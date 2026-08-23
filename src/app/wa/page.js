@@ -3,12 +3,17 @@
 import { useState, useEffect } from 'react';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const WA_NUMBER  = '601135172611';
+// ⬇️ Senarai nombor WA perawat — auto rotate setiap kunjungan
+const PERAWAT = [
+  '601135172611', // Perawat 1
+  '601XXXXXXXXX', // Perawat 2 — tukar ke nombor WA sebenar
+];
 const WA_MESSAGE = encodeURIComponent('Assalamualaikum, saya ingin dapatkan Scanning & Air Tawar PERCUMA. Boleh bantu saya?');
-const WA_LINK    = `https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}`;
+const buildWaLink = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
+const LS_KEY = 'esyifaa_wa_idx';
 
 // ─── WhatsApp Button ─────────────────────────────────────────────────────────
-function WAButton({ label = '🟢 Hubungi Kami Di WhatsApp — PERCUMA', id = 'cta-wa', size = 'large' }) {
+function WAButton({ label = '🟢 Hubungi Kami Di WhatsApp — PERCUMA', id = 'cta-wa', size = 'large', href = '#' }) {
   const handleClick = () => {
     try { window.fbq('track', 'Lead'); } catch (_) {}
   };
@@ -17,7 +22,7 @@ function WAButton({ label = '🟢 Hubungi Kami Di WhatsApp — PERCUMA', id = 'c
   return (
     <a
       id={id}
-      href={WA_LINK}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
@@ -103,9 +108,18 @@ const SYMPTOMS = [
 export default function WaPage() {
   const [openFaq, setOpenFaq] = useState(null);
   const [showSticky, setShowSticky] = useState(false);
+  const [waLink, setWaLink] = useState(buildWaLink(PERAWAT[0]));
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   useEffect(() => {
+    // ── Round-robin rotation antara perawat ──
+    // Setiap kunjungan baru → guna perawat berikutnya
+    const lastIdx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+    const nextIdx = (lastIdx + 1) % PERAWAT.length;
+    localStorage.setItem(LS_KEY, String(nextIdx));
+    setWaLink(buildWaLink(PERAWAT[nextIdx]));
+
+    // ── Sticky bar scroll listener ──
     const handleScroll = () => setShowSticky(window.scrollY > 400);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -155,7 +169,7 @@ export default function WaPage() {
           </p>
 
           <div style={{ marginBottom: '1.25rem' }}>
-            <WAButton id="cta-hero" label="🟢 Dapatkan Scanning & Air Tawar PERCUMA" />
+            <WAButton id="cta-hero" label="🟢 Dapatkan Scanning & Air Tawar PERCUMA" href={waLink} />
           </div>
           <p style={{ fontSize: '0.8rem', color: '#6EE7B7', fontStyle: 'italic' }}>
             Tiada bayaran · Tiada komitmen · Melalui WhatsApp
@@ -213,7 +227,7 @@ export default function WaPage() {
             </div>
 
             <div style={{ marginTop: '1.75rem', textAlign: 'center' }}>
-              <WAButton id="cta-offer" label="🟢 Saya Mahu Scanning Percuma" />
+              <WAButton id="cta-offer" label="🟢 Saya Mahu Scanning Percuma" href={waLink} />
               <p style={{ marginTop: '0.65rem', fontSize: '0.78rem', color: '#6EE7B7' }}>
                 Balas dalam masa 30 minit — Isnin hingga Jumaat
               </p>
@@ -272,7 +286,7 @@ export default function WaPage() {
             <p style={{ fontSize: '0.9rem', color: '#FCA5A5', fontWeight: 700, marginBottom: '1.25rem' }}>
               Jangan tangguh — semakin lama dibiarkan, semakin sukar untuk ditangani.
             </p>
-            <WAButton id="cta-symptom" label="🟢 Scanning Percuma Sekarang" />
+            <WAButton id="cta-symptom" label="🟢 Scanning Percuma Sekarang" href={waLink} />
           </div>
         </div>
       </section>
@@ -369,7 +383,7 @@ export default function WaPage() {
             ))}
           </div>
 
-          <WAButton id="cta-why" label="🟢 Hubungi Perawat ESyifaa Sekarang" />
+          <WAButton id="cta-why" label="🟢 Hubungi Perawat ESyifaa Sekarang" href={waLink} />
         </div>
       </section>
 
@@ -440,7 +454,7 @@ export default function WaPage() {
             Setiap hari tanpa tahu punca masalah adalah hari yang terbuang.
             Hubungi perawat ESyifaa sekarang — percuma, tiada komitmen.
           </p>
-          <WAButton id="cta-closing" label="🟢 Dapatkan Scanning & Air Tawar PERCUMA" />
+          <WAButton id="cta-closing" label="🟢 Dapatkan Scanning & Air Tawar PERCUMA" href={waLink} />
           <p style={{ marginTop: '0.85rem', fontSize: '0.8rem', color: '#6EE7B7', fontStyle: 'italic' }}>
             Tiada bayaran · Balas dalam masa 30 minit · 100% Patuh Syariah
           </p>
@@ -461,7 +475,7 @@ export default function WaPage() {
         boxShadow: '0 -8px 30px rgba(0,0,0,0.5)',
       }}>
         <a
-          href={WA_LINK}
+          href={waLink}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => { try { window.fbq('track', 'Lead'); } catch (_) {} }}
