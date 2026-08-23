@@ -1,9 +1,13 @@
 import PengisianHeroSection from '@/components/salespage/pengisian/HeroSection';
 import FspTestimonialSection from '@/components/salespage/fsp/TestimonialSection';
 import PengisianProblemSection from '@/components/salespage/pengisian/ProblemSection';
-import PengisianItemsSection from '@/components/salespage/pengisian/ItemsSection';
+import PengisianFearsSection from '@/components/salespage/pengisian/FearsSection';
+import PengisianExpertSection from '@/components/salespage/pengisian/ExpertSection';
+import PengisianSolutionSection from '@/components/salespage/pengisian/SolutionSection';
 import PengisianHowItWorksSection from '@/components/salespage/pengisian/HowItWorksSection';
+import PengisianGoalsSection from '@/components/salespage/pengisian/GoalsSection';
 import FspTestimonialPart2Section from '@/components/salespage/fsp/TestimonialPart2Section';
+import PengisianComparisonSection from '@/components/salespage/pengisian/ComparisonSection';
 import PengisianProcessSection from '@/components/salespage/pengisian/ProcessSection';
 import PengisianPaymentSection from '@/components/salespage/pengisian/PaymentSection';
 import FspGuaranteeSection from '@/components/salespage/fsp/GuaranteeSection';
@@ -20,19 +24,24 @@ export const metadata = {
  * Pengisian Ayat Ruqyah — Servis Pengisian Pada Barang Pesakit
  * Route: /tasbih-esyifa
  *
- * Section order:
- * #1  Hero — Pengisian Ayat Ruqyah
- * #2  Testimoni Part 1
- * #3  Problem (kenapa perlukan barang berisian)
- * #4  Jenis Barang (apa yang boleh diisi)
- * #5  Apa Yang Diisi (4 lapisan ayat + pelarasan mingguan)
- * #6  Testimoni Part 2
- * #7  Proses (4 langkah tempahan)
- * #8  Payment (pakej RM90)
- * #9  Jaminan
- * [BORANG CHECKOUT FPX — RM90]
- * #10 FAQ
- * Closing
+ * Section order — 100% ikut FSP framework:
+ *
+ * #1  Hero — Hook + Solution callout
+ * #2  Testimoni Part 1 ← social proof terus selepas hero
+ * #3  Problem (6 masalah — kenapa rawatan luar tidak cukup)
+ * #4  Fears (6 akibat jika tidak diselesaikan)
+ * #5  Expert/Authority (Dalil Al-Quran & Hadith)
+ * #6  Solution (Perkenalkan Pengisian E-Syifa' + 10 manfaat)
+ * #7  HowItWorks (4 lapisan ayat yang diisikan)
+ * #8  Goals (5 perubahan selepas dapat pengisian)
+ * #9  Testimoni Part 2 ← reinforce sebelum push ke payment
+ * #10 Comparison (vs Air Penawar vs Rawatan Luar)
+ * #11 Process (4 langkah: Tempah → Perawat → 7 Hari → Guna)
+ * #12 Payment (Pakej RM90)
+ * #13 Jaminan
+ * ──── [BORANG FPX CHECKOUT — RM90]
+ * #14 FAQ
+ * #15 Closing
  */
 export default function TasbihEsyifaPage() {
   return (
@@ -44,34 +53,46 @@ export default function TasbihEsyifaPage() {
       {/* #2 — Testimoni Part 1 */}
       <FspTestimonialSection />
 
-      {/* #3 — Problem */}
+      {/* #3 — Problem (6 masalah) */}
       <PengisianProblemSection />
 
-      {/* #4 — Jenis Barang Yang Boleh Diisi */}
-      <PengisianItemsSection />
+      {/* #4 — Fears (6 akibat jika tidak dirawat) */}
+      <PengisianFearsSection />
 
-      {/* #5 — Apa Yang Diisi (4 Lapisan Ayat + Pelarasan Mingguan) */}
+      {/* #5 — Expert / Authority (Dalil Al-Quran & Hadith) */}
+      <PengisianExpertSection />
+
+      {/* #6 — Solution (Perkenalkan Pengisian E-Syifa' + 10 manfaat) */}
+      <PengisianSolutionSection />
+
+      {/* #7 — Apa Yang Diisi (4 Lapisan Ayat Ruqyah) */}
       <PengisianHowItWorksSection />
 
-      {/* #6 — Testimoni Part 2 */}
+      {/* #8 — Goals (5 Perubahan Selepas Pengisian) */}
+      <PengisianGoalsSection />
+
+      {/* #9 — Testimoni Part 2 */}
       <FspTestimonialPart2Section />
 
-      {/* #7 — Proses Tempahan (4 Langkah) */}
+      {/* #10 — Comparison (vs Air Penawar vs Rawatan Luar) */}
+      <PengisianComparisonSection />
+
+      {/* #11 — Proses Tempahan (4 Langkah) */}
       <PengisianProcessSection />
 
-      {/* #8 — Payment (Pakej RM90) */}
+      {/* #12 — Payment (Pakej RM90) */}
       <PengisianPaymentSection />
 
-      {/* #9 — Jaminan Pulang Wang */}
+      {/* #13 — Jaminan */}
       <FspGuaranteeSection />
 
       {/* BORANG DIRECT FPX CHECKOUT — RM90 */}
       <PengisianCheckoutForm />
 
-      {/* #10 — FAQ */}
+      {/* #14 — FAQ */}
       <PengisianFAQSection />
 
-      {/* Closing */}
+      {/* #15 — Closing */}
       <PengisianClosingSection />
 
       {/* Footer */}
