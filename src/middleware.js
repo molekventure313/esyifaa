@@ -46,6 +46,8 @@ export async function middleware(request) {
     request.nextUrl.pathname === '/daftar-perawat' ||
     request.nextUrl.pathname === '/terima-kasih' ||
     request.nextUrl.pathname === '/tasbih-esyifa' ||
+    request.nextUrl.pathname.startsWith('/wa') ||
+    request.nextUrl.pathname.startsWith('/pengisian-esyifa') ||
     request.nextUrl.pathname.startsWith('/sihir') ||
     request.nextUrl.pathname.startsWith('/saka') ||
     request.nextUrl.pathname.startsWith('/penyakit-misteri') ||
@@ -61,6 +63,7 @@ export async function middleware(request) {
     request.nextUrl.pathname.startsWith('/api/submissions') ||
     request.nextUrl.pathname.startsWith('/api/payments') ||
     request.nextUrl.pathname.startsWith('/api/tracking') ||
+    request.nextUrl.pathname.startsWith('/api/public') ||          // ← public APIs (wasap numbers etc)
     request.nextUrl.pathname.startsWith('/api/setup') ||
     request.nextUrl.pathname.startsWith('/api/register-perawat') ||
     request.nextUrl.pathname.startsWith('/api/settings') ||
