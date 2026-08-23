@@ -94,6 +94,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Perawat', href: '/dashboard/admin/perawat' },
     { section: 'TETAPAN' },
     { label: 'Tracking & Pixel', href: '/dashboard/admin/tracking' },
+    { label: '💬 WA Perawat', href: '/dashboard/admin/wasap' },
     { label: 'Log Aktiviti', href: '/dashboard/admin/log' }
   ];
   

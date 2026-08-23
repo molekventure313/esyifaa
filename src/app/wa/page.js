@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-// ⬇️ Senarai nombor WA perawat — auto rotate setiap kunjungan
-const PERAWAT = [
-  '601135172611', // Perawat 1
-  '601XXXXXXXXX', // Perawat 2 — tukar ke nombor WA sebenar
-];
+// Nombor WA diambil dari DB via /api/public/wasap (boleh urus di /dashboard/admin/wasap)
+// Fallback jika API gagal:
+const FALLBACK_NUMBER = '601135172611';
 const WA_MESSAGE = encodeURIComponent('Assalamualaikum, saya ingin dapatkan Scanning & Air Tawar PERCUMA. Boleh bantu saya?');
 const buildWaLink = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
 const LS_KEY = 'esyifaa_wa_idx';
@@ -108,16 +106,31 @@ const SYMPTOMS = [
 export default function WaPage() {
   const [openFaq, setOpenFaq] = useState(null);
   const [showSticky, setShowSticky] = useState(false);
-  const [waLink, setWaLink] = useState(buildWaLink(PERAWAT[0]));
+  const [waLink, setWaLink] = useState(buildWaLink(FALLBACK_NUMBER));
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   useEffect(() => {
-    // ── Round-robin rotation antara perawat ──
-    // Setiap kunjungan baru → guna perawat berikutnya
-    const lastIdx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
-    const nextIdx = (lastIdx + 1) % PERAWAT.length;
-    localStorage.setItem(LS_KEY, String(nextIdx));
-    setWaLink(buildWaLink(PERAWAT[nextIdx]));
+    // ── Fetch active WA numbers from DB ──
+    const initWaRotation = async () => {
+      try {
+        const res = await fetch('/api/public/wasap');
+        const json = await res.json();
+        const numbers = (json.success && json.data?.length > 0)
+          ? json.data.map(d => d.number)
+          : [FALLBACK_NUMBER]; // fallback jika API gagal atau tiada nombor
+
+        // ── Round-robin rotation ──
+        const lastIdx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+        const nextIdx = (lastIdx + 1) % numbers.length;
+        localStorage.setItem(LS_KEY, String(nextIdx));
+        setWaLink(buildWaLink(numbers[nextIdx]));
+      } catch {
+        // Fallback silent — guna nombor default
+        setWaLink(buildWaLink(FALLBACK_NUMBER));
+      }
+    };
+
+    initWaRotation();
 
     // ── Sticky bar scroll listener ──
     const handleScroll = () => setShowSticky(window.scrollY > 400);

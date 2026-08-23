@@ -80,6 +80,14 @@ const PRODUCT_PAGES = [
     icon: '📿',
     isNew: true,
   },
+  {
+    label: 'WA Landing Page (FB Ads)',
+    desc: 'Landing page khas untuk FB Ads → WhatsApp. Fokus: Scanning & Air Tawar PERCUMA. Auto-rotate antara perawat.',
+    url: '/wa',
+    color: '#25D366',
+    icon: '💬',
+    isNew: true,
+  },
 ];
 
 export default function SalespageManagement({ isLightMode, cardBg, cardBorder, textPrimary, textSecondary }) {
