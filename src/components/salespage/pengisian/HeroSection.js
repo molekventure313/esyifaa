@@ -25,35 +25,52 @@ export default function PengisianHeroSection() {
           fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
           letterSpacing: '0.1em', textTransform: 'uppercase',
         }}>
-          ⭐ 500+ Pesakit Dirawat — Alhamdulillah
+          🌿 ESyifaa · Pengisian Ayat Ruqyah Jarak Jauh
         </div>
 
-        {/* H1 */}
+        {/* H1 — Hook baru */}
         <h1 style={{
-          fontSize: 'clamp(1.75rem, 4.5vw, 2.9rem)',
-          fontWeight: 900,
-          color: '#FEF3C7',
-          lineHeight: 1.2,
-          letterSpacing: '-0.02em',
+          fontSize: 'clamp(1.7rem, 4.5vw, 2.8rem)',
+          fontWeight: 900, color: '#FEF3C7',
+          lineHeight: 1.2, letterSpacing: '-0.02em',
           marginBottom: '1.25rem',
         }}>
-          Isikan Barang Anda Dengan{' '}
-          <span style={{ color: '#FDE047' }}>Kekuatan Ayat Al-Quran</span>
-          {' '}— Rawat Diri &amp; Keluarga Bila-Bila Masa
+          Dah Berulang Kali Dirawat Tapi{' '}
+          <span style={{ color: '#FDE047' }}>Gangguan Masih Datang Balik?</span>
+          {' '}Ini Sebabnya...
         </h1>
 
-        {/* Sub */}
+        {/* Problem framing */}
         <p style={{
-          fontSize: '1.05rem',
-          color: '#A7F3D0',
-          lineHeight: 1.75,
-          maxWidth: '660px',
+          fontSize: '1.05rem', color: '#A7F3D0',
+          lineHeight: 1.75, maxWidth: '660px',
           margin: '0 auto 1.5rem auto',
         }}>
-          Cincin, tasbih, atau mana-mana barang yang selalu anda gunakan.
-          Perawat ESyifaa buat <strong style={{ color: '#FDE047' }}>pengisian ayat ruqyah jarak jauh</strong> selama 7 hari —
-          selepas siap, barang anda menjadi alat rawatan yang boleh digunakan bila-bila masa.
+          Perawat boleh buang jin — tapi bila balik rumah, jin datang balik.
+          Sihir berat dihantar berkali-kali.{' '}
+          <strong style={{ color: '#FEF3C7' }}>Satu rawatan tidak pernah cukup untuk kes serius.</strong>
         </p>
+
+        {/* Solution callout */}
+        <div style={{
+          background: 'rgba(253,224,71,0.08)',
+          border: '2px solid rgba(253,224,71,0.4)',
+          borderRadius: '16px',
+          padding: '1.25rem 1.75rem',
+          maxWidth: '620px',
+          margin: '0 auto 2rem auto',
+          textAlign: 'left',
+        }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#FDE047', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+            ✨ Penyelesaian
+          </div>
+          <p style={{ margin: 0, fontSize: '1rem', color: '#FEF3C7', lineHeight: 1.65, fontWeight: 600 }}>
+            <strong style={{ color: '#FDE047' }}>Pengisian E-Syifa&apos; Pada Item Anda</strong> —
+            diisi bacaan ayat-ayat ruqyah syar&apos;iyyah.
+            Ibarat ada perawat private di rumah.
+            <span style={{ color: '#4ADE80' }}> Rawat sendiri, tanpa had, seumur hidup.</span>
+          </p>
+        </div>
 
         {/* Trust pills */}
         <div style={{
@@ -68,52 +85,39 @@ export default function PengisianHeroSection() {
           ].map((item, i) => (
             <span key={i} style={{
               background: 'rgba(167,243,208,0.1)',
-              border: '1px solid rgba(167,243,208,0.3)',
-              color: '#A7F3D0',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              padding: '0.3rem 0.9rem',
+              border: '1px solid rgba(167,243,208,0.25)',
+              color: '#A7F3D0', fontSize: '0.82rem',
+              fontWeight: 600, padding: '0.3rem 0.9rem',
               borderRadius: '999px',
-            }}>
-              {item}
-            </span>
+            }}>{item}</span>
           ))}
         </div>
 
         {/* Icon */}
         <div style={{
-          width: '160px', height: '160px', borderRadius: '50%',
+          width: '150px', height: '150px', borderRadius: '50%',
           background: 'radial-gradient(circle at 35% 35%, #065F46, #021812)',
           border: '3px solid #FDE047',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 2.5rem auto',
-          boxShadow: '0 0 60px rgba(253,224,71,0.15), 0 20px 40px rgba(0,0,0,0.5)',
+          boxShadow: '0 0 60px rgba(253,224,71,0.12), 0 20px 40px rgba(0,0,0,0.5)',
         }}>
-          <span style={{ fontSize: '3.5rem' }}>💎</span>
-          <span style={{ fontSize: '0.7rem', color: '#FDE047', fontWeight: 800, letterSpacing: '0.05em', marginTop: '0.2rem' }}>
-            PENGISIAN RUQYAH
+          <span style={{ fontSize: '3rem' }}>💎</span>
+          <span style={{ fontSize: '0.65rem', color: '#FDE047', fontWeight: 800, letterSpacing: '0.05em', marginTop: '0.2rem' }}>
+            PENGISIAN E-SYIFA&apos;
           </span>
         </div>
 
         {/* CTA */}
-        <a
-          href="#borang"
-          onClick={scrollToForm}
-          style={{
-            display: 'inline-block',
-            padding: '1.15rem 2.6rem',
-            fontSize: '1.1rem',
-            fontWeight: 800,
-            color: '#042E23',
-            background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-            borderRadius: '50px',
-            textDecoration: 'none',
-            boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
-            border: '2px solid #FEF08A',
-            letterSpacing: '-0.01em',
-          }}
-        >
+        <a href="#borang" onClick={scrollToForm} style={{
+          display: 'inline-block', padding: '1.15rem 2.6rem',
+          fontSize: '1.1rem', fontWeight: 800, color: '#042E23',
+          background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
+          borderRadius: '50px', textDecoration: 'none',
+          boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
+          border: '2px solid #FEF08A', letterSpacing: '-0.01em',
+        }}>
           💎 Tempah Pengisian RM90 Sekarang
         </a>
 

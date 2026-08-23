@@ -1,95 +1,80 @@
 'use client';
-import React from 'react';
 
-export default function ProcessSection() {
+const STEPS = [
+  { no: '01', icon: '💳', label: 'TEMPAH & BAYAR', title: 'Isi Borang & Bayar RM90 via FPX', desc: 'Isi borang ringkas di bawah. Nyatakan nama dan jenis barang anda. Bayar RM90 terus melalui FPX Online Banking — selamat dan segera.' },
+  { no: '02', icon: '📞', label: 'PERAWAT HUBUNGI', title: 'Perawat Hubungi Via WhatsApp', desc: 'Dalam masa 24 jam, perawat ESyifaa akan menghubungi anda melalui WhatsApp untuk mengesahkan maklumat barang dan memberi panduan awal.' },
+  { no: '03', icon: '⭐', label: 'PENGISIAN 7 HARI', title: 'Proses Pengisian Ayat Ruqyah Dijalankan', desc: 'Perawat menjalankan pengisian ayat ruqyah secara jarak jauh selama 7 hari berturut-turut. Anda tidak perlu buat apa-apa — cukup simpan barang bersama anda.' },
+  { no: '04', icon: '🎉', label: 'SIAP & GUNA', title: 'Selepas 7 Hari — Terus Guna', desc: 'Selepas 7 hari, barang anda sudah siap diisikan. Boleh terus gunakan untuk rawat diri, ahli keluarga dan sebagai perlindungan harian yang berterusan.' },
+];
+
+export default function PengisianProcessSection() {
   return (
-    <section className="bg-[#042E23] py-16 px-4 font-inter relative z-10 border-t border-[#031E17]">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
-          <span className="inline-block bg-[#031E17] border border-[#FDE047]/30 text-[#FDE047] px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide mb-6">
-            🗓️ PROSES TEMPAHAN
+    <section style={{
+      background: '#042E23', color: '#FFFFFF',
+      padding: '4rem 1rem',
+      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+    }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <span style={{
+            display: 'inline-block',
+            background: 'rgba(253,224,71,0.1)', border: '1px solid rgba(253,224,71,0.4)',
+            color: '#FDE047', padding: '0.4rem 1.1rem', borderRadius: '50px',
+            fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em',
+            textTransform: 'uppercase', marginBottom: '1rem',
+          }}>
+            🗓️ Proses Tempahan
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#FEF3C7] mb-6 leading-tight">
+          <h2 style={{
+            fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)',
+            fontWeight: 800, color: '#FDE047',
+            marginTop: '0.4rem', marginBottom: '0.75rem',
+            letterSpacing: '-0.02em', lineHeight: 1.25,
+          }}>
             4 Langkah Mudah — Dari Tempahan Hingga Mula Guna
           </h2>
-          <p className="text-[#D1FAE5] text-lg max-w-3xl mx-auto leading-relaxed">
+          <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '580px', margin: '0 auto' }}>
             Proses yang mudah dan telus. Dari tempahan hingga barang anda siap diisikan — semua dalam 7 hari.
           </p>
         </div>
 
-        <div className="relative">
-          {/* Vertical line connector */}
-          <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-[#4ADE80]/30 z-0"></div>
-          
-          <div className="space-y-12 relative z-10">
-            {/* Step 1 */}
-            <div className="flex flex-col md:flex-row items-center md:justify-between gap-6 md:gap-0">
-              <div className="md:w-5/12 order-2 md:order-1">
-                <div className="bg-[#031E17] p-6 rounded-2xl border border-[#4ADE80]/20 text-center md:text-right hover:border-[#FDE047]/40 transition-colors">
-                  <div className="text-[#4ADE80] font-bold text-sm mb-2 uppercase tracking-wider">Langkah 01</div>
-                  <h3 className="text-[#FDE047] text-xl font-bold mb-3">Isi Borang & Bayar RM90 via FPX</h3>
-                  <p className="text-[#A7F3D0] text-sm leading-relaxed">
-                    Isi borang ringkas di bawah. Nyatakan nama dan jenis barang anda. Bayar RM90 terus melalui FPX Online Banking — selamat dan segera.
-                  </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {STEPS.map((step, i) => (
+            <div key={i} style={{
+              background: '#031E17', border: '1px solid rgba(74,222,128,0.2)',
+              borderRadius: '16px', padding: '1.5rem',
+              display: 'flex', gap: '1.25rem', alignItems: 'flex-start',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+            }}>
+              {/* Step number + icon */}
+              <div style={{
+                minWidth: '56px', height: '56px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, #065F46, #047857)',
+                border: '2px solid rgba(74,222,128,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.5rem', flexShrink: 0,
+                boxShadow: '0 0 15px rgba(74,222,128,0.2)',
+              }}>
+                {step.icon}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                  <span style={{
+                    fontSize: '0.68rem', fontWeight: 900, color: '#4ADE80',
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                  }}>
+                    {step.no} · {step.label}
+                  </span>
                 </div>
-              </div>
-              <div className="w-16 h-16 rounded-full bg-[#047857] border-4 border-[#031E17] flex items-center justify-center text-2xl order-1 md:order-2 shadow-[0_0_15px_rgba(74,222,128,0.3)] z-10">
-                💳
-              </div>
-              <div className="md:w-5/12 order-3"></div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex flex-col md:flex-row items-center md:justify-between gap-6 md:gap-0">
-              <div className="md:w-5/12 order-3 md:order-1"></div>
-              <div className="w-16 h-16 rounded-full bg-[#047857] border-4 border-[#031E17] flex items-center justify-center text-2xl order-1 md:order-2 shadow-[0_0_15px_rgba(74,222,128,0.3)] z-10">
-                📞
-              </div>
-              <div className="md:w-5/12 order-2 md:order-3">
-                <div className="bg-[#031E17] p-6 rounded-2xl border border-[#4ADE80]/20 text-center md:text-left hover:border-[#FDE047]/40 transition-colors">
-                  <div className="text-[#4ADE80] font-bold text-sm mb-2 uppercase tracking-wider">Langkah 02</div>
-                  <h3 className="text-[#FDE047] text-xl font-bold mb-3">Perawat Hubungi Via WhatsApp</h3>
-                  <p className="text-[#A7F3D0] text-sm leading-relaxed">
-                    Dalam masa 24 jam, perawat ESyifaa akan menghubungi anda melalui WhatsApp untuk mengesahkan maklumat barang dan memberi panduan awal.
-                  </p>
+                <div style={{ fontWeight: 800, color: '#FDE047', fontSize: '0.975rem', marginBottom: '0.4rem', lineHeight: 1.3 }}>
+                  {step.title}
                 </div>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#D1FAE5', lineHeight: 1.65 }}>
+                  {step.desc}
+                </p>
               </div>
             </div>
-
-            {/* Step 3 */}
-            <div className="flex flex-col md:flex-row items-center md:justify-between gap-6 md:gap-0">
-              <div className="md:w-5/12 order-2 md:order-1">
-                <div className="bg-[#031E17] p-6 rounded-2xl border border-[#4ADE80]/20 text-center md:text-right hover:border-[#FDE047]/40 transition-colors">
-                  <div className="text-[#4ADE80] font-bold text-sm mb-2 uppercase tracking-wider">Langkah 03</div>
-                  <h3 className="text-[#FDE047] text-xl font-bold mb-3">Proses Pengisian Ayat Ruqyah Dijalankan</h3>
-                  <p className="text-[#A7F3D0] text-sm leading-relaxed">
-                    Perawat menjalankan pengisian ayat ruqyah secara jarak jauh selama 7 hari berturut-turut. Anda tidak perlu buat apa-apa — cukup simpan barang bersama anda.
-                  </p>
-                </div>
-              </div>
-              <div className="w-16 h-16 rounded-full bg-[#047857] border-4 border-[#031E17] flex items-center justify-center text-2xl order-1 md:order-2 shadow-[0_0_15px_rgba(74,222,128,0.3)] z-10">
-                ⭐
-              </div>
-              <div className="md:w-5/12 order-3"></div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="flex flex-col md:flex-row items-center md:justify-between gap-6 md:gap-0">
-              <div className="md:w-5/12 order-3 md:order-1"></div>
-              <div className="w-16 h-16 rounded-full bg-[#047857] border-4 border-[#031E17] flex items-center justify-center text-2xl order-1 md:order-2 shadow-[0_0_15px_rgba(74,222,128,0.3)] z-10">
-                🎉
-              </div>
-              <div className="md:w-5/12 order-2 md:order-3">
-                <div className="bg-[#031E17] p-6 rounded-2xl border border-[#4ADE80]/20 text-center md:text-left hover:border-[#FDE047]/40 transition-colors">
-                  <div className="text-[#4ADE80] font-bold text-sm mb-2 uppercase tracking-wider">Langkah 04</div>
-                  <h3 className="text-[#FDE047] text-xl font-bold mb-3">Selepas 7 Hari — Terus Guna</h3>
-                  <p className="text-[#A7F3D0] text-sm leading-relaxed">
-                    Selepas 7 hari, barang anda sudah siap diisikan. Boleh terus gunakan untuk rawat diri, ahli keluarga dan sebagai perlindungan harian yang berterusan.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </section>

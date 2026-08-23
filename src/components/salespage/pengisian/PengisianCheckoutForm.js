@@ -1,248 +1,274 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
+
+function getUTMParams() {
+  if (typeof window === 'undefined') return {};
+  const p = new URLSearchParams(window.location.search);
+  return {
+    utm_source:   p.get('utm_source')   || null,
+    utm_medium:   p.get('utm_medium')   || null,
+    utm_campaign: p.get('utm_campaign') || null,
+    utm_content:  p.get('utm_content')  || null,
+    utm_term:     p.get('utm_term')     || null,
+    fbclid:       p.get('fbclid')       || null,
+  };
+}
+
+const DIAL_CODES = [
+  { code: '+60',  flag: '🇲🇾', label: 'MY' },
+  { code: '+673', flag: '🇧🇳', label: 'BN' },
+  { code: '+65',  flag: '🇸🇬', label: 'SG' },
+  { code: '+62',  flag: '🇮🇩', label: 'ID' },
+];
 
 export default function PengisianCheckoutForm() {
+  const [fpxPixelId, setFpxPixelId] = useState(null);
   const [formData, setFormData] = useState({
     full_name: '',
+    dialCode: '+60',
     phone: '',
     problem: '',
     honeypot: '',
   });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Pixel setup
-  const fpxPixelId = '349586411516766';
-  const amount_in_myr = 90.00;
-
+  // Inject FPX pixel script + fetch pixel ID (same pattern as FspChipCheckoutForm)
   useEffect(() => {
-    // Inject fbq initialization
     const script = document.createElement('script');
     script.src = '/api/pixel-fpx-init';
     script.async = true;
-    document.body.appendChild(script);
+    document.head.appendChild(script);
 
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
+    fetch('/api/tracking/fpx-pixel-id')
+      .then(r => r.json())
+      .then(json => { if (json.fpx_pixel_id) setFpxPixelId(json.fpx_pixel_id); })
+      .catch(() => {});
+
+    return () => { try { document.head.removeChild(script); } catch (_) {} };
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const getCookie = (name) => {
-    if (typeof document === 'undefined') return '';
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return '';
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
-    
-    // Honeypot check
-    if (formData.honeypot) {
-      console.log('Spam detected');
+
+    if (!formData.full_name.trim() || !formData.phone.trim()) {
+      setErrorMessage('Sila isi nama penuh dan nombor telefon / WhatsApp anda.');
       return;
     }
 
-    if (!formData.full_name || !formData.phone || !formData.problem) {
-      setErrorMessage('Sila isikan semua maklumat yang diperlukan.');
-      return;
-    }
+    setLoading(true);
 
-    setIsLoading(true);
+    // Fire InitiateCheckout — FPX pixel only
+    try {
+      const pid = fpxPixelId || (typeof window !== 'undefined' && window.__fpxPixelId);
+      if (typeof window !== 'undefined' && window.fbq && pid) {
+        window.fbq('trackSingle', pid, 'InitiateCheckout', { value: 90.00, currency: 'MYR' });
+      }
+    } catch (_) {}
 
     try {
-      // Fire InitiateCheckout pixel
-      if (typeof window !== 'undefined' && window.fbq) {
-        window.fbq('trackSingle', fpxPixelId, 'InitiateCheckout', { 
-          value: amount_in_myr, 
-          currency: 'MYR' 
-        });
-      }
+      const eventId = generateEventId();
+      const { fbp, fbc } = getPixelCookies();
+      const utmParams = getUTMParams();
+      const fbcValue = fbc || (utmParams.fbclid ? `fb.1.${Date.now()}.${utmParams.fbclid}` : null);
 
-      const fbp = getCookie('_fbp') || '';
-      const fbc = getCookie('_fbc') || '';
+      const rawPhone = `${formData.dialCode}${formData.phone.replace(/^0+/, '')}`;
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const utm_source = urlParams.get('utm_source') || '';
-      const utm_medium = urlParams.get('utm_medium') || '';
-      const utm_campaign = urlParams.get('utm_campaign') || '';
-
-      // Create event_id
-      const event_id = 'evt_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-
-      const requestBody = {
-        full_name: formData.full_name,
-        phone: formData.phone.startsWith('+') ? formData.phone : `+60${formData.phone.replace(/^0/, '')}`,
-        problem: formData.problem,
-        source: 'tasbih-esyifa',
-        amount_in_myr: amount_in_myr,
-        event_id,
-        fbp,
-        fbc,
-        utm_source,
-        utm_medium,
-        utm_campaign,
-        client_user_agent: navigator.userAgent,
-        client_ip_address: '' // Will be resolved at server
-      };
-
-      const res = await fetch('/api/payments/chip/create', {
+      const response = await fetch('/api/payments/chip/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: formData.full_name,
+          phone: rawPhone,
+          problem: formData.problem,
+          honeypot: formData.honeypot,
+          source: 'tasbih-esyifa',
+          event_id: eventId,
+          amount_in_myr: 90.00,
+          landing_page_url: typeof window !== 'undefined' ? window.location.href : null,
+          referrer_url: typeof window !== 'undefined' ? document.referrer : null,
+          fbp: fbp || null,
+          fbc: fbcValue,
+          fbclid: utmParams.fbclid || null,
+          utm_source:   utmParams.utm_source,
+          utm_medium:   utmParams.utm_medium,
+          utm_campaign: utmParams.utm_campaign,
+          utm_content:  utmParams.utm_content,
+          utm_term:     utmParams.utm_term,
+        }),
       });
 
-      const data = await res.json();
+      const json = await response.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Terjadi ralat semasa memproses pembayaran');
+      if (!response.ok || !json.success) {
+        throw new Error(json.error || 'Ralat semasa membuat tempahan.');
       }
 
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+      if (json.checkout_url) {
+        window.location.href = json.checkout_url;
       } else {
-        throw new Error('URL pembayaran tidak ditemui');
+        throw new Error('URL pembayaran tidak ditemui.');
       }
-      
-    } catch (error) {
-      console.error('Checkout error:', error);
-      setErrorMessage(error.message || 'Terjadi ralat, sila cuba lagi');
-      setIsLoading(false);
+    } catch (err) {
+      setErrorMessage(err.message || 'Ralat tidak dijangka. Sila cuba lagi.');
+      setLoading(false);
     }
   };
 
+  // Shared styles
+  const inputStyle = {
+    width: '100%', boxSizing: 'border-box',
+    background: '#0D1117', border: '1.5px solid rgba(52,211,153,0.2)',
+    borderRadius: '10px', padding: '0.85rem 1rem',
+    fontSize: '0.95rem', color: '#FEF3C7',
+    outline: 'none', fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+    transition: 'border-color 0.2s',
+  };
+  const labelStyle = {
+    display: 'block', fontSize: '0.88rem',
+    fontWeight: 700, color: '#D1FAE5', marginBottom: '0.5rem',
+  };
+
   return (
-    <section id="borang" className="bg-[#031E17] py-16 px-4 font-inter relative z-10 border-t border-[#042E23]">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <span className="inline-block bg-[#042E23] border border-[#FDE047]/30 text-[#FDE047] px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide mb-6">
-            LANGKAH PERTAMA
+    <section id="borang" style={{
+      background: '#10131A', color: '#FFFFFF',
+      padding: '4rem 1rem',
+      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+    }}>
+      <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <span style={{
+            display: 'inline-block',
+            background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
+            color: '#34D399', padding: '0.35rem 1rem', borderRadius: '50px',
+            fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em',
+            textTransform: 'uppercase', marginBottom: '1rem',
+          }}>
+            Langkah Pertama
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#FEF3C7] mb-4 leading-tight">
-            Tempah Pengisian & Bayar RM90 Melalui FPX
+          <h2 style={{
+            fontSize: 'clamp(1.4rem, 3.5vw, 2rem)',
+            fontWeight: 800, color: '#FEF3C7',
+            marginTop: '0.3rem', marginBottom: '0.6rem',
+            letterSpacing: '-0.02em', lineHeight: 1.25,
+          }}>
+            Tempah Pengisian &amp; Bayar RM90 Melalui FPX
           </h2>
-          <p className="text-[#D1FAE5] text-lg max-w-xl mx-auto">
-            Isi borang ringkas di bawah. Nyatakan barang yang ingin diisikan. Perawat akan hubungi anda dalam 24 jam untuk pengesahan.
+          <p style={{ fontSize: '0.9rem', color: '#A7F3D0', lineHeight: 1.65 }}>
+            Isi borang ringkas di bawah. Nyatakan barang yang ingin diisikan.
+            Perawat akan hubungi anda dalam 24 jam untuk pengesahan.
           </p>
         </div>
 
-        <div className="bg-[#10131A] p-6 md:p-8 rounded-2xl border border-[#34D399]/30 shadow-2xl relative">
-          
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <div className="bg-[#031E17] p-3 rounded-lg border border-[#042E23] flex items-center gap-2 text-[#A7F3D0] text-sm">
-              <span>💎</span> Pengisian 7 Hari
+        {/* Trust badges */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1.75rem' }}>
+          {[
+            { icon: '💎', text: 'Pengisian 7 Hari' },
+            { icon: '🔄', text: 'Pelarasan Mingguan' },
+            { icon: '🔒', text: 'Bayaran Selamat' },
+            { icon: '⚡', text: 'Respon 24 Jam' },
+          ].map((b, i) => (
+            <div key={i} style={{
+              background: 'rgba(52,211,153,0.07)',
+              border: '1px solid rgba(52,211,153,0.2)',
+              borderRadius: '8px', padding: '0.6rem 0.8rem',
+              fontSize: '0.82rem', color: '#A7F3D0',
+              display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 600,
+            }}>
+              <span>{b.icon}</span> {b.text}
             </div>
-            <div className="bg-[#031E17] p-3 rounded-lg border border-[#042E23] flex items-center gap-2 text-[#A7F3D0] text-sm">
-              <span>🔄</span> Pelarasan Mingguan
-            </div>
-            <div className="bg-[#031E17] p-3 rounded-lg border border-[#042E23] flex items-center gap-2 text-[#A7F3D0] text-sm">
-              <span>🔒</span> Bayaran Selamat
-            </div>
-            <div className="bg-[#031E17] p-3 rounded-lg border border-[#042E23] flex items-center gap-2 text-[#A7F3D0] text-sm">
-              <span>⚡</span> Respon Dalam 24 Jam
-            </div>
-          </div>
+          ))}
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Honeypot field - hidden from users */}
-            <input 
-              type="text" 
-              name="honeypot" 
-              value={formData.honeypot} 
-              onChange={handleChange} 
-              style={{ display: 'none' }} 
-              tabIndex="-1" 
-              autoComplete="off" 
-            />
+        {/* Form card */}
+        <div style={{
+          background: '#0D1117', border: '1.5px solid rgba(52,211,153,0.25)',
+          borderRadius: '16px', padding: '2rem',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+        }}>
+          <form onSubmit={handleSubmit}>
+            {/* Honeypot */}
+            <input type="text" name="honeypot" value={formData.honeypot}
+              onChange={handleChange} style={{ display: 'none' }}
+              tabIndex="-1" autoComplete="off" />
 
-            <div>
-              <label className="block text-[#D1FAE5] font-semibold mb-2">Nama Penuh</label>
-              <input
-                type="text"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleChange}
-                required
-                className="w-full bg-[#031E17] border border-[#042E23] rounded-xl px-4 py-3 text-[#FEF3C7] focus:outline-none focus:border-[#34D399] transition-colors"
-                placeholder="Ali Bin Abu"
-              />
+            {/* Nama */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={labelStyle}>Nama Penuh *</label>
+              <input type="text" name="full_name" value={formData.full_name}
+                onChange={handleChange} required placeholder="Masukkan nama penuh anda"
+                style={inputStyle} />
             </div>
 
-            <div>
-              <label className="block text-[#D1FAE5] font-semibold mb-2">No. Telefon (WhatsApp)</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-                className="w-full bg-[#031E17] border border-[#042E23] rounded-xl px-4 py-3 text-[#FEF3C7] focus:outline-none focus:border-[#34D399] transition-colors"
-                placeholder="0123456789"
-              />
+            {/* Phone */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={labelStyle}>Nombor WhatsApp *</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <select name="dialCode" value={formData.dialCode} onChange={handleChange}
+                  style={{ ...inputStyle, width: 'auto', minWidth: '95px', padding: '0.85rem 0.6rem', flexShrink: 0 }}>
+                  {DIAL_CODES.map(d => (
+                    <option key={d.code} value={d.code}>{d.flag} {d.label} {d.code}</option>
+                  ))}
+                </select>
+                <input type="tel" name="phone" value={formData.phone}
+                  onChange={handleChange} required placeholder="123456789"
+                  style={{ ...inputStyle, flex: 1 }} />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-[#D1FAE5] font-semibold mb-2">Nama & Jenis Barang Yang Ingin Diisikan</label>
-              <textarea
-                name="problem"
-                value={formData.problem}
-                onChange={handleChange}
-                required
-                rows={4}
-                className="w-full bg-[#031E17] border border-[#042E23] rounded-xl px-4 py-3 text-[#FEF3C7] focus:outline-none focus:border-[#34D399] transition-colors resize-none"
+            {/* Item description */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={labelStyle}>Nama &amp; Jenis Barang Yang Ingin Diisikan *</label>
+              <textarea name="problem" value={formData.problem}
+                onChange={handleChange} required rows={4}
                 placeholder="Contoh: Cincin emas di tangan kiri, tasbih kayu, jam tangan hitam..."
-              />
+                style={{ ...inputStyle, resize: 'vertical', minHeight: '100px' }} />
+              <p style={{ margin: '0.4rem 0 0', fontSize: '0.78rem', color: '#6EE7B7' }}>
+                Nyatakan dengan jelas — perawat akan buat pengisian berdasarkan maklumat ini.
+              </p>
             </div>
 
+            {/* Error */}
             {errorMessage && (
-              <div className="bg-[#EF4444]/20 border border-[#EF4444] text-[#FCA5A5] p-4 rounded-xl text-sm">
-                {errorMessage}
+              <div style={{
+                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)',
+                borderRadius: '8px', padding: '0.85rem 1rem',
+                fontSize: '0.875rem', color: '#FCA5A5', marginBottom: '1.25rem',
+              }}>
+                ⚠️ {errorMessage}
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-4 rounded-xl text-lg font-bold shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all flex justify-center items-center gap-2 ${
-                isLoading 
-                  ? 'bg-[#042E23] text-[#A7F3D0] cursor-not-allowed' 
-                  : 'bg-[#34D399] hover:bg-[#10B981] text-[#031E17] hover:scale-[1.02] active:scale-[0.98]'
-              }`}
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#A7F3D0]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Memproses Tempahan...
-                </>
-              ) : (
-                '💎 Tempah & Bayar RM90 via FPX'
-              )}
+            {/* Submit */}
+            <button type="submit" disabled={loading} style={{
+              width: '100%', padding: '1.1rem',
+              fontSize: '1.05rem', fontWeight: 800,
+              color: loading ? '#6EE7B7' : '#042E23',
+              background: loading
+                ? 'rgba(52,211,153,0.15)'
+                : 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
+              border: loading ? '2px solid rgba(52,211,153,0.3)' : '2px solid #FEF08A',
+              borderRadius: '50px', cursor: loading ? 'not-allowed' : 'pointer',
+              boxShadow: loading ? 'none' : '0 8px 25px rgba(234,179,8,0.4)',
+              transition: 'all 0.2s',
+              letterSpacing: '-0.01em',
+            }}>
+              {loading ? '⏳ Memproses Tempahan...' : '💎 Tempah & Bayar RM90 via FPX'}
             </button>
-            <div className="text-center mt-4 text-[#A7F3D0] text-xs opacity-80 flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-              Pembayaran dijamin selamat dan diproses oleh CHIP
-            </div>
+
+            <p style={{ textAlign: 'center', marginTop: '0.85rem', fontSize: '0.78rem', color: '#6EE7B7' }}>
+              🔒 Bayaran diproses selamat oleh CHIP · 256-bit SSL
+            </p>
           </form>
         </div>
       </div>
