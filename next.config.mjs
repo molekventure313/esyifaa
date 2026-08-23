@@ -10,6 +10,16 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/tasbih-esyifa',
+        destination: '/pengisian-esyifa',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
+

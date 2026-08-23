@@ -66,11 +66,11 @@ const PRODUCT_PAGES = [
     isNew: true,
   },
   {
-    label: 'Tasbih E-Syifa\' (Asal)',
-    desc: 'Salespage produk tasbih ruqyah syar\'iyyah — versi asal.',
-    url: '/tasbih-esyifa',
+    label: 'Pengisian E-Syifa\' (Servis Baharu)',
+    desc: 'Salespage pengisian ayat ruqyah pada barang pesakit. Countdown 31 Ogos. RM90 → RM120.',
+    url: '/pengisian-esyifa',
     color: '#D97706',
-    icon: '📿',
+    icon: '💎',
   },
   {
     label: 'Tasbih E-Syifa\' (FSP V2)',

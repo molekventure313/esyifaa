@@ -29,7 +29,6 @@ export default function PengisianCheckoutForm() {
     full_name: '',
     dialCode: '+60',
     phone: '',
-    problem: '',
     honeypot: '',
   });
   const [loading, setLoading] = useState(false);
@@ -60,7 +59,7 @@ export default function PengisianCheckoutForm() {
     setErrorMessage('');
 
     if (!formData.full_name.trim() || !formData.phone.trim()) {
-      setErrorMessage('Sila isi nama penuh dan nombor telefon / WhatsApp anda.');
+      setErrorMessage('Sila isi nama penuh dan nombor WhatsApp anda.');
       return;
     }
 
@@ -88,9 +87,9 @@ export default function PengisianCheckoutForm() {
         body: JSON.stringify({
           full_name: formData.full_name,
           phone: rawPhone,
-          problem: formData.problem,
+          problem: 'Pengisian E-Syifa\' — perawat akan hubungi untuk gambar item',
           honeypot: formData.honeypot,
-          source: 'tasbih-esyifa',
+          source: 'pengisian-esyifa',
           event_id: eventId,
           amount_in_myr: 90.00,
           landing_page_url: typeof window !== 'undefined' ? window.location.href : null,
@@ -165,8 +164,7 @@ export default function PengisianCheckoutForm() {
             Tempah Pengisian &amp; Bayar RM90 Melalui FPX
           </h2>
           <p style={{ fontSize: '0.9rem', color: '#A7F3D0', lineHeight: 1.65 }}>
-            Isi borang ringkas di bawah. Nyatakan barang yang ingin diisikan.
-            Perawat akan hubungi anda dalam 24 jam untuk pengesahan.
+            Isi maklumat anda di bawah dan teruskan ke pembayaran FPX.
           </p>
         </div>
 
@@ -226,16 +224,29 @@ export default function PengisianCheckoutForm() {
               </div>
             </div>
 
-            {/* Item description */}
+            {/* Perawat contact note — replace item field */}
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={labelStyle}>Nama &amp; Jenis Barang Yang Ingin Diisikan *</label>
-              <textarea name="problem" value={formData.problem}
-                onChange={handleChange} required rows={4}
-                placeholder="Contoh: Cincin emas di tangan kiri, tasbih kayu, jam tangan hitam..."
-                style={{ ...inputStyle, resize: 'vertical', minHeight: '100px' }} />
-              <p style={{ margin: '0.4rem 0 0', fontSize: '0.78rem', color: '#6EE7B7' }}>
-                Nyatakan dengan jelas — perawat akan buat pengisian berdasarkan maklumat ini.
-              </p>
+              <div style={{
+                background: 'rgba(253,224,71,0.08)',
+                border: '1.5px solid rgba(253,224,71,0.3)',
+                borderLeft: '4px solid #FDE047',
+                borderRadius: '10px', padding: '1rem 1.15rem',
+                display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+              }}>
+                <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>📸</span>
+                <div>
+                  <p style={{ margin: '0 0 0.35rem 0', fontSize: '0.88rem', fontWeight: 800, color: '#FDE047' }}>
+                    Langkah Seterusnya — Gambar Item Anda
+                  </p>
+                  <p style={{ margin: 0, fontSize: '0.83rem', color: '#D1FAE5', lineHeight: 1.65 }}>
+                    Perawat akan menghubungi anda melalui WhatsApp untuk meminta{' '}
+                    <strong style={{ color: '#FEF3C7' }}>gambar item yang ingin dibuat pengisian E-Syifa&apos;</strong>.
+                  </p>
+                  <p style={{ margin: '0.5rem 0 0', fontSize: '0.83rem', color: '#FCA5A5', fontWeight: 700 }}>
+                    ⚠️ Pastikan nombor WhatsApp anda betul.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Error */}
