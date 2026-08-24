@@ -81,7 +81,7 @@ export default function PengisianHeroSection() {
             '✅ Jarak Jauh — Tanpa Pos',
             '📖 100% Patuh Syariah',
             '🔄 Pelarasan Setiap Minggu',
-            '⏱️ Siap Dalam 7 Hari',
+            '⏱️ Siap Dalam 3 Hari',
           ].map((item, i) => (
             <span key={i} style={{
               background: 'rgba(167,243,208,0.1)',

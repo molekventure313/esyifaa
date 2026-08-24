@@ -10,7 +10,7 @@ import FspTestimonialPart2Section from '@/components/salespage/fsp/TestimonialPa
 import PengisianComparisonSection from '@/components/salespage/pengisian/ComparisonSection';
 import PengisianProcessSection from '@/components/salespage/pengisian/ProcessSection';
 import PengisianPaymentSection from '@/components/salespage/pengisian/PaymentSection';
-import FspGuaranteeSection from '@/components/salespage/fsp/GuaranteeSection';
+import PengisianGuaranteeSection from '@/components/salespage/pengisian/GuaranteeSection';
 import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianCheckoutForm';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
@@ -47,7 +47,7 @@ export default function PengisianEsyifaPage() {
       <PengisianComparisonSection />
       <PengisianProcessSection />
       <PengisianPaymentSection />
-      <FspGuaranteeSection />
+      <PengisianGuaranteeSection />
       <PengisianCheckoutForm />
       <PengisianFAQSection />
       <PengisianClosingSection />

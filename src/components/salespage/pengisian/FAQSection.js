@@ -7,7 +7,7 @@ const FAQS = [
   },
   {
     q: 'Berapa lama proses pengisian?',
-    a: 'Proses pengisian mengambil masa 7 hari berturut-turut dari tarikh tempahan. Selepas 7 hari, barang anda sudah siap dan boleh terus digunakan.',
+    a: 'Proses pengisian mengambil masa 3 hari berturut-turut dari tarikh tempahan. Selepas 3 hari, barang anda sudah siap dan boleh terus digunakan.',
   },
   {
     q: 'Apakah barang yang paling sesuai untuk diisikan?',

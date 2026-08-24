@@ -3,8 +3,8 @@
 const STEPS = [
   { no: '01', icon: '💳', label: 'TEMPAH & BAYAR', title: 'Isi Borang & Bayar RM90 via FPX', desc: 'Isi borang ringkas di bawah. Nyatakan nama dan jenis barang anda. Bayar RM90 terus melalui FPX Online Banking — selamat dan segera.' },
   { no: '02', icon: '📞', label: 'PERAWAT HUBUNGI', title: 'Perawat Hubungi Via WhatsApp', desc: 'Dalam masa 24 jam, perawat ESyifaa akan menghubungi anda melalui WhatsApp untuk mengesahkan maklumat barang dan memberi panduan awal.' },
-  { no: '03', icon: '⭐', label: 'PENGISIAN 7 HARI', title: 'Proses Pengisian Ayat Ruqyah Dijalankan', desc: 'Perawat menjalankan pengisian ayat ruqyah secara jarak jauh selama 7 hari berturut-turut. Anda tidak perlu buat apa-apa — cukup simpan barang bersama anda.' },
-  { no: '04', icon: '🎉', label: 'SIAP & GUNA', title: 'Selepas 7 Hari — Terus Guna', desc: 'Selepas 7 hari, barang anda sudah siap diisikan. Boleh terus gunakan untuk rawat diri, ahli keluarga dan sebagai perlindungan harian yang berterusan.' },
+  { no: '03', icon: '⭐', label: 'PENGISIAN 3 HARI', title: 'Proses Pengisian Ayat Ruqyah Dijalankan', desc: 'Perawat menjalankan pengisian ayat ruqyah secara jarak jauh selama 3 hari berturut-turut. Anda tidak perlu buat apa-apa — cukup simpan barang bersama anda.' },
+  { no: '04', icon: '🎉', label: 'SIAP & GUNA', title: 'Selepas 3 Hari — Terus Guna', desc: 'Selepas 3 hari, barang anda sudah siap diisikan. Boleh terus gunakan untuk rawat diri, ahli keluarga dan sebagai perlindungan harian yang berterusan.' },
 ];
 
 export default function PengisianProcessSection() {
@@ -34,7 +34,7 @@ export default function PengisianProcessSection() {
             4 Langkah Mudah — Dari Tempahan Hingga Mula Guna
           </h2>
           <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '580px', margin: '0 auto' }}>
-            Proses yang mudah dan telus. Dari tempahan hingga barang anda siap diisikan — semua dalam 7 hari.
+            Proses yang mudah dan telus. Dari tempahan hingga barang anda siap diisikan — semua dalam 3 hari.
           </p>
         </div>
 

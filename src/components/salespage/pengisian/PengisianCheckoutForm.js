@@ -171,7 +171,7 @@ export default function PengisianCheckoutForm() {
         {/* Trust badges */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1.75rem' }}>
           {[
-            { icon: '💎', text: 'Pengisian 7 Hari' },
+            { icon: '💎', text: 'Pengisian 3 Hari' },
             { icon: '🔄', text: 'Pelarasan Mingguan' },
             { icon: '🔒', text: 'Bayaran Selamat' },
             { icon: '⚡', text: 'Respon 24 Jam' },

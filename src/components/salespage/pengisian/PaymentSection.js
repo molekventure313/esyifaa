@@ -49,7 +49,7 @@ const INCLUDES = [
   { icon: '🛡️', text: 'Pengisian Ayat Benteng Sihir & Gangguan Jin' },
   { icon: '💚', text: 'Pengisian Ayat-ayat Kesembuhan' },
   { icon: '🔄', text: 'Pelarasan & Pengisian Semula Setiap Minggu (PERCUMA Selamanya)', highlight: true },
-  { icon: '📋', text: 'Monitoring Hasil Pengisian (7 hari pertama)' },
+  { icon: '📋', text: 'Monitoring Hasil Pengisian (3 hari pertama)' },
   { icon: '📞', text: 'Konsultasi Ringkas Via WhatsApp Sebelum Pengisian' },
 ];
 

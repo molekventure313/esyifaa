@@ -40,24 +40,52 @@ export default function PengisianClosingSection() {
           maxWidth: '560px', margin: '0 auto 2.5rem auto',
         }}>
           Setiap hari tanpa perlindungan adalah hari anda dan keluarga terdedah.
-          Mulakan pengisian hari ini — siap dalam <strong style={{ color: '#FDE047' }}>7 hari</strong>,
+          Mulakan pengisian hari ini — siap dalam <strong style={{ color: '#FDE047' }}>3 hari</strong>,
           pelarasan setiap minggu, <strong style={{ color: '#4ADE80' }}>selamanya</strong>.
         </p>
 
-        <a href="#borang" onClick={scrollToForm} style={{
-          display: 'inline-block', padding: '1.15rem 2.6rem',
-          fontSize: '1.1rem', fontWeight: 800, color: '#042E23',
-          background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-          borderRadius: '50px', textDecoration: 'none',
-          boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
-          border: '2px solid #FEF08A',
-        }}>
-          💎 Tempah Pengisian RM90 Sekarang
-        </a>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          {/* FPX Button */}
+          <a href="#borang" onClick={scrollToForm} style={{
+            display: 'inline-block', padding: '1.15rem 2.6rem',
+            fontSize: '1.1rem', fontWeight: 800, color: '#042E23',
+            background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
+            borderRadius: '50px', textDecoration: 'none',
+            boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
+            border: '2px solid #FEF08A',
+          }}>
+            📎 Tempah Pengisian RM90 Sekarang
+          </a>
 
-        <p style={{ marginTop: '0.85rem', fontSize: '0.82rem', color: '#6EE7B7', fontStyle: 'italic' }}>
-          Bayar via FPX · Selamat · Patuh Syariah
-        </p>
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', maxWidth: '340px' }}>
+            <div style={{ flex: 1, borderTop: '1px solid rgba(167,243,208,0.2)' }} />
+            <span style={{ fontSize: '0.78rem', color: '#6EE7B7', fontWeight: 600 }}>atau</span>
+            <div style={{ flex: 1, borderTop: '1px solid rgba(167,243,208,0.2)' }} />
+          </div>
+
+          {/* WA Payment Button */}
+          <a
+            href="https://wa.me/601118939984?text=Saya%20nak%20buat%20pengisian%20item%20RM90"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              gap: '0.6rem', padding: '0.95rem 2rem',
+              fontSize: '1rem', fontWeight: 800, color: '#FFFFFF',
+              background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+              borderRadius: '50px', textDecoration: 'none',
+              boxShadow: '0 8px 25px rgba(37,211,102,0.4)',
+              border: '2px solid rgba(37,211,102,0.5)',
+            }}
+          >
+            💬 Nak Bayar Kat WhatsApp?
+          </a>
+
+          <p style={{ marginTop: '0', fontSize: '0.82rem', color: '#6EE7B7', fontStyle: 'italic' }}>
+            Bayar via FPX atau WA · Selamat · Patuh Syariah
+          </p>
+        </div>
       </div>
     </section>
   );
