@@ -1,485 +1,268 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { generateEventId, getPixelCookies, trackEvent } from '@/lib/tracking/pixel';
 
-// Read UTM params from URL
-function getUTMParams() {
-  if (typeof window === 'undefined') return {};
-  const p = new URLSearchParams(window.location.search);
-  return {
-    utm_source:   p.get('utm_source')   || null,
-    utm_medium:   p.get('utm_medium')   || null,
-    utm_campaign: p.get('utm_campaign') || null,
-    utm_content:  p.get('utm_content')  || null,
-    utm_term:     p.get('utm_term')     || null,
-    fbclid:       p.get('fbclid')       || null,
-  };
+// ─── Config ───────────────────────────────────────────────────────────────────
+const FALLBACK_NUMBER = '601135172611';
+const WA_MESSAGE = encodeURIComponent('Assalamualaikum, saya ingin dapatkan Diagnos Percuma. Boleh bantu saya?');
+const buildWaLink = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
+const LS_KEY = 'esyifaa_sp_wa_idx'; // key berbeza dari /wa page
+
+// ─── Hook: fetch & rotate WA numbers ─────────────────────────────────────────
+function useWaLink() {
+  const [waLink, setWaLink] = useState(buildWaLink(FALLBACK_NUMBER));
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const res = await fetch('/api/public/wasap');
+        const json = await res.json();
+        const numbers = (json.success && json.data?.length > 0)
+          ? json.data.map(d => d.number)
+          : [FALLBACK_NUMBER];
+
+        const lastIdx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+        const nextIdx = (lastIdx + 1) % numbers.length;
+        localStorage.setItem(LS_KEY, String(nextIdx));
+        setWaLink(buildWaLink(numbers[nextIdx]));
+      } catch {
+        setWaLink(buildWaLink(FALLBACK_NUMBER));
+      }
+    };
+    init();
+  }, []);
+
+  return waLink;
 }
 
-// Map salespage paths to source slugs (must match stats API SALESPAGE_LABELS keys)
-const PATH_TO_SOURCE = {
-  '/sihir': 'sihir',
-  '/saka': 'saka',
-  '/penyakit-misteri': 'penyakit-misteri',
-  '/gangguan-berulang': 'gangguan-berulang',
-  '/belum-zuriat': 'belum-zuriat',
-  '/kedai-tutup': 'kedai-tutup',
-  '/fsp': 'fsp',
-};
+// ─── Fire Lead pixel ──────────────────────────────────────────────────────────
+function fireLead() {
+  try { window.fbq('track', 'Lead'); } catch (_) {}
+}
 
-export default function ApplicationForm({ source }) {
-  const router = useRouter();
-  const [detectedSource, setDetectedSource] = useState(source || 'direct');
+// ─── Sticky Bar ───────────────────────────────────────────────────────────────
+function StickyBar({ waLink }) {
+  const [show, setShow] = useState(false);
 
-  // Auto-detect salespage from URL pathname if source prop not provided
   useEffect(() => {
-    if (!source) {
-      const path = window.location.pathname;
-      const mapped = PATH_TO_SOURCE[path];
-      if (mapped) setDetectedSource(mapped);
-    }
-  }, [source]);
+    const onScroll = () => setShow(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-  const DIAL_CODES = [
-    { code: '+60',  flag: '🇲🇾', label: 'MY' },
-    { code: '+673', flag: '🇧🇳', label: 'BN' },
-    { code: '+65',  flag: '🇸🇬', label: 'SG' },
-    { code: '+62',  flag: '🇮🇩', label: 'ID' },
-  ];
-
-  const [formData, setFormData] = useState({
-    full_name: '',
-    dialCode: '+60',
-    phone: '',
-    appointment_session: 'Pagi',
-    problem: '',
-    notes: '',
-    honeypot: ''
-  });
-
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
-
-    if (!formData.full_name.trim() || !formData.phone.trim()) {
-      setErrorMessage('Sila isi nama penuh dan nombor telefon / WhatsApp anda.');
-      return;
-    }
-
-    setLoading(true);
-
-    // ── Fire InitiateCheckout SEKARANG — user dah commit nak submit ──
-    // fbq confirm available (layout.js inject dalam <head>)
-    // Ini standard e-commerce pixel event untuk track checkout intent
-    try {
-      window.fbq('track', 'InitiateCheckout');
-    } catch (_) {}
-
-    try {
-      // ── Generate shared event_id for browser pixel + CAPI deduplication ──
-      const eventId = generateEventId();
-
-      // ── Read fbp / fbc cookies for CAPI matching ──
-      const { fbp, fbc } = getPixelCookies();
-
-      // ── Read UTM + fbclid from URL ──
-      const utmParams = getUTMParams();
-
-      // ── Build fbc from fbclid if no cookie ──
-      const fbcValue = fbc || (utmParams.fbclid ? `fb.1.${Date.now()}.${utmParams.fbclid}` : null);
-
-      const res = await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          full_name: formData.full_name,
-          phone: `${formData.dialCode}${formData.phone.replace(/^0+/, '')}`,
-          appointment_session: formData.appointment_session,
-          problem: formData.problem,
-          notes: formData.notes,
-          honeypot: formData.honeypot,
-          source: detectedSource,
-          event_id: eventId,
-          landing_page_url: typeof window !== 'undefined' ? window.location.href : null,
-          referrer_url: typeof window !== 'undefined' ? document.referrer : null,
-          fbp: fbp || null,
-          fbc: fbcValue,
-          fbclid: utmParams.fbclid || null,
-          utm_source:   utmParams.utm_source,
-          utm_medium:   utmParams.utm_medium,
-          utm_campaign: utmParams.utm_campaign,
-          utm_content:  utmParams.utm_content,
-          utm_term:     utmParams.utm_term,
-        })
-      });
-
-      const json = await res.json();
-
-      if (res.ok && json.success) {
-        // Redirect ke TQ page — Lead event akan fire di sana
-        // Pass event_id supaya TQ page boleh dedup dengan CAPI
-        router.push(`/terima-kasih?eid=${eventId}`);
-      } else {
-        throw new Error(json.error || 'Satu ralat telah berlaku. Sila cuba lagi.');
-      }
-    } catch (err) {
-      setErrorMessage(err.message || 'Satu ralat telah berlaku semasa menghantar borang. Sila cuba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!show) return null;
 
   return (
-    <section
-      id="borang"
-      style={{
-        background: 'linear-gradient(180deg, #042E23 0%, #0B382D 100%)',
-        color: '#0F172A',
-        padding: '4rem 1rem',
-        fontFamily: 'var(--font-inter), -apple-system, sans-serif'
-      }}
-    >
-      <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
+      background: 'linear-gradient(90deg, #042E23 0%, #064E3B 100%)',
+      borderTop: '2px solid rgba(52,211,153,0.4)',
+      padding: '0.85rem 1.25rem',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: '0 -6px 30px rgba(0,0,0,0.45)',
+      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+    }}>
+      <a
+        href={waLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={fireLead}
+        id="cta-sticky-sp"
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          gap: '0.6rem', width: '100%', maxWidth: '400px',
+          padding: '0.85rem 1.5rem', fontSize: '0.95rem', fontWeight: 800,
+          color: '#FFFFFF',
+          background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+          borderRadius: '50px', textDecoration: 'none',
+          boxShadow: '0 4px 15px rgba(37,211,102,0.45)',
+          letterSpacing: '0.01em',
+        }}
+      >
+        🟢 Hubungi Perawat — Diagnos PERCUMA
+      </a>
+    </div>
+  );
+}
 
-        {/* Section label above card */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+// ─── Trust badges ─────────────────────────────────────────────────────────────
+const BADGES = [
+  { icon: '✅', text: 'Diagnos 100% Percuma' },
+  { icon: '🤝', text: 'Tiada Paksaan' },
+  { icon: '🔒', text: 'Maklumat Sulit & Selamat' },
+  { icon: '⚡', text: 'Respon Dalam 30 Min' },
+];
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+export default function ApplicationForm({ source }) {
+  const waLink = useWaLink();
+  const ff = 'var(--font-inter), -apple-system, sans-serif';
+
+  return (
+    <>
+      {/* WA Contact Section */}
+      <section
+        id="borang"
+        style={{
+          background: 'linear-gradient(180deg, #042E23 0%, #0B382D 100%)',
+          color: '#FFFFFF',
+          padding: '4rem 1rem',
+          fontFamily: ff,
+        }}
+      >
+        {/* Invisible anchor alias for legacy scroll targets */}
+        <span id="apply-form" style={{ display: 'block', marginTop: '-80px', paddingTop: '80px' }} />
+
+        <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
+
+          {/* Label */}
           <span style={{
             fontSize: '0.75rem', fontWeight: 800, color: '#FDE047',
-            textTransform: 'uppercase', letterSpacing: '0.12em'
+            textTransform: 'uppercase', letterSpacing: '0.12em',
           }}>
             LANGKAH PERTAMA
           </span>
+
+          {/* Heading */}
           <h2 style={{
             fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)',
-            fontWeight: 800,
-            color: '#FEF3C7',
-            marginTop: '0.4rem',
-            marginBottom: '0.6rem',
-            letterSpacing: '-0.02em'
+            fontWeight: 800, color: '#FEF3C7',
+            marginTop: '0.5rem', marginBottom: '0.6rem',
+            letterSpacing: '-0.02em', lineHeight: 1.25,
           }}>
-            Dapatkan Diagnos Percuma Dahulu
+            Hubungi Perawat ESyifaa Sekarang
           </h2>
+
           <p style={{
-            color: '#A7F3D0',
-            fontSize: '1rem',
-            lineHeight: 1.7,
-            maxWidth: '520px',
-            margin: '0 auto'
+            color: '#A7F3D0', fontSize: '1rem',
+            lineHeight: 1.7, maxWidth: '500px', margin: '0 auto 1.75rem',
           }}>
-            Sebelum apa-apa, perawat kami akan <strong style={{ color: '#FDE047' }}>diagnos dahulu secara percuma</strong>.
+            Perawat kami akan{' '}
+            <strong style={{ color: '#FDE047' }}>diagnos dahulu secara percuma</strong>.
             Anda boleh tentukan sendiri sama ada nak teruskan rawatan atau tidak.
             Tiada paksaan. Tiada tekanan.
           </p>
-        </div>
 
-        {/* Trust badges */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          gap: '0.6rem',
-          marginBottom: '1.8rem'
-        }}>
-          {[
-            { icon: '✅', text: 'Diagnos 100% Percuma' },
-            { icon: '🤝', text: 'Tiada Paksaan' },
-            { icon: '🔒', text: 'Maklumat Sulit & Selamat' },
-            { icon: '⚡', text: 'Respon Pantas' },
-          ].map((b, i) => (
-            <span key={i} style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              background: 'rgba(253,224,71,0.1)',
-              border: '1px solid rgba(253,224,71,0.3)',
-              color: '#FEF3C7',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              padding: '0.3rem 0.75rem',
-              borderRadius: '999px'
-            }}>
-              {b.icon} {b.text}
-            </span>
-          ))}
-        </div>
-
-        {/* Form Card */}
-        <div style={{
-          background: '#FFFFFF',
-          borderRadius: '20px',
-          padding: '2.5rem 2rem',
-          border: '3px solid #FDE047',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.35)'
-        }}>
-
-          {/* Form header */}
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: '#ECFDF5',
-              border: '1.5px solid #059669',
-              borderRadius: '999px',
-              padding: '0.4rem 1.1rem',
-              marginBottom: '0.9rem'
-            }}>
-              <span style={{ fontSize: '1rem' }}>🩺</span>
-              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Borang Permohonan Diagnos
+          {/* Trust badges */}
+          <div style={{
+            display: 'flex', justifyContent: 'center',
+            flexWrap: 'wrap', gap: '0.55rem', marginBottom: '2.25rem',
+          }}>
+            {BADGES.map((b, i) => (
+              <span key={i} style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                background: 'rgba(253,224,71,0.1)',
+                border: '1px solid rgba(253,224,71,0.3)',
+                color: '#FEF3C7', fontSize: '0.78rem', fontWeight: 700,
+                padding: '0.3rem 0.75rem', borderRadius: '999px',
+              }}>
+                {b.icon} {b.text}
               </span>
-            </div>
-            <p style={{ fontSize: '0.875rem', color: '#4B5563', margin: 0, lineHeight: 1.6 }}>
-              Isi maklumat di bawah. Perawat kami akan hubungi anda untuk sesi diagnos.
-              <br />
-              <strong style={{ color: '#047857' }}>Percuma. Tanpa obligasi.</strong>
-            </p>
+            ))}
           </div>
 
-          {/* Error Alert */}
-          {errorMessage && (
-            <div style={{
-              background: '#FEF2F2',
-              border: '1px solid #FCA5A5',
-              borderRadius: '8px',
-              padding: '0.85rem 1rem',
-              color: '#DC2626',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              marginBottom: '1.5rem',
-              lineHeight: 1.4
-            }}>
-              ⚠️ {errorMessage}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-
-            <input
-              type="text"
-              name="honeypot"
-              value={formData.honeypot}
-              onChange={handleChange}
-              style={{ display: 'none' }}
-              tabIndex={-1}
-              autoComplete="off"
-            />
-
-            {/* Nama Penuh */}
+          {/* WA Button Card */}
+          <div style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '2px solid rgba(52,211,153,0.3)',
+            borderRadius: '20px', padding: '2.5rem 2rem',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.3)',
+          }}>
+            {/* WA icon pulse */}
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.9rem', color: '#06231C' }}>
-                Nama Penuh <span style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <input
-                type="text"
-                name="full_name"
-                placeholder="Masukkan nama penuh anda"
-                value={formData.full_name}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1rem',
-                  background: '#F9FAFB',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '10px',
-                  color: '#0F172A',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  fontWeight: 500,
-                  boxSizing: 'border-box'
-                }}
-              />
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: '64px', height: '64px', borderRadius: '50%',
+                background: 'rgba(37,211,102,0.15)',
+                border: '2px solid rgba(37,211,102,0.35)',
+                fontSize: '2rem',
+              }}>
+                💬
+              </span>
             </div>
 
-            {/* Nombor WhatsApp + Country Code */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.9rem', color: '#06231C' }}>
-                Nombor WhatsApp <span style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {/* Dial Code Selector */}
-                <select
-                  name="dialCode"
-                  value={formData.dialCode}
-                  onChange={handleChange}
-                  style={{
-                    flexShrink: 0,
-                    padding: '0.85rem 0.6rem',
-                    background: '#F9FAFB',
-                    border: '1.5px solid #CBD5E1',
-                    borderRadius: '10px',
-                    color: '#0F172A',
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    outline: 'none',
-                    cursor: 'pointer',
-                    minWidth: '95px',
-                  }}
-                >
-                  {DIAL_CODES.map(d => (
-                    <option key={d.code} value={d.code}>
-                      {d.flag} {d.label} {d.code}
-                    </option>
-                  ))}
-                </select>
-                {/* Phone Number */}
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder={formData.dialCode === '+60' ? '123456789' : formData.dialCode === '+65' ? '91234567' : formData.dialCode === '+673' ? '7123456' : '81234567890'}
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    flex: 1,
-                    padding: '0.85rem 1rem',
-                    background: '#F9FAFB',
-                    border: '1.5px solid #CBD5E1',
-                    borderRadius: '10px',
-                    color: '#0F172A',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    fontWeight: 500,
-                    boxSizing: 'border-box',
-                    minWidth: 0,
-                  }}
-                />
-              </div>
-              <p style={{ margin: '0.3rem 0 0', fontSize: '0.75rem', color: '#6B7280' }}>
-                Terbuka untuk Malaysia, Brunei, Singapura &amp; Indonesia
-              </p>
-            </div>
-
-            {/* Waktu Sesuai Dihubungi */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 800, fontSize: '0.9rem', color: '#06231C' }}>
-                Waktu Sesuai Untuk Dihubungi <span style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {[
-                  { id: 'Pagi', label: '🌅 Pagi', desc: '8am – 12pm' },
-                  { id: 'Petang', label: '☀️ Petang', desc: '2pm – 6pm' },
-                  { id: 'Malam', label: '🌙 Malam', desc: '8pm – 11pm' }
-                ].map((item) => {
-                  const isSelected = formData.appointment_session === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, appointment_session: item.id }))}
-                      style={{
-                        padding: '0.85rem 0.5rem',
-                        borderRadius: '10px',
-                        border: isSelected ? '2px solid #047857' : '1.5px solid #CBD5E1',
-                        background: isSelected ? '#ECFDF5' : '#F9FAFB',
-                        color: isSelected ? '#047857' : '#4B5563',
-                        fontWeight: 800,
-                        fontSize: '0.88rem',
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <div>{item.label}</div>
-                      <div style={{ fontSize: '0.72rem', opacity: 0.8, marginTop: '0.15rem', fontWeight: 600 }}>
-                        {item.desc}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Simptom / Masalah */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.9rem', color: '#06231C' }}>
-                Ceritakan Simptom atau Masalah Anda
-                <span style={{ fontWeight: 500, color: '#6B7280', marginLeft: '0.3rem', fontSize: '0.8rem' }}>(tidak wajib, tapi membantu diagnos)</span>
-              </label>
-              <textarea
-                name="problem"
-                rows={4}
-                placeholder="Contoh: Kerap mimpi menakutkan, badan terasa berat tanpa sebab, perniagaan tiba-tiba sunyi..."
-                value={formData.problem}
-                onChange={handleChange}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1rem',
-                  background: '#F9FAFB',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '10px',
-                  color: '#0F172A',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  resize: 'vertical',
-                  fontWeight: 500,
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            {/* No pressure note */}
-            <div style={{
-              background: '#F0FDF4',
-              border: '1px solid #BBF7D0',
-              borderRadius: '10px',
-              padding: '0.9rem 1rem',
-              marginBottom: '1.5rem',
-              display: 'flex',
-              gap: '0.6rem',
-              alignItems: 'flex-start'
+            <p style={{
+              fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.6,
+              margin: '0 0 1.75rem',
             }}>
-              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>💚</span>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: '#166534', lineHeight: 1.6, fontWeight: 500 }}>
-                <strong>Tiada sebarang paksaan.</strong> Setelah diagnos selesai, anda boleh putuskan sendiri
-                sama ada nak teruskan rawatan (RM50) atau sekadar diagnos sahaja. Keputusan sepenuhnya di tangan anda.
-              </p>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '1.15rem',
-                fontSize: '1.1rem',
-                fontWeight: 800,
-                color: '#042E23',
-                background: loading
-                  ? '#A7F3D0'
-                  : 'linear-gradient(135deg, #FDE047 0%, #FACC15 100%)',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.8 : 1,
-                boxShadow: loading ? 'none' : '0 8px 24px rgba(253,224,71,0.4)',
-                transition: 'all 0.2s ease',
-                letterSpacing: '0.01em'
-              }}
-            >
-              {loading ? '⏳ Menghantar...' : '🩺 Mohon Diagnos Percuma Sekarang'}
-            </button>
-
-            <p style={{ textAlign: 'center', marginTop: '0.9rem', fontSize: '0.78rem', color: '#6B7280', margin: '0.9rem 0 0 0' }}>
-              🔒 Maklumat anda adalah sulit dan hanya digunakan untuk tujuan diagnos sahaja.
+              Tekan butang di bawah untuk berhubung terus dengan perawat ESyifaa
+              melalui WhatsApp. <strong style={{ color: '#FEF3C7' }}>Percuma. Tiada obligasi.</strong>
             </p>
 
-          </form>
-        </div>
+            {/* Main WA CTA */}
+            <a
+              id="cta-borang-wa"
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={fireLead}
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                gap: '0.65rem', width: '100%', maxWidth: '420px',
+                padding: '1.15rem 1.5rem',
+                fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF',
+                background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                borderRadius: '50px', textDecoration: 'none',
+                boxShadow: '0 8px 28px rgba(37,211,102,0.45)',
+                border: '2px solid rgba(37,211,102,0.5)',
+                letterSpacing: '0.01em',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 12px 35px rgba(37,211,102,0.55)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 28px rgba(37,211,102,0.45)';
+              }}
+            >
+              🟢 Hubungi Perawat Via WhatsApp
+            </a>
 
-      </div>
-    </section>
+            <p style={{
+              marginTop: '1rem', fontSize: '0.8rem',
+              color: '#6EE7B7', fontStyle: 'italic',
+            }}>
+              Diagnos Percuma · Tanpa Obligasi · Tiada Bayaran
+            </p>
+
+            {/* Divider */}
+            <div style={{
+              margin: '1.5rem auto', width: '80px',
+              borderTop: '1px solid rgba(167,243,208,0.2)',
+            }} />
+
+            {/* Secondary trust info */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr',
+              gap: '0.75rem', maxWidth: '380px', margin: '0 auto',
+            }}>
+              {[
+                { icon: '🌍', text: 'Malaysia · Brunei · Singapura · Indonesia' },
+                { icon: '🕌', text: '100% Patuh Syariah — Al-Quran & Doa Sahih' },
+                { icon: '🩺', text: 'Diagnos dahulu, anda buat keputusan sendiri' },
+                { icon: '📞', text: 'Perawat akan balas dalam masa 30 minit' },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  background: 'rgba(52,211,153,0.06)',
+                  border: '1px solid rgba(52,211,153,0.15)',
+                  borderRadius: '10px', padding: '0.7rem 0.85rem',
+                  fontSize: '0.75rem', color: '#A7F3D0', lineHeight: 1.5,
+                  display: 'flex', flexDirection: 'column', gap: '0.3rem',
+                }}>
+                  <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                  <span>{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* Sticky WA Bar — muncul selepas scroll 400px */}
+      <StickyBar waLink={waLink} />
+    </>
   );
 }
