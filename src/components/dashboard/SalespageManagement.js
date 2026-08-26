@@ -87,6 +87,14 @@ const PRODUCT_PAGES = [
     icon: '📿',
     isNew: true,
   },
+  {
+    label: 'Rawat Sendiri — Pengisian V2',
+    desc: 'Versi kedua pengisian esyifa dengan angle baru: "Berhenti bergantung pada perawat & mula rawat diri sendiri". 6 sections angle-specific, 9 sections dikongsi.',
+    url: '/rawat-sendiri',
+    color: '#10B981',
+    icon: '🛡️',
+    isNew: true,
+  },
 ];
 
 export default function SalespageManagement({ isLightMode, cardBg, cardBorder, textPrimary, textSecondary }) {

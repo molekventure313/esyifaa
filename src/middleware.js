@@ -48,6 +48,7 @@ export async function middleware(request) {
     request.nextUrl.pathname === '/tasbih-esyifa' ||
     request.nextUrl.pathname.startsWith('/wa') ||
     request.nextUrl.pathname.startsWith('/pengisian-esyifa') ||
+    request.nextUrl.pathname.startsWith('/rawat-sendiri') ||
     request.nextUrl.pathname.startsWith('/sihir') ||
     request.nextUrl.pathname.startsWith('/saka') ||
     request.nextUrl.pathname.startsWith('/penyakit-misteri') ||
