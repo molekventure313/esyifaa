@@ -10,6 +10,7 @@ import FspTestimonialPart2Section from '@/components/salespage/fsp/TestimonialPa
 import FspProcessSection from '@/components/salespage/fsp/ProcessSection';
 import FspPaymentSection from '@/components/salespage/fsp/PaymentSection';
 import FspGuaranteeSection from '@/components/salespage/fsp/GuaranteeSection';
+import FspRuqyahTestSection from '@/components/salespage/fsp/RuqyahTestSection';
 import FspChipCheckoutForm from '@/components/salespage/fsp/FspChipCheckoutForm';
 import FspFAQSection from '@/components/salespage/fsp/FAQSection';
 import FspClosingSection from '@/components/salespage/fsp/ClosingSection';
@@ -83,6 +84,9 @@ export default function FspCheckoutPage() {
 
       {/* #12 — Jaminan Pulang Wang */}
       <FspGuaranteeSection />
+
+      {/* #13 — Masih Ragu? Cuba Sendiri — Video Ruqyah + Air + Tindak Balas */}
+      <FspRuqyahTestSection />
 
       {/* BORANG DIRECT FPX CHECKOUT — terus selepas jaminan */}
       <FspChipCheckoutForm source="fsp-checkout" />
