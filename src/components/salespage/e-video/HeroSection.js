@@ -44,7 +44,7 @@ export default function EVideoHeroSection() {
         }}>
           Tidak perlu tunggu slot. Tidak perlu bergantung pada perawat.{' '}
           <strong style={{ color: '#FEF3C7' }}>
-            Satu video rakaman ruqyah syar&apos;iyyah — guna seumur hidup.
+            Pakej lengkap video rawatan ruqyah syar&apos;iyyah — guna seumur hidup, tanpa kos tambahan.
           </strong>
         </p>
 
@@ -59,8 +59,8 @@ export default function EVideoHeroSection() {
           </div>
           <p style={{ margin: 0, fontSize: '1rem', color: '#FEF3C7', lineHeight: 1.65, fontWeight: 600 }}>
             <strong style={{ color: '#FDE047' }}>E-Video Rawatan</strong>{' '}
-            — rakaman video bacaan ayat-ayat ruqyah syar&apos;iyyah oleh perawat berpengalaman.
-            <span style={{ color: '#4ADE80' }}>{' '}Rawat diri, lindungi rumah, buat air tawar &amp; garam sendiri — semua dalam satu video.</span>
+            — pakej lengkap video rawatan ruqyah syar&apos;iyyah oleh perawat berpengalaman.
+            <span style={{ color: '#4ADE80' }}>{' '}Rawat diri, putuskan ikatan sihir &amp; saka, lindungi rumah, buat air tawar &amp; garam sendiri — semua dalam satu pakej.</span>
           </p>
         </div>
 

@@ -1,14 +1,52 @@
 'use client';
 
-const INCLUDES = [
-  { icon: '🎬', text: '1 Video Rakaman Ruqyah Syariyyah' },
-  { icon: '🔄', text: 'Guna Tanpa Had — Seumur Hidup' },
-  { icon: '🔥', text: 'Rawatan Diri Peribadi' },
-  { icon: '🏠', text: 'Rawatan &amp; Perlindungan Rumah' },
-  { icon: '💧', text: 'Buat Air Tawar Sendiri' },
-  { icon: '🧂', text: 'Buat Garam Mandian &amp; Pagar' },
-  { icon: '🐍', text: 'Rawatan Bisa / Santau Dalam Badan' },
-  { icon: '👪', text: 'Boleh Dikongsi Seluruh Keluarga' },
+const PACKAGE_ITEMS = [
+  {
+    icon: '🔥',
+    title: 'Video Rawatan Menyeluruh',
+    desc: 'Membersihkan diri dari segala gangguan jin yang bersarang dalam badan',
+  },
+  {
+    icon: '⛓️',
+    title: 'Rawatan Memutuskan Ikatan Jin Saka',
+    desc: 'Memutuskan ikatan-ikatan perjanjian yang telah dibuat dengan jin-jin saka',
+  },
+  {
+    icon: '🔗',
+    title: 'Rawatan Memutuskan Buhulan Sihir',
+    desc: 'Memutuskan segala ikatan & buhulan sihir yang ada dalam badan',
+  },
+  {
+    icon: '🧲',
+    title: 'Rawatan Pertalian Barang Sihir',
+    desc: 'Memutuskan pertalian & ikatan diri anda dengan barang-barang sihir',
+  },
+  {
+    icon: '💧',
+    title: 'Video Air Tawar, Air Mandian & Garam Mandian',
+    desc: 'Video khusus untuk buat air tawar, air mandian & garam mandian sendiri di rumah',
+  },
+  {
+    icon: '🧂',
+    title: 'Video Garam Pagar Rumah',
+    desc: 'Video untuk buat garam pagar rumah — lindungi rumah dari gangguan jin & sihir',
+  },
+  {
+    icon: '🐍',
+    title: 'Rawatan Sakit & Bisa Badan',
+    desc: 'Rawatan khusus untuk sakit & bisa-bisa badan yang disebabkan oleh gangguan jin',
+  },
+  {
+    icon: '🛡️',
+    title: 'Rawatan Pagar, Benteng & Perlindungan Diri',
+    desc: 'Perlindungan menyeluruh diri dari serangan jin, sihir & gangguan spiritual',
+  },
+  {
+    icon: '⭐',
+    title: 'Amalan Ringkas Harian',
+    desc: 'BONUS: Booster pendinding — amalan ringkas harian untuk kekalkan perlindungan',
+    isBonus: true,
+  },
 ];
 
 export default function EVideoPaymentSection() {
@@ -25,7 +63,7 @@ export default function EVideoPaymentSection() {
       fontFamily: 'var(--font-inter), -apple-system, sans-serif',
       textAlign: 'center',
     }}>
-      <div style={{ maxWidth: '760px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '780px', margin: '0 auto' }}>
 
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
@@ -34,23 +72,26 @@ export default function EVideoPaymentSection() {
           fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
           letterSpacing: '0.08em', textTransform: 'uppercase',
         }}>
-          💳 Pakej &amp; Harga
+          💳 Apa Yang Anda Dapat
         </div>
 
         <h2 style={{
           fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)',
           fontWeight: 800, color: '#FEF3C7',
-          marginTop: '0.4rem', marginBottom: '0.75rem',
+          marginTop: '0.4rem', marginBottom: '0.5rem',
           letterSpacing: '-0.02em', lineHeight: 1.25,
         }}>
-          E-Video Rawatan ESyifaa
+          Pakej E-Video Rawatan ESyifaa
         </h2>
+        <p style={{ fontSize: '0.95rem', color: '#A7F3D0', marginBottom: '2rem' }}>
+          Bukan satu video — ini pakej lengkap rawatan &amp; perlindungan menyeluruh.
+        </p>
 
         {/* Main price card */}
         <div style={{
           background: 'linear-gradient(135deg, #065F46 0%, #047857 100%)',
           border: '2px solid #FDE047',
-          borderRadius: '24px', padding: '2.5rem 2rem',
+          borderRadius: '24px', padding: '2rem 1.75rem',
           marginBottom: '2rem',
           boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
           position: 'relative', overflow: 'hidden',
@@ -63,39 +104,77 @@ export default function EVideoPaymentSection() {
             borderRadius: '50%', pointerEvents: 'none',
           }} />
 
-          {/* Label */}
           <div style={{ fontSize: '0.75rem', color: '#A7F3D0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>
-            Pakej Digital — Sekali Bayar
+            Pakej Digital Lengkap — Sekali Bayar
           </div>
 
-          {/* Price */}
-          <div style={{ marginBottom: '0.5rem' }}>
+          <div style={{ marginBottom: '0.4rem' }}>
             <span style={{ fontSize: 'clamp(3rem, 8vw, 4.5rem)', fontWeight: 900, color: '#FDE047', lineHeight: 1 }}>
               RM150
             </span>
           </div>
 
-          <div style={{ fontSize: '0.9rem', color: '#D1FAE5', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '0.9rem', color: '#D1FAE5', marginBottom: '1.75rem' }}>
             Sekali bayar · Guna seumur hidup · Dihantar via WhatsApp
           </div>
 
-          {/* Includes grid */}
+          {/* Package items list */}
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '0.5rem', marginBottom: '1.5rem', textAlign: 'left',
+            display: 'flex', flexDirection: 'column', gap: '0.65rem',
+            marginBottom: '1.75rem', textAlign: 'left',
           }}>
-            {INCLUDES.map((item, i) => (
+            {PACKAGE_ITEMS.map((item, i) => (
               <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                background: 'rgba(253,224,71,0.08)',
-                border: '1px solid rgba(253,224,71,0.2)',
-                borderRadius: '8px', padding: '0.5rem 0.75rem',
-                fontSize: '0.82rem', color: '#FEF3C7', fontWeight: 600,
+                display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                background: item.isBonus
+                  ? 'rgba(253,224,71,0.1)'
+                  : 'rgba(255,255,255,0.06)',
+                border: item.isBonus
+                  ? '1px solid rgba(253,224,71,0.35)'
+                  : '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '10px', padding: '0.75rem 1rem',
+                position: 'relative',
               }}>
-                <span>{item.icon}</span>
-                <span dangerouslySetInnerHTML={{ __html: item.text }} />
+                {item.isBonus && (
+                  <div style={{
+                    position: 'absolute', top: '-1px', right: '0.75rem',
+                    background: '#FDE047', color: '#042E23',
+                    fontSize: '0.6rem', fontWeight: 900,
+                    padding: '0.1rem 0.6rem', borderRadius: '0 0 6px 6px',
+                    letterSpacing: '0.05em', textTransform: 'uppercase',
+                  }}>
+                    BONUS
+                  </div>
+                )}
+                <span style={{ fontSize: '1.2rem', flexShrink: 0, lineHeight: 1.4 }}>{item.icon}</span>
+                <div>
+                  <div style={{
+                    fontWeight: 800, fontSize: '0.875rem',
+                    color: item.isBonus ? '#FDE047' : '#FEF3C7',
+                    marginBottom: '0.2rem',
+                  }}>
+                    {item.title}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#A7F3D0', lineHeight: 1.5 }}>
+                    {item.desc}
+                  </div>
+                </div>
               </div>
             ))}
+          </div>
+
+          {/* Total count */}
+          <div style={{
+            background: 'rgba(253,224,71,0.12)',
+            border: '1px solid rgba(253,224,71,0.3)',
+            borderRadius: '10px', padding: '0.75rem 1rem',
+            marginBottom: '1.5rem', textAlign: 'center',
+          }}>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: '#FEF3C7', fontWeight: 700 }}>
+              🎬 <span style={{ color: '#FDE047' }}>8 Video Rawatan + 1 Amalan Bonus</span>{' '}
+              — semua untuk{' '}
+              <span style={{ color: '#4ADE80' }}>RM150 sahaja. Guna seumur hidup.</span>
+            </p>
           </div>
 
           {/* CTA */}
@@ -107,7 +186,7 @@ export default function EVideoPaymentSection() {
             boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
             border: '2px solid #FEF08A', letterSpacing: '-0.01em',
           }}>
-            🎬 Dapatkan E-Video RM150 Sekarang
+            🎬 Dapatkan Pakej E-Video RM150 Sekarang
           </a>
 
           <p style={{ marginTop: '0.85rem', fontSize: '0.82rem', color: '#6EE7B7', fontStyle: 'italic', marginBottom: 0 }}>
@@ -125,13 +204,13 @@ export default function EVideoPaymentSection() {
           <span style={{ fontSize: '1.75rem', flexShrink: 0 }}>📱</span>
           <div>
             <div style={{ fontWeight: 800, color: '#60A5FA', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
-              Cara Terima Video
+              Cara Terima Pakej E-Video
             </div>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#D1FAE5', lineHeight: 1.65 }}>
               Selepas bayaran berjaya, perawat ESyifaa akan hubungi anda melalui{' '}
               <strong style={{ color: '#FEF3C7' }}>WhatsApp dalam masa 24 jam</strong>{' '}
-              dan hantar E-Video Rawatan secara langsung. Simpan video tersebut — boleh guna
-              berulang kali tanpa had.
+              dan hantar semua video rawatan secara langsung. Simpan — boleh guna
+              berulang kali seumur hidup, tanpa kos tambahan.
             </p>
           </div>
         </div>

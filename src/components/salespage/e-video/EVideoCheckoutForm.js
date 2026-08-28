@@ -169,7 +169,7 @@ export default function EVideoCheckoutForm() {
         {/* Trust badges */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1.75rem' }}>
           {[
-            { icon: '🎬', text: 'E-Video Rawatan' },
+            { icon: '🎬', text: 'Pakej 8 Video Rawatan' },
             { icon: '📱', text: 'Dihantar Via WA' },
             { icon: '🔒', text: 'Bayaran Selamat' },
             { icon: '⚡', text: 'Hantar 24 Jam' },

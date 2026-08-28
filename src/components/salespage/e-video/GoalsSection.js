@@ -9,8 +9,8 @@ const GOALS = [
   },
   {
     icon: '👪',
-    title: 'Lindungi Seluruh Keluarga — Semua Dalam Satu Video',
-    desc: 'Satu video E-Video boleh digunakan untuk merawat semua ahli keluarga — suami, isteri, anak-anak. Kongsi video dalam group keluarga.',
+    title: 'Lindungi Seluruh Keluarga — Semua Dalam Satu Pakej',
+    desc: 'Pakej E-Video boleh digunakan untuk merawat dan melindungi semua ahli keluarga — suami, isteri, anak-anak. Kongsi pakej dalam group keluarga.',
     highlight: true,
   },
   {

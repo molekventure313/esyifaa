@@ -69,7 +69,7 @@ export default function EVideoClosingSection() {
           alignItems: 'center',
         }}>
           {[
-            '🎬 Satu video — lima kegunaan berbeza',
+            '🎬 8 video rawatan + 1 amalan bonus — pakej lengkap',
             '🔄 Guna tanpa had — seumur hidup, tanpa kos tambahan',
             '👪 Boleh dikongsi seluruh keluarga',
             '💯 2 jaminan refund — tiada risiko',

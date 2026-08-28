@@ -10,6 +10,7 @@ import EVideoPaymentSection from '@/components/salespage/e-video/PaymentSection'
 import EVideoCheckoutForm from '@/components/salespage/e-video/EVideoCheckoutForm';
 import EVideoFAQSection from '@/components/salespage/e-video/FAQSection';
 import EVideoClosingSection from '@/components/salespage/e-video/ClosingSection';
+import FspRuqyahTestSection from '@/components/salespage/fsp/RuqyahTestSection';
 
 // ─── Shared components
 import FspTestimonialSection from '@/components/salespage/fsp/TestimonialSection';
@@ -88,6 +89,9 @@ export default function EVideoPage() {
 
       {/* #13 — Guarantee (shared) */}
       <PengisianGuaranteeSection />
+
+      {/* #13b — Masih Ragu? Cuba Sendiri — Video Ruqyah + Air + Tindak Balas */}
+      <FspRuqyahTestSection />
 
       {/* BORANG FPX CHECKOUT — RM150 */}
       <EVideoCheckoutForm />
