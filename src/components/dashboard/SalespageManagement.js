@@ -95,6 +95,14 @@ const PRODUCT_PAGES = [
     icon: '🛡️',
     isNew: true,
   },
+  {
+    label: 'E-Video Rawatan Ruqyah',
+    desc: 'Produk digital baru — rakaman video ruqyah RM150. Untuk rawatan diri, rumah, air tawar, garam mandian & bisa. Video dihantar via WhatsApp dalam 24 jam selepas bayar FPX.',
+    url: '/e-video',
+    color: '#8B5CF6',
+    icon: '🎬',
+    isNew: true,
+  },
 ];
 
 export default function SalespageManagement({ isLightMode, cardBg, cardBorder, textPrimary, textSecondary }) {
