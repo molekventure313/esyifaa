@@ -68,7 +68,7 @@ export default function EVideoCheckoutForm() {
     try {
       const pid = fpxPixelId || (typeof window !== 'undefined' && window.__fpxPixelId);
       if (typeof window !== 'undefined' && window.fbq && pid) {
-        window.fbq('trackSingle', pid, 'InitiateCheckout', { value: 150.00, currency: 'MYR' });
+        window.fbq('trackSingle', pid, 'InitiateCheckout', { value: 60.00, currency: 'MYR' });
       }
     } catch (_) {}
 
@@ -90,7 +90,7 @@ export default function EVideoCheckoutForm() {
           honeypot: formData.honeypot,
           source: 'e-video',
           event_id: eventId,
-          amount_in_myr: 150.00,
+          amount_in_myr: 60.00,
           landing_page_url: typeof window !== 'undefined' ? window.location.href : null,
           referrer_url: typeof window !== 'undefined' ? document.referrer : null,
           fbp: fbp || null,
@@ -159,7 +159,7 @@ export default function EVideoCheckoutForm() {
             marginTop: '0.3rem', marginBottom: '0.6rem',
             letterSpacing: '-0.02em', lineHeight: 1.25,
           }}>
-            Tempah E-Video &amp; Bayar RM150 Melalui FPX
+            Tempah Pakej E-Video &amp; Bayar RM60 Melalui FPX
           </h2>
           <p style={{ fontSize: '0.9rem', color: '#A7F3D0', lineHeight: 1.65 }}>
             Isi maklumat anda di bawah dan teruskan ke pembayaran FPX.
@@ -271,7 +271,7 @@ export default function EVideoCheckoutForm() {
               boxShadow: loading ? 'none' : '0 8px 25px rgba(234,179,8,0.4)',
               transition: 'all 0.2s', letterSpacing: '-0.01em',
             }}>
-              {loading ? '⏳ Memproses Tempahan...' : '🎬 Tempah & Bayar RM150 via FPX'}
+              {loading ? '⏳ Memproses Tempahan...' : '🎬 Tempah & Bayar RM60 via FPX'}
             </button>
 
             <p style={{ textAlign: 'center', marginTop: '0.85rem', fontSize: '0.78rem', color: '#6EE7B7' }}>
