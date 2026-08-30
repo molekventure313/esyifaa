@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import FspRuqyahTestSection from '@/components/salespage/fsp/RuqyahTestSection';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const FALLBACK_NUMBER = '601135172611';
@@ -287,6 +288,11 @@ export default function WaPage() {
           </div>
         </div>
       </section>
+
+      {/* ══════════════════════════════════════════
+          SECTION 2b — TEST AIR SENDIRI
+      ══════════════════════════════════════════ */}
+      <FspRuqyahTestSection />
 
       {/* ══════════════════════════════════════════
           SECTION 3 — PAKEJ RAWATAN RM50
