@@ -5,7 +5,7 @@ import { useState } from 'react';
 // ─── YouTube placeholder ──────────────────────────────────────────────────────
 // Ganti YOUTUBE_VIDEO_ID dengan ID video YouTube ruqyah anda
 // Contoh: 'dQw4w9WgXcQ' dari https://www.youtube.com/watch?v=dQw4w9WgXcQ
-const YOUTUBE_VIDEO_ID = null; // ← LETAK ID VIDEO DI SINI
+const YOUTUBE_VIDEO_ID = 'kkXGJBATCNI'; // ← Air Tawar Ruqyah ESyifaa
 
 const STEPS = [
   {
