@@ -53,6 +53,57 @@ export default function PengisianSolutionSection() {
           </div>
         </div>
 
+        {/* ── Apa Itu Pengisian E-Syifa'? ── */}
+        <div style={{
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%)',
+          border: '2px solid #BBF7D0',
+          borderRadius: '20px', padding: '2rem 2.25rem',
+          marginBottom: '3rem', textAlign: 'left',
+          maxWidth: '780px', margin: '0 auto 3rem auto',
+        }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            background: '#042E23', color: '#FDE047',
+            padding: '0.35rem 1rem', borderRadius: '50px',
+            fontSize: '0.75rem', fontWeight: 800,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            marginBottom: '1.25rem',
+          }}>
+            💎 Apa Itu Pengisian E-Syifa&apos;?
+          </div>
+
+          <p style={{ fontSize: '1rem', color: '#042E23', lineHeight: 1.75, marginBottom: '1.25rem', fontWeight: 500 }}>
+            Pengisian E-Syifa&apos; adalah satu kaedah di mana{' '}
+            <strong style={{ color: '#047857' }}>tenaga ayat-ayat ruqyah, doa &amp; zikir dipaksakan ke dalam item peribadi pesakit</strong>{' '}
+            — supaya pesakit boleh menggunakan item tersebut untuk{' '}
+            <strong style={{ color: '#047857' }}>berubat diri sendiri tanpa perlu bergantung pada perawat</strong>.
+          </p>
+
+          <p style={{ fontSize: '0.95rem', color: '#374151', lineHeight: 1.7, marginBottom: '1.25rem' }}>
+            Sama kaedah seperti air tawar &amp; minyak pendiding — tetapi{' '}
+            <strong style={{ color: '#DC2626' }}>lebih intensif &amp; padu</strong> kerana:
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {[
+              { text: 'Diisi selama 3 hari berturut-turut (bukan sekali sahaja)' },
+              { text: 'Didoakan khusus untuk masalah gangguan berulang anda' },
+              { text: '4 lapisan ayat: Pembakar Jin · Pembatal Sihir · Benteng · Kesembuhan' },
+              { text: 'Pelarasan semula setiap minggu secara automatik — PERCUMA selamanya, supaya tenaga kekuatan pada item tidak berkurang' },
+            ].map((p, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
+                <span style={{
+                  width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
+                  background: '#042E23', display: 'inline-flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.72rem', color: '#FDE047', fontWeight: 900, marginTop: '1px',
+                }}>✓</span>
+                <span style={{ fontSize: '0.9rem', color: '#042E23', lineHeight: 1.55, fontWeight: 500 }}>{p.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             10 Kelebihan Utama

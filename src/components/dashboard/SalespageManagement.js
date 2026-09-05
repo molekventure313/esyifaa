@@ -74,10 +74,18 @@ const PRODUCT_PAGES = [
   },
   {
     label: 'Pengisian E-Syifa\' (Servis Baharu)',
-    desc: 'Salespage pengisian ayat ruqyah pada barang pesakit. Countdown 31 Ogos. RM90 → RM120.',
+    desc: 'Salespage pengisian ayat ruqyah pada barang pesakit. 50 slot terawal RM90. RM90 → RM120.',
     url: '/pengisian-esyifa',
     color: '#D97706',
     icon: '💎',
+  },
+  {
+    label: 'Pengisian E-Syifa\' — Versi WA (Lead)',
+    desc: 'Clone /pengisian-esyifa tapi CTA = WhatsApp sahaja. Tiada FPX. Tracking: Lead pixel.',
+    url: '/pengisian-wasap',
+    color: '#059669',
+    icon: '🟢',
+    isNew: true,
   },
   {
     label: 'Tasbih E-Syifa\' (FSP V2)',

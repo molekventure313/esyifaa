@@ -1,47 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+// ─── Slot-based promo config ──────────────────────────────────────────────────
+// Admin: kemaskini PROMO_SLOTS_TAKEN bila ada pembeli RM90 baru
+const PROMO_SLOTS_TAKEN = 8;
+const TOTAL_PROMO_SLOTS = 50;
 
-// ─── Countdown to 31 August 2026 (end of day MYT) ────────────────────────────
-const DEADLINE = new Date('2026-08-31T23:59:59+08:00').getTime();
-
-function useCountdown() {
-  const calc = () => {
-    const diff = DEADLINE - Date.now();
-    if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-    return {
-      days:    Math.floor(diff / 86400000),
-      hours:   Math.floor((diff % 86400000) / 3600000),
-      minutes: Math.floor((diff % 3600000) / 60000),
-      seconds: Math.floor((diff % 60000) / 1000),
-    };
-  };
-  const [t, setT] = useState(calc);
-  useEffect(() => {
-    const id = setInterval(() => setT(calc()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return t;
-}
-
-// ─── Countdown Box ────────────────────────────────────────────────────────────
-function CountdownBox({ value, label }) {
-  return (
-    <div style={{ textAlign: 'center', minWidth: '54px' }}>
-      <div style={{
-        fontSize: '1.75rem', fontWeight: 900, color: '#FDE047', lineHeight: 1,
-        background: 'rgba(253,224,71,0.1)', border: '2px solid rgba(253,224,71,0.35)',
-        borderRadius: '10px', padding: '0.5rem 0.6rem', marginBottom: '0.3rem',
-        fontVariantNumeric: 'tabular-nums',
-      }}>
-        {String(value).padStart(2, '0')}
-      </div>
-      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-        {label}
-      </div>
-    </div>
-  );
-}
+const slotsLeft = TOTAL_PROMO_SLOTS - PROMO_SLOTS_TAKEN;
+const slotPct = (PROMO_SLOTS_TAKEN / TOTAL_PROMO_SLOTS) * 100;
 
 const INCLUDES = [
   { icon: '🔥', text: 'Pengisian Ayat Ruqyah Pembakar & Pemusnah Jin' },
@@ -54,9 +19,6 @@ const INCLUDES = [
 ];
 
 export default function PengisianPaymentSection() {
-  const { days, hours, minutes, seconds } = useCountdown();
-  const isExpired = days === 0 && hours === 0 && minutes === 0 && seconds === 0;
-
   const scrollToForm = (e) => {
     e.preventDefault();
     const target = document.getElementById('borang');
@@ -71,33 +33,33 @@ export default function PengisianPaymentSection() {
     }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
-        {/* Urgency countdown bar */}
-        {!isExpired && (
+        {/* Urgency slot bar */}
+        <div style={{
+          background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.4)',
+          borderRadius: '14px', padding: '1.1rem 1.5rem', marginBottom: '2rem',
+        }}>
           <div style={{
-            background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.4)',
-            borderRadius: '14px', padding: '1.1rem 1.5rem', marginBottom: '2rem',
-            display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
-            justifyContent: 'center',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem',
           }}>
-            <div style={{ textAlign: 'center', flex: 1, minWidth: '180px' }}>
-              <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 800, color: '#FCA5A5', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                ⏳ Harga RM90 Tamat Pada
-              </p>
-              <p style={{ margin: '0.2rem 0 0', fontSize: '1rem', fontWeight: 900, color: '#FFFFFF' }}>
-                31 Ogos 2026 — Lepas tu naik ke RM120
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <CountdownBox value={days} label="Hari" />
-              <span style={{ fontSize: '1.5rem', color: '#FDE047', fontWeight: 900, marginBottom: '1.2rem' }}>:</span>
-              <CountdownBox value={hours} label="Jam" />
-              <span style={{ fontSize: '1.5rem', color: '#FDE047', fontWeight: 900, marginBottom: '1.2rem' }}>:</span>
-              <CountdownBox value={minutes} label="Min" />
-              <span style={{ fontSize: '1.5rem', color: '#FDE047', fontWeight: 900, marginBottom: '1.2rem' }}>:</span>
-              <CountdownBox value={seconds} label="Saat" />
-            </div>
+            <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#FCA5A5', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              🔴 Slot Harga RM90 — {PROMO_SLOTS_TAKEN}/{TOTAL_PROMO_SLOTS} Diambil
+            </p>
+            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#4ADE80' }}>
+              {slotsLeft} slot lagi
+            </p>
           </div>
-        )}
+          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '999px', height: '10px', overflow: 'hidden', marginBottom: '0.65rem' }}>
+            <div style={{
+              width: `${slotPct}%`, height: '100%',
+              background: 'linear-gradient(90deg, #EF4444, #DC2626)',
+              borderRadius: '999px',
+            }} />
+          </div>
+          <p style={{ margin: 0, fontSize: '0.78rem', color: '#FCA5A5', fontStyle: 'italic' }}>
+            Selepas {TOTAL_PROMO_SLOTS} slot habis, harga akan naik ke <strong style={{ color: '#FFFFFF' }}>RM120</strong>.
+          </p>
+        </div>
 
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <span style={{
@@ -138,7 +100,7 @@ export default function PengisianPaymentSection() {
               textAlign: 'center', padding: '0.65rem',
               fontSize: '0.85rem', letterSpacing: '0.02em',
             }}>
-              🔥 HARGA PENGENALAN — Sehingga 31 Ogos 2026 Sahaja
+              🔥 HARGA PENGENALAN — {TOTAL_PROMO_SLOTS} Terawal Sahaja · {slotsLeft} Slot Berbaki
             </div>
 
             {/* Price area */}
@@ -147,10 +109,10 @@ export default function PengisianPaymentSection() {
                 Pakej Pengisian Ayat Ruqyah
               </div>
 
-              {/* Crossed out original price */}
+              {/* Crossed out next price */}
               <div style={{ marginBottom: '0.4rem' }}>
                 <span style={{ fontSize: '0.9rem', color: '#F87171', marginRight: '0.5rem' }}>
-                  Harga asal selepas 31 Ogos:
+                  Harga selepas slot habis:
                 </span>
                 <span style={{ fontSize: '1.15rem', color: '#F87171', textDecoration: 'line-through', fontWeight: 700 }}>
                   RM120
@@ -217,9 +179,8 @@ export default function PengisianPaymentSection() {
             borderRadius: '12px', padding: '0.9rem 1.25rem',
           }}>
             <p style={{ margin: 0, fontSize: '0.875rem', color: '#FCA5A5', lineHeight: 1.6, fontWeight: 600 }}>
-              ⚠️ Harga RM90 adalah <strong style={{ color: '#FDE047' }}>harga pengenalan produk baru</strong> —
-              hanya sehingga <strong style={{ color: '#FFFFFF' }}>31 Ogos 2026</strong>.
-              Selepas tarikh ini, harga akan naik ke <strong style={{ color: '#F87171' }}>RM120</strong>.
+              ⚠️ Harga RM90 adalah <strong style={{ color: '#FDE047' }}>harga pengenalan — {TOTAL_PROMO_SLOTS} pembeli terawal sahaja</strong>.
+              Selepas slot habis, harga naik ke <strong style={{ color: '#F87171' }}>RM120</strong>. Jangan lepaskan peluang ini.
             </p>
           </div>
         </div>
