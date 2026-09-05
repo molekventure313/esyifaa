@@ -10,7 +10,7 @@ const LS_KEY          = 'esyifaa_wa_idx'; // shared rotator key (sama dengan /wa
 const buildWaLink = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
 
 export default function PengisianWACtaSection() {
-  const [showSticky, setShowSticky] = useState(false);
+
   const [waLink, setWaLink]         = useState(buildWaLink(FALLBACK_NUMBER));
 
   useEffect(() => {
@@ -31,10 +31,6 @@ export default function PengisianWACtaSection() {
       }
     };
     initWaRotation();
-
-    const handleScroll = () => setShowSticky(window.scrollY > 400);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const firePixel = () => {
@@ -157,38 +153,6 @@ export default function PengisianWACtaSection() {
           </div>
         </div>
       </section>
-
-      {/* Sticky WA button */}
-      {showSticky && (
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: 'rgba(2,24,18,0.97)',
-          borderTop: '2px solid rgba(37,211,102,0.4)',
-          padding: '0.85rem 1rem',
-          display: 'flex', justifyContent: 'center',
-          zIndex: 1000,
-          boxShadow: '0 -8px 30px rgba(0,0,0,0.5)',
-          fontFamily: ff,
-        }}>
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={firePixel}
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.6rem', width: '100%', maxWidth: '420px',
-              padding: '0.9rem 1.5rem', fontSize: '0.95rem', fontWeight: 800,
-              color: '#FFFFFF',
-              background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-              borderRadius: '50px', textDecoration: 'none',
-              boxShadow: '0 4px 15px rgba(37,211,102,0.4)',
-            }}
-          >
-            🟢 Tempah Pengisian RM90 Via WhatsApp
-          </a>
-        </div>
-      )}
     </>
   );
 }
