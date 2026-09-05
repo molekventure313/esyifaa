@@ -8,8 +8,8 @@ import PengisianHowItWorksSection from '@/components/salespage/pengisian/HowItWo
 import PengisianGoalsSection from '@/components/salespage/pengisian/GoalsSection';
 import FspTestimonialPart2Section from '@/components/salespage/fsp/TestimonialPart2Section';
 import PengisianComparisonSection from '@/components/salespage/pengisian/ComparisonSection';
-import PengisianProcessSection from '@/components/salespage/pengisian/ProcessSection';
-import PengisianPaymentSection from '@/components/salespage/pengisian/PaymentSection';
+import PengisianWasapProcessSection from '@/components/salespage/pengisian-wasap/ProcessSection';
+import PengisianWasapPaymentSection from '@/components/salespage/pengisian-wasap/PaymentSection';
 import PengisianGuaranteeSection from '@/components/salespage/pengisian/GuaranteeSection';
 import WACtaSection from '@/components/salespage/pengisian-wasap/WACtaSection';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
@@ -44,8 +44,8 @@ export default function PengisianWasapPage() {
       <PengisianGoalsSection />
       <FspTestimonialPart2Section />
       <PengisianComparisonSection />
-      <PengisianProcessSection />
-      <PengisianPaymentSection />
+      <PengisianWasapProcessSection />
+      <PengisianWasapPaymentSection />
       <PengisianGuaranteeSection />
       <WACtaSection />
       <PengisianFAQSection />
