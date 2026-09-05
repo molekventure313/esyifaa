@@ -95,7 +95,6 @@ const COVERED = ['Sihir', 'Saka', 'Gangguan Jin', 'Asyik', 'Badi', 'Sumpahan', '
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function WaPage() {
   const [openFaq, setOpenFaq] = useState(null);
-  const [showSticky, setShowSticky] = useState(false);
   const [waLink, setWaLink] = useState(buildWaLink(FALLBACK_NUMBER));
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
@@ -116,10 +115,6 @@ export default function WaPage() {
       }
     };
     initWaRotation();
-
-    const handleScroll = () => setShowSticky(window.scrollY > 400);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -512,59 +507,6 @@ export default function WaPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          STICKY BOTTOM BAR — 2 BUTTONS
-      ══════════════════════════════════════════ */}
-      {showSticky && (
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: 'rgba(2,24,18,0.97)',
-          borderTop: '2px solid rgba(37,211,102,0.35)',
-          padding: '0.75rem 1rem',
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          gap: '0.6rem', zIndex: 1000,
-          boxShadow: '0 -8px 30px rgba(0,0,0,0.5)',
-          flexWrap: 'wrap',
-        }}>
-          {/* Button 1 — scroll to test */}
-          <button
-            onClick={scrollToTest}
-            id="sticky-test"
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', flex: '1 1 160px', maxWidth: '220px',
-              padding: '0.8rem 1.1rem', fontSize: '0.82rem', fontWeight: 800,
-              color: '#042E23',
-              background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-              borderRadius: '50px', border: '2px solid #FEF08A',
-              boxShadow: '0 4px 15px rgba(234,179,8,0.4)',
-              cursor: 'pointer', fontFamily: ff, textAlign: 'center',
-            }}
-          >
-            🧪 Cuba Air Tawar Percuma
-          </button>
-
-          {/* Button 2 — WhatsApp */}
-          <a
-            href={waLink} target="_blank" rel="noopener noreferrer"
-            onClick={() => { try { window.fbq('track', 'Lead'); } catch (_) {} }}
-            id="sticky-wa"
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', flex: '1 1 160px', maxWidth: '260px',
-              padding: '0.8rem 1.1rem', fontSize: '0.82rem', fontWeight: 800,
-              color: '#FFFFFF',
-              background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-              borderRadius: '50px', textDecoration: 'none',
-              boxShadow: '0 4px 15px rgba(37,211,102,0.4)',
-              border: '2px solid rgba(255,255,255,0.2)',
-              textAlign: 'center', fontFamily: ff,
-            }}
-          >
-            🟢 Ada Tindakbalas? Rawatan RM50 →
-          </a>
-        </div>
-      )}
 
       {/* Footer */}
       <footer style={{ background: '#010E09', color: '#4B5563', padding: '1.5rem 1rem', textAlign: 'center', fontSize: '0.78rem', lineHeight: 1.6 }}>
