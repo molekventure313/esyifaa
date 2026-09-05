@@ -3,14 +3,35 @@
 import { useState, useEffect } from 'react';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const WA_NUMBER = '601118939984';
-const WA_MESSAGE = encodeURIComponent('Saya nak buat pengisian item RM90');
-const WA_LINK = `https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}`;
+const FALLBACK_NUMBER = '601135172611';
+const WA_MESSAGE      = encodeURIComponent('Saya nak buat pengisian item RM90');
+const LS_KEY          = 'esyifaa_wa_idx'; // shared rotator key (sama dengan /wa)
+
+const buildWaLink = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
 
 export default function PengisianWACtaSection() {
   const [showSticky, setShowSticky] = useState(false);
+  const [waLink, setWaLink]         = useState(buildWaLink(FALLBACK_NUMBER));
 
   useEffect(() => {
+    // WA Rotator — sama sistem seperti /wa
+    const initWaRotation = async () => {
+      try {
+        const res     = await fetch('/api/public/wasap');
+        const json    = await res.json();
+        const numbers = (json.success && json.data?.length > 0)
+          ? json.data.map(d => d.number)
+          : [FALLBACK_NUMBER];
+        const lastIdx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+        const nextIdx = (lastIdx + 1) % numbers.length;
+        localStorage.setItem(LS_KEY, String(nextIdx));
+        setWaLink(buildWaLink(numbers[nextIdx]));
+      } catch {
+        setWaLink(buildWaLink(FALLBACK_NUMBER));
+      }
+    };
+    initWaRotation();
+
     const handleScroll = () => setShowSticky(window.scrollY > 400);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -98,7 +119,7 @@ export default function PengisianWACtaSection() {
 
             {/* WA Button */}
             <a
-              href={WA_LINK}
+              href={waLink}
               target="_blank"
               rel="noopener noreferrer"
               onClick={firePixel}
@@ -150,7 +171,7 @@ export default function PengisianWACtaSection() {
           fontFamily: ff,
         }}>
           <a
-            href={WA_LINK}
+            href={waLink}
             target="_blank"
             rel="noopener noreferrer"
             onClick={firePixel}
