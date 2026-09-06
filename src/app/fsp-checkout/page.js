@@ -14,6 +14,7 @@ import FspRuqyahTestSection from '@/components/salespage/fsp/RuqyahTestSection';
 import FspChipCheckoutForm from '@/components/salespage/fsp/FspChipCheckoutForm';
 import FspFAQSection from '@/components/salespage/fsp/FAQSection';
 import FspClosingSection from '@/components/salespage/fsp/ClosingSection';
+import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 
 export const metadata = {
   title: 'ESyifaa — Rawatan Gangguan Jin, Sihir & Saka | Bayar Terus RM50 FPX',
@@ -96,6 +97,7 @@ export default function FspCheckoutPage() {
 
       {/* Closing */}
       <FspClosingSection />
+      <FloatingWAButton pretext="Assalamualaikum, saya nak dapatkan rawatan ESyifaa. Boleh bantu saya?" />
 
       {/* Footer */}
       <footer style={{

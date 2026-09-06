@@ -3,18 +3,19 @@
 import { useState, useEffect } from 'react';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const FALLBACK_NUMBER = '601135172611';
-const WA_MESSAGE      = encodeURIComponent('Saya nak dapatkan Pengisian Item E-Syifa');
-const LS_KEY          = 'esyifaa_wa_idx';
-const buildWaLink     = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
+const FALLBACK_NUMBER  = '601135172611';
+const LS_KEY           = 'esyifaa_wa_idx';
+const buildWaLink      = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
-export default function FloatingWAButton() {
+const DEFAULT_PRETEXT = 'Saya nak dapatkan Pengisian Item E-Syifa';
+
+export default function FloatingWAButton({ pretext = DEFAULT_PRETEXT }) {
   const [visible, setVisible]   = useState(false);
-  const [waLink, setWaLink]     = useState(buildWaLink(FALLBACK_NUMBER));
+  const [waLink, setWaLink]     = useState(buildWaLink(FALLBACK_NUMBER, pretext));
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    // WA rotator — baca idx semasa tanpa advance (WACtaSection/PaymentSection yang advance)
+    // WA rotator — baca idx semasa tanpa advance
     const initWa = async () => {
       try {
         const res     = await fetch('/api/public/wasap');
@@ -23,9 +24,9 @@ export default function FloatingWAButton() {
           ? json.data.map(d => d.number)
           : [FALLBACK_NUMBER];
         const idx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
-        setWaLink(buildWaLink(numbers[idx % numbers.length]));
+        setWaLink(buildWaLink(numbers[idx % numbers.length], pretext));
       } catch {
-        setWaLink(buildWaLink(FALLBACK_NUMBER));
+        setWaLink(buildWaLink(FALLBACK_NUMBER, pretext));
       }
     };
     initWa();
@@ -34,7 +35,7 @@ export default function FloatingWAButton() {
     const onScroll = () => setVisible(window.scrollY > 200);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [pretext]);
 
   if (!visible) return null;
 
