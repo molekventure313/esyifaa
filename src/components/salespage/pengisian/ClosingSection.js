@@ -31,17 +31,23 @@ export default function PengisianClosingSection() {
           marginTop: '0.25rem', marginBottom: '1rem',
           letterSpacing: '-0.02em', lineHeight: 1.2,
         }}>
-          Barang Anda Tunggu Untuk Diisikan
+          Rawat Diri Sendiri —{' '}
+          <span style={{ color: '#4ADE80' }}>Jimat Masa, Jimat Kos, Tanpa Bergantung Perawat</span>
         </h2>
 
         <p style={{
           fontSize: '1.05rem', color: '#D1FAE5',
           lineHeight: 1.75, marginBottom: '2.5rem',
-          maxWidth: '560px', margin: '0 auto 2.5rem auto',
+          maxWidth: '580px', margin: '0 auto 2.5rem auto',
         }}>
-          Setiap hari tanpa perlindungan adalah hari anda dan keluarga terdedah.
-          Mulakan pengisian hari ini — siap dalam <strong style={{ color: '#FDE047' }}>3 hari</strong>,
-          pelarasan setiap minggu, <strong style={{ color: '#4ADE80' }}>selamanya</strong>.
+          Bayangkan — setiap kali gangguan melanda, anda{' '}
+          <strong style={{ color: '#FDE047' }}>tak perlu tunggu slot perawat</strong>,
+          tak perlu keluar rumah, tak perlu bayar sesi demi sesi. Item anda menjadi
+          &ldquo;perawat peribadi&rdquo; yang sedia{' '}
+          <strong style={{ color: '#4ADE80' }}>24 jam</strong> — rawat diri sendiri,
+          rawat keluarga, lindungi rumah. Siap dalam{' '}
+          <strong style={{ color: '#FDE047' }}>3 hari</strong>, pelarasan setiap minggu,{' '}
+          <strong style={{ color: '#4ADE80' }}>selamanya</strong>.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>

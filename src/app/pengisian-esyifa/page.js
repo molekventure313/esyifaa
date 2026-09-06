@@ -14,6 +14,7 @@ import PengisianGuaranteeSection from '@/components/salespage/pengisian/Guarante
 import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianCheckoutForm';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
+import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 
 export const metadata = {
   title: "Pengisian E-Syifa' — Isi Barang Anda Dengan Ayat Ruqyah | RM90 via FPX",
@@ -51,6 +52,7 @@ export default function PengisianEsyifaPage() {
       <PengisianCheckoutForm />
       <PengisianFAQSection />
       <PengisianClosingSection />
+      <FloatingWAButton />
 
       <footer style={{
         background: '#021812', color: '#FFFFFF',

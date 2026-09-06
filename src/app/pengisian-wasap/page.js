@@ -14,6 +14,7 @@ import PengisianGuaranteeSection from '@/components/salespage/pengisian/Guarante
 import WACtaSection from '@/components/salespage/pengisian-wasap/WACtaSection';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
+import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 
 export const metadata = {
   title: "Pengisian E-Syifa' — Isi Barang Anda Dengan Ayat Ruqyah Syar'iyyah | RM90",
@@ -50,6 +51,7 @@ export default function PengisianWasapPage() {
       <WACtaSection />
       <PengisianFAQSection />
       <PengisianClosingSection />
+      <FloatingWAButton />
 
       <footer style={{
         background: '#021812', color: '#FFFFFF',
