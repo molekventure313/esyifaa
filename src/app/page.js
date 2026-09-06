@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ESyifaaHomepage from '@/components/homepage/ESyifaaHomepage';
 
 // Main salespage components
 import HeroSection from '@/components/salespage/HeroSection';
@@ -145,6 +146,12 @@ export default function Home() {
     );
   }
 
+  // No active slug → render proper company homepage
+  if (!activeSlug) {
+    return <ESyifaaHomepage />;
+  }
+
+  // Active slug set → render salespage variant as before
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <ActiveHero />
@@ -164,10 +171,10 @@ export default function Home() {
       <footer style={{ background: '#021812', color: '#FFFFFF', padding: '2rem 1rem', textAlign: 'center', fontSize: '0.85rem', borderTop: '1px solid rgba(254, 243, 199, 0.15)' }}>
         <div style={{ maxWidth: '850px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.05rem', color: '#FEF3C7' }}>
-            ESyifaa Â· Rawatan Jarak Jauh Gangguan Jin, Sihir, Santau &amp; Saka
+            ESyifaa · Rawatan Jarak Jauh Gangguan Jin, Sihir, Santau &amp; Saka
           </p>
           <p style={{ margin: 0, opacity: 0.85, fontSize: '0.8rem', color: '#D1D5DB' }}>
-            Â© {new Date().getFullYear()} ESyifaa. Hak cipta terpelihara. Rawatan berasaskan bacaan Al-Quran dan doa berlandaskan syarak.
+            © {new Date().getFullYear()} ESyifaa. Hak cipta terpelihara. Rawatan berasaskan bacaan Al-Quran dan doa berlandaskan syarak.
           </p>
         </div>
       </footer>

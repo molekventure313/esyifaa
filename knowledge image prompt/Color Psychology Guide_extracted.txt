@@ -1,0 +1,629 @@
+
+=== Page 1 ===
+🔍 Step 1: Kenapa Warna Penting? 
+Warna bukan sekadar "cantik". 
+  Warna = Trigger emosi + mood. 
+  Orang boleh decide untuk klik / beli dalam beberapa saat — kadang² hanya sebab warna 
+tu rasa “kena”. 
+ 
+🎯 Step 2: Pemilihan Color dalam gambar 
+Color Mengikut Emosi 
+ 
+Emosi 
+Warna 
+Disyorkan 
+Cinta 
+['Merah, 
+Pink', 
+'Ungu 
+lembut'] 
+Gembira 
+['Kuning', 
+'Oren'] 
+Sedih 
+['Biru 
+kelabu', 
+'Kelabu'] 
+Marah 
+['Merah 
+pekat', 
+'Hitam'] 
+Tenang 
+['Biru', 
+'Hijau 
+daun'] 
+
+=== Page 2 ===
+Bimbang 
+['Kuning 
+pudar', 
+'Abu-abu'] 
+Tertekan 
+['Kelabu 
+gelap', 
+'Navy'] 
+Teruja 
+['Oren 
+terang', 
+'Merah'] 
+Bangga 
+['Emas', 
+'Navy'] 
+Kecewa 
+['Coklat 
+pudar', 
+'Kelabu'] 
+Syukur 
+['Hijau 
+daun', 
+'Kuning 
+pastel'] 
+Romantik 
+['Merah 
+jambu', 
+'Lavender'] 
+Benci 
+['Merah 
+darah', 
+'Hitam'] 
+Bersalah 
+['Ungu 
+gelap', 
+'Kelabu'] 
+Terharu 
+['Merah 
+lembut', 
+'Peach'] 
+
+=== Page 3 ===
+Motivasi 
+['Oren', 
+'Biru 
+cerah'] 
+Letih 
+['Coklat', 
+'Kelabu'] 
+Optimis 
+['Kuning 
+cerah', 
+'Hijau 
+muda'] 
+Pesimis 
+['Biru 
+gelap', 
+'Kelabu'] 
+Confident 
+['Biru 
+gelap', 
+'Emas'] 
+Cemburu 
+['Hijau tua', 
+'Hitam'] 
+Takut 
+['Hitam', 
+'Biru 
+kelabu'] 
+Rindu 
+['Biru 
+muda', 
+'Lavender'] 
+Bertenaga 
+['Merah', 
+'Kuning'] 
+Malas 
+['Abu-abu', 
+'Biru lesu'] 
+Riak 
+['Emas', 
+'Putih'] 
+
+=== Page 4 ===
+Hina diri 
+['Kelabu', 
+'Coklat 
+lembut'] 
+Bangga diri 
+['Emas 
+pekat', 
+'Merah'] 
+Excited 
+['Oren 
+terang', 
+'Kuning'] 
+Bosan 
+['Kelabu', 
+'Biru 
+kusam'] 
+Harapan 
+['Hijau 
+pastel', 
+'Biru langit'] 
+Kejutan 
+['Kuning', 
+'Putih'] 
+Takjub 
+['Ungu', 
+'Biru 
+elektrik'] 
+Kagum 
+['Biru', 
+'Putih'] 
+Iri hati 
+['Hijau tua', 
+'Kelabu'] 
+Kagum takut ['Biru 
+gelap', 
+'Ungu 
+gelap'] 
+
+=== Page 5 ===
+Selesa 
+['Hijau 
+daun', 
+'Beige'] 
+Terpinga-
+pinga 
+['Putih', 
+'Kuning 
+cair'] 
+Skeptikal 
+['Kelabu', 
+'Biru 
+kelabu'] 
+Yakin 
+['Biru 
+gelap', 
+'Hitam 
+putih'] 
+Keyakinan 
+palsu 
+['Emas 
+terang', 
+'Pink 
+shocking'] 
+Bersemanga
+t 
+['Merah', 
+'Biru 
+cerah'] 
+Putus asa 
+['Kelabu 
+gelap', 
+'Navy'] 
+Syahdu 
+['Biru 
+kelabu', 
+'Lavender'] 
+Malas nak 
+layan 
+['Kelabu', 
+'Coklat 
+lembut'] 
+Terinspirasi 
+['Kuning', 
+'Putih'] 
+
+=== Page 6 ===
+Terkilan 
+['Coklat 
+pudar', 
+'Kelabu'] 
+Berserah 
+['Putih', 
+'Biru 
+lembut'] 
+Tersentuh 
+['Peach', 
+'Merah 
+lembut'] 
+Hilang arah 
+['Abu-abu', 
+'Biru 
+kelabu'] 
+Hampa 
+['Kelabu', 
+'Coklat 
+lembut'] 
+Ragu-ragu 
+['Kelabu 
+muda', 
+'Hijau 
+pudar'] 
+Berani 
+['Merah 
+terang', 
+'Navy'] 
+Malu 
+['Merah 
+jambu', 
+'Coklat 
+pudar'] 
+Keterujaan 
+['Oren', 
+'Kuning 
+terang'] 
+Keresahan 
+['Biru 
+kelabu', 
+'Hijau 
+kusam'] 
+
+=== Page 7 ===
+Tersinggung ['Merah 
+pekat', 
+'Kelabu'] 
+Bersalah diri ['Coklat 
+gelap', 
+'Kelabu'] 
+Bangun 
+semangat 
+['Merah', 
+'Kuning'] 
+Bangkit 
+['Emas', 
+'Merah'] 
+Seronok 
+['Kuning', 
+'Hijau 
+muda'] 
+Dendam 
+['Merah 
+gelap', 
+'Hitam'] 
+Terbakar 
+semangat 
+['Merah', 
+'Oren 
+pekat'] 
+Fokus 
+['Biru navy', 
+'Hitam'] 
+Blur 
+['Kelabu', 
+'Putih'] 
+Tak peduli 
+['Kelabu', 
+'Coklat 
+pudar'] 
+Geram 
+['Merah', 
+'Hitam'] 
+
+=== Page 8 ===
+Syok sendiri 
+['Pink 
+terang', 
+'Ungu'] 
+Kecewa 
+harapan 
+['Lavender 
+gelap', 
+'Kelabu'] 
+Naik angin 
+['Merah 
+pekat', 
+'Hitam'] 
+Lega 
+['Hijau 
+pastel', 
+'Putih'] 
+Mencintai 
+['Pink', 
+'Merah 
+lembut'] 
+Terdesak 
+['Merah', 
+'Biru gelap'] 
+Kering hati 
+['Kelabu 
+gelap', 
+'Coklat'] 
+Curiga 
+['Biru 
+gelap', 
+'Kelabu'] 
+Menyesal 
+['Lavender', 
+'Kelabu'] 
+Lemau 
+['Kelabu 
+muda', 
+'Hijau lesu'] 
+
+=== Page 9 ===
+Benci tapi 
+rindu 
+['Lavender', 
+'Merah'] 
+Tertekan 
+sangat 
+['Kelabu 
+gelap', 
+'Hitam'] 
+Arah jelas 
+['Biru', 
+'Emas'] 
+Tegas 
+['Merah', 
+'Hitam 
+putih'] 
+Lemah 
+semangat 
+['Biru 
+kusam', 
+'Coklat 
+lembut'] 
+Insecure 
+['Kelabu', 
+'Pink 
+pudar'] 
+Introvert 
+['Hijau 
+pudar', 
+'Biru 
+lembut'] 
+Ekstrovert 
+['Oren', 
+'Kuning'] 
+Manipulatif 
+['Emas 
+gelap', 
+'Hitam'] 
+Setia 
+['Biru', 
+'Hijau tua'] 
+Curang 
+['Merah 
+darah', 
+'Kelabu'] 
+
+=== Page 10 ===
+Bergantung 
+harap 
+['Putih', 
+'Hijau 
+pudar'] 
+Independent ['Hitam 
+putih', 'Biru 
+gelap'] 
+Pemaaf 
+['Putih', 
+'Hijau'] 
+Lega 
+menangis 
+['Lavender', 
+'Biru 
+muda'] 
+Naik 
+semangat 
+balik 
+['Merah', 
+'Kuning 
+cerah'] 
+Lapang 
+dada 
+['Hijau 
+pastel', 
+'Putih'] 
+Tawakal 
+['Putih', 
+'Biru langit'] 
+Trust 
+['Biru', 
+'Hijau'] 
+Love-hate 
+['Merah 
+gelap', 
+'Lavender'] 
+FOMO 
+['Merah 
+terang', 
+'Oren'] 
+Yakin tak 
+tentu 
+['Emas', 
+'Lavender'] 
+
+=== Page 11 ===
+Relief 
+['Hijau', 
+'Putih'] 
+Bingung 
+['Kelabu', 
+'Biru'] 
+Bersedia 
+['Biru', 
+'Hijau tua'] 
+Kosong 
+['Putih', 
+'Kelabu'] 
+Empati 
+['Merah 
+lembut', 
+'Lavender'] 
+ 
+ 
+Color Mengikut Niche Business 
+ 
+Niche 
+Business 
+Warna 
+Disyorkan 
+Produk 
+Kesihatan 
+(Supplements
+, Madu, 
+Minyak 
+Zaitun) 
+['Hijau', 
+'Emas', 
+'Coklat', 
+'Putih'] 
+Kecantikan 
+(Skincare, 
+Kosmetik) 
+['Pink', 
+'Putih', 
+'Ungu', 
+'Rose 
+Gold'] 
+Fesyen 
+(Pakaian 
+Muslimah, 
+Streetwear) 
+['Hitam', 
+'Putih', 
+'Beige', 
+'Maroon'] 
+
+=== Page 12 ===
+Produk Digital 
+(Ebook, Kelas 
+Online, 
+Software) 
+['Biru', 
+'Hitam', 
+'Kuning', 
+'Putih'] 
+Coaching & 
+Training 
+['Biru 
+gelap', 
+'Emas', 
+'Putih'] 
+Servis 
+Marketing / 
+Design 
+['Oren', 
+'Hitam', 
+'Putih', 
+'Kuning'] 
+Makanan & 
+Minuman 
+(F&B 
+Delivery) 
+['Merah', 
+'Kuning', 
+'Coklat', 
+'Putih'] 
+Travel & 
+Umrah 
+['Biru 
+langit', 
+'Putih', 
+'Emas'] 
+Baby & 
+Parenting 
+['Pink 
+pastel', 
+'Biru 
+lembut', 
+'Putih'] 
+Produk 
+Rumah 
+(Dekorasi, 
+Perabot) 
+['Beige', 
+'Hijau 
+olive', 
+'Putih', 
+'Coklat 
+kayu'] 
+Gadget & 
+Aksesori 
+['Hitam', 
+'Merah', 
+'Silver', 
+'Putih'] 
+
+=== Page 13 ===
+Produk Kurus 
+/ Fitness 
+['Merah', 
+'Hitam', 
+'Hijau 
+daun'] 
+Perfume / 
+Fragrance 
+['Ungu', 
+'Hitam', 
+'Emas'] 
+Mainan / Toy 
+Store 
+['Kuning', 
+'Oren', 
+'Biru 
+cerah'] 
+Bisnes 
+Takaful / 
+Insurance 
+['Biru 
+gelap', 
+'Hijau', 
+'Putih'] 
+Pet Products 
+(Makanan 
+Kucing dll) 
+['Oren', 
+'Putih', 
+'Coklat 
+pastel'] 
+Buku / Alat 
+Tulis 
+['Biru', 
+'Putih', 
+'Hijau 
+pastel'] 
+Produk 
+Sunnah 
+['Hijau 
+zamrud', 
+'Emas', 
+'Coklat 
+tanah'] 
+Produk 
+Premium / 
+Luxury 
+['Hitam', 
+'Navy', 
+'Emas', 
+'Putih'] 
+
+=== Page 14 ===
+Produk 
+Harian 
+(Sabun, 
+Pencuci) 
+['Putih', 
+'Biru 
+muda', 
+'Hijau'] 
+ 
+🎨 Step 3: Gunakan Warna Ikut Zon Gambar 
+Contoh layout gambar iklan: 
+● Headline → Bold color (merah, oren) untuk tarik perhatian. 
+ 
+● Background → Warna neutral (putih, kelabu muda) untuk nampak clean. 
+ 
+● CTA button/arrow → Warna contrast (hijau, merah) supaya standout. 
+ 
+● Produk → Warna kekal natural supaya tak ganggu fokus utama. 
+ 
+🚫 Step 4: Elak Silap Warna 
+● Jangan guna terlalu banyak warna — max 2-3 color sahaja. 
+ 
+● Jangan letak font warna cerah atas background cerah — susah baca. 
+ 
+● Jangan guna merah kalau mesej nak bagi rasa tenang — clash! 
+ 
+ 
+💡 Step 5: Uji & Bandingkan 
+Buat 2 version (A/B test): 
+● Gambar A guna tone hangat (merah/oren). 
+ 
+● Gambar B guna tone cool (biru/hijau). 
+ 
+Tengok mana yang dapat CTR (Click-Through Rate) lebih tinggi. 
+
+=== Page 15 ===
+ 
