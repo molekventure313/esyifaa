@@ -96,6 +96,7 @@ const COVERED = ['Sihir', 'Saka', 'Gangguan Jin', 'Asyik', 'Badi', 'Sumpahan', '
 export default function WaPage() {
   const [openFaq, setOpenFaq] = useState(null);
   const [waLink, setWaLink] = useState(buildWaLink(FALLBACK_NUMBER));
+  const [showSticky, setShowSticky] = useState(false);
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   useEffect(() => {
@@ -115,6 +116,10 @@ export default function WaPage() {
       }
     };
     initWaRotation();
+
+    const handleScroll = () => setShowSticky(window.scrollY > 400);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -507,6 +512,41 @@ export default function WaPage() {
         </div>
       </section>
 
+
+      {/* ══════════════════════════════════════════
+          STICKY BOTTOM — WA BUTTON (SCAN PERCUMA ANGLE)
+      ══════════════════════════════════════════ */}
+      {showSticky && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'rgba(2,24,18,0.97)',
+          borderTop: '2px solid rgba(37,211,102,0.35)',
+          padding: '0.85rem 1rem',
+          display: 'flex', justifyContent: 'center',
+          zIndex: 1000,
+          boxShadow: '0 -8px 30px rgba(0,0,0,0.5)',
+          fontFamily: ff,
+        }}>
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => { try { window.fbq('track', 'Lead'); } catch (_) {} }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              gap: '0.6rem', width: '100%', maxWidth: '420px',
+              padding: '0.9rem 1.5rem', fontSize: '0.95rem', fontWeight: 800,
+              color: '#FFFFFF',
+              background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+              borderRadius: '50px', textDecoration: 'none',
+              boxShadow: '0 4px 15px rgba(37,211,102,0.4)',
+              border: '2px solid rgba(255,255,255,0.2)',
+            }}
+          >
+            🧪 Ada Tindakbalas Selepas Scan? Rawatan RM50 →
+          </a>
+        </div>
+      )}
 
       {/* Footer */}
       <footer style={{ background: '#010E09', color: '#4B5563', padding: '1.5rem 1rem', textAlign: 'center', fontSize: '0.78rem', lineHeight: 1.6 }}>
