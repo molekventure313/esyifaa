@@ -9,7 +9,7 @@ import SabunHowToUseSection from '@/components/salespage/sabun-garam/HowToUseSec
 import SabunTestimonialPart2Section from '@/components/salespage/sabun-garam/TestimonialPart2Section';
 import SabunComparisonSection from '@/components/salespage/sabun-garam/ComparisonSection';
 import SabunCheckoutForm from '@/components/salespage/sabun-garam/SabunCheckoutForm';
-import FspGuaranteeSection from '@/components/salespage/fsp/GuaranteeSection';
+import SabunGuaranteeSection from '@/components/salespage/sabun-garam/GuaranteeSection';
 import SabunFAQSection from '@/components/salespage/sabun-garam/FAQSection';
 import SabunClosingSection from '@/components/salespage/sabun-garam/ClosingSection';
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
@@ -29,7 +29,7 @@ export default function SabunGaramPageContent({
   source = 'sabun-garam',
 }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#042E23' }}>
+    <main style={{ minHeight: '100vh', background: '#061510' }}>
 
       {/* #01 — Hero Banner (variant-specific) */}
       <SabunHeroSection headline={heroHeadline} subheadline={heroSubheadline} />
@@ -65,7 +65,7 @@ export default function SabunGaramPageContent({
       <SabunCheckoutForm source={source} />
 
       {/* #12 — Jaminan */}
-      <FspGuaranteeSection />
+      <SabunGuaranteeSection />
 
       {/* #13 — FAQ */}
       <SabunFAQSection />
@@ -76,7 +76,15 @@ export default function SabunGaramPageContent({
       {/* Floating WA help button */}
       <FloatingWAButton pretext="Assalamualaikum, saya nak tanya pasal Sabun Garam Himalaya Pengisian ESyifaa" />
 
-      <footer style={{ background: '#010E09', color: '#4B5563', padding: '1.75rem 1rem', textAlign: 'center', fontSize: '0.78rem', lineHeight: 1.6 }}>
+      <footer style={{
+        background: '#040E0B',
+        color: '#64748B',
+        padding: '2rem 1rem',
+        textAlign: 'center',
+        fontSize: '0.78rem',
+        lineHeight: 1.6,
+        borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+      }}>
         © {new Date().getFullYear()} ESyifaa. Produk berasaskan ruqyah syar&apos;iyyah. Tiada unsur syirik.
       </footer>
 

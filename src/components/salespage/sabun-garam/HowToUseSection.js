@@ -5,23 +5,19 @@ const STEPS = [
     num: '01',
     icon: '💧',
     title: 'Basahkan Badan',
-    desc: 'Mandi seperti biasa. Basahkan seluruh badan dengan air terlebih dahulu.',
-    color: '#3B82F6',
+    desc: 'Mandi seperti biasa. Basahkan seluruh badan dengan air bersih terlebih dahulu.',
   },
   {
     num: '02',
     icon: '🧼',
     title: 'Gosok Dengan Sabun Pengisian',
-    desc: 'Gosok sabun pada seluruh badan terutama bahagian yang sakit atau terasa berat. Biarkan berbusa 1-2 minit.',
-    color: '#10B981',
+    desc: 'Gosok sabun pada seluruh badan, terutamanya bahagian yang sering sakit, kaku atau terasa berat. Biarkan buih meresap 1-2 minit.',
   },
   {
     num: '03',
     icon: '🚿',
-    title: 'Bilas & Rasa Perbezaannya',
-    desc: 'Bilas dengan air. Lakukan setiap kali mandi. In shaa Allah badan terasa lebih ringan & tenang dari masa ke semasa.',
-    color: '#FDE047',
-    colorText: '#042E23',
+    title: 'Bilas & Rasai Kelegaannya',
+    desc: 'Bilas dengan air sehingga bersih. Amalkan setiap kali mandi untuk perlindungan dan pemulihan berterusan, in shaa Allah.',
   },
 ];
 
@@ -29,55 +25,88 @@ export default function SabunHowToUseSection() {
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   return (
-    <section style={{ background: '#042E23', padding: '4rem 1rem', fontFamily: ff }}>
+    <section style={{
+      background: '#081C15',
+      padding: '4.5rem 1.25rem',
+      fontFamily: ff,
+      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <span style={{
-            display: 'inline-block', background: 'rgba(74,222,128,0.1)',
-            border: '1px solid rgba(74,222,128,0.3)', color: '#4ADE80',
-            padding: '0.4rem 1.1rem', borderRadius: '50px',
-            fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em',
-            textTransform: 'uppercase', marginBottom: '1rem',
+            display: 'inline-block',
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            color: '#34D399',
+            padding: '0.35rem 0.95rem',
+            borderRadius: '9999px',
+            fontSize: '0.74rem',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginBottom: '0.85rem',
           }}>
             ✅ Mudah Digunakan
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 900,
-            color: '#FEF3C7', margin: '0.4rem 0 0.6rem', letterSpacing: '-0.02em',
+            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
+            fontWeight: 800,
+            color: '#F8FAFC',
+            margin: '0.3rem 0 0.65rem',
+            letterSpacing: '-0.025em',
           }}>
             3 Langkah Mudah — Sama Seperti Mandi Biasa
           </h2>
-          <p style={{ fontSize: '0.95rem', color: '#A7F3D0', lineHeight: 1.7, maxWidth: '500px', margin: '0 auto' }}>
-            Tidak perlu buat apa-apa yang rumit. Guna seperti sabun mandi biasa dan biarkan tenaga ruqyah bertindak.
+          <p style={{
+            fontSize: '0.96rem',
+            color: '#94A3B8',
+            lineHeight: 1.7,
+            maxWidth: '480px',
+            margin: '0 auto',
+          }}>
+            Tidak perlu amalan yang rumit. Guna seperti sabun mandi biasa dan biarkan tenaga ruqyah bertindak.
           </p>
         </div>
 
         {/* Steps */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'relative' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {STEPS.map((step, i) => (
             <div key={i} style={{
-              display: 'flex', gap: '1.5rem', alignItems: 'flex-start',
-              background: '#031E17', border: `1px solid ${step.color}44`,
-              borderRadius: '16px', padding: '1.5rem',
+              display: 'flex',
+              gap: '1.25rem',
+              alignItems: 'flex-start',
+              background: '#0D221B',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '16px',
+              padding: '1.4rem 1.5rem',
             }}>
-              {/* Number */}
+              {/* Number pill */}
               <div style={{
-                flexShrink: 0, width: '48px', height: '48px', borderRadius: '50%',
-                background: step.color, color: step.colorText || '#FFFFFF',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 900, fontSize: '1rem',
+                flexShrink: 0,
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#FBBF24',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '0.9rem',
               }}>
                 {step.num}
               </div>
+
               {/* Content */}
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                  <span style={{ fontSize: '1.25rem' }}>{step.icon}</span>
-                  <span style={{ fontWeight: 800, fontSize: '1rem', color: '#FEF3C7' }}>{step.title}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <span style={{ fontSize: '1.1rem' }}>{step.icon}</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.98rem', color: '#F8FAFC' }}>{step.title}</span>
                 </div>
-                <p style={{ margin: 0, fontSize: '0.88rem', color: '#A7F3D0', lineHeight: 1.6 }}>
+                <p style={{ margin: 0, fontSize: '0.86rem', color: '#94A3B8', lineHeight: 1.6 }}>
                   {step.desc}
                 </p>
               </div>
@@ -85,15 +114,18 @@ export default function SabunHowToUseSection() {
           ))}
         </div>
 
-        {/* Tip */}
+        {/* Tip Box */}
         <div style={{
-          marginTop: '2rem', padding: '1.1rem 1.5rem',
-          background: 'rgba(253,224,71,0.06)', border: '1px solid rgba(253,224,71,0.25)',
-          borderRadius: '12px', textAlign: 'center',
+          marginTop: '2rem',
+          padding: '1.1rem 1.4rem',
+          background: 'rgba(245, 158, 11, 0.04)',
+          border: '1px solid rgba(245, 158, 11, 0.2)',
+          borderRadius: '12px',
+          textAlign: 'center',
         }}>
-          <p style={{ margin: 0, fontSize: '0.88rem', color: '#FEF3C7', lineHeight: 1.65 }}>
-            💡 <strong style={{ color: '#FDE047' }}>Tips:</strong> Untuk hasil terbaik, guna setiap hari.
-            Satu unit 200g boleh tahan <strong>1-2 bulan</strong> penggunaan harian.
+          <p style={{ margin: 0, fontSize: '0.86rem', color: '#CBD5E1', lineHeight: 1.65 }}>
+            💡 <strong style={{ color: '#FBBF24' }}>Tips:</strong> Untuk hasil terbaik, gunakan setiap hari.
+            Satu ketul 200g boleh bertahan <strong>1-2 bulan</strong> penggunaan biasa.
           </p>
         </div>
 

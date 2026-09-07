@@ -2,98 +2,130 @@
 
 const ELEMENTS = [
   {
-    name: 'Garam Himalaya',
+    name: 'Garam Himalaya Asli',
     icon: '🧂',
     color: '#F59E0B',
     subtitle: 'Asas Penyucian Semulajadi',
     points: [
       'Mengandungi 84+ mineral semulajadi termasuk magnesium, kalsium & zink',
-      'Bersifat anti-bakteria semulajadi — bersihkan kulit secara mendalam',
-      'Digunakan sejak zaman dahulu untuk penyucian fizikal & rohani',
-      'Garam dalam Al-Quran & sunnah dikenali sebagai bahan berkat & penyucian',
+      'Bersifat anti-bakteria semulajadi — membersihkan kulit secara mendalam',
+      'Digunakan sejak zaman dahulu untuk amalan penyucian fizikal & rohani',
+      'Garam dalam tradisi perubatan Islam dikenali sebagai bahan berkat & penyucian',
     ],
   },
   {
     name: 'Pengisian Ruqyah Syar\'iyyah',
     icon: '📖',
     color: '#10B981',
-    subtitle: 'Kuasa Ayat Al-Quran Dalam Sabun',
+    subtitle: 'Tenaga Ayat Al-Quran Terpilih',
     points: [
-      'Diisikan dengan ayat-ayat ruqyah pilihan oleh perawat ESyifaa selama 3 hari',
+      'Diisikan dengan ayat-ayat ruqyah khusus oleh perawat ESyifaa selama 3 hari',
       'Tenaga rohani tertanam dalam setiap zarah sabun — aktif semasa digunakan',
-      'Sama kaedah dengan air ruqyah — terbukti dalam amalan ulama & perawat',
-      'Bertindak mengusir & melemahkan gangguan sihir, saka & santau semasa mandi',
+      'Sama kaedah dengan air penawar ruqyah — terbukti dalam amalan rawatan syarak',
+      'Bertindak melemahkan dan mengusir gangguan sihir, saka & santau semasa mandi',
     ],
   },
 ];
 
 const HOW_IT_WORKS = [
-  { step: '01', text: 'Sabun digosok → mineral garam himalaya bersihkan kulit secara fizikal', color: '#F59E0B' },
-  { step: '02', text: 'Tenaga ruqyah terlepas → bertindak pada gangguan rohani dalam badan', color: '#10B981' },
-  { step: '03', text: 'Air membilas → membawa keluar gangguan yang telah dilemahkan, in shaa Allah', color: '#3B82F6' },
+  { step: '01', text: 'Sabun digosok pada tubuh — mineral garam himalaya membersihkan kulit secara fizikal' },
+  { step: '02', text: 'Tenaga ayat ruqyah terlepas — bertindak balas terhadap gangguan rohani dalam badan' },
+  { step: '03', text: 'Bilas dengan air bersih — membawa keluar sisa bisa dan gangguan yang dilemahkan' },
 ];
 
 export default function SabunFungsiElemenSection() {
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   return (
-    <section style={{ background: 'linear-gradient(180deg, #042E23 0%, #031E17 100%)', padding: '4rem 1rem', fontFamily: ff }}>
+    <section style={{
+      background: '#081C15',
+      padding: '4.5rem 1.25rem',
+      fontFamily: ff,
+      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <span style={{
-            display: 'inline-block', background: 'rgba(253,224,71,0.1)',
-            border: '1px solid rgba(253,224,71,0.4)', color: '#FDE047',
-            padding: '0.4rem 1.1rem', borderRadius: '50px',
-            fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em',
-            textTransform: 'uppercase', marginBottom: '1rem',
+            display: 'inline-block',
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.25)',
+            color: '#FBBF24',
+            padding: '0.35rem 0.95rem',
+            borderRadius: '9999px',
+            fontSize: '0.74rem',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginBottom: '0.85rem',
           }}>
             🔬 Kenapa Ia Berkesan?
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)', fontWeight: 900,
-            color: '#FEF3C7', margin: '0.4rem 0 0.5rem', letterSpacing: '-0.02em', lineHeight: 1.2,
+            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
+            fontWeight: 800,
+            color: '#F8FAFC',
+            margin: '0.3rem 0 0.65rem',
+            letterSpacing: '-0.025em',
+            lineHeight: 1.25,
           }}>
             2 Elemen Utama Yang Menjadikan Sabun Ini Berbeza
           </h2>
-          <p style={{ fontSize: '0.95rem', color: '#A7F3D0', lineHeight: 1.7, maxWidth: '580px', margin: '0 auto' }}>
-            Bukan sekadar sabun biasa — ia gabungan penyucian fizikal garam himalaya
-            dan kekuatan rohani ruqyah syar&apos;iyyah yang bertindak serentak.
+          <p style={{
+            fontSize: '0.96rem',
+            color: '#94A3B8',
+            lineHeight: 1.7,
+            maxWidth: '580px',
+            margin: '0 auto',
+          }}>
+            Bukan sekadar sabun wangi — ia gabungan khasiat mineral garam himalaya
+            dan kekuatan ayat ruqyah syar&apos;iyyah yang bertindak serentak.
           </p>
         </div>
 
-        {/* Elements */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+        {/* Elements Cards */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '1.25rem',
+          marginBottom: '2.5rem',
+        }}>
           {ELEMENTS.map((el, i) => (
             <div key={i} style={{
-              background: '#021812', border: `2px solid ${el.color}33`,
-              borderRadius: '18px', padding: '1.75rem',
+              background: '#0D221B',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '16px',
+              padding: '1.75rem',
             }}>
-              {/* Element header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                 <div style={{
-                  width: '48px', height: '48px', borderRadius: '12px', flexShrink: 0,
-                  background: `${el.color}15`, border: `1.5px solid ${el.color}44`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem',
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  flexShrink: 0,
+                  background: `${el.color}15`,
+                  border: `1px solid ${el.color}35`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.3rem',
                 }}>
                   {el.icon}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 900, fontSize: '1.05rem', color: el.color }}>{el.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#6EE7B7', fontWeight: 600 }}>{el.subtitle}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.02rem', color: '#F8FAFC' }}>{el.name}</div>
+                  <div style={{ fontSize: '0.74rem', color: '#64748B' }}>{el.subtitle}</div>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div style={{ height: '1px', background: `${el.color}22`, margin: '1rem 0' }} />
+              <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.06)', margin: '1rem 0' }} />
 
-              {/* Points */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 {el.points.map((p, j) => (
                   <div key={j} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
-                    <span style={{ color: el.color, fontWeight: 900, fontSize: '0.85rem', flexShrink: 0, marginTop: '1px' }}>✓</span>
-                    <span style={{ fontSize: '0.84rem', color: '#D1FAE5', lineHeight: 1.55 }}>{p}</span>
+                    <span style={{ color: '#10B981', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0, marginTop: '2px' }}>✓</span>
+                    <span style={{ fontSize: '0.84rem', color: '#94A3B8', lineHeight: 1.55 }}>{p}</span>
                   </div>
                 ))}
               </div>
@@ -103,23 +135,42 @@ export default function SabunFungsiElemenSection() {
 
         {/* How it works flow */}
         <div style={{
-          background: '#021812', border: '1px solid rgba(253,224,71,0.2)',
-          borderRadius: '18px', padding: '2rem',
+          background: '#0D221B',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+          borderRadius: '16px',
+          padding: '2rem 1.75rem',
         }}>
-          <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.78rem', fontWeight: 800, color: '#FDE047', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>
+          <p style={{
+            margin: '0 0 1.5rem 0',
+            fontSize: '0.76rem',
+            fontWeight: 700,
+            color: '#FBBF24',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            textAlign: 'center',
+          }}>
             ⚡ Bagaimana Ia Bertindak Semasa Mandi
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {HOW_IT_WORKS.map((h, i) => (
               <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <div style={{
-                  flexShrink: 0, width: '36px', height: '36px', borderRadius: '50%',
-                  background: h.color, color: '#021812', fontWeight: 900, fontSize: '0.82rem',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#FBBF24',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}>
                   {h.step}
                 </div>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#D1FAE5', lineHeight: 1.55 }}>
+                <p style={{ margin: 0, fontSize: '0.88rem', color: '#CBD5E1', lineHeight: 1.55 }}>
                   {h.text}
                 </p>
               </div>

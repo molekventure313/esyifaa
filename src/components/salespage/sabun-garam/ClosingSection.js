@@ -6,52 +6,76 @@ export default function SabunClosingSection() {
 
   return (
     <section style={{
-      background: 'linear-gradient(180deg, #031E17 0%, #021812 100%)',
-      padding: '5rem 1rem', fontFamily: ff, textAlign: 'center', color: '#FFFFFF',
+      background: 'linear-gradient(180deg, #061510 0%, #040E0B 100%)',
+      padding: '5rem 1.25rem',
+      fontFamily: ff,
+      textAlign: 'center',
+      color: '#FFFFFF',
     }}>
-      <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '660px', margin: '0 auto' }}>
 
         <span style={{
-          display: 'inline-block', background: 'rgba(253,224,71,0.1)',
-          border: '1px solid rgba(253,224,71,0.4)', color: '#FDE047',
-          padding: '0.4rem 1.1rem', borderRadius: '50px',
-          fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em',
-          textTransform: 'uppercase', marginBottom: '1.25rem',
+          display: 'inline-block',
+          background: 'rgba(245, 158, 11, 0.08)',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          color: '#FBBF24',
+          padding: '0.35rem 0.95rem',
+          borderRadius: '9999px',
+          fontSize: '0.74rem',
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          marginBottom: '1.25rem',
         }}>
           🧼 Jangan Tangguh Lagi
         </span>
 
         <h2 style={{
-          fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 900, color: '#FEF3C7',
-          marginTop: '0.25rem', marginBottom: '1rem', letterSpacing: '-0.02em', lineHeight: 1.2,
+          fontSize: 'clamp(1.55rem, 3.8vw, 2.35rem)',
+          fontWeight: 800,
+          color: '#F8FAFC',
+          marginTop: '0.25rem',
+          marginBottom: '1rem',
+          letterSpacing: '-0.025em',
+          lineHeight: 1.25,
         }}>
-          Setiap Hari Tanpa Perlindungan —{' '}
-          <span style={{ color: '#F87171' }}>Gangguan Terus Bertapak</span>
+          Setiap Hari Tanpa Ikhtiar —{' '}
+          <span style={{ color: '#FB7185' }}>Gangguan Terus Bertapak</span>
         </h2>
 
-        <p style={{ fontSize: '1.05rem', color: '#D1FAE5', lineHeight: 1.75, maxWidth: '580px', margin: '0 auto 1.5rem auto' }}>
-          Sihir, saka dan santau tidak pergi sendiri. Ia perlu diusir secara aktif.
-          Dengan Sabun Garam Himalaya Pengisian ESyifaa, anda boleh{' '}
-          <strong style={{ color: '#FDE047' }}>rawat diri sendiri setiap kali mandi</strong> —
-          tanpa perlu bergantung pada sesi rawatan, tanpa kos tambahan, in shaa Allah sembuh.
+        <p style={{
+          fontSize: '1rem',
+          color: '#94A3B8',
+          lineHeight: 1.75,
+          maxWidth: '540px',
+          margin: '0 auto 2rem auto',
+        }}>
+          Sihir, saka dan santau tidak hilang dengan sendiri. Dengan Sabun Garam Himalaya Pengisian ESyifaa, anda boleh{' '}
+          <strong style={{ color: '#F1F5F9' }}>berikhtiar memulihkan diri sendiri setiap kali mandi</strong> —
+          mudah, selamat dan patuh syariah, in shaa Allah.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.85rem' }}>
           <button
             onClick={scrollToForm}
             style={{
-              display: 'inline-block', padding: '1.15rem 2.6rem',
-              fontSize: '1.1rem', fontWeight: 800, color: '#042E23',
-              background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-              borderRadius: '50px', border: '2px solid #FEF08A',
-              boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
-              cursor: 'pointer', fontFamily: ff,
+              padding: '1.05rem 2.5rem',
+              fontSize: '1.02rem',
+              fontWeight: 700,
+              color: '#061811',
+              background: 'linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%)',
+              borderRadius: '9999px',
+              border: 'none',
+              boxShadow: '0 6px 20px rgba(245, 158, 11, 0.25)',
+              cursor: 'pointer',
+              fontFamily: ff,
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
             }}
           >
             🧼 Tempah Sabun Pengisian Sekarang
           </button>
-          <p style={{ margin: 0, fontSize: '0.82rem', color: '#6EE7B7', fontStyle: 'italic' }}>
-            Dari RM39 + postage RM5 · COD & FPX · Selamat & Patuh Syariah
+          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B' }}>
+            Dari RM39 + postage RM5 · Pilihan COD atau FPX · 100% Ruqyah Syar&apos;iyyah
           </p>
         </div>
 

@@ -3,7 +3,7 @@
 const DEFAULT_HEADLINE = (
   <>
     Usir Saka, Sihir & Santau —{' '}
-    <span style={{ color: '#4ADE80' }}>
+    <span style={{ color: '#34D399' }}>
       Sembuh Sakit Urat, Sakit Badan & Penyakit Misteri
     </span>{' '}
     Dengan Sabun Pengisian Ruqyah
@@ -21,44 +21,71 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
 
   return (
     <section style={{
-      background: 'linear-gradient(180deg, #021812 0%, #042E23 100%)',
-      color: '#FFFFFF', padding: '3.5rem 1rem 4rem',
-      fontFamily: ff, textAlign: 'center',
+      background: 'linear-gradient(180deg, #061510 0%, #081C15 100%)',
+      color: '#FFFFFF',
+      padding: '4rem 1.25rem 4.5rem',
+      fontFamily: ff,
+      textAlign: 'center',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
     }}>
-      <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '820px', margin: '0 auto' }}>
 
-        {/* Badge */}
+        {/* Minimalist Pill Badge */}
         <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          background: 'rgba(253,224,71,0.12)', border: '1px solid rgba(253,224,71,0.5)',
-          padding: '0.4rem 1.1rem', borderRadius: '50px', marginBottom: '1.5rem',
-          fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          background: 'rgba(245, 158, 11, 0.08)',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          padding: '0.35rem 0.95rem',
+          borderRadius: '9999px',
+          marginBottom: '1.75rem',
         }}>
-          🧼 Sabun Garam Himalaya 200g · Pengisian Ruqyah Syar&apos;iyyah
+          <span style={{ fontSize: '0.85rem' }}>🧼</span>
+          <span style={{
+            fontSize: '0.74rem',
+            fontWeight: 700,
+            color: '#FBBF24',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}>
+            Sabun Garam Himalaya 200g · Pengisian Ruqyah Syar&apos;iyyah
+          </span>
         </div>
 
-        {/* H1 */}
+        {/* H1 Headline */}
         <h1 style={{
-          fontSize: 'clamp(1.75rem, 4.5vw, 2.9rem)',
-          fontWeight: 900, lineHeight: 1.2,
-          color: '#FDE047', marginBottom: '1.2rem',
-          letterSpacing: '-0.02em',
+          fontSize: 'clamp(1.75rem, 4.2vw, 2.75rem)',
+          fontWeight: 800,
+          lineHeight: 1.28,
+          color: '#F8FAFC',
+          marginBottom: '1.25rem',
+          letterSpacing: '-0.025em',
         }}>
           {headline}
         </h1>
 
-        {/* Sub */}
+        {/* Subtitle */}
         <p style={{
-          fontSize: '1.05rem', lineHeight: 1.75,
-          color: '#D1FAE5', marginBottom: '0.75rem',
-          maxWidth: '700px', margin: '0 auto 0.75rem auto',
+          fontSize: '1.02rem',
+          lineHeight: 1.75,
+          color: '#94A3B8',
+          marginBottom: '2rem',
+          maxWidth: '680px',
+          margin: '0 auto 2rem auto',
+          fontWeight: 400,
         }}>
           {subheadline}
         </p>
 
-        {/* Trust badges */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem', marginBottom: '2rem', marginTop: '1rem' }}>
+        {/* Trust badges — Clean & Subtle */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          marginBottom: '2.5rem',
+        }}>
           {[
             '📖 Berasaskan Al-Quran & Sunnah',
             '🧂 Garam Himalaya 200g',
@@ -66,30 +93,42 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
             '🚚 COD & FPX Tersedia',
           ].map((b, i) => (
             <span key={i} style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-              background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)',
-              color: '#A7F3D0', fontSize: '0.78rem', fontWeight: 700,
-              padding: '0.3rem 0.85rem', borderRadius: '50px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#CBD5E1',
+              fontSize: '0.76rem',
+              fontWeight: 500,
+              padding: '0.32rem 0.85rem',
+              borderRadius: '9999px',
             }}>{b}</span>
           ))}
         </div>
 
-        {/* CTA */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.85rem' }}>
+        {/* CTA Button — Clean Minimalist */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
           <button
             onClick={scrollToForm}
             style={{
-              padding: '1.15rem 2.5rem', fontSize: '1.1rem', fontWeight: 900,
-              color: '#042E23',
-              background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-              border: '2px solid #FEF08A', borderRadius: '50px', cursor: 'pointer',
-              boxShadow: '0 10px 30px rgba(234,179,8,0.45)', fontFamily: ff,
+              padding: '1rem 2.4rem',
+              fontSize: '1.02rem',
+              fontWeight: 700,
+              color: '#061811',
+              background: 'linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%)',
+              border: 'none',
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              boxShadow: '0 6px 20px rgba(245, 158, 11, 0.25)',
+              fontFamily: ff,
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
             }}
           >
             🧼 Dapatkan Sabun Pengisian Sekarang
           </button>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#6EE7B7' }}>
-            Dari <strong style={{ color: '#FDE047' }}>RM39</strong> seunit · Postage RM5 · COD & FPX tersedia
+          <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748B' }}>
+            Dari <span style={{ color: '#FBBF24', fontWeight: 600 }}>RM39</span> seunit · Postage RM5 · Bayar Masa Terima (COD) atau FPX
           </p>
         </div>
 
