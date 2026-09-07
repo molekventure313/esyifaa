@@ -1,9 +1,9 @@
 import SabunHeroSection from '@/components/salespage/sabun-garam/HeroSection';
-import FspTestimonialSection from '@/components/salespage/fsp/TestimonialSection';
+import SabunTestimonialSection from '@/components/salespage/sabun-garam/TestimonialSection';
 import SabunProblemSection from '@/components/salespage/sabun-garam/ProblemSection';
 import SabunSolutionSection from '@/components/salespage/sabun-garam/SolutionSection';
 import SabunHowToUseSection from '@/components/salespage/sabun-garam/HowToUseSection';
-import FspTestimonialPart2Section from '@/components/salespage/fsp/TestimonialPart2Section';
+import SabunTestimonialPart2Section from '@/components/salespage/sabun-garam/TestimonialPart2Section';
 import SabunComparisonSection from '@/components/salespage/sabun-garam/ComparisonSection';
 import SabunCheckoutForm from '@/components/salespage/sabun-garam/SabunCheckoutForm';
 import FspGuaranteeSection from '@/components/salespage/fsp/GuaranteeSection';
@@ -35,8 +35,8 @@ export default function SabunGaramPage() {
       {/* #1 — Hero */}
       <SabunHeroSection />
 
-      {/* #2 — Testimoni (placeholder FSP) */}
-      <FspTestimonialSection />
+      {/* #2 — Testimoni Part 1 */}
+      <SabunTestimonialSection />
 
       {/* #3 — Masalah / Simptom */}
       <SabunProblemSection />
@@ -47,8 +47,8 @@ export default function SabunGaramPage() {
       {/* #5 — Cara Guna */}
       <SabunHowToUseSection />
 
-      {/* #6 — Testimoni Part 2 (placeholder FSP) */}
-      <FspTestimonialPart2Section />
+      {/* #6 — Testimoni Part 2 */}
+      <SabunTestimonialPart2Section />
 
       {/* #7 — Perbandingan */}
       <SabunComparisonSection />
