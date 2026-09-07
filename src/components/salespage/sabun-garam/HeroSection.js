@@ -1,6 +1,18 @@
 'use client';
 
-export default function SabunHeroSection() {
+const DEFAULT_HEADLINE = (
+  <>
+    Usir Saka, Sihir & Santau —{' '}
+    <span style={{ color: '#4ADE80' }}>
+      Sembuh Sakit Urat, Sakit Badan & Penyakit Misteri
+    </span>{' '}
+    Dengan Sabun Pengisian Ruqyah
+  </>
+);
+
+const DEFAULT_SUB = 'Sabun garam himalaya 200g diisikan tenaga ayat ruqyah syar\'iyyah selama 3 hari berturut-turut — mandi seperti biasa, rasai kesan perlindungan & rawatan pada badan anda, in shaa Allah.';
+
+export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadline = DEFAULT_SUB }) {
   const scrollToForm = () => {
     document.getElementById('borang')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -33,11 +45,7 @@ export default function SabunHeroSection() {
           color: '#FDE047', marginBottom: '1.2rem',
           letterSpacing: '-0.02em',
         }}>
-          Usir Saka, Sihir & Santau —{' '}
-          <span style={{ color: '#4ADE80' }}>
-            Sembuh Sakit Urat, Sakit Badan & Penyakit Misteri
-          </span>{' '}
-          Dengan Sabun Pengisian Ruqyah
+          {headline}
         </h1>
 
         {/* Sub */}
@@ -46,9 +54,7 @@ export default function SabunHeroSection() {
           color: '#D1FAE5', marginBottom: '0.75rem',
           maxWidth: '700px', margin: '0 auto 0.75rem auto',
         }}>
-          Sabun garam himalaya 200g diisikan tenaga ayat ruqyah syar&apos;iyyah
-          selama <strong style={{ color: '#FDE047' }}>3 hari berturut-turut</strong> — mandi seperti biasa,
-          rasai kesan perlindungan & rawatan pada badan anda, in shaa Allah.
+          {subheadline}
         </p>
 
         {/* Trust badges */}

@@ -36,7 +36,12 @@ const EVIDEO_PAGES = [
 
 // TAB 4: Produk Fizikal
 const PRODUK_PAGES = [
-  { label: 'Sabun Garam Himalaya Pengisian', desc: 'Produk fizikal — sabun 200g pengisian ruqyah. RM39 (1u) / RM70 (2u) / RM90 (3u) + postage RM5. COD & FPX.', url: '/sabun-garam', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam (Base)',         desc: 'SP base — default headline (feature angle). Guna untuk rujukan.',                                                         url: '/sabun-garam',   color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #1 — Saka/Sihir/Santau', desc: 'Pilihan 1 FSP formula: "Alhamdulillah saka, sihir & santau...keluar selepas mandi"',                          url: '/sabun-garam-1', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #2 — Lenguh Urat/Badan',  desc: 'Pilihan 2 FSP formula: "Alhamdulillah lenguh urat, sakit badan...lega selepas amalkan"',                     url: '/sabun-garam-2', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #3 — Penyakit Misteri',   desc: 'Pilihan 3 FSP formula: "Alhamdulillah sakit misteri yg doktor tak tahu punca...makin pulih"',                url: '/sabun-garam-3', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #4 — Emosi/Bisikan/Tidur', desc: 'Pilihan 4 FSP formula: "Alhamdulillah bisikan halus, emosi tak terkawal & susah tidur...reda"',            url: '/sabun-garam-4', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #5 — Keluarga/Anak',       desc: 'Pilihan 5 FSP formula: "Alhamdulillah anak meracau malam, gatal-gatal & berat sekeluarga...hilang"',       url: '/sabun-garam-5', color: '#D97706', icon: '🧼', isNew: true },
 ];
 
 const TABS = [
