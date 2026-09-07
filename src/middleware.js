@@ -49,6 +49,7 @@ export async function middleware(request) {
     request.nextUrl.pathname.startsWith('/wa') ||
     request.nextUrl.pathname.startsWith('/pengisian-esyifa') ||
     request.nextUrl.pathname.startsWith('/pengisian-wasap') ||
+    request.nextUrl.pathname.startsWith('/sabun-garam') ||
     request.nextUrl.pathname.startsWith('/rawat-sendiri') ||
     request.nextUrl.pathname.startsWith('/e-video') ||
     request.nextUrl.pathname.startsWith('/sihir') ||

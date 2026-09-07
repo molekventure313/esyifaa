@@ -34,10 +34,16 @@ const EVIDEO_PAGES = [
   { label: 'E-Video Rawatan Ruqyah', desc: 'Produk digital — pakej 8 video rawatan RM60 (promo). Dihantar via WhatsApp dalam 24 jam selepas bayar FPX.', url: '/e-video', color: '#8B5CF6', icon: '🎬', isNew: true },
 ];
 
+// TAB 4: Produk Fizikal
+const PRODUK_PAGES = [
+  { label: 'Sabun Garam Himalaya Pengisian', desc: 'Produk fizikal — sabun 200g pengisian ruqyah. RM39 (1u) / RM70 (2u) / RM90 (3u) + postage RM5. COD & FPX.', url: '/sabun-garam', color: '#D97706', icon: '🧼', isNew: true },
+];
+
 const TABS = [
   { id: 'rawatan',   label: '🏥 Rawatan',           count: RAWATAN_HOMEPAGE_VARIANTS.length + RAWATAN_STANDALONE.length },
   { id: 'pengisian', label: "💎 Pengisian E-Syifa'", count: PENGISIAN_PAGES.length },
   { id: 'evideo',    label: '🎬 E-Video',            count: EVIDEO_PAGES.length },
+  { id: 'produk',    label: '🧼 Produk Fizikal',     count: PRODUK_PAGES.length },
 ];
 
 // ─── Card Components ──────────────────────────────────────────────────────────
@@ -394,6 +400,19 @@ export default function SalespageManagement({ isLightMode, cardBg, cardBorder, t
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '0.85rem' }}>
             {EVIDEO_PAGES.map((page, i) => (
+              <ProductCard key={i} page={page} {...shared} />
+            ))}
+          </div>
+        </div>
+      )}
+      {/* ── TAB: Produk Fizikal ── */}
+      {activeTab === 'produk' && (
+        <div>
+          <p style={{ margin: '0 0 1rem 0', fontSize: '0.78rem', color: textSecondary }}>
+            Salespage produk fizikal — sabun garam himalaya pengisian ruqyah. COD & FPX, postage RM5.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '0.85rem' }}>
+            {PRODUK_PAGES.map((page, i) => (
               <ProductCard key={i} page={page} {...shared} />
             ))}
           </div>
