@@ -6,7 +6,7 @@ import SabunGaramPageContent from '@/components/salespage/sabun-garam/PageConten
 const HEADLINE = (
   <>
     Alhamdulillah sakit misteri yang doktor pun tak tahu punca{' '}
-    <span style={{ color: '#4ADE80' }}>
+    <span style={{ color: '#059669' }}>
       makin pulih lepas guna Sabun Pengisian Ruqyah ESyifaa
     </span>
   </>

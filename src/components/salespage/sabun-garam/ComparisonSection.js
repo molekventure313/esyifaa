@@ -3,7 +3,7 @@
 const COMPARISONS = [
   {
     aspect: 'Fungsi Utama',
-    biasa: 'Bersih fizikal sahaja',
+    biasa: 'Bersih luaran sahaja',
     pengisian: 'Bersih fizikal + rohani (ruqyah)',
   },
   {
@@ -38,34 +38,35 @@ export default function SabunComparisonSection() {
 
   return (
     <section style={{
-      background: '#081C15',
+      background: '#FFFFFF',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      borderBottom: '1px solid #E2E8F0',
     }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
           <span style={{
             display: 'inline-block',
-            background: 'rgba(245, 158, 11, 0.08)',
-            border: '1px solid rgba(245, 158, 11, 0.25)',
-            color: '#FBBF24',
-            padding: '0.35rem 0.95rem',
+            background: '#ECFDF5',
+            border: '1px solid #A7F3D0',
+            color: '#047857',
+            padding: '0.35rem 1rem',
             borderRadius: '9999px',
-            fontSize: '0.74rem',
+            fontSize: '0.75rem',
             fontWeight: 700,
-            letterSpacing: '0.06em',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             marginBottom: '0.85rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
           }}>
             ⚖️ Perbandingan
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.4rem, 3.2vw, 1.95rem)',
+            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
             fontWeight: 800,
-            color: '#F8FAFC',
+            color: '#0F172A',
             margin: '0.3rem 0 0',
             letterSpacing: '-0.02em',
           }}>
@@ -75,33 +76,35 @@ export default function SabunComparisonSection() {
 
         {/* Table Container */}
         <div style={{
-          background: '#0D221B',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: '16px',
+          background: '#FFFFFF',
+          border: '1px solid #CBD5E1',
+          borderRadius: '18px',
           overflow: 'hidden',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
         }}>
           {/* Table header */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1.2fr 1fr 1.2fr',
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            background: '#F8FAFC',
+            borderBottom: '1px solid #E2E8F0',
           }}>
-            <div style={{ padding: '0.9rem 1.25rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ padding: '1rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Ciri & Manfaat
             </div>
-            <div style={{ padding: '0.9rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>
+            <div style={{ padding: '1rem', fontSize: '0.78rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center' }}>
               Sabun Biasa
             </div>
             <div style={{
-              padding: '0.9rem 1rem',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              color: '#34D399',
+              padding: '1rem',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              color: '#047857',
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
               textAlign: 'center',
-              background: 'rgba(16, 185, 129, 0.06)',
+              background: '#ECFDF5',
+              borderLeft: '1px solid #D1FAE5',
             }}>
               🧼 Sabun ESyifaa
             </div>
@@ -112,22 +115,23 @@ export default function SabunComparisonSection() {
             <div key={i} style={{
               display: 'grid',
               gridTemplateColumns: '1.2fr 1fr 1.2fr',
-              borderBottom: i === COMPARISONS.length - 1 ? 'none' : '1px solid rgba(255, 255, 255, 0.04)',
-              background: i % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)',
+              borderBottom: i === COMPARISONS.length - 1 ? 'none' : '1px solid #F1F5F9',
+              background: i % 2 === 0 ? '#FFFFFF' : '#FBFDFB',
             }}>
-              <div style={{ padding: '0.85rem 1.25rem', fontSize: '0.85rem', fontWeight: 600, color: '#F1F5F9', borderRight: '1px solid rgba(255, 255, 255, 0.04)' }}>
+              <div style={{ padding: '0.95rem 1.25rem', fontSize: '0.88rem', fontWeight: 600, color: '#1E293B', borderRight: '1px solid #F1F5F9' }}>
                 {row.aspect}
               </div>
-              <div style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: '#64748B', textAlign: 'center', borderRight: '1px solid rgba(255, 255, 255, 0.04)' }}>
+              <div style={{ padding: '0.95rem 1rem', fontSize: '0.85rem', color: '#64748B', textAlign: 'center', borderRight: '1px solid #F1F5F9' }}>
                 {row.biasa}
               </div>
               <div style={{
-                padding: '0.85rem 1rem',
-                fontSize: '0.84rem',
-                color: '#34D399',
+                padding: '0.95rem 1rem',
+                fontSize: '0.88rem',
+                color: '#059669',
                 textAlign: 'center',
-                fontWeight: 600,
-                background: 'rgba(16, 185, 129, 0.04)',
+                fontWeight: 700,
+                background: '#F0FDF4',
+                borderLeft: '1px solid #E6F8ED',
               }}>
                 {row.pengisian}
               </div>

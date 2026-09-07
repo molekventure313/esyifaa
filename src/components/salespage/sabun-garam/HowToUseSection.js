@@ -26,10 +26,10 @@ export default function SabunHowToUseSection() {
 
   return (
     <section style={{
-      background: '#081C15',
+      background: '#FFFFFF',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      borderBottom: '1px solid #E2E8F0',
     }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
@@ -37,31 +37,32 @@ export default function SabunHowToUseSection() {
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <span style={{
             display: 'inline-block',
-            background: 'rgba(16, 185, 129, 0.08)',
-            border: '1px solid rgba(16, 185, 129, 0.25)',
-            color: '#34D399',
-            padding: '0.35rem 0.95rem',
+            background: '#ECFDF5',
+            border: '1px solid #A7F3D0',
+            color: '#047857',
+            padding: '0.35rem 1rem',
             borderRadius: '9999px',
-            fontSize: '0.74rem',
+            fontSize: '0.75rem',
             fontWeight: 700,
-            letterSpacing: '0.06em',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             marginBottom: '0.85rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
           }}>
             ✅ Mudah Digunakan
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
+            fontSize: 'clamp(1.5rem, 3.2vw, 2.1rem)',
             fontWeight: 800,
-            color: '#F8FAFC',
+            color: '#0F172A',
             margin: '0.3rem 0 0.65rem',
             letterSpacing: '-0.025em',
           }}>
             3 Langkah Mudah — Sama Seperti Mandi Biasa
           </h2>
           <p style={{
-            fontSize: '0.96rem',
-            color: '#94A3B8',
+            fontSize: '0.98rem',
+            color: '#64748B',
             lineHeight: 1.7,
             maxWidth: '480px',
             margin: '0 auto',
@@ -77,25 +78,26 @@ export default function SabunHowToUseSection() {
               display: 'flex',
               gap: '1.25rem',
               alignItems: 'flex-start',
-              background: '#0D221B',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
+              background: '#F8FAFC',
+              border: '1px solid #E2E8F0',
               borderRadius: '16px',
               padding: '1.4rem 1.5rem',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
             }}>
               {/* Number pill */}
               <div style={{
                 flexShrink: 0,
                 width: '42px',
                 height: '42px',
-                borderRadius: '10px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#FBBF24',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 800,
-                fontSize: '0.9rem',
+                fontSize: '0.92rem',
+                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.25)',
               }}>
                 {step.num}
               </div>
@@ -103,10 +105,10 @@ export default function SabunHowToUseSection() {
               {/* Content */}
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                  <span style={{ fontSize: '1.1rem' }}>{step.icon}</span>
-                  <span style={{ fontWeight: 700, fontSize: '0.98rem', color: '#F8FAFC' }}>{step.title}</span>
+                  <span style={{ fontSize: '1.2rem' }}>{step.icon}</span>
+                  <span style={{ fontWeight: 800, fontSize: '1.02rem', color: '#0F172A' }}>{step.title}</span>
                 </div>
-                <p style={{ margin: 0, fontSize: '0.86rem', color: '#94A3B8', lineHeight: 1.6 }}>
+                <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', lineHeight: 1.6 }}>
                   {step.desc}
                 </p>
               </div>
@@ -117,14 +119,14 @@ export default function SabunHowToUseSection() {
         {/* Tip Box */}
         <div style={{
           marginTop: '2rem',
-          padding: '1.1rem 1.4rem',
-          background: 'rgba(245, 158, 11, 0.04)',
-          border: '1px solid rgba(245, 158, 11, 0.2)',
-          borderRadius: '12px',
+          padding: '1.2rem 1.5rem',
+          background: '#FFFBEB',
+          border: '1px solid #FDE68A',
+          borderRadius: '14px',
           textAlign: 'center',
         }}>
-          <p style={{ margin: 0, fontSize: '0.86rem', color: '#CBD5E1', lineHeight: 1.65 }}>
-            💡 <strong style={{ color: '#FBBF24' }}>Tips:</strong> Untuk hasil terbaik, gunakan setiap hari.
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#92400E', lineHeight: 1.65 }}>
+            💡 <strong style={{ color: '#B45309' }}>Tips:</strong> Untuk hasil terbaik, gunakan setiap hari.
             Satu ketul 200g boleh bertahan <strong>1-2 bulan</strong> penggunaan biasa.
           </p>
         </div>

@@ -6,7 +6,7 @@ import SabunGaramPageContent from '@/components/salespage/sabun-garam/PageConten
 const HEADLINE = (
   <>
     Alhamdulillah anak meracau malam, gatal-gatal badan & rasa berat sekeluarga{' '}
-    <span style={{ color: '#4ADE80' }}>
+    <span style={{ color: '#059669' }}>
       hilang lepas guna Sabun Pengisian ESyifaa
     </span>
   </>

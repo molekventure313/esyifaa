@@ -14,10 +14,10 @@ export default function SabunProblemSection() {
 
   return (
     <section style={{
-      background: '#061510',
+      background: '#FFFFFF',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      borderBottom: '1px solid #E2E8F0',
     }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
 
@@ -25,30 +25,30 @@ export default function SabunProblemSection() {
         <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
           <span style={{
             display: 'inline-block',
-            background: 'rgba(244, 63, 94, 0.08)',
-            border: '1px solid rgba(244, 63, 94, 0.25)',
-            color: '#FB7185',
-            padding: '0.35rem 0.95rem',
+            background: '#FFF1F2',
+            border: '1px solid #FECDD3',
+            color: '#BE123C',
+            padding: '0.35rem 1rem',
             borderRadius: '9999px',
-            fontSize: '0.74rem',
+            fontSize: '0.75rem',
             fontWeight: 700,
-            letterSpacing: '0.06em',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             marginBottom: '0.85rem',
           }}>
             ⚠️ Adakah Anda Mengalami Ini?
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
+            fontSize: 'clamp(1.5rem, 3.2vw, 2.1rem)',
             fontWeight: 800,
-            color: '#F8FAFC',
+            color: '#0F172A',
             margin: '0.3rem 0 0.65rem',
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
           }}>
             Simptom Yang Mungkin Bukan Penyakit Biasa
           </h2>
-          <p style={{ fontSize: '0.96rem', color: '#94A3B8', lineHeight: 1.7, maxWidth: '560px', margin: '0 auto' }}>
+          <p style={{ fontSize: '0.98rem', color: '#64748B', lineHeight: 1.7, maxWidth: '580px', margin: '0 auto' }}>
             Jika anda dah berulang-ulang berikhtiar secara fizikal tapi tiada perubahan —
             mungkin punca sebenarnya melibatkan rohani.
           </p>
@@ -58,33 +58,35 @@ export default function SabunProblemSection() {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1rem',
+          gap: '1.1rem',
         }}>
           {PROBLEMS.map((p, i) => (
             <div key={i} style={{
-              background: '#0D221B',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: '14px',
+              background: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: '16px',
               padding: '1.4rem',
               display: 'flex',
               gap: '1rem',
               alignItems: 'flex-start',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
             }}>
               <span style={{
                 fontSize: '1.6rem',
                 flexShrink: 0,
                 lineHeight: 1,
                 padding: '0.5rem',
-                background: 'rgba(255, 255, 255, 0.03)',
-                borderRadius: '10px',
+                background: '#FFFFFF',
+                borderRadius: '12px',
+                border: '1px solid #E2E8F0',
               }}>
                 {p.icon}
               </span>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#F1F5F9', marginBottom: '0.3rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.94rem', color: '#0F172A', marginBottom: '0.3rem' }}>
                   {p.title}
                 </div>
-                <p style={{ margin: 0, fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6 }}>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B', lineHeight: 1.6 }}>
                   {p.desc}
                 </p>
               </div>
@@ -97,12 +99,12 @@ export default function SabunProblemSection() {
           marginTop: '2rem',
           padding: '1.25rem 1.5rem',
           textAlign: 'center',
-          background: 'rgba(245, 158, 11, 0.05)',
-          border: '1px solid rgba(245, 158, 11, 0.2)',
-          borderRadius: '12px',
+          background: '#FFFBEB',
+          border: '1px solid #FDE68A',
+          borderRadius: '14px',
         }}>
-          <p style={{ margin: 0, fontSize: '0.92rem', color: '#CBD5E1', lineHeight: 1.7 }}>
-            Jika anda alami <strong style={{ color: '#FBBF24' }}>2 atau lebih</strong> dari simptom di atas —
+          <p style={{ margin: 0, fontSize: '0.94rem', color: '#92400E', lineHeight: 1.7 }}>
+            Jika anda alami <strong style={{ color: '#B45309' }}>2 atau lebih</strong> dari simptom di atas —
             ada kemungkinan wujud gangguan rohani yang perlu ditangani dengan kaedah ruqyah syar&apos;iyyah.
           </p>
         </div>

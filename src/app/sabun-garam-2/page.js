@@ -6,7 +6,7 @@ import SabunGaramPageContent from '@/components/salespage/sabun-garam/PageConten
 const HEADLINE = (
   <>
     Alhamdulillah lenguh urat, sakit badan & rasa berat bertahun-tahun{' '}
-    <span style={{ color: '#4ADE80' }}>
+    <span style={{ color: '#059669' }}>
       lega selepas amalkan Sabun Garam Himalaya Pengisian
     </span>
   </>

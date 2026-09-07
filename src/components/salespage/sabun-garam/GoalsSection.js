@@ -33,10 +33,10 @@ export default function SabunGoalsSection() {
 
   return (
     <section style={{
-      background: '#061510',
+      background: '#F8FAF9',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      borderBottom: '1px solid #E2E8F0',
     }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
@@ -44,33 +44,34 @@ export default function SabunGoalsSection() {
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <span style={{
             display: 'inline-block',
-            background: 'rgba(16, 185, 129, 0.08)',
-            border: '1px solid rgba(16, 185, 129, 0.25)',
-            color: '#34D399',
-            padding: '0.35rem 0.95rem',
+            background: '#ECFDF5',
+            border: '1px solid #A7F3D0',
+            color: '#047857',
+            padding: '0.35rem 1rem',
             borderRadius: '9999px',
-            fontSize: '0.74rem',
+            fontSize: '0.75rem',
             fontWeight: 700,
-            letterSpacing: '0.06em',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             marginBottom: '0.85rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
           }}>
             🌱 Kehidupan Selepas Rawatan
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
+            fontSize: 'clamp(1.5rem, 3.2vw, 2.1rem)',
             fontWeight: 800,
-            color: '#F8FAFC',
+            color: '#0F172A',
             margin: '0.3rem 0 0.65rem',
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
           }}>
             5 Perubahan Yang Anda Akan Rasa<br />
-            <span style={{ color: '#34D399' }}>Bila Sabun Pengisian Mula Bertindak</span>
+            <span style={{ color: '#059669' }}>Bila Sabun Pengisian Mula Bertindak</span>
           </h2>
           <p style={{
-            fontSize: '0.96rem',
-            color: '#94A3B8',
+            fontSize: '0.98rem',
+            color: '#64748B',
             lineHeight: 1.7,
             maxWidth: '520px',
             margin: '0 auto',
@@ -80,36 +81,37 @@ export default function SabunGoalsSection() {
         </div>
 
         {/* Goals list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
           {GOALS.map((g, i) => (
             <div key={i} style={{
-              background: '#0D221B',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: '14px',
-              padding: '1.25rem 1.4rem',
+              background: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '16px',
+              padding: '1.3rem 1.5rem',
               display: 'flex',
-              gap: '1.1rem',
+              gap: '1.2rem',
               alignItems: 'flex-start',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
             }}>
               <div style={{
                 flexShrink: 0,
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                background: 'rgba(16, 185, 129, 0.1)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: '#F0FDF4',
+                border: '1px solid #A7F3D0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.25rem',
+                fontSize: '1.3rem',
               }}>
                 {g.icon}
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#F8FAFC', marginBottom: '0.25rem' }}>
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0F172A', marginBottom: '0.25rem' }}>
                   {g.title}
                 </div>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.6 }}>
+                <p style={{ margin: 0, fontSize: '0.88rem', color: '#64748B', lineHeight: 1.6 }}>
                   {g.desc}
                 </p>
               </div>
@@ -119,23 +121,24 @@ export default function SabunGoalsSection() {
 
         {/* CTA nudge */}
         <div style={{ marginTop: '2.75rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.92rem', color: '#CBD5E1', lineHeight: 1.7, marginBottom: '1.25rem' }}>
+          <p style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.7, marginBottom: '1.25rem' }}>
             5 perubahan ini bermula dengan satu keputusan —{' '}
-            <strong style={{ color: '#FBBF24' }}>mula ikhtiar dengan Sabun Pengisian Ruqyah hari ini.</strong>
+            <strong style={{ color: '#047857' }}>mula ikhtiar dengan Sabun Pengisian Ruqyah hari ini.</strong>
           </p>
           <button
             onClick={() => document.getElementById('borang')?.scrollIntoView({ behavior: 'smooth' })}
             style={{
-              padding: '0.9rem 2.2rem',
-              fontSize: '0.95rem',
+              padding: '0.95rem 2.4rem',
+              fontSize: '1rem',
               fontWeight: 700,
-              color: '#061811',
-              background: 'linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%)',
+              color: '#FFFFFF',
+              background: 'linear-gradient(180deg, #10B981 0%, #059669 100%)',
               border: 'none',
               borderRadius: '9999px',
               cursor: 'pointer',
               fontFamily: ff,
-              boxShadow: '0 4px 15px rgba(245, 158, 11, 0.25)',
+              boxShadow: '0 6px 20px rgba(16, 185, 129, 0.25)',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
             }}
           >
             🧼 Dapatkan Sabun Sekarang

@@ -33,8 +33,8 @@ function getUTMParams() {
 const INPUT_STYLE = {
   width: '100%',
   padding: '0.85rem 1rem',
-  background: '#F8FAFC',
-  border: '1.5px solid #E2E8F0',
+  background: '#FFFFFF',
+  border: '1.5px solid #CBD5E1',
   borderRadius: '10px',
   color: '#0F172A',
   fontSize: '0.94rem',
@@ -202,7 +202,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
   if (codSuccess) {
     return (
       <section id="borang" style={{
-        background: '#061510',
+        background: '#F0FDF4',
         padding: '4.5rem 1.25rem',
         fontFamily: ff,
         textAlign: 'center',
@@ -211,16 +211,16 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           maxWidth: '540px',
           margin: '0 auto',
           background: '#FFFFFF',
-          borderRadius: '18px',
+          borderRadius: '20px',
           padding: '2.5rem 2rem',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
+          border: '1px solid #BBF7D0',
+          boxShadow: '0 10px 30px rgba(16, 185, 129, 0.1)',
         }}>
           <div style={{ fontSize: '2.8rem', marginBottom: '0.5rem' }}>✅</div>
           <h2 style={{ fontWeight: 800, fontSize: '1.35rem', color: '#0F172A', marginBottom: '0.4rem' }}>
             Pesanan COD Diterima
           </h2>
-          <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.65, marginBottom: '1.5rem' }}>
+          <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.65, marginBottom: '1.5rem' }}>
             Terima kasih! Pesanan anda telah direkodkan. Perawat kami akan <strong>menghubungi anda melalui WhatsApp</strong> untuk pengesahan alamat sebelum penghantaran.
           </p>
 
@@ -242,14 +242,14 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               ['Postage', 'RM5'],
               ['Jumlah Perlu Dibayar', `RM${pkg.total}`],
             ].map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', color: '#334155', marginBottom: '0.35rem' }}>
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: '#334155', marginBottom: '0.35rem' }}>
                 <span>{k}:</span>
-                <span style={{ fontWeight: 600, color: k.includes('Jumlah') ? '#0F172A' : 'inherit' }}>{v}</span>
+                <span style={{ fontWeight: 700, color: k.includes('Jumlah') ? '#047857' : '#0F172A' }}>{v}</span>
               </div>
             ))}
           </div>
 
-          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B' }}>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748B' }}>
             💡 Sila sediakan wang tunai <strong>RM{pkg.total}</strong> apabila pihak kurier tiba.
           </p>
         </div>
@@ -257,13 +257,13 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
     );
   }
 
-  // ─── Clean Form Render ─────────────────────────────────────────────────────
+  // ─── Bright & Fresh Form Render ───────────────────────────────────────────
   return (
     <section id="borang" style={{
-      background: 'linear-gradient(180deg, #061510 0%, #081C15 100%)',
+      background: 'linear-gradient(180deg, #F0FDF4 0%, #F8FAF9 100%)',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      borderBottom: '1px solid #E2E8F0',
     }}>
       <div style={{ maxWidth: '680px', margin: '0 auto' }}>
 
@@ -271,41 +271,42 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <span style={{
             display: 'inline-block',
-            background: 'rgba(245, 158, 11, 0.08)',
-            border: '1px solid rgba(245, 158, 11, 0.25)',
-            color: '#FBBF24',
-            padding: '0.35rem 0.95rem',
+            background: '#FFFFFF',
+            border: '1px solid #A7F3D0',
+            color: '#047857',
+            padding: '0.35rem 1rem',
             borderRadius: '9999px',
-            fontSize: '0.74rem',
+            fontSize: '0.75rem',
             fontWeight: 700,
-            letterSpacing: '0.06em',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             marginBottom: '0.85rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
           }}>
             📦 Tempah Sekarang
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
+            fontSize: 'clamp(1.5rem, 3.2vw, 2.1rem)',
             fontWeight: 800,
-            color: '#F8FAFC',
+            color: '#0F172A',
             margin: '0.3rem 0 0.5rem',
             letterSpacing: '-0.025em',
           }}>
             Pilih Pakej & Kaedah Pembayaran
           </h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.92rem', lineHeight: 1.6, maxWidth: '460px', margin: '0 auto' }}>
-            Postage RM5 seluruh Malaysia · Pilihan COD atau FPX Online Banking
+          <p style={{ color: '#64748B', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto' }}>
+            Postage RM5 seluruh Malaysia · Pilihan Bayar Masa Terima (COD) atau FPX
           </p>
         </div>
 
         {/* ── 1. Package Selector ── */}
         <div style={{ marginBottom: '1.75rem' }}>
           <p style={{
-            fontSize: '0.78rem',
+            fontSize: '0.8rem',
             fontWeight: 700,
-            color: '#CBD5E1',
+            color: '#0F172A',
             textTransform: 'uppercase',
-            letterSpacing: '0.06em',
+            letterSpacing: '0.04em',
             marginBottom: '0.75rem',
           }}>
             Langkah 1: Pilih Pakej
@@ -321,11 +322,12 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                   onClick={() => setSelectedPkg(i)}
                   style={{
                     position: 'relative',
-                    padding: '1.1rem 0.65rem 0.95rem',
-                    borderRadius: '14px',
+                    padding: '1.2rem 0.65rem 1rem',
+                    borderRadius: '16px',
                     cursor: 'pointer',
-                    border: isSelected ? '1.5px solid #F59E0B' : '1px solid rgba(255, 255, 255, 0.08)',
-                    background: isSelected ? 'rgba(245, 158, 11, 0.08)' : '#0D221B',
+                    border: isSelected ? '2px solid #10B981' : '1.5px solid #E2E8F0',
+                    background: isSelected ? '#ECFDF5' : '#FFFFFF',
+                    boxShadow: isSelected ? '0 4px 15px rgba(16, 185, 129, 0.15)' : '0 2px 5px rgba(0,0,0,0.02)',
                     transition: 'all 0.15s ease',
                     fontFamily: ff,
                     textAlign: 'center',
@@ -335,28 +337,29 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                   {p.badge && (
                     <div style={{
                       position: 'absolute',
-                      top: '-10px',
+                      top: '-11px',
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      background: p.recommended ? '#F59E0B' : '#10B981',
-                      color: '#061811',
-                      fontSize: '0.62rem',
+                      background: p.recommended ? '#10B981' : '#059669',
+                      color: '#FFFFFF',
+                      fontSize: '0.64rem',
                       fontWeight: 700,
                       padding: '2px 8px',
                       borderRadius: '9999px',
                       whiteSpace: 'nowrap',
                       letterSpacing: '0.02em',
+                      boxShadow: '0 2px 5px rgba(16, 185, 129, 0.2)',
                     }}>
                       {p.badge}
                     </div>
                   )}
-                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: isSelected ? '#FBBF24' : '#F1F5F9', marginBottom: '0.2rem' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: isSelected ? '#047857' : '#0F172A', marginBottom: '0.25rem' }}>
                     {p.label}
                   </div>
-                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: isSelected ? '#FBBF24' : '#E2E8F0', lineHeight: 1.1 }}>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 800, color: isSelected ? '#047857' : '#0F172A', lineHeight: 1.1 }}>
                     RM{p.price}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.25rem' }}>
                     + pos RM5
                   </div>
                 </button>
@@ -364,23 +367,24 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
             })}
           </div>
 
-          {/* Minimal Selected Package Summary */}
+          {/* Selected Package Summary */}
           <div style={{
             marginTop: '0.85rem',
-            padding: '0.75rem 1.1rem',
-            background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            borderRadius: '10px',
+            padding: '0.85rem 1.15rem',
+            background: '#FFFFFF',
+            border: '1px solid #CBD5E1',
+            borderRadius: '12px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: '0.5rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
           }}>
-            <span style={{ fontSize: '0.84rem', color: '#94A3B8' }}>
+            <span style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 500 }}>
               {pkg.label} · Sabun Garam Himalaya 200g (RM{pkg.price} + RM5 postage)
             </span>
-            <span style={{ fontSize: '0.98rem', fontWeight: 700, color: '#FBBF24' }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#047857' }}>
               Jumlah: RM{pkg.total}
             </span>
           </div>
@@ -389,19 +393,19 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
         {/* ── 2. Payment Method Switcher ── */}
         <div style={{ marginBottom: '1.75rem' }}>
           <p style={{
-            fontSize: '0.78rem',
+            fontSize: '0.8rem',
             fontWeight: 700,
-            color: '#CBD5E1',
+            color: '#0F172A',
             textTransform: 'uppercase',
-            letterSpacing: '0.06em',
+            letterSpacing: '0.04em',
             marginBottom: '0.75rem',
           }}>
             Langkah 2: Kaedah Pembayaran
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             {[
-              { key: 'fpx', label: '💳 FPX Online Banking', sub: 'Bayar sekarang secara selamat' },
-              { key: 'cod', label: '🚚 Bayar Masa Terima (COD)', sub: 'Bayar tunai kepada kurier' },
+              { key: 'fpx', label: '💳 FPX Online Banking', sub: 'Bayar secara online & selamat' },
+              { key: 'cod', label: '🚚 Bayar Masa Terima (COD)', sub: 'Bayar tunai kepada posmen' },
             ].map(m => {
               const isSelected = paymentMethod === m.key;
               return (
@@ -410,21 +414,22 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                   type="button"
                   onClick={() => setPaymentMethod(m.key)}
                   style={{
-                    padding: '0.9rem 1rem',
-                    borderRadius: '12px',
+                    padding: '1rem',
+                    borderRadius: '14px',
                     cursor: 'pointer',
                     textAlign: 'center',
                     fontFamily: ff,
-                    border: isSelected ? '1.5px solid #F59E0B' : '1px solid rgba(255, 255, 255, 0.08)',
-                    background: isSelected ? 'rgba(245, 158, 11, 0.08)' : '#0D221B',
+                    border: isSelected ? '2px solid #10B981' : '1.5px solid #E2E8F0',
+                    background: isSelected ? '#ECFDF5' : '#FFFFFF',
+                    boxShadow: isSelected ? '0 4px 12px rgba(16, 185, 129, 0.12)' : '0 2px 4px rgba(0,0,0,0.02)',
                     transition: 'all 0.15s ease',
                     outline: 'none',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.86rem', color: isSelected ? '#FBBF24' : '#F1F5F9', marginBottom: '0.2rem' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: isSelected ? '#047857' : '#0F172A', marginBottom: '0.2rem' }}>
                     {m.label}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{m.sub}</div>
+                  <div style={{ fontSize: '0.74rem', color: '#64748B' }}>{m.sub}</div>
                 </button>
               );
             })}
@@ -434,10 +439,10 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
         {/* ── 3. Clean Modern Form Card ── */}
         <div style={{
           background: '#FFFFFF',
-          borderRadius: '18px',
-          padding: '2rem 1.75rem',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          borderRadius: '20px',
+          padding: '2.25rem 2rem',
+          border: '1px solid #CBD5E1',
+          boxShadow: '0 10px 35px rgba(0,0,0,0.05)',
         }}>
           {/* Header Inside Card */}
           <div style={{
@@ -451,16 +456,16 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
             gap: '0.5rem',
           }}>
             <div>
-              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Ringkasan Tempahan
               </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0F172A' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>
                 {pkg.label} · Sabun Pengisian (200g)
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>Jumlah Pembayaran</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>Jumlah Bayaran</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#047857', lineHeight: 1 }}>
                 RM{pkg.total}
               </div>
             </div>
@@ -473,8 +478,8 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               border: '1px solid #FECDD3',
               borderRadius: '8px',
               padding: '0.75rem 1rem',
-              color: '#E11D48',
-              fontSize: '0.84rem',
+              color: '#BE123C',
+              fontSize: '0.85rem',
               fontWeight: 600,
               marginBottom: '1.25rem',
               lineHeight: 1.4,
@@ -509,7 +514,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                   name="dialCode"
                   value={formData.dialCode}
                   onChange={handleChange}
-                  style={{ ...INPUT_STYLE, flexShrink: 0, width: '100px', cursor: 'pointer', paddingRight: '0.5rem' }}
+                  style={{ ...INPUT_STYLE, flexShrink: 0, width: '105px', cursor: 'pointer', paddingRight: '0.5rem' }}
                 >
                   {DIAL_CODES.map(d => <option key={d.code} value={d.code}>{d.flag} {d.code}</option>)}
                 </select>
@@ -523,8 +528,8 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                   style={{ ...INPUT_STYLE, flex: 1 }}
                 />
               </div>
-              <p style={{ margin: '0.35rem 0 0', fontSize: '0.73rem', color: '#94A3B8' }}>
-                Perawat akan menghantar butiran penghantaran ke WhatsApp ini.
+              <p style={{ margin: '0.35rem 0 0', fontSize: '0.74rem', color: '#64748B' }}>
+                Perawat kami akan menghantar maklumat pesanan ke WhatsApp ini.
               </p>
             </div>
 
@@ -551,7 +556,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               <input
                 type="text"
                 name="notes"
-                placeholder="Cth: Tinggalkan di pondok guard, hubungi sebelum hantar..."
+                placeholder="Cth: Tinggalkan di pos keselamatan jika tiada di rumah..."
                 value={formData.notes}
                 onChange={handleChange}
                 style={INPUT_STYLE}
@@ -568,8 +573,8 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                 marginBottom: '1.25rem',
                 textAlign: 'center',
               }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Disokong Bank FPX Utama (Maybank, CIMB, Bank Islam, RHB dll)
+                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#475569' }}>
+                  Disokong Semua Bank FPX Utama (Maybank, CIMB, Bank Islam, RHB dll)
                 </span>
               </div>
             )}
@@ -580,15 +585,15 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '1.05rem',
-                fontSize: '1rem',
+                padding: '1.1rem',
+                fontSize: '1.02rem',
                 fontWeight: 700,
-                color: '#061811',
-                background: loading ? '#CBD5E1' : 'linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%)',
+                color: '#FFFFFF',
+                background: loading ? '#94A3B8' : 'linear-gradient(180deg, #10B981 0%, #059669 100%)',
                 border: 'none',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: loading ? 'none' : '0 4px 14px rgba(245, 158, 11, 0.25)',
+                boxShadow: loading ? 'none' : '0 6px 20px rgba(16, 185, 129, 0.28)',
                 transition: 'all 0.15s ease',
                 fontFamily: ff,
                 display: 'flex',
@@ -602,16 +607,16 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               ) : (
                 <>
                   {paymentMethod === 'fpx'
-                    ? `Bayar RM${pkg.total} Melalui FPX →`
-                    : `Sahkan Pesanan COD (RM${pkg.total}) →`}
+                    ? `Bayar RM${pkg.total} Melalui FPX Sekarang →`
+                    : `Sahkan Pesanan COD (RM${pkg.total}) Sekarang →`}
                 </>
               )}
             </button>
 
-            <p style={{ textAlign: 'center', marginTop: '0.85rem', fontSize: '0.75rem', color: '#94A3B8' }}>
+            <p style={{ textAlign: 'center', marginTop: '0.9rem', fontSize: '0.76rem', color: '#64748B' }}>
               {paymentMethod === 'fpx'
-                ? '🔒 Bayaran selamat melalui FPX Online Banking berenkripsi 256-bit'
-                : '✅ Tiada risiko — anda hanya bayar apabila parcel selamat sampai'}
+                ? '🔒 Bayaran selamat melalui FPX Online Banking rasmi (enkripsi 256-bit)'
+                : '✅ Tiada risiko — anda hanya bayar tunai apabila barang selamat sampai'}
             </p>
           </form>
         </div>

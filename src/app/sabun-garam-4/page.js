@@ -6,7 +6,7 @@ import SabunGaramPageContent from '@/components/salespage/sabun-garam/PageConten
 const HEADLINE = (
   <>
     Alhamdulillah bisikan halus, emosi tak terkawal & susah tidur{' '}
-    <span style={{ color: '#4ADE80' }}>
+    <span style={{ color: '#059669' }}>
       reda lepas mandi Sabun Garam Himalaya Pengisian ESyifaa
     </span>
   </>

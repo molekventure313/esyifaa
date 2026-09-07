@@ -15,7 +15,7 @@ import SabunClosingSection from '@/components/salespage/sabun-garam/ClosingSecti
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 
 /**
- * Shared page content for all Sabun Garam Himalaya variants.
+ * Shared page content for all Sabun Garam Himalaya variants (Bright & Fresh Theme).
  * Only the Hero Banner differs between variants — all other sections are identical.
  *
  * Props:
@@ -29,7 +29,7 @@ export default function SabunGaramPageContent({
   source = 'sabun-garam',
 }) {
   return (
-    <main style={{ minHeight: '100vh', background: '#061510' }}>
+    <main style={{ minHeight: '100vh', background: '#FFFFFF', color: '#0F172A' }}>
 
       {/* #01 — Hero Banner (variant-specific) */}
       <SabunHeroSection headline={heroHeadline} subheadline={heroSubheadline} />
@@ -77,13 +77,13 @@ export default function SabunGaramPageContent({
       <FloatingWAButton pretext="Assalamualaikum, saya nak tanya pasal Sabun Garam Himalaya Pengisian ESyifaa" />
 
       <footer style={{
-        background: '#040E0B',
+        background: '#F8FAFC',
         color: '#64748B',
-        padding: '2rem 1rem',
+        padding: '2.5rem 1rem',
         textAlign: 'center',
-        fontSize: '0.78rem',
+        fontSize: '0.82rem',
         lineHeight: 1.6,
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+        borderTop: '1px solid #E2E8F0',
       }}>
         © {new Date().getFullYear()} ESyifaa. Produk berasaskan ruqyah syar&apos;iyyah. Tiada unsur syirik.
       </footer>

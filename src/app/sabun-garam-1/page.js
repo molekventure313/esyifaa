@@ -6,7 +6,7 @@ import SabunGaramPageContent from '@/components/salespage/sabun-garam/PageConten
 const HEADLINE = (
   <>
     Alhamdulillah saka, sihir & santau yang bertahun-tahun menyeksa{' '}
-    <span style={{ color: '#4ADE80' }}>
+    <span style={{ color: '#059669' }}>
       akhirnya keluar selepas mandi Sabun Pengisian ESyifaa
     </span>
   </>
