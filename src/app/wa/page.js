@@ -5,7 +5,7 @@ import FspRuqyahTestSection from '@/components/salespage/fsp/RuqyahTestSection';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const FALLBACK_NUMBER = '601135172611';
-const WA_MESSAGE = encodeURIComponent('Assalamualaikum, saya ingin mendapatkan rawatan ESyifaa. Boleh bantu saya?');
+const WA_MESSAGE = encodeURIComponent('Assalamualaikum perawat ESyifaa, saya nak dapatkan scanning percuma untuk diri/keluarga saya.');
 const buildWaLink = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
 const LS_KEY = 'esyifaa_wa_idx';
 
@@ -126,7 +126,7 @@ export default function WaPage() {
     <main style={{ minHeight: '100vh', background: '#042E23', fontFamily: ff }}>
 
       {/* ══════════════════════════════════════════
-          SECTION 1 — HERO
+          SECTION 1 — HERO (FOKUS SCANNING PERCUMA)
       ══════════════════════════════════════════ */}
       <section style={{ background: 'linear-gradient(180deg, #021812 0%, #042E23 100%)', padding: '3.5rem 1rem 3rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
@@ -138,74 +138,93 @@ export default function WaPage() {
             fontSize: '0.78rem', fontWeight: 800, color: '#25D366',
             letterSpacing: '0.08em', textTransform: 'uppercase',
           }}>
-            🌿 ESyifaa · Rawatan Ruqyah Syar&apos;iyyah
+            🔍 Tinjauan Rohani Percuma · ESyifaa
           </div>
 
           <h1 style={{
             fontSize: 'clamp(1.7rem, 5vw, 2.8rem)',
             fontWeight: 900, color: '#FEF3C7',
-            lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: '1rem',
+            lineHeight: 1.22, letterSpacing: '-0.02em', marginBottom: '1rem',
           }}>
-            Tak Pasti Ada Gangguan?{' '}
+            Tak Pasti Ada Gangguan Sihir, Saka Atau Santau?{' '}
             <span style={{ background: 'linear-gradient(90deg, #FDE047, #25D366)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Cuba Sendiri — Percuma
+              Dapatkan Scanning Percuma Melalui WhatsApp
             </span>
           </h1>
 
-          <p style={{ fontSize: '1.05rem', color: '#A7F3D0', lineHeight: 1.75, maxWidth: '560px', margin: '0 auto 1.25rem auto' }}>
-            Sediakan air, play video ruqyah, minum.{' '}
+          <p style={{ fontSize: '1.05rem', color: '#A7F3D0', lineHeight: 1.75, maxWidth: '580px', margin: '0 auto 1.5rem auto' }}>
+            Perawat kami sedia membantu memeriksa simptom dan keadaan rohani anda dari jarak jauh secara{' '}
             <strong style={{ color: '#FEF3C7' }}>
-              Jika ada tindakbalas — sendawa, loya, pening atau rasa tidak selesa — itu petanda ada gangguan.
-            </strong>{' '}
-            Cuba sendiri sekarang, percuma, tanpa komitmen.
+              100% percuma tanpa sebarang caj atau komitmen.
+            </strong>
           </p>
 
-          {/* Primary CTA — scroll to test */}
-          <div style={{ marginBottom: '1rem' }}>
+          {/* Primary CTA — direct WA scanning percuma */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <WAButton
+              id="cta-hero-scan"
+              label="🟢 Dapatkan Scanning Percuma di WhatsApp →"
+              size="large"
+              href={waLink}
+            />
+          </div>
+
+          {/* Secondary CTA — option to test air tawar sendiri */}
+          <div style={{
+            display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(253,224,71,0.2)',
+            borderRadius: '14px', padding: '0.85rem 1.25rem', marginTop: '0.25rem',
+          }}>
+            <span style={{ fontSize: '0.86rem', color: '#FEF3C7', fontWeight: 600 }}>
+              Atau nak cuba uji sendiri dahulu di rumah?
+            </span>
             <button
               onClick={scrollToTest}
               id="cta-hero-test"
               style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                gap: '0.6rem', padding: '1.15rem 2.25rem',
-                fontSize: '1.05rem', fontWeight: 800, color: '#042E23',
-                background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-                borderRadius: '50px', border: '2px solid #FEF08A',
-                boxShadow: '0 8px 28px rgba(234,179,8,0.45)',
-                cursor: 'pointer', letterSpacing: '-0.01em',
-                fontFamily: ff,
+                background: 'transparent', border: 'none', color: '#FDE047',
+                fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer',
+                textDecoration: 'underline', fontFamily: ff, padding: 0,
               }}
             >
-              🧪 Cuba Scanning Air Tawar Percuma Sekarang
+              🧪 Ikuti Panduan Buat Air Tawar Sendiri (Percuma) ↓
             </button>
           </div>
 
-          {/* Secondary — direct WA */}
-          <p style={{ fontSize: '0.85rem', color: '#6EE7B7', marginBottom: '0.25rem' }}>
-            Dah pasti ada gangguan?{' '}
-            <a
-              href={waLink} target="_blank" rel="noopener noreferrer"
-              onClick={() => { try { window.fbq('track', 'Lead'); } catch (_) {} }}
-              style={{ color: '#25D366', fontWeight: 800, textDecoration: 'underline' }}
-            >
-              Terus hubungi perawat sekarang →
-            </a>
-          </p>
-          <p style={{ fontSize: '0.78rem', color: '#4ADE80', fontStyle: 'italic', margin: 0 }}>
-            Test air tawar percuma · Tiada komitmen · Melalui video ruqyah
+          <p style={{ fontSize: '0.78rem', color: '#4ADE80', fontStyle: 'italic', margin: '1.25rem 0 0' }}>
+            100% Ruqyah Syar&apos;iyyah · Tiada Bayaran Tersembunyi · Balas Dalam 30 Minit
           </p>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 2 — TEST AIR TAWAR SENDIRI
+          SECTION 2 — TEST AIR TAWAR SENDIRI (PILIHAN KENDIRI)
           (anchor: #test-air-tawar)
       ══════════════════════════════════════════ */}
       <div id="test-air-tawar">
+        <div style={{ background: '#021812', padding: '2.5rem 1rem 0.5rem', textAlign: 'center', borderTop: '1px solid rgba(74,222,128,0.1)' }}>
+          <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+            <span style={{
+              display: 'inline-block', background: 'rgba(253,224,71,0.1)',
+              border: '1px solid rgba(253,224,71,0.3)', color: '#FDE047',
+              padding: '0.3rem 0.9rem', borderRadius: '50px',
+              fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em',
+              textTransform: 'uppercase', marginBottom: '0.6rem',
+            }}>
+              Pilihan Alternatif
+            </span>
+            <h2 style={{ fontSize: 'clamp(1.3rem, 3.5vw, 1.85rem)', fontWeight: 800, color: '#FEF3C7', margin: '0 0 0.5rem' }}>
+              Uji Sendiri Dahulu Menggunakan Kaedah Air Tawar
+            </h2>
+            <p style={{ fontSize: '0.92rem', color: '#A7F3D0', lineHeight: 1.65, margin: 0 }}>
+              Sediakan air kosong, pasang audio ruqyah di bawah, dan minum. Jika ada tindak balas — itu petanda wujud gangguan yang perlu dirawat.
+            </p>
+          </div>
+        </div>
         <FspRuqyahTestSection />
       </div>
 
-      {/* CTA selepas test — high intent */}
+      {/* CTA selepas test — direct WA scanning percuma */}
       <section style={{ background: '#031E17', padding: '2.5rem 1rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
           <div style={{
@@ -219,11 +238,11 @@ export default function WaPage() {
             </h3>
             <p style={{ fontSize: '0.9rem', color: '#FCA5A5', lineHeight: 1.65, marginBottom: '1.25rem' }}>
               Sendawa, loya, pening, badan panas atau apa-apa rasa tidak selesa — ini petanda anda
-              memerlukan rawatan. <strong style={{ color: '#FEF3C7' }}>Jangan tangguh lagi.</strong>
+              memerlukan bimbingan. <strong style={{ color: '#FEF3C7' }}>WhatsApp perawat untuk pengesahan &amp; scanning percuma sekarang.</strong>
             </p>
-            <WAButton id="cta-after-test" label="🟢 Ada Tindakbalas? Dapatkan Rawatan Sekarang" href={waLink} />
+            <WAButton id="cta-after-test" label="🟢 WhatsApp Perawat Untuk Scanning Percuma" href={waLink} />
             <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#6EE7B7', fontStyle: 'italic' }}>
-              Rawatan penuh RM50 sahaja · Balas dalam 30 minit
+              100% Percuma · Balas Dalam 30 Minit · Bimbingan Perawat Berpengalaman
             </p>
           </div>
         </div>
@@ -496,25 +515,25 @@ export default function WaPage() {
       ══════════════════════════════════════════ */}
       <section style={{ background: 'linear-gradient(180deg, #031E17 0%, #021812 100%)', padding: '4rem 1rem 7rem', textAlign: 'center' }}>
         <div style={{ maxWidth: '620px', margin: '0 auto' }}>
-          <span style={{ fontSize: '1.5rem' }}>🩺</span>
+          <span style={{ fontSize: '1.5rem' }}>🔍</span>
           <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 900, color: '#FEF3C7', marginTop: '0.5rem', marginBottom: '0.75rem', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Jangan Tangguh Lagi —{' '}
-            <span style={{ color: '#FDE047' }}>Hubungi ESyifaa Sekarang</span>
+            <span style={{ color: '#FDE047' }}>Dapatkan Scanning Percuma Sekarang</span>
           </h2>
           <p style={{ fontSize: '1rem', color: '#A7F3D0', lineHeight: 1.75, maxWidth: '500px', margin: '0 auto 2rem auto' }}>
-            Setiap hari tanpa rawatan adalah hari yang terbuang.
-            RM50 sahaja — ikhtiar sampai sembuh, in shaa Allah.
+            Ketahui punca sebenar masalah anda sebelum melarat.
+            Perawat ESyifaa sedia membantu — percuma, tiada sebarang bayaran atau komitmen.
           </p>
-          <WAButton id="cta-closing" label="🟢 Hubungi ESyifaa Sekarang — RM50 Sahaja" href={waLink} />
+          <WAButton id="cta-closing" label="🟢 WhatsApp Perawat Untuk Scanning Percuma" href={waLink} />
           <p style={{ marginTop: '0.85rem', fontSize: '0.8rem', color: '#6EE7B7', fontStyle: 'italic' }}>
-            Balas dalam masa 30 minit · Isnin hingga Ahad · 100% Patuh Syariah
+            100% Percuma · Balas Dalam 30 Minit · Patuh Syariah
           </p>
         </div>
       </section>
 
 
       {/* ══════════════════════════════════════════
-          STICKY BOTTOM — WA BUTTON (SCAN PERCUMA ANGLE)
+          STICKY BOTTOM — WA BUTTON (SCANNING PERCUMA)
       ══════════════════════════════════════════ */}
       {showSticky && (
         <div style={{
@@ -543,7 +562,7 @@ export default function WaPage() {
               border: '2px solid rgba(255,255,255,0.2)',
             }}
           >
-            🧪 Ada Tindakbalas Selepas Scan? Rawatan RM50 →
+            🟢 Dapatkan Scanning Percuma di WhatsApp →
           </a>
         </div>
       )}
