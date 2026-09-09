@@ -15,7 +15,8 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const paymentStatus = searchParams.get('payment_status') || 'all'; // all | pending | completed | failed
-    const paymentType   = searchParams.get('payment_type') || 'all';   // all | fpx_payment | cod
+    const paymentType   = searchParams.get('payment_type') || 'all';   // all | fpx_payment | cod | physical
+    const physical      = searchParams.get('physical') === 'true';     // COD + FPX sabun only
     const search = searchParams.get('search') || '';
     const page   = parseInt(searchParams.get('page'))  || 1;
     const limit  = parseInt(searchParams.get('limit')) || 100;
@@ -27,6 +28,7 @@ export async function GET(req) {
       .select(`
         id, full_name, phone, address, problem, source,
         payment_type, payment_status, chip_bill_id, amount_paid,
+        ninjavan_exported_at,
         created_at, notes, customer_id,
         cases:cases!cases_submission_id_fkey (
           id, status, assigned_to, created_at,
@@ -39,7 +41,8 @@ export async function GET(req) {
       query = query.eq('payment_status', paymentStatus);
     }
 
-    if (paymentType !== 'all') {
+    // physical=true: COD (semua) + FPX sabun sahaja — filter in JS after fetch
+    if (!physical && paymentType !== 'all') {
       query = query.eq('payment_type', paymentType);
     }
 
@@ -51,6 +54,14 @@ export async function GET(req) {
 
     const { data: submissions, error, count } = await query;
     if (error) throw error;
+
+    // Apply physical filter in JS: COD (all) + FPX where source contains 'sabun'
+    const filteredSubmissions = physical
+      ? (submissions || []).filter(s =>
+          s.payment_type === 'cod' ||
+          (s.payment_type === 'fpx_payment' && (s.source || '').toLowerCase().includes('sabun'))
+        )
+      : (submissions || []);
 
     // Stats: kira semua order (FPX + COD)
     let statsCompleted = 0, statsPending = 0, statsFailed = 0;
@@ -85,7 +96,7 @@ export async function GET(req) {
       });
     } catch (_) {}
 
-    const formatted = (submissions || []).map(s => {
+    const formatted = filteredSubmissions.map(s => {
       const caseRecord = Array.isArray(s.cases) ? s.cases[0] : s.cases;
 
       // Extract address: guna column address (COD), atau parse dari problem field
@@ -123,6 +134,7 @@ export async function GET(req) {
         chip_bill_id: s.chip_bill_id,
         amount_paid: amountDisplay,
         produk_label: produkLabel,
+        ninjavan_exported_at: s.ninjavan_exported_at || null,
         created_at: s.created_at,
         // Case info
         case_id: caseRecord?.id || null,
