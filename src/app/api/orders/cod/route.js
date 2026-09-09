@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
 import { sendFpxCAPIEvent } from '@/lib/tracking/capi';
+import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 
 export async function POST(req) {
   try {
@@ -124,6 +125,22 @@ export async function POST(req) {
         ipAddress: ip,
       });
     } catch (_) {}
+
+    // WasapBot Notification — order baru
+    try {
+      const msg = buildOrderMessage({
+        name: cleanName,
+        phone: formattedPhone,
+        product: `${product || 'Sabun Garam'} — ${units_label}`,
+        amount: `RM${amount_total} (COD — Bayar Masa Terima)`,
+        address: address?.trim() || '—',
+        source: source || 'sabun-garam',
+        paymentType: 'cod',
+      });
+      await sendGroupNotification(`📦 [ORDER COD BARU]\n${msg}`);
+    } catch (e) {
+      console.error('WasapBot COD Error (non-blocking):', e.message);
+    }
 
     return NextResponse.json({ success: true, order_id: submissionId });
 

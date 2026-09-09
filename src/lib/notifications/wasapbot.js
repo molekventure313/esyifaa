@@ -91,3 +91,46 @@ export function buildLeadMessage({ name, phone, session, source, problem, assign
     `Sila hubungi pesakit segera ✅`
   );
 }
+
+/**
+ * Bina mesej notifikasi order baru (COD/FPX produk) untuk group admin.
+ * Beza dari buildLeadMessage — ini untuk order produk (sabun, pengisian), bukan lead rawatan.
+ *
+ * @param {Object} data
+ * @param {string} data.name          - Nama pelanggan
+ * @param {string} data.phone         - Nombor telefon
+ * @param {string} data.product       - Nama produk + pakej
+ * @param {string} data.amount        - Jumlah bayaran (cth: "RM95 (COD)")
+ * @param {string} [data.address]     - Alamat penghantaran (COD)
+ * @param {string} [data.source]      - Sumber salespage
+ * @param {string} [data.paymentType] - 'cod' | 'fpx'
+ * @returns {string}
+ */
+export function buildOrderMessage({ name, phone, product, amount, address, source, paymentType }) {
+  const now = new Date().toLocaleString('ms-MY', {
+    timeZone: 'Asia/Kuala_Lumpur',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  const icon = paymentType === 'cod' ? '📦' : '💳';
+  const addressLine = address && address !== '—'
+    ? `\n📍 Alamat: *${address}*`
+    : '';
+
+  return (
+    `${icon} *ORDER BARU — ESyifa'*\n` +
+    `─────────────────────\n` +
+    `👤 Nama: *${name}*\n` +
+    `📱 WA: *${phone}*\n` +
+    `🛍️ Produk: *${product}*\n` +
+    `💰 Jumlah: *${amount}*` +
+    addressLine + '\n' +
+    `🏪 Sumber: *${source || 'Direct'}*\n` +
+    `🕰️ ${now}\n` +
+    `─────────────────────\n` +
+    (paymentType === 'cod'
+      ? `Sila proses penghantaran ✅`
+      : `Bayaran disahkan — sila proses ✅`)
+  );
+}

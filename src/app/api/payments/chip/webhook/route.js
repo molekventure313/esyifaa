@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
 import { sendFpxCAPIEvent } from '@/lib/tracking/capi';
-import { sendGroupNotification, buildLeadMessage } from '@/lib/notifications/wasapbot';
+import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 
 function verifySignature(rawBody, signatureHeader, publicKeyPem) {
   if (!signatureHeader || !publicKeyPem) return false;
@@ -187,18 +187,18 @@ export async function POST(req) {
         console.error('CAPI FPX Purchase Error (non-blocking):', e.message);
       }
 
-      // 5. WasapBot Notification
+      // 5. WasapBot Notification — guna buildOrderMessage (bukan lead template)
       try {
-        const msg = buildLeadMessage({
+        const msg = buildOrderMessage({
           name: submission.full_name,
           phone: submission.phone,
-          session: '💳 FPX Paid (RM50)',
+          product: submission.source?.includes('sabun') ? 'Sabun Garam Himalaya (FPX)' : 'Pengisian ESyifaa (FPX)',
+          amount: `RM${amountValue} (FPX Online Banking)`,
+          address: '—',
           source: submission.source || 'fsp-checkout',
-          problem: submission.problem || '',
-          assignedTo: assignedPractitioner ? assignedPractitioner.full_name : null,
-          isRepeat: false,
+          paymentType: 'fpx',
         });
-        await sendGroupNotification(`💳 [BAYARAN FPX BERJAYA — PESAKIT BERBAYAR]\n${msg}`);
+        await sendGroupNotification(`💳 [BAYARAN FPX BERJAYA]\n${msg}`);
       } catch (e) {
         console.error('WasapBot Error (non-blocking):', e.message);
       }

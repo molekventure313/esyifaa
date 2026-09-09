@@ -15,16 +15,22 @@ const PAYMENT_TYPE_LABELS = {
 };
 
 export default function PengurusanOrderPage() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders]                   = useState([]);
+  const [loading, setLoading]                 = useState(true);
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [lastUpdated, setLastUpdated] = useState('');
-  const [stats, setStats] = useState({
+  const [paymentTypeFilter, setPaymentTypeFilter]     = useState('all');
+  const [searchTerm, setSearchTerm]           = useState('');
+  const [lastUpdated, setLastUpdated]         = useState('');
+  const [stats, setStats]                     = useState({
     total_completed: 0, total_pending: 0, total_failed: 0,
     total_cod: 0, total_fpx: 0, total_revenue_rm: 0,
   });
+
+  // Multi-select delete state
+  const [selectedIds, setSelectedIds]   = useState(new Set());
+  const [deleting, setDeleting]         = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const { showToast } = useToast();
 
   const [isLightMode, setIsLightMode] = useState(false);
@@ -44,25 +50,27 @@ export default function PengurusanOrderPage() {
   const cardBg      = isLightMode ? '#FFFFFF' : '#10131A';
   const subCardBg   = isLightMode ? '#F8FAFC' : '#090A0F';
   const cardBorder  = isLightMode ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.08)';
-  const textPrimary = isLightMode ? '#0F172A' : '#F9FAFB';
+  const textPrimary   = isLightMode ? '#0F172A' : '#F9FAFB';
   const textSecondary = isLightMode ? '#475569' : '#9CA3AF';
-  const textMuted   = isLightMode ? '#64748B' : '#6B7280';
+  const textMuted     = isLightMode ? '#64748B' : '#6B7280';
 
   const fetchOrders = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (paymentStatusFilter !== 'all') params.set('payment_status', paymentStatusFilter);
-      if (paymentTypeFilter !== 'all') params.set('payment_type', paymentTypeFilter);
-      if (searchTerm.trim()) params.set('search', searchTerm.trim());
-      const res = await fetch(`/api/payments/list?${params.toString()}`);
+      if (paymentTypeFilter !== 'all')   params.set('payment_type', paymentTypeFilter);
+      if (searchTerm.trim())             params.set('search', searchTerm.trim());
+      const res  = await fetch(`/api/payments/list?${params.toString()}`);
       const json = await res.json();
       if (res.ok && json.success) {
         setOrders(json.data || []);
-        setStats(json.stats || {
-          total_completed: 0, total_pending: 0, total_failed: 0,
-          total_cod: 0, total_fpx: 0, total_revenue_rm: 0,
-        });
+        setStats(json.stats || { total_completed: 0, total_pending: 0, total_failed: 0, total_cod: 0, total_fpx: 0, total_revenue_rm: 0 });
         setLastUpdated(new Date().toLocaleTimeString('ms-MY'));
+        // Clear selections on refresh to avoid stale state
+        setSelectedIds(prev => {
+          const newIds = new Set([...(json.data || [])].map(o => o.id));
+          return new Set([...prev].filter(id => newIds.has(id)));
+        });
       }
     } catch (err) {
       showToast('Ralat memuatkan senarai order', 'error');
@@ -76,6 +84,52 @@ export default function PengurusanOrderPage() {
     const interval = setInterval(fetchOrders, 15000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
+
+  // ─── Selection helpers ────────────────────────────────────────────────────
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === orders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(orders.map(o => o.id)));
+    }
+  };
+
+  const allSelected = orders.length > 0 && selectedIds.size === orders.length;
+  const someSelected = selectedIds.size > 0;
+
+  // ─── Delete handler ───────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setDeleting(true);
+    setConfirmDelete(false);
+    try {
+      const res = await fetch('/api/orders/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [...selectedIds] }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        showToast(json.message || `${json.deleted} order dipadam.`, 'success');
+        setSelectedIds(new Set());
+        await fetchOrders();
+      } else {
+        showToast(json.error || 'Ralat semasa memadam order.', 'error');
+      }
+    } catch (err) {
+      showToast('Ralat rangkaian. Sila cuba lagi.', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const formatDate = (d) => d
     ? new Date(d).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -164,7 +218,7 @@ export default function PengurusanOrderPage() {
 
       {/* ─── Filters ─── */}
       <div style={{
-        padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem',
+        padding: '1rem', borderRadius: '8px', marginBottom: '1rem',
         background: cardBg, border: cardBorder,
         display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center',
       }}>
@@ -175,19 +229,12 @@ export default function PengurusanOrderPage() {
             { value: 'fpx_payment', label: '💳 FPX' },
             { value: 'cod', label: '📦 COD' },
           ].map(tab => (
-            <button
-              key={tab.value}
-              onClick={() => setPaymentTypeFilter(tab.value)}
-              style={{
-                padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
-                fontWeight: 600, cursor: 'pointer', border: 'none',
-                background: paymentTypeFilter === tab.value
-                  ? (isLightMode ? '#1D4ED8' : '#3B82F6') : subCardBg,
-                color: paymentTypeFilter === tab.value ? '#fff' : textSecondary,
-              }}
-            >
-              {tab.label}
-            </button>
+            <button key={tab.value} onClick={() => setPaymentTypeFilter(tab.value)} style={{
+              padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
+              fontWeight: 600, cursor: 'pointer', border: 'none',
+              background: paymentTypeFilter === tab.value ? (isLightMode ? '#1D4ED8' : '#3B82F6') : subCardBg,
+              color: paymentTypeFilter === tab.value ? '#fff' : textSecondary,
+            }}>{tab.label}</button>
           ))}
         </div>
 
@@ -201,20 +248,12 @@ export default function PengurusanOrderPage() {
             { value: 'pending', label: '⏳ Pending' },
             { value: 'failed', label: '❌ Gagal' },
           ].map(tab => (
-            <button
-              key={tab.value}
-              onClick={() => setPaymentStatusFilter(tab.value)}
-              style={{
-                padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
-                fontWeight: 600, cursor: 'pointer', border: 'none',
-                background: paymentStatusFilter === tab.value
-                  ? (isLightMode ? '#047857' : '#064E3B') : subCardBg,
-                color: paymentStatusFilter === tab.value
-                  ? (isLightMode ? '#fff' : '#34D399') : textSecondary,
-              }}
-            >
-              {tab.label}
-            </button>
+            <button key={tab.value} onClick={() => setPaymentStatusFilter(tab.value)} style={{
+              padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
+              fontWeight: 600, cursor: 'pointer', border: 'none',
+              background: paymentStatusFilter === tab.value ? (isLightMode ? '#047857' : '#064E3B') : subCardBg,
+              color: paymentStatusFilter === tab.value ? (isLightMode ? '#fff' : '#34D399') : textSecondary,
+            }}>{tab.label}</button>
           ))}
         </div>
 
@@ -232,6 +271,89 @@ export default function PengurusanOrderPage() {
         />
       </div>
 
+      {/* ─── Bulk Action Bar (visible when selection active) ─── */}
+      {someSelected && (
+        <div style={{
+          padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem',
+          background: isLightMode ? '#FFF7ED' : 'rgba(239,68,68,0.08)',
+          border: isLightMode ? '1px solid #FED7AA' : '1px solid rgba(239,68,68,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: isLightMode ? '#9A3412' : '#FCA5A5' }}>
+            {selectedIds.size} order dipilih
+          </span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              style={{
+                padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
+                fontWeight: 600, cursor: 'pointer',
+                background: subCardBg, border: cardBorder, color: textSecondary,
+              }}
+            >
+              Batalkan Pilihan
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+              style={{
+                padding: '0.45rem 1rem', borderRadius: '6px', fontSize: '0.78rem',
+                fontWeight: 700, cursor: deleting ? 'not-allowed' : 'pointer',
+                background: '#DC2626', border: 'none', color: '#fff',
+                opacity: deleting ? 0.7 : 1,
+              }}
+            >
+              {deleting ? 'Memadam...' : `🗑️ Padam ${selectedIds.size} Order`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Confirm Delete Dialog ─── */}
+      {confirmDelete && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+        }}>
+          <div style={{
+            background: isLightMode ? '#FFFFFF' : '#10131A',
+            border: isLightMode ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '16px', padding: '2rem', maxWidth: '400px', width: '90%', textAlign: 'center',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+          }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⚠️</div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: textPrimary, marginBottom: '0.5rem' }}>
+              Padam {selectedIds.size} Order?
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: textSecondary, marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Tindakan ini tidak boleh dibatalkan. Order yang dipadam tidak akan boleh dipulihkan.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{
+                  padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.875rem',
+                  fontWeight: 600, cursor: 'pointer',
+                  background: subCardBg, border: cardBorder, color: textPrimary,
+                }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDelete}
+                style={{
+                  padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.875rem',
+                  fontWeight: 700, cursor: 'pointer',
+                  background: '#DC2626', border: 'none', color: '#fff',
+                }}
+              >
+                Ya, Padam Sekarang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── Table ─── */}
       <div style={{ background: cardBg, borderRadius: '8px', border: cardBorder, padding: '1.25rem', overflowX: 'auto' }}>
         {loading ? (
@@ -243,120 +365,150 @@ export default function PengurusanOrderPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: isLightMode ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.08)' }}>
-                {['Pelanggan', 'Telefon', 'Produk', 'Alamat', 'Bayaran', 'Status', 'Tindakan', 'Tarikh'].map(h => (
+                {/* Select All Checkbox */}
+                <th style={{ padding: '0.7rem 0.5rem', width: '32px' }}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    style={{ cursor: 'pointer', width: '15px', height: '15px', accentColor: '#3B82F6' }}
+                  />
+                </th>
+                {['Pelanggan', 'Telefon', 'Produk', 'Jumlah', 'Alamat', 'Bayaran', 'Tindakan', 'Tarikh'].map(h => (
                   <th key={h} style={{ padding: '0.7rem 0.5rem', color: textSecondary, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {orders.map(order => (
-                <tr key={order.id} style={{ borderBottom: isLightMode ? '1px solid #F1F5F9' : '1px solid rgba(255,255,255,0.04)' }}>
+              {orders.map(order => {
+                const isSelected = selectedIds.has(order.id);
+                return (
+                  <tr key={order.id} style={{
+                    borderBottom: isLightMode ? '1px solid #F1F5F9' : '1px solid rgba(255,255,255,0.04)',
+                    background: isSelected
+                      ? (isLightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.08)')
+                      : 'transparent',
+                    transition: 'background 0.1s',
+                  }}>
 
-                  {/* Pelanggan */}
-                  <td style={{ padding: '0.85rem 0.5rem', minWidth: '140px' }}>
-                    <div style={{ fontWeight: 700, color: textPrimary, fontSize: '0.875rem' }}>{order.full_name}</div>
-                    {order.source && (
-                      <div style={{ fontSize: '0.65rem', color: textMuted, marginTop: '0.15rem' }}>
-                        Dari: <span style={{ fontWeight: 600 }}>{order.source}</span>
+                    {/* Checkbox */}
+                    <td style={{ padding: '0.85rem 0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(order.id)}
+                        style={{ cursor: 'pointer', width: '15px', height: '15px', accentColor: '#3B82F6' }}
+                      />
+                    </td>
+
+                    {/* Pelanggan */}
+                    <td style={{ padding: '0.85rem 0.5rem', minWidth: '140px' }}>
+                      <div style={{ fontWeight: 700, color: textPrimary, fontSize: '0.875rem' }}>{order.full_name}</div>
+                      {order.source && (
+                        <div style={{ fontSize: '0.65rem', color: textMuted, marginTop: '0.15rem' }}>
+                          Dari: <span style={{ fontWeight: 600 }}>{order.source}</span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Telefon */}
+                    <td style={{ padding: '0.85rem 0.5rem', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: 600, color: textPrimary }}>{order.phone}</div>
+                    </td>
+
+                    {/* Produk */}
+                    <td style={{ padding: '0.85rem 0.5rem', minWidth: '120px' }}>
+                      <div style={{ marginBottom: '0.3rem' }}>
+                        <TypeBadge type={order.payment_type} />
                       </div>
-                    )}
-                  </td>
-
-                  {/* Telefon */}
-                  <td style={{ padding: '0.85rem 0.5rem', whiteSpace: 'nowrap' }}>
-                    <div style={{ fontWeight: 600, color: textPrimary }}>{order.phone}</div>
-                  </td>
-
-                  {/* Produk */}
-                  <td style={{ padding: '0.85rem 0.5rem', minWidth: '120px' }}>
-                    <div style={{ marginBottom: '0.3rem' }}>
-                      <TypeBadge type={order.payment_type} />
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: textSecondary, fontWeight: 600 }}>
-                      {order.produk_label || '—'}
-                    </div>
-                    {order.amount_paid && (
-                      <div style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 700, marginTop: '0.15rem' }}>
-                        RM {parseFloat(order.amount_paid).toFixed(2)}
+                      <div style={{ fontSize: '0.75rem', color: textSecondary, fontWeight: 600 }}>
+                        {order.produk_label || '—'}
                       </div>
-                    )}
-                  </td>
+                    </td>
 
-                  {/* Alamat */}
-                  <td style={{ padding: '0.85rem 0.5rem', minWidth: '160px', maxWidth: '200px' }}>
-                    {order.address ? (
-                      <div style={{ fontSize: '0.78rem', color: textSecondary, lineHeight: 1.5 }}>
-                        📍 {order.address}
+                    {/* Jumlah (amount_paid) — kolum berasingan */}
+                    <td style={{ padding: '0.85rem 0.5rem', whiteSpace: 'nowrap' }}>
+                      {order.amount_paid ? (
+                        <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#10B981' }}>
+                          RM {parseFloat(order.amount_paid).toFixed(2)}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.72rem', color: textMuted, fontStyle: 'italic' }}>—</span>
+                      )}
+                    </td>
+
+                    {/* Alamat */}
+                    <td style={{ padding: '0.85rem 0.5rem', minWidth: '160px', maxWidth: '200px' }}>
+                      {order.address ? (
+                        <div style={{ fontSize: '0.78rem', color: textSecondary, lineHeight: 1.5 }}>
+                          📍 {order.address}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.72rem', color: textMuted, fontStyle: 'italic' }}>
+                          {order.payment_type === 'fpx_payment' ? 'Digital' : '—'}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Status Bayaran */}
+                    <td style={{ padding: '0.85rem 0.5rem' }}>
+                      <StatusBadge status={order.payment_status} />
+                      {order.payment_type === 'fpx_payment' && order.chip_bill_id && (
+                        <div style={{ fontSize: '0.6rem', color: textMuted, marginTop: '0.3rem', fontFamily: 'monospace' }}>
+                          #{order.chip_bill_id.substring(0, 10)}...
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Tindakan */}
+                    <td style={{ padding: '0.85rem 0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {order.phone && (
+                          <a
+                            href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '').replace(/^0/, '60')}`}
+                            target="_blank" rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                              padding: '0.35rem 0.65rem', borderRadius: '6px',
+                              background: '#25D366', color: '#fff',
+                              fontWeight: 700, fontSize: '0.72rem',
+                              textDecoration: 'none', whiteSpace: 'nowrap',
+                              boxShadow: '0 2px 6px rgba(37,211,102,0.3)',
+                            }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                            </svg>
+                            WA
+                          </a>
+                        )}
+                        <button
+                          onClick={() => { setSelectedIds(new Set([order.id])); setConfirmDelete(true); }}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                            padding: '0.3rem 0.55rem', borderRadius: '6px',
+                            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                            color: '#EF4444', fontWeight: 700, fontSize: '0.68rem',
+                            cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          🗑️ Padam
+                        </button>
                       </div>
-                    ) : (
-                      <span style={{ fontSize: '0.72rem', color: textMuted, fontStyle: 'italic' }}>
-                        {order.payment_type === 'fpx_payment' ? 'Digital — tiada alamat' : '—'}
-                      </span>
-                    )}
-                  </td>
+                    </td>
 
-                  {/* Status Bayaran */}
-                  <td style={{ padding: '0.85rem 0.5rem' }}>
-                    <StatusBadge status={order.payment_status} />
-                    {order.payment_type === 'fpx_payment' && order.chip_bill_id && (
-                      <div style={{ fontSize: '0.6rem', color: textMuted, marginTop: '0.3rem', fontFamily: 'monospace' }}>
-                        #{order.chip_bill_id.substring(0, 10)}...
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Status Order */}
-                  <td style={{ padding: '0.85rem 0.5rem' }}>
-                    {order.case_status ? (
-                      <span style={{
-                        fontSize: '0.7rem', padding: '0.2rem 0.55rem', borderRadius: '10px',
-                        background: isLightMode ? '#F0FDF4' : 'rgba(16,185,129,0.1)',
-                        border: isLightMode ? '1px solid #A7F3D0' : '1px solid rgba(16,185,129,0.25)',
-                        color: isLightMode ? '#047857' : '#34D399',
-                        fontWeight: 600,
-                      }}>
-                        {order.case_status}
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: '0.7rem', color: textMuted, fontStyle: 'italic' }}>—</span>
-                    )}
-                  </td>
-
-                  {/* Tindakan */}
-                  <td style={{ padding: '0.85rem 0.5rem' }}>
-                    {order.phone && (
-                      <a
-                        href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '').replace(/^0/, '60')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                          padding: '0.35rem 0.65rem', borderRadius: '6px',
-                          background: '#25D366', color: '#fff',
-                          fontWeight: 700, fontSize: '0.72rem',
-                          textDecoration: 'none', whiteSpace: 'nowrap',
-                          boxShadow: '0 2px 6px rgba(37,211,102,0.3)',
-                        }}
-                      >
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                        </svg>
-                        WA
-                      </a>
-                    )}
-                  </td>
-
-                  {/* Tarikh */}
-                  <td style={{ padding: '0.85rem 0.5rem', color: textMuted, fontSize: '0.775rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <div style={{ fontWeight: 600, color: textSecondary }}>{formatDate(order.created_at)}</div>
-                    <div style={{ fontSize: '0.675rem' }}>{formatTime(order.created_at)}</div>
-                  </td>
-                </tr>
-              ))}
+                    {/* Tarikh */}
+                    <td style={{ padding: '0.85rem 0.5rem', color: textMuted, fontSize: '0.775rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: 600, color: textSecondary }}>{formatDate(order.created_at)}</div>
+                      <div style={{ fontSize: '0.675rem' }}>{formatTime(order.created_at)}</div>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {orders.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={8} style={{ padding: '3rem 0', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>
+                  <td colSpan={9} style={{ padding: '3rem 0', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>
                     Tiada rekod order lagi.
                   </td>
                 </tr>

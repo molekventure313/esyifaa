@@ -115,21 +115,14 @@ function PaymentSuccessContent() {
     } catch (_) {}
   }, [status, fpxPixelId, amount, productName, submissionId]);
 
-  // ─── Determine display content based on type ───
-  const isOrder = isCod; // COD = order, FPX = payment
-  const displayTitle = isOrder
-    ? `Pesanan Diterima — RM${amount.toFixed(2)}`
-    : `Pembayaran RM${amount.toFixed(2)} Diterima!`;
-  const displaySubtitle = isOrder
-    ? `Terima kasih! Pesanan ${productName} anda telah direkodkan. Perawat kami akan menghubungi anda melalui WhatsApp untuk pengesahan alamat sebelum penghantaran.`
-    : `Alhamdulillah, borang dan pembayaran anda telah disahkan. Perawat kami telah diagihkan dan akan menghubungi anda melalui WhatsApp untuk sesi diagnos & rawatan.`;
-  const amountLabel = isOrder
+  // ─── Display content — same message for both COD and FPX ───
+  const displayTitle    = `Pesanan Diterima — RM${amount.toFixed(2)}`;
+  const displaySubtitle = `Pesanan anda telah diterima! Barang akan dihantar dalam masa 1–5 hari bekerja. Jika bayar COD, sila sediakan wang tunai yang mencukupi apabila kurier tiba.`;
+  const amountLabel     = isCod
     ? `RM${amount.toFixed(2)} (Bayar Masa Terima — COD)`
     : `RM${amount.toFixed(2)} (FPX Online Banking)`;
-  const statusLabel = isOrder ? 'ORDER DITERIMA' : 'TRANSAKSI BERJAYA';
-  const ctaNote = isOrder
-    ? `💡 Sila sediakan wang tunai RM${amount.toFixed(2)} apabila pihak kurier tiba.`
-    : null;
+  const statusLabel = isCod ? 'ORDER DITERIMA' : 'TRANSAKSI BERJAYA';
+  const ctaNote = `💡 Penghantaran 1–5 hari bekerja${isCod ? `. Sediakan RM${amount.toFixed(2)} tunai semasa kurier tiba` : ''}.`;
 
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto' }}>
