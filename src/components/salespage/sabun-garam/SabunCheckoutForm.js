@@ -136,7 +136,14 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           utm_term: utms.utm_term,
         }),
       });
-      const json = await res.json();
+      const rawText = await res.text();
+      let json = {};
+      try {
+        json = JSON.parse(rawText);
+      } catch {
+        throw new Error('Respons daripada pelayan tidak sah. Sila hubungi admin atau cuba sebentar lagi.');
+      }
+
       if (res.ok && json.success && json.checkout_url) {
         window.location.href = json.checkout_url;
       } else {
@@ -177,7 +184,15 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           ...utms,
         }),
       });
-      const json = await res.json();
+
+      const rawText = await res.text();
+      let json = {};
+      try {
+        json = JSON.parse(rawText);
+      } catch {
+        throw new Error('Respons daripada pelayan tidak sah. Sila hubungi admin atau cuba sebentar lagi.');
+      }
+
       if (res.ok && json.success) {
         setCodOrderId(json.order_id || '');
         setCodSuccess(true);
