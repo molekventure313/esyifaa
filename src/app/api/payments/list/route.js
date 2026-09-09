@@ -70,11 +70,11 @@ export async function GET(req) {
           if (s.amount_paid) {
             totalRevenue += parseFloat(s.amount_paid);
           } else if (s.payment_type === 'fpx_payment') {
-            // FPX — parse dari notes atau default RM90
-            const match = (s.notes || '').match(/\[AMOUNT:\s*RM([0-9]+(?:\.[0-9]+)?)\]/i);
+            // FPX notes: "[AMOUNT: MYR 95.00]" or "[AMOUNT: RM95]"
+            const match = (s.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9]+(?:\.[0-9]+)?)\]/i);
             totalRevenue += match ? parseFloat(match[1]) : 90;
           } else if (s.payment_type === 'cod') {
-            const match = (s.notes || '').match(/\[AMOUNT:\s*RM([0-9]+(?:\.[0-9]+)?)\]/i);
+            const match = (s.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9]+(?:\.[0-9]+)?)\]/i);
             totalRevenue += match ? parseFloat(match[1]) : 0;
           }
         } else if (s.payment_status === 'pending') statsPending++;
@@ -104,10 +104,10 @@ export async function GET(req) {
         produkLabel = s.source?.includes('pengisian') ? 'Pengisian ESyifaa' : 'FPX';
       }
 
-      // Revenue for this record
-      let amountDisplay = s.amount_paid || null;
+      // Revenue for this record — parse dari notes (handle "RM95" COD & "MYR 95.00" FPX format)
+      let amountDisplay = s.amount_paid ? parseFloat(s.amount_paid) : null;
       if (!amountDisplay && s.notes) {
-        const m = s.notes.match(/\[AMOUNT:\s*RM([0-9]+(?:\.[0-9]+)?)\]/i);
+        const m = s.notes.match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9]+(?:\.[0-9]+)?)\]/i);
         if (m) amountDisplay = parseFloat(m[1]);
       }
 
