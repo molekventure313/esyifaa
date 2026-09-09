@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
+import { sendFpxCAPIEvent } from '@/lib/tracking/capi';
 
 export async function POST(req) {
   try {
@@ -89,6 +90,29 @@ export async function POST(req) {
       if (!subErr && submission) submissionId = submission.id;
     } catch (e) {
       console.warn('COD submission DB error:', e.message);
+    }
+
+    // Server-side CAPI Purchase event (FPX pixel — covers COD as well)
+    try {
+      await sendFpxCAPIEvent({
+        eventName: 'Purchase',
+        eventId: `cod_${submissionId}`,
+        sourceUrl: landing_page_url || null,
+        userData: {
+          phone: formattedPhone,
+          client_ip_address: ip,
+          client_user_agent: user_agent,
+        },
+        customData: {
+          currency: 'MYR',
+          value: parseFloat(amount_total) || 0,
+          content_name: `${product || 'Sabun Garam'} — ${units_label}`,
+        },
+        clientIpAddress: ip,
+        clientUserAgent: user_agent,
+      });
+    } catch (e) {
+      console.error('CAPI COD Purchase Error (non-blocking):', e.message);
     }
 
     // Log activity

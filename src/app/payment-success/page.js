@@ -7,16 +7,25 @@ import Link from 'next/link';
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const submissionId = searchParams.get('submission_id') || searchParams.get('order_id');
-  const isMock = searchParams.get('mock') === 'true';
+  const isMock       = searchParams.get('mock') === 'true';
+  const type         = searchParams.get('type');         // 'cod' | null (FPX)
+  const amountParam  = searchParams.get('amount');       // e.g. '95', '44'
+  const productParam = searchParams.get('product');      // e.g. 'Sabun Garam 3 Unit'
 
-  const [status, setStatus] = useState(isMock ? 'completed' : 'pending');
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(!isMock);
+  const isCod = type === 'cod';
+
+  const [status, setStatus] = useState(isMock || isCod ? 'completed' : 'pending');
+  const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(!isMock && !isCod);
   const [fpxPixelId, setFpxPixelId] = useState(null);
 
+  // Amount & product — read from URL params first (most accurate)
+  const [amount, setAmount]           = useState(parseFloat(amountParam) || 50.00);
+  const [productName, setProductName] = useState(
+    productParam ? decodeURIComponent(productParam) : (isCod ? 'Sabun Garam Himalaya' : 'ESyifaa Payment')
+  );
+
   // Inject FPX pixel script + fetch pixel ID for client-side Purchase backup
-  // Mirrors FspChipCheckoutForm pattern — fbq('init', fpxPixelId) MUST be called
-  // before fbq('trackSingle') or the event is silently dropped by Meta
   useEffect(() => {
     const script = document.createElement('script');
     script.src = '/api/pixel-fpx-init';
@@ -31,15 +40,16 @@ function PaymentSuccessContent() {
     return () => { try { document.head.removeChild(script); } catch (_) {} };
   }, []);
 
-  // Poll payment status from Chip
+  // Poll payment status from Chip (FPX only — COD skips this)
   useEffect(() => {
     if (isMock) {
-      setData({
-        submission_id: submissionId || 'MOCK-12345',
-        full_name: 'Pelanggan Ujian',
-        phone: '0123456789',
-        payment_status: 'completed',
-      });
+      setData({ submission_id: submissionId || 'MOCK-12345', full_name: 'Pelanggan Ujian', phone: '0123456789', payment_status: 'completed' });
+      setLoading(false);
+      return;
+    }
+
+    // COD — no polling needed, status already set to completed
+    if (isCod) {
       setLoading(false);
       return;
     }
@@ -62,6 +72,14 @@ function PaymentSuccessContent() {
           setData(json);
           setStatus(json.payment_status);
 
+          // Update amount from API if not already set from URL
+          if (json.amount_paid && !amountParam) {
+            setAmount(parseFloat(json.amount_paid));
+          }
+          if (json.product_name && !productParam) {
+            setProductName(json.product_name);
+          }
+
           if (json.payment_status === 'completed') {
             setLoading(false);
             return;
@@ -80,26 +98,38 @@ function PaymentSuccessContent() {
     };
 
     checkStatus();
+    return () => { isSubscribed = false; };
+  }, [submissionId, isMock, isCod, amountParam, productParam]);
 
-    return () => {
-      isSubscribed = false;
-    };
-  }, [submissionId, isMock]);
-
-  // Backup Purchase pixel event when status becomes completed
-  // This covers cases where CAPI webhook was delayed or missed
+  // Fire Purchase pixel when status = completed (covers FPX + COD)
   useEffect(() => {
     if (status !== 'completed' || !fpxPixelId) return;
     try {
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('trackSingle', fpxPixelId, 'Purchase', {
-          value: 50.00,
+          value: amount,
           currency: 'MYR',
-          content_name: 'Pakej Rawatan FPX RM50',
-        });
+          content_name: productName,
+        }, { eventID: `ps_${submissionId || Date.now()}` });
       }
     } catch (_) {}
-  }, [status, fpxPixelId]);
+  }, [status, fpxPixelId, amount, productName, submissionId]);
+
+  // ─── Determine display content based on type ───
+  const isOrder = isCod; // COD = order, FPX = payment
+  const displayTitle = isOrder
+    ? `Pesanan Diterima — RM${amount.toFixed(2)}`
+    : `Pembayaran RM${amount.toFixed(2)} Diterima!`;
+  const displaySubtitle = isOrder
+    ? `Terima kasih! Pesanan ${productName} anda telah direkodkan. Perawat kami akan menghubungi anda melalui WhatsApp untuk pengesahan alamat sebelum penghantaran.`
+    : `Alhamdulillah, borang dan pembayaran anda telah disahkan. Perawat kami telah diagihkan dan akan menghubungi anda melalui WhatsApp untuk sesi diagnos & rawatan.`;
+  const amountLabel = isOrder
+    ? `RM${amount.toFixed(2)} (Bayar Masa Terima — COD)`
+    : `RM${amount.toFixed(2)} (FPX Online Banking)`;
+  const statusLabel = isOrder ? 'ORDER DITERIMA' : 'TRANSAKSI BERJAYA';
+  const ctaNote = isOrder
+    ? `💡 Sila sediakan wang tunai RM${amount.toFixed(2)} apabila pihak kurier tiba.`
+    : null;
 
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto' }}>
@@ -134,15 +164,14 @@ function PaymentSuccessContent() {
           </div>
 
           <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#4ADE80', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-            TRANSAKSI BERJAYA
+            {statusLabel}
           </span>
           <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.3rem)', fontWeight: 900, color: '#FDE047', marginTop: '0.4rem', marginBottom: '0.8rem', lineHeight: 1.25 }}>
-            Pembayaran RM50 Diterima!
+            {displayTitle}
           </h1>
 
           <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, marginBottom: '2rem' }}>
-            Alhamdulillah, borang dan pembayaran anda telah disahkan.
-            Perawat kami telah diagihkan dan akan menghubungi anda melalui <strong style={{ color: '#FDE047' }}>WhatsApp</strong> untuk sesi diagnos &amp; rawatan.
+            {displaySubtitle}
           </p>
 
           {/* Details Card */}
@@ -156,25 +185,30 @@ function PaymentSuccessContent() {
             fontSize: '0.9rem',
             color: '#FEF3C7'
           }}>
+            {data?.full_name && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '0.5rem' }}>
+                <span>{isOrder ? 'Nama Penerima:' : 'Nama Pesakit:'}</span>
+                <strong style={{ color: '#FFFFFF' }}>{data.full_name}</strong>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '0.5rem' }}>
-              <span>Nama Pesakit:</span>
-              <strong style={{ color: '#FFFFFF' }}>{data?.full_name || 'Terima kasih'}</strong>
+              <span>Produk:</span>
+              <strong style={{ color: '#FFFFFF' }}>{productName}</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: ctaNote ? '0.5rem' : 0, borderBottom: ctaNote ? '1px dashed rgba(255,255,255,0.1)' : 'none', marginBottom: ctaNote ? '0.5rem' : 0 }}>
               <span>Jumlah Bayaran:</span>
-              <strong style={{ color: '#4ADE80' }}>RM50.00 (FPX Online Banking)</strong>
+              <strong style={{ color: '#4ADE80' }}>{amountLabel}</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Status Pakej:</span>
-              <span style={{ background: '#22C55E', color: '#fff', padding: '1px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 800 }}>
-                AKTIF (5 BONUS DISERTAKAN)
-              </span>
-            </div>
+            {ctaNote && (
+              <div style={{ paddingTop: '0.25rem', fontSize: '0.85rem', color: '#FDE047', fontStyle: 'italic' }}>
+                {ctaNote}
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', alignItems: 'center' }}>
             <Link
-              href="/fsp-checkout"
+              href="/"
               style={{
                 display: 'inline-block',
                 padding: '1rem 2.2rem',
@@ -202,7 +236,7 @@ function PaymentSuccessContent() {
             Sistem belum menerima sah status bayaran FPX anda. Sekiranya anda telah membuat bayaran, sila simpan resit dan hubungi kami.
           </p>
           <Link
-            href="/fsp-checkout"
+            href="/"
             style={{
               display: 'inline-block',
               padding: '0.85rem 1.8rem',
@@ -214,7 +248,7 @@ function PaymentSuccessContent() {
               textDecoration: 'none'
             }}
           >
-            🔄 Cuba Lagi Pembayaran
+            🔄 Cuba Lagi
           </Link>
         </div>
       )}

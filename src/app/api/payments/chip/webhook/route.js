@@ -167,12 +167,17 @@ export async function POST(req) {
 
       // 4. Meta CAPI Purchase event — uses FPX pixel (not main pixel)
       try {
+        // Parse actual amount from submission notes
+        // Format: "[STATUS: pending_payment] [AMOUNT: MYR 95.00]"
+        const amountMatch = (submission.notes || '').match(/\[AMOUNT:\s*MYR\s*([0-9.]+)\]/i);
+        const amountValue = amountMatch ? parseFloat(amountMatch[1]) : 50.00;
+
         await sendFpxCAPIEvent({
           eventName: 'Purchase',
           eventId: submission.event_id || submission.id,
           sourceUrl: submission.landing_page_url || null,
           userData: { phone: submission.phone, client_ip_address: submission.ip_address, client_user_agent: submission.user_agent },
-          customData: { currency: 'MYR', value: 50.00, content_name: 'Pakej Rawatan FPX RM50' },
+          customData: { currency: 'MYR', value: amountValue, content_name: `ESyifaa FPX — RM${amountValue}` },
           clientIpAddress: submission.ip_address,
           clientUserAgent: submission.user_agent,
           fbp: submission.fbp || null,

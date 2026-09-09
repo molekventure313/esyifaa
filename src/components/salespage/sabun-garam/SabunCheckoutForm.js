@@ -60,8 +60,6 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
   const [formData,      setFormData]      = useState({ full_name: '', dialCode: '+60', phone: '', address: '', notes: '', honeypot: '' });
   const [loading,       setLoading]       = useState(false);
   const [errorMsg,      setErrorMsg]      = useState('');
-  const [codSuccess,    setCodSuccess]    = useState(false);
-  const [codOrderId,    setCodOrderId]    = useState('');
   const [fpxPixelId,    setFpxPixelId]    = useState(null);
 
   const ff = 'var(--font-inter), -apple-system, sans-serif';
@@ -122,6 +120,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           problem: orderNotes,
           honeypot: formData.honeypot,
           source,
+          source_page: window.location.pathname,
           event_id: eventId,
           amount_in_myr: pkg.total,
           landing_page_url: window.location.href,
@@ -194,8 +193,28 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
       }
 
       if (res.ok && json.success) {
-        setCodOrderId(json.order_id || '');
-        setCodSuccess(true);
+        // Fire client-side Purchase pixel before redirect
+        try {
+          const pid = fpxPixelId || window.__fpxPixelId;
+          if (window.fbq) {
+            const evtId = `cod_${json.order_id || Date.now()}`;
+            if (pid) {
+              window.fbq('trackSingle', pid, 'Purchase', {
+                value: pkg.total, currency: 'MYR',
+                content_name: `Sabun Garam — ${pkg.label}`,
+              }, { eventID: evtId });
+            } else {
+              window.fbq('track', 'Purchase', {
+                value: pkg.total, currency: 'MYR',
+                content_name: `Sabun Garam — ${pkg.label}`,
+              }, { eventID: evtId });
+            }
+          }
+        } catch (_) {}
+
+        // Redirect to TQ page with order details
+        const productLabel = encodeURIComponent(`Sabun Garam ${pkg.label}`);
+        window.location.href = `/payment-success?type=cod&amount=${pkg.total}&product=${productLabel}&order_id=${json.order_id || ''}`;
       } else {
         throw new Error(json.error || 'Ralat berlaku. Sila cuba lagi.');
       }
@@ -213,66 +232,9 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
     else handleCOD();
   };
 
-  // ─── COD Success State ────────────────────────────────────────────────────
-  if (codSuccess) {
-    return (
-      <section id="borang" style={{
-        background: '#F0FDF4',
-        padding: '4.5rem 1.25rem',
-        fontFamily: ff,
-        textAlign: 'center',
-      }}>
-        <div style={{
-          maxWidth: '540px',
-          margin: '0 auto',
-          background: '#FFFFFF',
-          borderRadius: '20px',
-          padding: '2.5rem 2rem',
-          border: '1px solid #BBF7D0',
-          boxShadow: '0 10px 30px rgba(16, 185, 129, 0.1)',
-        }}>
-          <div style={{ fontSize: '2.8rem', marginBottom: '0.5rem' }}>✅</div>
-          <h2 style={{ fontWeight: 800, fontSize: '1.35rem', color: '#0F172A', marginBottom: '0.4rem' }}>
-            Pesanan COD Diterima
-          </h2>
-          <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.65, marginBottom: '1.5rem' }}>
-            Terima kasih! Pesanan anda telah direkodkan. Perawat kami akan <strong>menghubungi anda melalui WhatsApp</strong> untuk pengesahan alamat sebelum penghantaran.
-          </p>
 
-          <div style={{
-            background: '#F8FAFC',
-            border: '1px solid #E2E8F0',
-            borderRadius: '12px',
-            padding: '1.1rem',
-            marginBottom: '1.25rem',
-            textAlign: 'left',
-          }}>
-            <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Ringkasan Pesanan
-            </div>
-            {[
-              ['Produk', 'Sabun Garam Himalaya Pengisian (200g)'],
-              ['Pakej', pkg.label],
-              ['Harga Produk', `RM${pkg.price}`],
-              ['Postage', 'RM5'],
-              ['Jumlah Perlu Dibayar', `RM${pkg.total}`],
-            ].map(([k, v]) => (
-              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem', color: '#334155', marginBottom: '0.35rem' }}>
-                <span>{k}:</span>
-                <span style={{ fontWeight: 700, color: k.includes('Jumlah') ? '#047857' : '#0F172A' }}>{v}</span>
-              </div>
-            ))}
-          </div>
+  // ─── Form Render ─────────────────────────────────────────────────────────
 
-          <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748B' }}>
-            💡 Sila sediakan wang tunai <strong>RM{pkg.total}</strong> apabila pihak kurier tiba.
-          </p>
-        </div>
-      </section>
-    );
-  }
-
-  // ─── Bright & Fresh Form Render ───────────────────────────────────────────
   return (
     <section id="borang" style={{
       background: 'linear-gradient(180deg, #F0FDF4 0%, #F8FAF9 100%)',

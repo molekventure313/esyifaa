@@ -11,6 +11,7 @@ export async function POST(req) {
       phone,
       problem,
       source,
+      source_page,
       honeypot,
       event_id,
       amount_in_myr = 50.00,
@@ -113,6 +114,9 @@ export async function POST(req) {
         callbackUrl = 'https://e-syifa.com/api/payments/chip/webhook';
       }
 
+      // Use source_page for failure redirect — fallback to /fsp-checkout
+      const failurePage = source_page || '/fsp-checkout';
+
       const chipPayload = {
         brand_id: CHIP_BRAND_ID,
         client: {
@@ -123,11 +127,11 @@ export async function POST(req) {
         purchase: {
           currency: 'MYR',
           products: [{ name: "Pakej Rawatan Jarak Jauh ESyifaa'", price: amountInSen, quantity: 1 }],
-          return_url: `${APP_URL}/payment-success?submission_id=${submissionId}`,
+          return_url: `${APP_URL}/payment-success?submission_id=${submissionId}&amount=${amount_in_myr}`,
         },
         success_callback: callbackUrl,
-        success_redirect: `${APP_URL}/payment-success?submission_id=${submissionId}`,
-        failure_redirect: `${APP_URL}/fsp-checkout?status=failed`,
+        success_redirect: `${APP_URL}/payment-success?submission_id=${submissionId}&amount=${amount_in_myr}`,
+        failure_redirect: `${APP_URL}${failurePage}?status=failed`,
       };
 
       const chipRes = await fetch('https://gate.chip-in.asia/api/v1/purchases/', {
