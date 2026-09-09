@@ -48,11 +48,12 @@ function WAButton({ label = '🟢 Hubungi ESyifaa Sekarang', id = 'cta-wa', size
 
 // ─── FAQ Accordion ────────────────────────────────────────────────────────────
 const FAQS = [
-  { q: 'Macam mana rawatan ESyifaa berfungsi?', a: 'Rawatan ESyifaa dilakukan secara jarak jauh menggunakan kaedah ruqyah syar\'iyyah — bacaan ayat-ayat Al-Quran dan doa-doa Sunnah Nabi SAW. Perawat akan lakukan rawatan dari jauh dan pesakit akan merasakan kesannya walaupun berada di lokasi yang berbeza.' },
-  { q: 'Berapa lama proses rawatan?', a: 'Sesi rawatan biasanya mengambil masa 30-60 minit. Selepas rawatan, perawat akan pantau perkembangan pesakit selama 7 hari dan berikan rawatan susulan percuma jika masih diperlukan.' },
-  { q: 'Rawatan jarak jauh betul ke berkesan?', a: 'Ya, rawatan jarak jauh adalah berkesan. Kekuatan bacaan ruqyah syar\'iyyah tidak terhad oleh jarak fizik. Kami sudah membantu 500+ pesakit dari seluruh Malaysia dan luar negara melalui rawatan jarak jauh ini.' },
-  { q: 'Adakah rawatan ESyifaa patuh syariah?', a: 'Ya, 100% patuh syariah. Semua rawatan adalah berdasarkan Al-Quran, doa-doa Sunnah Nabi SAW dan tiada unsur syirik sama sekali. Kami tidak menggunakan sebarang kaedah bomoh, jampi atau perkara yang dilarang Islam.' },
-  { q: 'Berapa kos rawatan ESyifaa?', a: 'Rawatan penuh hanya RM50 sahaja — sekali bayar, ikhtiar sampai sembuh, in shaa Allah. Termasuk monitoring 7 hari, rawatan susulan percuma, air tawar, garam mandian & garam pagar rumah. Tiada caj tersembunyi.' },
+  { q: 'Adakah pengisian boleh dilakukan dari jarak jauh — tanpa pos barang?', a: 'Ya. Pengisian dilakukan secara jarak jauh menggunakan kaedah yang dibenarkan syarak — sama seperti rawatan jarak jauh. Anda tidak perlu pos atau hantar barang ke mana-mana. Cukup nyatakan nama dan jenis barang semasa mendaftar.' },
+  { q: 'Berapa lama proses pengisian?', a: 'Proses pengisian mengambil masa 3 hari berturut-turut dari tarikh tempahan. Selepas 3 hari, barang anda sudah siap dan boleh terus digunakan.' },
+  { q: 'Apakah barang yang paling sesuai untuk diisikan?', a: 'Apa-apa barang yang selalu bersama anda — cincin, tasbih, jam tangan, gelang, rantai. Semakin kerap barang itu bersama anda, semakin berkesan perlindungannya.' },
+  { q: 'Adakah kekuatan pengisian akan berkurang dengan masa?', a: 'Tidak. Perawat ESyifaa akan buat pelarasan dan pengisian semula setiap minggu secara automatik. Barang anda sentiasa pada kapasiti penuh tanpa anda perlu buat apa-apa.' },
+  { q: 'Boleh saya gunakan barang yang diisikan untuk rawat ahli keluarga?', a: 'Ya. Barang yang sudah diisikan boleh digunakan untuk rawat diri sendiri dan ahli keluarga. Panduan lengkap cara penggunaan akan diberikan oleh perawat selepas pengisian selesai.' },
+  { q: 'Adakah pengisian ini patuh syariah?', a: 'Ya, 100%. Semua ayat yang diisikan adalah daripada Al-Quran dan doa-doa yang sabit daripada Sunnah Rasulullah SAW. Tiada unsur syirik atau amalan bertentangan syarak dalam proses pengisian ini.' },
 ];
 
 function FAQItem({ q, a, isOpen, onToggle }) {
@@ -82,15 +83,26 @@ const SYMPTOMS = [
   'Gangguan berulang walaupun dah pernah dirawat',
 ];
 
-const AFTER_SALES = [
-  { icon: '💧', title: 'Isian Air Tawar Percuma', desc: 'Unlimited refill — boleh minta bila-bila masa diperlukan.' },
-  { icon: '🧂', title: 'Isian Garam Mandian Percuma', desc: 'Garam mandian berisian untuk membantu proses pembersihan.' },
-  { icon: '🏠', title: 'Isian Garam Pagar Percuma', desc: 'Perlindungan rumah dengan garam pagar berisian tanpa bayaran tambahan.' },
-  { icon: '📋', title: 'Monitoring 7 Hari', desc: 'Perawat pantau perkembangan pesakit selama 7 hari selepas rawatan.' },
-  { icon: '🔄', title: 'Rawatan Susulan Percuma', desc: 'Jika masih diperlukan, rawatan susulan diberikan tanpa kos tambahan.' },
+const PENGISIAN_INCLUDES = [
+  { icon: '🔥', title: 'Ayat Pembakar & Pemusnah Jin', desc: 'Bertindak balas secara aktif apabila ada gangguan jin yang cuba mendekat.' },
+  { icon: '✂️', title: 'Ayat Pembatal Sihir', desc: 'Memutuskan dan membatalkan ikatan sihir yang pernah dihantar atau sedang aktif.' },
+  { icon: '🛡️', title: 'Ayat Benteng Sihir & Gangguan Jin', desc: 'Membina dinding perlindungan di sekeliling barang dan pemiliknya.' },
+  { icon: '💚', title: 'Ayat-ayat Kesembuhan', desc: 'Memulihkan kesan gangguan dan membantu proses penyembuhan secara berterusan.' },
+  { icon: '🔄', title: 'Pelarasan Mingguan PERCUMA Selamanya', desc: 'Perawat ESyifaa buat pelarasan semula setiap minggu automatik — kekuatan sentiasa penuh.' },
+  { icon: '📋', title: 'Monitoring 3 Hari Pertama', desc: 'Perawat pantau perkembangan selepas pengisian untuk pastikan hasilnya berkesan.' },
+  { icon: '📞', title: 'Konsultasi Ringkas Via WhatsApp', desc: 'Perawat akan hubungi anda sebelum pengisian untuk sahkan maklumat barang.' },
 ];
 
-const COVERED = ['Sihir', 'Saka', 'Gangguan Jin', 'Asyik', 'Badi', 'Sumpahan', 'Penyakit Misteri', 'Perniagaan Tersekat'];
+const TEACHING_POINTS = [
+  'Cara clearkan gangguan jin pada badan, rumah & kediaman',
+  'Cara buat air tawar, garam mandian untuk bersihkan diri dari dalam',
+  'Musnahkan buhul-buhul sihir & tapak sihir pada diri & kediaman',
+  'Pendinding diri dari sihir, saka & santau',
+  'Rawatan buang bisa-bisa badan',
+  'Alirkan aura kesembuhan untuk penyakit medis & non medis',
+];
+
+const COVERED = ['Cincin', 'Tasbih', 'Jam Tangan', 'Gelang', 'Rantai', 'Baju', 'Air Penawar', 'Air Mandian'];
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function WaPage() {
@@ -307,23 +319,69 @@ export default function WaPage() {
       </section>
 
       {/* ══════════════════════════════════════════
-          SECTION 4 — PAKEJ RAWATAN RM50
+          SECTION 4 — PAKEJ PENGISIAN ESYIFAA
       ══════════════════════════════════════════ */}
       <section style={{ background: 'linear-gradient(180deg, #021812 0%, #042E23 100%)', padding: '4rem 1rem' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto', textAlign: 'center' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FDE047', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-            PAKEJ RAWATAN
+            💎 PAKEJ PENGISIAN
           </span>
           <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight: 800, color: '#FEF3C7', marginTop: '0.4rem', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
-            Satu Harga. Satu Ikhtiar.{' '}
-            <span style={{ color: '#FDE047' }}>In Shaa Allah Sembuh.</span>
+            Satu Pakej. Empat Lapisan Perlindungan.{' '}
+            <span style={{ color: '#FDE047' }}>RM90 Sahaja.</span>
           </h2>
           <p style={{ color: '#A7F3D0', fontSize: '1rem', marginBottom: '2.5rem', lineHeight: 1.7 }}>
-            Kami percaya rawatan yang ikhlas tidak perlu membebankan. Bayar sekali sahaja,
-            kami akan berusaha bersama anda sehingga pulih — dengan izin Allah.
+            Bayar sekali, nikmati perlindungan seumur hidup dengan pelarasan mingguan automatik dari perawat ESyifaa.
           </p>
 
-          <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+          {/* ── USP CALLOUT: Rawat Sendiri ── */}
+          <div style={{
+            maxWidth: '680px', margin: '0 auto 2.5rem auto',
+            background: 'rgba(253,224,71,0.07)',
+            border: '2px solid rgba(253,224,71,0.5)',
+            borderRadius: '18px', padding: '1.75rem 1.5rem', textAlign: 'left',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>♾️</span>
+              <h3 style={{ fontWeight: 900, fontSize: 'clamp(1.1rem, 3vw, 1.4rem)', color: '#FDE047', margin: '0.4rem 0 0.5rem' }}>
+                Rawat Diri Sendiri — Tanpa Perlu Perawat
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: '#D1FAE5', lineHeight: 1.65, margin: 0 }}>
+                Selepas pengisian selesai, item anda menjadi <strong style={{ color: '#FEF3C7' }}>&quot;perawat peribadi&quot;</strong> — guna bila-bila masa diserang, tanpa tunggu slot, tanpa bayar lagi, tanpa bergantung pada sesiapa.
+              </p>
+            </div>
+
+            {/* Teaching Points */}
+            <div style={{
+              background: 'rgba(0,0,0,0.25)', borderRadius: '12px',
+              padding: '1.2rem 1.25rem', border: '1px solid rgba(253,224,71,0.2)',
+            }}>
+              <p style={{
+                textAlign: 'center', fontSize: '0.72rem', fontWeight: 800,
+                color: '#FDE047', textTransform: 'uppercase', letterSpacing: '0.1em',
+                marginBottom: '1rem',
+              }}>
+                📚 Ini Yang Akan Diajar Selepas Pengisian Selesai
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.6rem' }}>
+                {TEACHING_POINTS.map((point, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+                    <span style={{
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      background: 'rgba(253,224,71,0.2)', border: '1.5px solid #FDE047',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, fontSize: '0.65rem', color: '#FDE047', fontWeight: 900,
+                      marginTop: '1px',
+                    }}>✓</span>
+                    <span style={{ fontSize: '0.85rem', color: '#D1FAE5', lineHeight: 1.5 }}>{point}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+            {/* Pakej Card */}
             <div style={{
               background: 'linear-gradient(135deg, #065F46 0%, #047857 50%, #059669 100%)',
               border: '2px solid #FDE047', borderRadius: '20px', padding: '2.5rem 2rem',
@@ -332,71 +390,63 @@ export default function WaPage() {
             }}>
               <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(253,224,71,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
               <div style={{ display: 'inline-block', background: '#FDE047', color: '#042E23', fontWeight: 800, fontSize: '0.75rem', padding: '0.3rem 1rem', borderRadius: '999px', marginBottom: '1.2rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                ✨ Pakej Lengkap — Semua Dalam Satu
+                💎 Pakej Pengisian — 4 Lapisan Ayat Ruqyah
               </div>
               <div style={{ marginBottom: '1rem' }}>
-                <span style={{ fontSize: 'clamp(3rem, 8vw, 4.5rem)', fontWeight: 900, color: '#FDE047', lineHeight: 1, display: 'block' }}>RM50</span>
-                <span style={{ fontSize: '1rem', color: '#D1FAE5', fontWeight: 500, display: 'block', marginTop: '0.3rem' }}>Sekali bayar — ikhtiar sampai sembuh, in shaa Allah</span>
+                <span style={{ fontSize: 'clamp(3rem, 8vw, 4.5rem)', fontWeight: 900, color: '#FDE047', lineHeight: 1, display: 'block' }}>RM90</span>
+                <span style={{ fontSize: '1rem', color: '#D1FAE5', fontWeight: 500, display: 'block', marginTop: '0.3rem' }}>Sekali bayar · Pelarasan mingguan percuma selamanya</span>
               </div>
               <div style={{ borderTop: '1px solid rgba(253,224,71,0.3)', margin: '1.5rem 0' }} />
               <p style={{ fontSize: '0.8rem', color: '#A7F3D0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.8rem' }}>
-                Merangkumi Semua Kes:
+                Barang Yang Boleh Diisikan:
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', marginBottom: '1.5rem' }}>
                 {COVERED.map((item, i) => (
                   <span key={i} style={{ background: 'rgba(253,224,71,0.15)', border: '1px solid rgba(253,224,71,0.4)', color: '#FEF3C7', fontSize: '0.82rem', fontWeight: 600, padding: '0.3rem 0.85rem', borderRadius: '999px' }}>{item}</span>
                 ))}
               </div>
-              <WAButton id="cta-pricing" label="🟢 Hubungi ESyifaa — Mula Rawatan RM50" href={waLink} />
+              <WAButton id="cta-pricing" label="💬 Tempah Pengisian RM90 via WhatsApp →" href={waLink} />
             </div>
 
-            {/* After-sales */}
+            {/* Termasuk dalam pakej */}
             <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(253,224,71,0.2)', borderRadius: '16px', padding: '2rem 1.5rem', textAlign: 'left' }}>
               <p style={{ textAlign: 'center', fontWeight: 800, fontSize: '1rem', color: '#FDE047', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                🎁 After-Sales Service — Semuanya PERCUMA
+                🎁 Semua Ini Termasuk Dalam RM90
               </p>
               <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#A7F3D0', marginBottom: '1.5rem' }}>
-                Termasuk dalam pakej RM50 — tiada bayaran tambahan.
+                Tiada bayaran tambahan — sekali bayar, guna seumur hidup.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                {AFTER_SALES.map((s, i) => (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,243,208,0.15)', borderRadius: '10px', padding: '1rem', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '0.7rem', right: '0.7rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                      <span style={{ fontSize: '0.7rem', color: '#F87171', textDecoration: 'line-through', fontWeight: 700 }}>RM50</span>
-                      <span style={{ fontSize: '0.65rem', background: '#22C55E', color: '#fff', fontWeight: 800, padding: '1px 6px', borderRadius: '999px' }}>PERCUMA</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
-                      <span style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>{s.icon}</span>
-                      <div>
-                        <p style={{ margin: '0 0 0.25rem 0', fontWeight: 700, fontSize: '0.9rem', color: '#FEF3C7', paddingRight: '2.5rem' }}>{s.title}</p>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#A7F3D0', lineHeight: 1.5 }}>{s.desc}</p>
-                      </div>
+                {PENGISIAN_INCLUDES.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(167,243,208,0.15)', borderRadius: '10px', padding: '1rem' }}>
+                    <span style={{ fontSize: '1.6rem', lineHeight: 1, flexShrink: 0 }}>{s.icon}</span>
+                    <div>
+                      <p style={{ margin: '0 0 0.25rem 0', fontWeight: 700, fontSize: '0.88rem', color: '#FEF3C7' }}>{s.title}</p>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#A7F3D0', lineHeight: 1.5 }}>{s.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: '1.5rem', borderTop: '1px dashed rgba(253,224,71,0.3)', paddingTop: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <p style={{ margin: 0, color: '#D1FAE5', fontSize: '0.9rem', fontWeight: 600 }}>Jumlah nilai keseluruhan perkhidmatan:</p>
-                <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#F87171', textDecoration: 'line-through', opacity: 0.9 }}>RM300</span>
-              </div>
             </div>
 
-            {/* Value banner */}
-            <div style={{ marginTop: '1.5rem', background: 'linear-gradient(135deg, #854D0E 0%, #A16207 50%, #CA8A04 100%)', border: '2px solid #FDE047', borderRadius: '14px', padding: '1.5rem 1.8rem', textAlign: 'center', boxShadow: '0 8px 30px rgba(253,224,71,0.2)' }}>
-              <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.85rem', color: '#FEF9C3', fontWeight: 600 }}>Semua perkhidmatan bernilai</p>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
-                <span style={{ fontSize: 'clamp(1.8rem, 5vw, 2.5rem)', fontWeight: 900, color: '#FCA5A5', textDecoration: 'line-through', opacity: 0.85 }}>RM300</span>
-                <span style={{ fontSize: '1.5rem', color: '#FEF3C7', fontWeight: 800 }}>→</span>
-                <span style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', fontWeight: 900, color: '#FDE047' }}>RM50 sahaja</span>
+            {/* Jaminan banner */}
+            <div style={{ marginTop: '1.5rem', background: 'linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 100%)', border: '2px solid rgba(147,197,253,0.4)', borderRadius: '14px', padding: '1.5rem 1.8rem', textAlign: 'center', boxShadow: '0 8px 30px rgba(29,78,216,0.25)' }}>
+              <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.8rem', fontWeight: 800, color: '#BAE6FD', textTransform: 'uppercase', letterSpacing: '0.1em' }}>🛡️ Jaminan ESyifaa</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'rgba(255,255,255,0.07)', borderRadius: '8px', padding: '0.6rem 0.9rem' }}>
+                  <span style={{ fontSize: '1.1rem' }}>✅</span>
+                  <span style={{ fontSize: '0.85rem', color: '#E0F2FE', fontWeight: 600 }}>Refund jika langsung tiada perubahan selepas 14 hari guna</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'rgba(255,255,255,0.07)', borderRadius: '8px', padding: '0.6rem 0.9rem' }}>
+                  <span style={{ fontSize: '1.1rem' }}>📖</span>
+                  <span style={{ fontSize: '0.85rem', color: '#E0F2FE', fontWeight: 600 }}>100% Ayat Al-Quran & Asma&apos; Allah — Tiada unsur syirik</span>
+                </div>
               </div>
-              <p style={{ margin: 0, fontSize: '0.92rem', color: '#FEF9C3', lineHeight: 1.6 }}>
-                Anda tidak perlu bayar RM300. Cukup <strong>bayar RM50</strong> untuk rawatan penuh<br/>
-                berserta semua after-sales service — <strong>in shaa Allah, ikhtiar sampai sembuh.</strong>
-              </p>
             </div>
           </div>
         </div>
       </section>
+
 
       {/* ══════════════════════════════════════════
           SECTION 5 — STATS
@@ -408,7 +458,7 @@ export default function WaPage() {
               { num: '500+', label: 'Pesakit Dibantu', icon: '🏥' },
               { num: '100%', label: 'Patuh Syariah', icon: '📖' },
               { num: '98%', label: 'Puas Hati', icon: '⭐' },
-              { num: 'RM50', label: 'Kos Rawatan', icon: '💰' },
+              { num: 'RM90', label: 'Kos Pengisian', icon: '💎' },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(253,224,71,0.2)', borderRadius: '12px', padding: '1rem 1.25rem', minWidth: '120px' }}>
                 <div style={{ fontSize: '1.4rem', marginBottom: '0.25rem' }}>{s.icon}</div>
@@ -569,7 +619,7 @@ export default function WaPage() {
 
       {/* Footer */}
       <footer style={{ background: '#010E09', color: '#4B5563', padding: '1.5rem 1rem', textAlign: 'center', fontSize: '0.78rem', lineHeight: 1.6 }}>
-        © {new Date().getFullYear()} ESyifaa. Rawatan berasaskan Al-Quran &amp; Sunnah Nabi SAW. Tiada unsur syirik.
+        © {new Date().getFullYear()} ESyifaa. Rawatan &amp; Pengisian berasaskan Al-Quran &amp; Sunnah Nabi SAW. Tiada unsur syirik.
       </footer>
 
     </main>
