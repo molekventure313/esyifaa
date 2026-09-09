@@ -84,110 +84,121 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
     }
 
-    // ─── Idempotency: skip if already processed ───
-    if (submission.payment_status === 'completed') {
-      return NextResponse.json({ success: true, message: 'Already processed' });
-    }
+    // ─── Idempotency: skip DB updates if already processed, but still send WA ───
+    const alreadyCompleted = submission.payment_status === 'completed';
 
     if (isPaid) {
-      // 1. Update submission payment_status → completed
-      try {
-        await supabase
-          .from('submissions')
-          .update({
-            payment_status: 'completed',
-            chip_bill_id: billId,
-            notes: `${submission.notes || ''} [STATUS: paid] [CHIP_STATUS: ${chipStatus}] [PAID_AT: ${new Date().toISOString()}]`,
-          })
-          .eq('id', submission.id);
-      } catch (e) {
-        console.warn('Submission update skipped:', e.message);
-      }
+      // Parse actual amount first — used in CAPI + WA + logs
+      // Notes format: "[AMOUNT: MYR 95.00]" (FPX) or "[AMOUNT: RM95]" (COD)
+      const amountMatch = (submission.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9.]+)\]/i);
+      const amountValue = amountMatch ? parseFloat(amountMatch[1]) : 50.00;
 
-      // 2. Round-Robin Auto-assign Perawat (same logic as appointment)
-      let assignedPractitioner = null;
-      try {
-        const { data: allProfiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, role, is_active, is_receiving_cases, created_at')
-          .order('created_at', { ascending: true });
+      if (!alreadyCompleted) {
+        // 1. Update submission payment_status → completed
+        try {
+          await supabase
+            .from('submissions')
+            .update({
+              payment_status: 'completed',
+              chip_bill_id: billId,
+              notes: `${submission.notes || ''} [STATUS: paid] [CHIP_STATUS: ${chipStatus}] [PAID_AT: ${new Date().toISOString()}]`,
+            })
+            .eq('id', submission.id);
+        } catch (e) {
+          console.warn('Submission update skipped:', e.message);
+        }
 
-        const activePractitioners = (allProfiles || []).filter(p =>
-          p.role !== 'super_admin' && p.is_active !== false && p.is_receiving_cases !== false
-        );
+        // 2. Round-Robin Auto-assign Perawat
+        let assignedPractitioner = null;
+        try {
+          const { data: allProfiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, role, is_active, is_receiving_cases, created_at')
+            .order('created_at', { ascending: true });
 
-        if (activePractitioners.length > 0) {
-          const { data: lastCase } = await supabase
-            .from('cases')
-            .select('assigned_to, created_at')
-            .not('assigned_to', 'is', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          const activePractitioners = (allProfiles || []).filter(p =>
+            p.role !== 'super_admin' && p.is_active !== false && p.is_receiving_cases !== false
+          );
 
-          if (lastCase?.assigned_to) {
-            const lastIdx = activePractitioners.findIndex(p => p.id === lastCase.assigned_to);
-            const nextIdx = lastIdx !== -1 ? (lastIdx + 1) % activePractitioners.length : 0;
-            assignedPractitioner = activePractitioners[nextIdx];
-          } else {
-            assignedPractitioner = activePractitioners[0];
+          if (activePractitioners.length > 0) {
+            const { data: lastCase } = await supabase
+              .from('cases')
+              .select('assigned_to, created_at')
+              .not('assigned_to', 'is', null)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (lastCase?.assigned_to) {
+              const lastIdx = activePractitioners.findIndex(p => p.id === lastCase.assigned_to);
+              const nextIdx = lastIdx !== -1 ? (lastIdx + 1) % activePractitioners.length : 0;
+              assignedPractitioner = activePractitioners[nextIdx];
+            } else {
+              assignedPractitioner = activePractitioners[0];
+            }
           }
+        } catch (e) {
+          console.warn('Round-robin skipped:', e.message);
         }
-      } catch (e) {
-        console.warn('Round-robin skipped:', e.message);
-      }
 
-      // 3. Create Case for FPX paid patient
-      let newCase = null;
-      try {
-        const caseStatus = assignedPractitioner ? 'Sedang Diurus' : 'Baru';
-        const { data } = await supabase
-          .from('cases')
-          .insert({
-            customer_id: submission.customer_id,
-            submission_id: submission.id,
-            status: caseStatus,
-            assigned_to: assignedPractitioner ? assignedPractitioner.id : null,
-          })
-          .select()
-          .single();
-        newCase = data;
+        // 3. Create Case for FPX paid patient
+        let newCase = null;
+        try {
+          const caseStatus = assignedPractitioner ? 'Sedang Diurus' : 'Baru';
+          const { data } = await supabase
+            .from('cases')
+            .insert({
+              customer_id: submission.customer_id,
+              submission_id: submission.id,
+              status: caseStatus,
+              assigned_to: assignedPractitioner ? assignedPractitioner.id : null,
+            })
+            .select()
+            .single();
+          newCase = data;
 
-        if (newCase) {
-          await supabase.from('case_status_history').insert({
-            case_id: newCase.id,
-            old_status: null,
-            new_status: caseStatus,
-            notes: `💳 Bayaran FPX RM50 BERJAYA via Chip. ${assignedPractitioner ? `Diagih kepada ${assignedPractitioner.full_name}` : 'Menunggu agihan perawat'}`,
+          if (newCase) {
+            await supabase.from('case_status_history').insert({
+              case_id: newCase.id,
+              old_status: null,
+              new_status: caseStatus,
+              notes: `💳 Bayaran FPX RM${amountValue} BERJAYA via Chip. ${assignedPractitioner ? `Diagih kepada ${assignedPractitioner.full_name}` : 'Menunggu agihan perawat'}`,
+            });
+          }
+        } catch (e) {
+          console.warn('Case creation skipped (RLS/customer_id missing):', e.message);
+        }
+
+        // 4. Meta CAPI Purchase event
+        try {
+          await sendFpxCAPIEvent({
+            eventName: 'Purchase',
+            eventId: submission.event_id || submission.id,
+            sourceUrl: submission.landing_page_url || null,
+            userData: { phone: submission.phone, client_ip_address: submission.ip_address, client_user_agent: submission.user_agent },
+            customData: { currency: 'MYR', value: amountValue, content_name: `ESyifaa FPX — RM${amountValue}` },
+            clientIpAddress: submission.ip_address,
+            clientUserAgent: submission.user_agent,
+            fbp: submission.fbp || null,
+            fbc: submission.fbc || null,
           });
+        } catch (e) {
+          console.error('CAPI FPX Purchase Error (non-blocking):', e.message);
         }
-      } catch (e) {
-        console.warn('Case creation skipped (RLS/customer_id missing):', e.message);
-      }
 
-      // 4. Meta CAPI Purchase event — uses FPX pixel (not main pixel)
-      try {
-        // Parse actual amount from submission notes
-        // Format: "[STATUS: pending_payment] [AMOUNT: MYR 95.00]"
-        const amountMatch = (submission.notes || '').match(/\[AMOUNT:\s*MYR\s*([0-9.]+)\]/i);
-        const amountValue = amountMatch ? parseFloat(amountMatch[1]) : 50.00;
+        // 6. Log activity
+        try {
+          await logActivity(supabase, {
+            userId: null, actionType: 'chip_payment_success',
+            entityType: 'submission', entityId: submission.id,
+            newValues: { bill_id: billId, payment_status: 'completed', case_id: newCase?.id || null },
+            description: `💳 Bayaran FPX RM${amountValue} disahkan — ${submission.full_name} (${submission.phone})`,
+            ipAddress: submission.ip_address || 'webhook',
+          });
+        } catch (_) {}
+      } // end !alreadyCompleted
 
-        await sendFpxCAPIEvent({
-          eventName: 'Purchase',
-          eventId: submission.event_id || submission.id,
-          sourceUrl: submission.landing_page_url || null,
-          userData: { phone: submission.phone, client_ip_address: submission.ip_address, client_user_agent: submission.user_agent },
-          customData: { currency: 'MYR', value: amountValue, content_name: `ESyifaa FPX — RM${amountValue}` },
-          clientIpAddress: submission.ip_address,
-          clientUserAgent: submission.user_agent,
-          fbp: submission.fbp || null,
-          fbc: submission.fbc || null,
-        });
-      } catch (e) {
-        console.error('CAPI FPX Purchase Error (non-blocking):', e.message);
-      }
-
-      // 5. WasapBot Notification — guna buildOrderMessage (bukan lead template)
+      // 5. WasapBot Notification — hantar walaupun alreadyCompleted (idempotent safe)
       try {
         const msg = buildOrderMessage({
           name: submission.full_name,
@@ -202,17 +213,6 @@ export async function POST(req) {
       } catch (e) {
         console.error('WasapBot Error (non-blocking):', e.message);
       }
-
-      // 6. Log activity
-      try {
-        await logActivity(supabase, {
-          userId: null, actionType: 'chip_payment_success',
-          entityType: 'submission', entityId: submission.id,
-          newValues: { bill_id: billId, payment_status: 'completed', case_id: newCase?.id || null },
-          description: `💳 Bayaran FPX RM50 disahkan — ${submission.full_name} (${submission.phone})`,
-          ipAddress: submission.ip_address || 'webhook',
-        });
-      } catch (_) {}
 
     } else if (isFailed) {
       try {
