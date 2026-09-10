@@ -9,7 +9,7 @@ const POINTS = [
   { icon: '🏠', text: 'Boleh diguna oleh seluruh ahli keluarga — sesuai untuk dewasa & kanak-kanak' },
 ];
 
-export default function SabunSolutionSection() {
+export default function SabunSolutionSection({ solutionImage = null }) {
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   return (
@@ -61,6 +61,31 @@ export default function SabunSolutionSection() {
             ESyifaa — sama kaedah seperti air tawar dan minyak pengisian, tetapi dalam bentuk sabun mandian harian yang menyegarkan.
           </p>
         </div>
+
+        {/* Solution Image — gambar atas, teks bawah */}
+        {solutionImage && (
+          <div style={{
+            marginBottom: '2rem',
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.10)',
+            border: '2px solid #D1FAE5',
+            maxHeight: '420px',
+          }}>
+            <img
+              src={solutionImage}
+              alt="Penyelesaian Sabun Garam Himalaya Pengisian ESyifaa"
+              style={{
+                width: '100%',
+                height: '100%',
+                maxHeight: '420px',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+              loading="lazy"
+            />
+          </div>
+        )}
 
         {/* Main explanation card */}
         <div style={{

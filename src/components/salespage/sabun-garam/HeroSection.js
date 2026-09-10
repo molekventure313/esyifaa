@@ -12,7 +12,7 @@ const DEFAULT_HEADLINE = (
 
 const DEFAULT_SUB = 'Sabun garam himalaya 200g diisikan tenaga ayat ruqyah syar\'iyyah selama 3 hari berturut-turut — mandi seperti biasa, rasai badan lebih ringan, segar & dilindungi dengan izin Allah.';
 
-export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadline = DEFAULT_SUB }) {
+export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadline = DEFAULT_SUB, heroImage = null }) {
   const scrollToForm = () => {
     document.getElementById('borang')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -78,6 +78,29 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
         }}>
           {subheadline}
         </p>
+
+        {/* Product Image — ikut angle SP */}
+        {heroImage && (
+          <div style={{
+            margin: '1.75rem auto 2rem',
+            maxWidth: '420px',
+            width: '100%',
+          }}>
+            <img
+              src={heroImage}
+              alt="Sabun Garam Himalaya Pengisian ESyifaa"
+              style={{
+                width: '100%',
+                borderRadius: '20px',
+                boxShadow: '0 16px 48px rgba(0,0,0,0.13)',
+                border: '3px solid #D1FAE5',
+                display: 'block',
+                objectFit: 'cover',
+              }}
+              loading="eager"
+            />
+          </div>
+        )}
 
         {/* Trust badges — Clean & Fresh */}
         <div style={{

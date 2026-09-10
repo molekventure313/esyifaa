@@ -19,20 +19,38 @@ import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton'
  * Only the Hero Banner differs between variants — all other sections are identical.
  *
  * Props:
- * - heroHeadline   {ReactNode|string} — H1 headline text (FSP formula: testimonial result + 3 masalah)
- * - heroSubheadline {string}          — H4 description (what prospek will EXPERIENCE)
- * - source         {string}           — tracking source for checkout (e.g. 'sabun-garam-1')
+ * - heroHeadline    {ReactNode|string} — H1 headline text (FSP formula: testimonial result + 3 masalah)
+ * - heroSubheadline {string}           — H4 description (what prospek will EXPERIENCE)
+ * - source          {string}           — tracking source for checkout (e.g. 'sabun-garam-1')
  */
+
+// ─── Gambar produk ikut angle SP ─────────────────────────────────────────────
+const BASE = '/images/sabun-garam';
+const IMAGE_MAP = {
+  'sabun-garam':   { hero: `${BASE}/hero-saka-sihir-santau.png`,  solution: `${BASE}/solution-saka.png` },
+  'sabun-garam-1': { hero: `${BASE}/hero-saka-sihir-santau.png`,  solution: `${BASE}/solution-saka.png` },
+  'sabun-garam-2': { hero: `${BASE}/hero-lenguh-badan.jpeg`,       solution: `${BASE}/solution-lenguh-urat.jpeg` },
+  'sabun-garam-3': { hero: `${BASE}/hero-sakit-misteri.jpeg`,      solution: `${BASE}/solution-sakit-misteri.png` },
+  'sabun-garam-4': { hero: `${BASE}/hero-dengar-bisikan.jpeg`,     solution: `${BASE}/solution-bisikan-halus.jpeg` },
+  'sabun-garam-5': { hero: `${BASE}/hero-anak-meracau.jpeg`,       solution: `${BASE}/solution-anak-meracau.jpeg` },
+};
+
 export default function SabunGaramPageContent({
   heroHeadline,
   heroSubheadline,
   source = 'sabun-garam',
 }) {
+  const images = IMAGE_MAP[source] || IMAGE_MAP['sabun-garam'];
+
   return (
     <main style={{ minHeight: '100vh', background: '#FFFFFF', color: '#0F172A' }}>
 
       {/* #01 — Hero Banner (variant-specific) */}
-      <SabunHeroSection headline={heroHeadline} subheadline={heroSubheadline} />
+      <SabunHeroSection
+        headline={heroHeadline}
+        subheadline={heroSubheadline}
+        heroImage={images.hero}
+      />
 
       {/* #02 — Testimoni Part 1 */}
       <SabunTestimonialSection />
@@ -44,7 +62,7 @@ export default function SabunGaramPageContent({
       <SabunFearsSection />
 
       {/* #05 — Penyelesaian */}
-      <SabunSolutionSection />
+      <SabunSolutionSection solutionImage={images.solution} />
 
       {/* #06 — Fungsi Elemen */}
       <SabunFungsiElemenSection />
