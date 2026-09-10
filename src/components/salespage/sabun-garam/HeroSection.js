@@ -90,7 +90,7 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
           {[
             '📖 Berasaskan Al-Quran & Sunnah',
             '🧂 Garam Himalaya 200g Asli',
-            '🔄 Diisi 3 Hari Berturut-Turut',
+            '📿 4 Lapisan Ayat Ruqyah',
             '🚚 COD & FPX Disediakan',
           ].map((b, i) => (
             <span key={i} style={{

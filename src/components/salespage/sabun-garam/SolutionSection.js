@@ -2,7 +2,7 @@
 
 const POINTS = [
   { icon: '📖', text: 'Diisikan dengan ayat-ayat ruqyah Al-Quran, doa dan zikir pilihan' },
-  { icon: '🔄', text: 'Proses pengisian selama 3 hari berturut-turut oleh perawat ESyifaa' },
+  { icon: '📿', text: '4 lapisan ayat ruqyah — Al-Fatihah, Ayat Kursi, Al-Falaq & An-Nas ditiupkan ke dalam garam' },
   { icon: '🧂', text: 'Garam himalaya asli 200g — bersifat semulajadi & digunakan dalam amalan ruqyah' },
   { icon: '🛡️', text: 'Bertindak sebagai ikhtiar perlindungan — usir sihir, saka, santau dari badan' },
   { icon: '💊', text: 'Bantu melegakan sakit urat, sengal badan & penyakit misteri secara rohani' },
