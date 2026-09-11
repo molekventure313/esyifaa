@@ -38,6 +38,7 @@ export default function AdminDashboardPage() {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState('');
+  const [stockSummary, setStockSummary] = useState(null);
 
   const [isLightMode, setIsLightMode] = useState(false);
   useEffect(() => {
@@ -65,12 +66,15 @@ export default function AdminDashboardPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res  = await fetch(`/api/admin/sales-stats?period=${period}`);
-      const json = await res.json();
-      if (res.ok && json.success) {
-        setData(json.data);
+      const [statsRes, stockRes] = await Promise.all([
+        fetch(`/api/admin/sales-stats?period=${period}`).then(r => r.json()),
+        fetch('/api/stock/summary').then(r => r.json()).catch(() => ({ success: false })),
+      ]);
+      if (statsRes.success) {
+        setData(statsRes.data);
         setLastUpdated(new Date().toLocaleTimeString('ms-MY'));
       }
+      if (stockRes.success) setStockSummary(stockRes.data);
     } catch (_) {}
     finally { setLoading(false); }
   }, [period]);
@@ -358,10 +362,42 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* ─── Row 3: Quick Links ─── */}
+          {/* ─── Row 3: Stock Widget ─── */}
+          {stockSummary?.products?.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <Link href="/dashboard/admin/stok" style={{ textDecoration: 'none', display: 'block' }}>
+                <div style={{
+                  padding: '1rem 1.5rem', borderRadius: '10px',
+                  background: lm ? '#FFFBEB' : 'rgba(245,158,11,0.06)',
+                  border: lm ? '1px solid #FCD34D' : '1px solid rgba(245,158,11,0.2)',
+                  display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap',
+                }}>
+                  <span style={{ fontSize: '1.4rem' }}>📦</span>
+                  {stockSummary.products.map(p => (
+                    <div key={p.id} style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+                      <div>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: lm ? '#92400E' : '#F59E0B', textTransform: 'uppercase' }}>{p.name}</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: p.current_stock <= p.low_stock_threshold ? '#EF4444' : lm ? '#047857' : '#34D399' }}>
+                          {p.current_stock} {p.unit}
+                          {p.current_stock <= p.low_stock_threshold && <span style={{ fontSize: '0.75rem', marginLeft: '0.4rem' }}>⚠️ Stok Rendah!</span>}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: lm ? '#92400E' : '#F59E0B' }}>
+                        Nilai: <strong>{formatRM(stockSummary.total_value)}</strong>
+                      </div>
+                    </div>
+                  ))}
+                  <span style={{ fontSize: '0.75rem', color: lm ? '#92400E' : '#F59E0B', fontWeight: 600, whiteSpace: 'nowrap' }}>Pengurusan Stok →</span>
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* ─── Row 4: Quick Links ─── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             {[
-              { href: '/dashboard/admin/pesakit-berbayar', icon: '📦', title: 'Pengurusan Order', desc: 'Senarai FPX & COD · Export NinjaVan' },
+              { href: '/dashboard/admin/pesakit-berbayar', icon: '📦', title: 'Pengurusan Order', desc: 'Senarai FPX & COD · Export NinjaVan · Return COD' },
+              { href: '/dashboard/admin/stok',             icon: '🏪', title: 'Pengurusan Stok',  desc: 'Stok sabun · Tambah batch · Sejarah pergerakan' },
               { href: '/dashboard/admin/tracking',         icon: '🎯', title: 'Tracking & Pixel', desc: 'Meta Pixel · CAPI · Salespage' },
               { href: '/dashboard/admin/kes',              icon: '📋', title: 'Pengurusan Kes',   desc: 'Agih & kemaskini perawat' },
               { href: '/dashboard/admin/perawat',          icon: '👥', title: 'Pengurusan Perawat', desc: 'Beban kerja & status perawat' },

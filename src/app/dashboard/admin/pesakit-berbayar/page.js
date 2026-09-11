@@ -32,7 +32,10 @@ export default function PengurusanOrderPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Export
-  const [exporting, setExporting] = useState(false);
+  const [exporting,   setExporting]   = useState(false);
+
+  // Return COD
+  const [returningId, setReturningId] = useState(null);
 
   const { showToast } = useToast();
 
@@ -168,6 +171,26 @@ export default function PengurusanOrderPage() {
       showToast(err.message || 'Export gagal', 'error');
     } finally {
       setExporting(false);
+    }
+  };
+
+  // ─── Return COD ────────────────────────────────────────────────────────────
+  const handleReturn = async (orderId, orderName) => {
+    if (!confirm(`Return order COD dari ${orderName}?\n\nStok akan ditambah semula ke dalam sistem.`)) return;
+    setReturningId(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/return`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        showToast(json.message || 'Return berjaya. Stok dikembalikan.', 'success');
+        await fetchOrders();
+      } else {
+        showToast(json.error || 'Return gagal', 'error');
+      }
+    } catch {
+      showToast('Ralat rangkaian. Sila cuba lagi.', 'error');
+    } finally {
+      setReturningId(null);
     }
   };
 
@@ -565,6 +588,34 @@ export default function PengurusanOrderPage() {
                         >
                           📦 Export
                         </button>
+
+                        {/* Return button — COD + completed + not yet returned */}
+                        {order.payment_type === 'cod' && order.payment_status === 'completed' && (
+                          order.returned_at ? (
+                            <span style={{
+                              fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '6px',
+                              background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)',
+                              color: '#60A5FA', fontWeight: 700, whiteSpace: 'nowrap',
+                            }}>
+                              ↩️ Returned
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleReturn(order.id, order.full_name)}
+                              disabled={returningId === order.id}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                                padding: '0.3rem 0.55rem', borderRadius: '6px',
+                                background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)',
+                                color: '#60A5FA', fontWeight: 700, fontSize: '0.68rem',
+                                cursor: returningId === order.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {returningId === order.id ? '...' : '🔄 Return'}
+                            </button>
+                          )
+                        )}
+
                         <button
                           onClick={() => { setSelectedIds(new Set([order.id])); setConfirmDelete(true); }}
                           style={{

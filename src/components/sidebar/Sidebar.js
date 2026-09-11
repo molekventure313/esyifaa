@@ -87,8 +87,9 @@ export default function Sidebar({ isOpen, onClose }) {
   const adminNav = [
     { section: 'UTAMA' },
     { label: 'Dashboard', href: '/dashboard/admin' },
-    { section: 'ORDER & PEMBAYARAN' },
+    { section: 'ORDER & STOK' },
     { label: '📦 Pengurusan Order', href: '/dashboard/admin/pesakit-berbayar' },
+    { label: '🏪 Stok Produk',      href: '/dashboard/admin/stok' },
     { section: 'PENGURUSAN' },
     { label: 'Perawat', href: '/dashboard/admin/perawat' },
     { section: 'TETAPAN' },

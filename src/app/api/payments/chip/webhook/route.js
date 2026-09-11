@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
 import { sendFpxCAPIEvent } from '@/lib/tracking/capi';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
+import { deductStock } from '@/lib/stock';
 
 function verifySignature(rawBody, signatureHeader, publicKeyPem) {
   if (!signatureHeader || !publicKeyPem) return false;
@@ -184,6 +185,24 @@ export async function POST(req) {
           });
         } catch (e) {
           console.error('CAPI FPX Purchase Error (non-blocking):', e.message);
+        }
+
+        // 5. Auto-deduct stock (FPX sabun orders only — non-blocking)
+        try {
+          if (submission.source?.includes('sabun')) {
+            // Parse qty from problem field: "Pakej: 3 Unit"
+            const qtyMatch = (submission.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
+            const qty = qtyMatch ? parseInt(qtyMatch[1]) : (parseInt(submission.qty) || 1);
+            await deductStock({
+              adminClient: supabase,
+              source: submission.source,
+              qty,
+              referenceId: submission.id,
+              notes: `FPX Order — RM${amountValue}`,
+            });
+          }
+        } catch (e) {
+          console.error('Stock deduct FPX error (non-blocking):', e.message);
         }
 
         // 6. Log activity

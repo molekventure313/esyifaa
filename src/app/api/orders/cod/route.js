@@ -4,6 +4,7 @@ import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
 import { sendFpxCAPIEvent } from '@/lib/tracking/capi';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
+import { deductStock } from '@/lib/stock';
 
 export async function POST(req) {
   try {
@@ -78,6 +79,7 @@ export async function POST(req) {
       utm_term: utm_term || null, landing_page_url: landing_page_url || null,
       referrer_url: referrer_url || null, fbclid: fbclid || null,
       ip_address: ip, user_agent, consent_contact: true,
+      qty: parseInt(quantity) || 1,
     };
     if (customerId) submissionData.customer_id = customerId;
 
@@ -89,6 +91,15 @@ export async function POST(req) {
         .single();
 
       if (!subErr && submission) submissionId = submission.id;
+
+      // Auto-deduct stock (non-blocking)
+      await deductStock({
+        adminClient: supabase,
+        source: source || 'sabun-garam',
+        qty: parseInt(quantity) || 1,
+        referenceId: submissionId,
+        notes: `COD Order — ${units_label}`,
+      });
     } catch (e) {
       console.warn('COD submission DB error:', e.message);
     }
