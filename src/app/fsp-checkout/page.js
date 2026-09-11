@@ -97,7 +97,7 @@ export default function FspCheckoutPage() {
 
       {/* Closing */}
       <FspClosingSection />
-      <FloatingWAButton pretext="Assalamualaikum, saya nak dapatkan rawatan ESyifaa. Boleh bantu saya?" />
+      <FloatingWAButton pretext="Assalamualaikum, saya nak dapatkan rawatan ESyifaa. Boleh bantu saya?" group="pengisian" />
 
       {/* Footer */}
       <footer style={{

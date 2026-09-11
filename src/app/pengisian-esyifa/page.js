@@ -52,7 +52,7 @@ export default function PengisianEsyifaPage() {
       <PengisianCheckoutForm />
       <PengisianFAQSection />
       <PengisianClosingSection />
-      <FloatingWAButton />
+      <FloatingWAButton group="pengisian" />
 
       <footer style={{
         background: '#021812', color: '#FFFFFF',

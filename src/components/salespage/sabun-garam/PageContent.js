@@ -92,7 +92,7 @@ export default function SabunGaramPageContent({
       <SabunClosingSection />
 
       {/* Floating WA help button */}
-      <FloatingWAButton pretext="Assalamualaikum, saya nak tanya pasal Sabun Garam Himalaya Pengisian ESyifaa" />
+      <FloatingWAButton pretext="Assalamualaikum, saya nak tanya pasal Sabun Garam Himalaya Pengisian ESyifaa" group="sabun" />
 
       <footer style={{
         background: '#F8FAFC',

@@ -34,28 +34,33 @@ export async function GET() {
 /**
  * POST /api/settings/wasap
  * Admin — tambah nombor WA baru.
- * Body: { name: string, number: string, is_active?: boolean, sort_order?: number }
+ * Body: { name, number, is_active?, sort_order?, group? }
+ * group: 'sabun' | 'pengisian' | 'all' (default: 'all')
  */
 export async function POST(req) {
   try {
     await requireAuth();
     const body = await req.json();
-    const { name, number, is_active = true, sort_order = 0 } = body;
+    const { name, number, is_active = true, sort_order = 0, group = 'all' } = body;
 
     if (!name?.trim() || !number?.trim()) {
       return NextResponse.json({ success: false, error: 'Nama dan nombor WA diperlukan' }, { status: 400 });
     }
 
-    // Clean number — remove +, spaces, dashes
     const cleanNumber = number.replace(/[\s\-+]/g, '');
     if (!/^\d{10,15}$/.test(cleanNumber)) {
       return NextResponse.json({ success: false, error: 'Format nombor tidak sah. Guna format: 601XXXXXXXX' }, { status: 400 });
     }
 
+    const validGroups = ['sabun', 'pengisian', 'all'];
+    if (!validGroups.includes(group)) {
+      return NextResponse.json({ success: false, error: 'Kumpulan tidak sah. Pilih: sabun, pengisian, atau all' }, { status: 400 });
+    }
+
     const adminClient = createAdminClient();
     const { data, error } = await adminClient
       .from('wasap_numbers')
-      .insert({ name: name.trim(), number: cleanNumber, is_active, sort_order })
+      .insert({ name: name.trim(), number: cleanNumber, is_active, sort_order, group })
       .select()
       .single();
 

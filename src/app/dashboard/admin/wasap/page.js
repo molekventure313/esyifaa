@@ -30,7 +30,13 @@ function Toast({ msg, type, onClose }) {
 }
 
 // ─── Empty form state ─────────────────────────────────────────────────────────
-const emptyForm = () => ({ name: '', number: '', is_active: true, sort_order: 0 });
+const emptyForm = () => ({ name: '', number: '', is_active: true, sort_order: 0, group: 'all' });
+
+const GROUP_OPTIONS = [
+  { value: 'all',       label: '🌐 Semua SP (all)',          desc: 'Muncul dalam semua salespage' },
+  { value: 'sabun',     label: '🧂 Sabun Garam',             desc: 'SP sabun-garam hingga sabun-garam-5' },
+  { value: 'pengisian', label: '✨ Pengisian ESyifaa',        desc: 'FSP checkout & pengisian pages' },
+];
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function WasapSettingsPage() {
@@ -100,7 +106,7 @@ export default function WasapSettingsPage() {
   // ── Edit ───────────────────────────────────────────────────────────────────
   const startEdit = (item) => {
     setEditingId(item.id);
-    setEditForm({ name: item.name, number: item.number, sort_order: item.sort_order });
+    setEditForm({ name: item.name, number: item.number, sort_order: item.sort_order, group: item.group || 'all' });
   };
 
   const handleSaveEdit = async () => {
@@ -232,11 +238,12 @@ export default function WasapSettingsPage() {
           <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>ℹ️</span>
           <div>
             <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.82rem', color: '#A7F3D0', fontWeight: 700 }}>
-              Cara Rotation Berfungsi
+              Cara Rotation Berfungsi (Ikut Kumpulan)
             </p>
             <p style={{ margin: 0, fontSize: '0.8rem', color: '#6EE7B7', lineHeight: 1.6 }}>
-              Kunjungan 1 → Perawat 1 · Kunjungan 2 → Perawat 2 · Kunjungan 3 → Perawat 1 · dan seterusnya.
-              Hanya nombor yang <strong>Aktif</strong> sahaja yang masuk dalam rotation.
+              Setiap kumpulan rotate <strong>berasingan</strong> — SP Sabun Garam guna queue <strong style={{ color: '#FCD34D' }}>🧂 Sabun</strong>,
+              SP Pengisian guna queue <strong style={{ color: '#A78BFA' }}>✨ Pengisian</strong>.
+              Nombor <strong style={{ color: '#34D399' }}>🌐 All</strong> muncul dalam semua kumpulan sebagai fallback.
             </p>
           </div>
         </div>
@@ -289,7 +296,7 @@ export default function WasapSettingsPage() {
                   />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
                 <div>
                   <label style={labelStyle}>Urutan (sort_order)</label>
                   <input
@@ -298,6 +305,18 @@ export default function WasapSettingsPage() {
                     value={addForm.sort_order}
                     onChange={e => setAddForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
                   />
+                </div>
+                <div>
+                  <label style={labelStyle}>Kumpulan SP</label>
+                  <select
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                    value={addForm.group}
+                    onChange={e => setAddForm(f => ({ ...f, group: e.target.value }))}
+                  >
+                    {GROUP_OPTIONS.map(g => (
+                      <option key={g.value} value={g.value}>{g.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontSize: '0.875rem', color: '#CBD5E1' }}>
@@ -372,6 +391,18 @@ export default function WasapSettingsPage() {
                         onChange={e => setEditForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
                       />
                     </div>
+                    <div style={{ marginBottom: '0.85rem' }}>
+                      <label style={labelStyle}>Kumpulan SP</label>
+                      <select
+                        style={{ ...inputStyle, width: '260px', cursor: 'pointer' }}
+                        value={editForm.group || 'all'}
+                        onChange={e => setEditForm(f => ({ ...f, group: e.target.value }))}
+                      >
+                        {GROUP_OPTIONS.map(g => (
+                          <option key={g.value} value={g.value}>{g.label} — {g.desc}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div style={{ display: 'flex', gap: '0.6rem' }}>
                       <button style={btnStyle('primary')} onClick={handleSaveEdit} disabled={saving}>
                         {saving ? 'Menyimpan...' : '✓ Simpan'}
@@ -404,6 +435,15 @@ export default function WasapSettingsPage() {
                         <code style={{ fontSize: '0.8rem', color: '#94A3B8', background: '#0D111C', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
                           +{item.number}
                         </code>
+                        {/* Group badge */}
+                        <span style={{
+                          fontSize: '0.68rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '5px',
+                          background: item.group === 'sabun' ? 'rgba(251,191,36,0.12)' : item.group === 'pengisian' ? 'rgba(167,139,250,0.12)' : 'rgba(52,211,153,0.08)',
+                          color: item.group === 'sabun' ? '#FCD34D' : item.group === 'pengisian' ? '#A78BFA' : '#34D399',
+                          border: item.group === 'sabun' ? '1px solid rgba(251,191,36,0.25)' : item.group === 'pengisian' ? '1px solid rgba(167,139,250,0.25)' : '1px solid rgba(52,211,153,0.2)',
+                        }}>
+                          {item.group === 'sabun' ? '🧂 Sabun' : item.group === 'pengisian' ? '✨ Pengisian' : '🌐 All'}
+                        </span>
                         <a
                           href={`https://wa.me/${item.number}`}
                           target="_blank" rel="noopener noreferrer"

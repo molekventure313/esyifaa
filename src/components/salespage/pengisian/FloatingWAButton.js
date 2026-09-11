@@ -3,27 +3,35 @@
 import { useState, useEffect } from 'react';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const FALLBACK_NUMBER  = '601135172611';
-const LS_KEY           = 'esyifaa_wa_idx';
-const buildWaLink      = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+const FALLBACK_NUMBER = '601135172611';
+const buildWaLink     = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
 const DEFAULT_PRETEXT = 'Saya nak dapatkan Pengisian Item E-Syifa';
 
-export default function FloatingWAButton({ pretext = DEFAULT_PRETEXT }) {
+/**
+ * FloatingWAButton
+ * @param {string} pretext  — Pre-filled WA message text
+ * @param {string} group    — WA rotater group: 'sabun' | 'pengisian' | 'all'
+ *                            Each group rotates independently via its own localStorage key.
+ */
+export default function FloatingWAButton({ pretext = DEFAULT_PRETEXT, group = 'all' }) {
   const [visible, setVisible]   = useState(false);
   const [waLink, setWaLink]     = useState(buildWaLink(FALLBACK_NUMBER, pretext));
   const [expanded, setExpanded] = useState(false);
 
+  // Per-group localStorage key — setiap group rotate berasingan
+  const lsKey = `esyifaa_wa_idx_${group}`;
+
   useEffect(() => {
-    // WA rotator — baca idx semasa tanpa advance
     const initWa = async () => {
       try {
-        const res     = await fetch('/api/public/wasap');
+        // Fetch numbers filtered by group (+ universal 'all' numbers)
+        const res     = await fetch(`/api/public/wasap?group=${group}`);
         const json    = await res.json();
         const numbers = (json.success && json.data?.length > 0)
           ? json.data.map(d => d.number)
           : [FALLBACK_NUMBER];
-        const idx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
+        const idx = parseInt(localStorage.getItem(lsKey) || '0', 10);
         setWaLink(buildWaLink(numbers[idx % numbers.length], pretext));
       } catch {
         setWaLink(buildWaLink(FALLBACK_NUMBER, pretext));
@@ -35,7 +43,7 @@ export default function FloatingWAButton({ pretext = DEFAULT_PRETEXT }) {
     const onScroll = () => setVisible(window.scrollY > 200);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [pretext]);
+  }, [pretext, group, lsKey]);
 
   if (!visible) return null;
 
