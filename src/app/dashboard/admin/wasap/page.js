@@ -30,7 +30,7 @@ function Toast({ msg, type, onClose }) {
 }
 
 // ─── Empty form state ─────────────────────────────────────────────────────────
-const emptyForm = () => ({ name: '', number: '', is_active: true, sort_order: 0, group: 'all' });
+const emptyForm = () => ({ name: '', number: '', is_active: true, sort_order: 0, sp_group: 'all' });
 
 const GROUP_OPTIONS = [
   { value: 'all',       label: '🌐 Semua SP (all)',          desc: 'Muncul dalam semua salespage' },
@@ -106,7 +106,7 @@ export default function WasapSettingsPage() {
   // ── Edit ───────────────────────────────────────────────────────────────────
   const startEdit = (item) => {
     setEditingId(item.id);
-    setEditForm({ name: item.name, number: item.number, sort_order: item.sort_order, group: item.group || 'all' });
+    setEditForm({ name: item.name, number: item.number, sort_order: item.sort_order, sp_group: item.sp_group || 'all' });
   };
 
   const handleSaveEdit = async () => {
@@ -310,8 +310,8 @@ export default function WasapSettingsPage() {
                   <label style={labelStyle}>Kumpulan SP</label>
                   <select
                     style={{ ...inputStyle, cursor: 'pointer' }}
-                    value={addForm.group}
-                    onChange={e => setAddForm(f => ({ ...f, group: e.target.value }))}
+                    value={addForm.sp_group}
+                    onChange={e => setAddForm(f => ({ ...f, sp_group: e.target.value }))}
                   >
                     {GROUP_OPTIONS.map(g => (
                       <option key={g.value} value={g.value}>{g.label}</option>
@@ -395,8 +395,8 @@ export default function WasapSettingsPage() {
                       <label style={labelStyle}>Kumpulan SP</label>
                       <select
                         style={{ ...inputStyle, width: '260px', cursor: 'pointer' }}
-                        value={editForm.group || 'all'}
-                        onChange={e => setEditForm(f => ({ ...f, group: e.target.value }))}
+                        value={editForm.sp_group || 'all'}
+                        onChange={e => setEditForm(f => ({ ...f, sp_group: e.target.value }))}
                       >
                         {GROUP_OPTIONS.map(g => (
                           <option key={g.value} value={g.value}>{g.label} — {g.desc}</option>
@@ -438,11 +438,11 @@ export default function WasapSettingsPage() {
                         {/* Group badge */}
                         <span style={{
                           fontSize: '0.68rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '5px',
-                          background: item.group === 'sabun' ? 'rgba(251,191,36,0.12)' : item.group === 'pengisian' ? 'rgba(167,139,250,0.12)' : 'rgba(52,211,153,0.08)',
-                          color: item.group === 'sabun' ? '#FCD34D' : item.group === 'pengisian' ? '#A78BFA' : '#34D399',
-                          border: item.group === 'sabun' ? '1px solid rgba(251,191,36,0.25)' : item.group === 'pengisian' ? '1px solid rgba(167,139,250,0.25)' : '1px solid rgba(52,211,153,0.2)',
+                          background: item.sp_group === 'sabun' ? 'rgba(251,191,36,0.12)' : item.sp_group === 'pengisian' ? 'rgba(167,139,250,0.12)' : 'rgba(52,211,153,0.08)',
+                          color: item.sp_group === 'sabun' ? '#FCD34D' : item.sp_group === 'pengisian' ? '#A78BFA' : '#34D399',
+                          border: item.sp_group === 'sabun' ? '1px solid rgba(251,191,36,0.25)' : item.sp_group === 'pengisian' ? '1px solid rgba(167,139,250,0.25)' : '1px solid rgba(52,211,153,0.2)',
                         }}>
-                          {item.group === 'sabun' ? '🧂 Sabun' : item.group === 'pengisian' ? '✨ Pengisian' : '🌐 All'}
+                          {item.sp_group === 'sabun' ? '🧂 Sabun' : item.sp_group === 'pengisian' ? '✨ Pengisian' : '🌐 All'}
                         </span>
                         <a
                           href={`https://wa.me/${item.number}`}

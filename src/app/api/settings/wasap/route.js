@@ -34,14 +34,17 @@ export async function GET() {
 /**
  * POST /api/settings/wasap
  * Admin — tambah nombor WA baru.
- * Body: { name, number, is_active?, sort_order?, group? }
- * group: 'sabun' | 'pengisian' | 'all' (default: 'all')
+ * Body: { name, number, is_active?, sort_order?, sp_group? }
+ * sp_group: 'sabun' | 'pengisian' | 'all' (default: 'all')
  */
 export async function POST(req) {
   try {
     await requireAuth();
     const body = await req.json();
-    const { name, number, is_active = true, sort_order = 0, group = 'all' } = body;
+    const { name, number, is_active = true, sort_order = 0, sp_group = 'all', group } = body;
+
+    // Support legacy 'group' field from older clients
+    const resolvedGroup = sp_group || group || 'all';
 
     if (!name?.trim() || !number?.trim()) {
       return NextResponse.json({ success: false, error: 'Nama dan nombor WA diperlukan' }, { status: 400 });
@@ -53,14 +56,14 @@ export async function POST(req) {
     }
 
     const validGroups = ['sabun', 'pengisian', 'all'];
-    if (!validGroups.includes(group)) {
+    if (!validGroups.includes(resolvedGroup)) {
       return NextResponse.json({ success: false, error: 'Kumpulan tidak sah. Pilih: sabun, pengisian, atau all' }, { status: 400 });
     }
 
     const adminClient = createAdminClient();
     const { data, error } = await adminClient
       .from('wasap_numbers')
-      .insert({ name: name.trim(), number: cleanNumber, is_active, sort_order, group })
+      .insert({ name: name.trim(), number: cleanNumber, is_active, sort_order, sp_group: resolvedGroup })
       .select()
       .single();
 
@@ -96,6 +99,18 @@ export async function PATCH(req) {
     }
 
     if (updates.name) updates.name = updates.name.trim();
+
+    // Map legacy 'group' key → 'sp_group' (column was renamed)
+    if ('group' in updates) {
+      updates.sp_group = updates.group;
+      delete updates.group;
+    }
+    if (updates.sp_group !== undefined) {
+      const validGroups = ['sabun', 'pengisian', 'all'];
+      if (!validGroups.includes(updates.sp_group)) {
+        return NextResponse.json({ success: false, error: 'Kumpulan tidak sah. Pilih: sabun, pengisian, atau all' }, { status: 400 });
+      }
+    }
 
     const adminClient = createAdminClient();
     const { data, error } = await adminClient
