@@ -70,16 +70,13 @@ export default function SabunSolutionSection({ solutionImage = null }) {
             overflow: 'hidden',
             boxShadow: '0 12px 40px rgba(0,0,0,0.10)',
             border: '2px solid #D1FAE5',
-            maxHeight: '420px',
           }}>
             <img
               src={solutionImage}
               alt="Penyelesaian Sabun Garam Himalaya Pengisian ESyifaa"
               style={{
                 width: '100%',
-                height: '100%',
-                maxHeight: '420px',
-                objectFit: 'cover',
+                height: 'auto',
                 display: 'block',
               }}
               loading="lazy"
