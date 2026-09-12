@@ -2,12 +2,35 @@
 
 const POINTS = [
   { icon: '📖', text: 'Diisikan dengan ayat-ayat ruqyah Al-Quran, doa dan zikir pilihan' },
-  { icon: '📿', text: '4 lapisan ayat ruqyah — Al-Fatihah, Ayat Kursi, Al-Falaq & An-Nas ditiupkan ke dalam garam' },
   { icon: '🧂', text: 'Garam himalaya asli 200g — bersifat semulajadi & digunakan dalam amalan ruqyah' },
   { icon: '🛡️', text: 'Bertindak sebagai ikhtiar perlindungan — usir sihir, saka, santau dari badan' },
   { icon: '💊', text: 'Bantu melegakan sakit urat, sengal badan & penyakit misteri secara rohani' },
   { icon: '🏠', text: 'Boleh diguna oleh seluruh ahli keluarga — sesuai untuk dewasa & kanak-kanak' },
 ];
+
+const RUQYAH_LAYERS = [
+  {
+    icon: '🔥',
+    title: 'Ayat Pembakar & Pemusnah Jin',
+    desc: 'Membakar dan memusnahkan jin yang menetap atau menyerang — bertindak aktif apabila ada gangguan yang cuba mendekat.',
+  },
+  {
+    icon: '✂️',
+    title: 'Ayat Pembatal Sihir',
+    desc: 'Memutuskan dan membatalkan ikatan sihir yang pernah dihantar atau masih aktif dari punca asalnya.',
+  },
+  {
+    icon: '🛡️',
+    title: 'Ayat Benteng Sihir & Jin',
+    desc: 'Membina dinding perlindungan di sekeliling badan. Jin dan sihir yang cuba mendekat akan dihalang dan dipukul balik.',
+  },
+  {
+    icon: '💚',
+    title: 'Ayat-Ayat Kesembuhan',
+    desc: 'Memulihkan kesan gangguan yang masih tinggal dalam badan — proses penyembuhan spiritual dan fizikal secara berterusan.',
+  },
+];
+
 
 export default function SabunSolutionSection({ solutionImage = null }) {
   const ff = 'var(--font-inter), -apple-system, sans-serif';
@@ -135,6 +158,50 @@ export default function SabunSolutionSection({ solutionImage = null }) {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* 4 Lapisan Ayat Ruqyah */}
+        <div style={{
+          background: '#FFFFFF',
+          border: '1px solid #D1FAE5',
+          borderRadius: '18px',
+          padding: '2rem',
+          marginBottom: '2rem',
+          boxShadow: '0 6px 20px rgba(16,185,129,0.05)',
+        }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <span style={{
+              display: 'inline-block', background: '#ECFDF5', border: '1px solid #A7F3D0',
+              color: '#047857', padding: '0.25rem 0.85rem', borderRadius: '9999px',
+              fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em',
+              textTransform: 'uppercase', marginBottom: '0.6rem',
+            }}>
+              📿 4 Lapisan Ayat Ruqyah
+            </span>
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0F172A', marginBottom: '0.3rem' }}>
+              Perlindungan Menyeluruh
+            </div>
+            <p style={{ margin: 0, fontSize: '0.87rem', color: '#475569', lineHeight: 1.65 }}>
+              Setiap sabun diisi dengan <strong style={{ color: '#047857' }}>4 lapisan ayat ruqyah syar&apos;iyyah</strong> yang berbeza fungsi — bukan sekadar bacaan biasa, ini gabungan yang direka untuk merawat, membakar, membatal dan membentengi secara serentak.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+            {RUQYAH_LAYERS.map((layer, i) => (
+              <div key={i} style={{
+                background: '#F8FFFE',
+                border: '1px solid #D1FAE5',
+                borderRadius: '12px',
+                padding: '1rem 1.1rem',
+                display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+              }}>
+                <span style={{ fontSize: '1.4rem', flexShrink: 0, lineHeight: 1 }}>{layer.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0F172A', marginBottom: '0.3rem' }}>{layer.title}</div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.6 }}>{layer.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
