@@ -43,11 +43,13 @@ export default function AdminDashboardPage() {
   // ── PNL Tab state ────────────────────────────────────────────────────────
   const [activeView,    setActiveView]    = useState('overview');
   const [pnlMode,       setPnlMode]       = useState('daily');   // 'daily' | 'monthly'
-  const [pnlPeriod,     setPnlPeriod]     = useState('month');   // 'week' | 'month'
+  const [pnlPeriod,     setPnlPeriod]     = useState('today');   // 'today' | 'week' | 'month'
   const [pnlData,       setPnlData]       = useState(null);
   const [pnlLoading,    setPnlLoading]    = useState(false);
   const [adsForm,       setAdsForm]       = useState({ spend_date: '', amount: '', notes: '', id: null });
   const [adsSubmitting, setAdsSubmitting] = useState(false);
+  // ── Overview pkg breakdown ────────────────────────────────────────────────
+  const [pkgData,       setPkgData]       = useState(null);
 
   const [isLightMode, setIsLightMode] = useState(false);
   useEffect(() => {
@@ -75,15 +77,21 @@ export default function AdminDashboardPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const [statsRes, stockRes] = await Promise.all([
+      // Map overview period to pnl-report period
+      const pnlPeriodMap = { today: 'today', yesterday: 'yesterday', week: 'week', month: 'month', all: 'all' };
+      const mappedPeriod = pnlPeriodMap[period] || 'today';
+
+      const [statsRes, stockRes, pkgRes] = await Promise.all([
         fetch(`/api/admin/sales-stats?period=${period}`).then(r => r.json()),
         fetch('/api/stock/summary').then(r => r.json()).catch(() => ({ success: false })),
+        fetch(`/api/admin/pnl-report?mode=daily&period=${mappedPeriod}`).then(r => r.json()).catch(() => ({ success: false })),
       ]);
       if (statsRes.success) {
         setData(statsRes.data);
         setLastUpdated(new Date().toLocaleTimeString('ms-MY'));
       }
       if (stockRes.success) setStockSummary(stockRes.data);
+      if (pkgRes.success)   setPkgData(pkgRes.summary);
     } catch (_) {}
     finally { setLoading(false); }
   }, [period]);
@@ -340,6 +348,21 @@ export default function AdminDashboardPage() {
             );
           })()}
 
+          {/* ─── Pecahan Set Widget ─── */}
+          {pkgData?.total_pkg && (
+            <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '0.85rem 1.5rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem 2rem', flexWrap: 'wrap', alignItems: 'center', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', flex: '0 0 auto' }}>📦 Pecahan Set:</div>
+              {[1, 2, 3].map(k => (
+                <div key={k} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase' }}>Set {k}U</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: k === 1 ? '#60A5FA' : k === 2 ? '#34D399' : '#F59E0B' }}>{pkgData.total_pkg[k] ?? 0}</span>
+                  <span style={{ fontSize: '0.68rem', color: textMuted }}>order</span>
+                </div>
+              ))}
+              <div style={{ marginLeft: 'auto', fontSize: '0.68rem', color: textMuted }}>{pkgData.total_orders ?? 0} order · {pkgData.total_units ?? 0} unit</div>
+            </div>
+          )}
+
           {/* ─── Row 2: SP Breakdown + Recent Orders ─── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
 
@@ -534,7 +557,7 @@ export default function AdminDashboardPage() {
             </div>
             {pnlMode === 'daily' && (
               <div style={{ display: 'flex', gap: '0.25rem', background: lm ? '#F1F5F9' : '#090A0F', padding: '3px', borderRadius: '8px', border: cardBorder }}>
-                {[{ id: 'week', label: '7 Hari' }, { id: 'month', label: '30 Hari' }].map(p => (
+                {[{ id: 'today', label: 'Hari Ini' }, { id: 'week', label: '7 Hari' }, { id: 'month', label: '30 Hari' }].map(p => (
                   <button key={p.id} onClick={() => setPnlPeriod(p.id)} style={{ padding: '0.35rem 0.85rem', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: pnlPeriod === p.id ? 700 : 500, fontSize: '0.78rem', fontFamily: ff, background: pnlPeriod === p.id ? (lm ? '#FFFFFF' : '#064E3B') : 'transparent', color: pnlPeriod === p.id ? (lm ? '#047857' : '#34D399') : textSecondary }}>{p.label}</button>
                 ))}
               </div>

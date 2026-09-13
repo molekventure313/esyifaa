@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-// ─── Auth Helper ─────────────────────────────────────────────────────────────
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -10,84 +10,79 @@ async function requireAdmin() {
   const adminClient = createAdminClient();
   const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
   if (!['admin', 'super_admin'].includes(profile?.role)) throw new Error('Forbidden');
-  return { user, adminClient };
+  return adminClient;
 }
 
-// ─── MYT Helpers ─────────────────────────────────────────────────────────────
-const MYT = 8 * 3600 * 1000;
-
-function nowMYT() {
-  return new Date(Date.now() + MYT);
-}
+// ─── MYT helpers ──────────────────────────────────────────────────────────────
+const MYT_MS = 8 * 3600 * 1000;
 
 function toMYTDateStr(utcDate) {
-  // Given a UTC date string/obj, return the MYT calendar date (YYYY-MM-DD)
-  const myt = new Date(new Date(utcDate).getTime() + MYT);
-  return myt.toISOString().split('T')[0];
+  return new Date(new Date(utcDate).getTime() + MYT_MS).toISOString().split('T')[0];
 }
 
 function getMYTToday() {
-  return nowMYT().toISOString().split('T')[0];
+  return new Date(Date.now() + MYT_MS).toISOString().split('T')[0];
 }
 
-// ─── Date Ranges ─────────────────────────────────────────────────────────────
-function getDailyRange(period) {
-  const todayMYT = getMYTToday();
-  const nowUTC   = new Date();
-  const DAY      = 86400000;
+// ─── Date range builder ────────────────────────────────────────────────────────
+// Supports: today | yesterday | week | month | all
+function getUTCRange(period) {
+  const DAY     = 86400000;
+  const nowMYT  = new Date(Date.now() + MYT_MS);
+  const todayStr = nowMYT.toISOString().split('T')[0];
 
-  if (period === 'week') {
-    const from = new Date(nowUTC - 6 * DAY);
-    return { fromUTC: from.toISOString(), toUTC: nowUTC.toISOString() };
+  if (period === 'today') {
+    return {
+      fromUTC: new Date(`${todayStr}T00:00:00+08:00`).toISOString(),
+      toUTC:   new Date(`${todayStr}T23:59:59+08:00`).toISOString(),
+    };
   }
-  // default: month (last 30 days)
-  const from = new Date(nowUTC - 29 * DAY);
-  return { fromUTC: from.toISOString(), toUTC: nowUTC.toISOString() };
+  if (period === 'yesterday') {
+    const yest = new Date(nowMYT);
+    yest.setUTCDate(nowMYT.getUTCDate() - 1);
+    const yStr = yest.toISOString().split('T')[0];
+    return {
+      fromUTC: new Date(`${yStr}T00:00:00+08:00`).toISOString(),
+      toUTC:   new Date(`${yStr}T23:59:59+08:00`).toISOString(),
+    };
+  }
+  if (period === 'week') {
+    return { fromUTC: new Date(Date.now() - 6 * DAY).toISOString(), toUTC: new Date().toISOString() };
+  }
+  if (period === 'month') {
+    return { fromUTC: new Date(Date.now() - 29 * DAY).toISOString(), toUTC: new Date().toISOString() };
+  }
+  // 'all' — no filter
+  return { fromUTC: null, toUTC: null };
 }
 
+// ─── Monthly calendar ranges (last N months) ──────────────────────────────────
 function getMonthlyRanges(count = 6) {
-  // Returns last N calendar months as { year, month, label, fromISO, toISO }
-  const today = nowMYT();
-  const months = [];
-  for (let i = 0; i < count; i++) {
-    const d = new Date(today);
+  const today = new Date(Date.now() + MYT_MS);
+  return Array.from({ length: count }, (_, i) => {
+    const d     = new Date(today);
     d.setUTCMonth(d.getUTCMonth() - i);
     const year  = d.getUTCFullYear();
-    const month = d.getUTCMonth() + 1; // 1-12
-    const fromMYT = `${year}-${String(month).padStart(2,'0')}-01`;
+    const month = d.getUTCMonth() + 1;
+    const pad   = String(month).padStart(2, '0');
     const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-    const toMYT   = `${year}-${String(month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
-    // Convert MYT dates to UTC boundaries for DB queries
-    const fromUTC = new Date(`${fromMYT}T00:00:00+08:00`).toISOString();
-    const toUTC   = new Date(`${toMYT}T23:59:59+08:00`).toISOString();
-    months.push({
-      year, month,
-      key: `${year}-${String(month).padStart(2,'0')}`,
-      label: new Date(`${fromMYT}T12:00:00Z`).toLocaleString('ms-MY', { month: 'long', year: 'numeric' }),
-      fromUTC, toUTC,
-    });
-  }
-  return months;
+    return {
+      key:   `${year}-${pad}`,
+      label: new Date(`${year}-${pad}-01T12:00:00Z`).toLocaleString('ms-MY', { month: 'long', year: 'numeric' }),
+      fromUTC: new Date(`${year}-${pad}-01T00:00:00+08:00`).toISOString(),
+      toUTC:   new Date(`${year}-${pad}-${String(lastDay).padStart(2,'0')}T23:59:59+08:00`).toISOString(),
+      spendDateFrom: `${year}-${pad}-01`,
+      spendDateTo:   `${year}-${pad}-${String(lastDay).padStart(2,'0')}`,
+    };
+  });
 }
 
-// ─── Qty Parser ───────────────────────────────────────────────────────────────
-function parseQty(row) {
-  // Priority: qty column → notes [QTY: X unit] → problem "Pakej: X Unit"
-  if (row.qty && row.qty > 0) return row.qty;
-  const notesMatch = (row.notes || '').match(/\[QTY:\s*(\d+)\s*unit\]/i);
-  if (notesMatch) return parseInt(notesMatch[1]);
-  const probMatch = (row.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
-  if (probMatch) return parseInt(probMatch[1]);
-  return 1; // default
-}
-
-// ─── Order Fetcher ────────────────────────────────────────────────────────────
-async function fetchOrders(adminClient, fromUTC, toUTC) {
+// ─── Fetch stock_movements (type='out') ───────────────────────────────────────
+async function fetchMovements(adminClient, fromUTC, toUTC) {
   let q = adminClient
-    .from('submissions')
-    .select('id, source, payment_type, amount_paid, notes, problem, qty, created_at')
-    .in('payment_type', ['fpx_payment', 'cod'])
-    .eq('payment_status', 'completed')
+    .from('stock_movements')
+    .select('id, qty, reference_id, created_at')
+    .eq('movement_type', 'out')
     .order('created_at', { ascending: true });
 
   if (fromUTC) q = q.gte('created_at', fromUTC);
@@ -95,15 +90,32 @@ async function fetchOrders(adminClient, fromUTC, toUTC) {
 
   const { data, error } = await q;
   if (error) throw error;
-  return (data || []).filter(s =>
-    s.source?.includes('sabun') ||
-    s.payment_type === 'cod' // COD orders are all sabun
-  );
+  return data || [];
 }
 
-// ─── Ads Fetcher ──────────────────────────────────────────────────────────────
+// ─── Batch-fetch submission amounts ───────────────────────────────────────────
+async function fetchRevenues(adminClient, subIds) {
+  if (!subIds.length) return {};
+  const { data } = await adminClient
+    .from('submissions')
+    .select('id, amount_paid, notes')
+    .in('id', subIds);
+
+  const map = {};
+  (data || []).forEach(s => {
+    let amt = parseFloat(s.amount_paid || 0);
+    if (!amt) {
+      // Fallback: parse from notes "[AMOUNT: MYR 75.00]"
+      const m = (s.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)?\s*([0-9.]+)\]/i);
+      amt = m ? parseFloat(m[1]) : 0;
+    }
+    map[s.id] = amt;
+  });
+  return map;
+}
+
+// ─── Fetch ads_spend records ──────────────────────────────────────────────────
 async function fetchAds(adminClient, fromDate, toDate) {
-  // fromDate/toDate are YYYY-MM-DD strings
   let q = adminClient.from('ads_spend').select('*').order('spend_date', { ascending: true });
   if (fromDate) q = q.gte('spend_date', fromDate);
   if (toDate)   q = q.lte('spend_date', toDate);
@@ -111,72 +123,88 @@ async function fetchAds(adminClient, fromDate, toDate) {
   return data || [];
 }
 
-// ─── Amount Parser ────────────────────────────────────────────────────────────
-function parseAmount(s) {
-  if (s.amount_paid && parseFloat(s.amount_paid) > 0) return parseFloat(s.amount_paid);
-  const m = (s.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)?\s*([0-9.]+)\]/i);
-  return m ? parseFloat(m[1]) : 0;
-}
-
-// ─── Aggregate Orders by Date ─────────────────────────────────────────────────
-function aggregateByDate(orders) {
+// ─── Aggregate movements into daily buckets ───────────────────────────────────
+function aggregateByDate(movements, revenueMap) {
   const map = {};
-  for (const s of orders) {
-    const date = toMYTDateStr(s.created_at);
-    if (!map[date]) map[date] = { date, orders: 0, revenue: 0, pkg: { 1: 0, 2: 0, 3: 0 } };
-    const qty = parseQty(s);
-    const amt = parseAmount(s);
-    map[date].orders++;
-    map[date].revenue += amt;
+  const seenSubsByDate = {}; // prevent double-counting revenue if multiple movements per sub
+
+  for (const mv of movements) {
+    const date   = toMYTDateStr(mv.created_at);
+    const qty    = parseInt(mv.qty) || 1;
     const pkgKey = Math.min(Math.max(qty, 1), 3);
-    map[date].pkg[pkgKey] = (map[date].pkg[pkgKey] || 0) + 1;
+
+    if (!map[date]) {
+      map[date] = { date, orders: 0, units_sold: 0, revenue: 0, pkg: { 1: 0, 2: 0, 3: 0 } };
+      seenSubsByDate[date] = new Set();
+    }
+
+    map[date].orders++;
+    map[date].units_sold += qty;
+    map[date].pkg[pkgKey]++;
+
+    // Revenue: count once per submission (avoid double-counting)
+    if (mv.reference_id && !seenSubsByDate[date].has(mv.reference_id)) {
+      map[date].revenue += revenueMap[mv.reference_id] || 0;
+      seenSubsByDate[date].add(mv.reference_id);
+    }
   }
   return map;
 }
 
-// ─── Main Handler ─────────────────────────────────────────────────────────────
+// ─── GET ──────────────────────────────────────────────────────────────────────
 export async function GET(req) {
   try {
-    const { adminClient } = await requireAdmin();
+    const adminClient = await requireAdmin();
     const { searchParams } = new URL(req.url);
-    const mode   = searchParams.get('mode') || 'daily'; // 'daily' | 'monthly'
-    const period = searchParams.get('period') || 'month'; // 'week' | 'month' (for daily mode)
+    const mode   = searchParams.get('mode')   || 'daily';
+    const period = searchParams.get('period') || 'today';
 
-    // Fetch avg cost for COGS calculation
-    const stockSumRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').limit(1).maybeSingle();
-    const avgCost = parseFloat(stockSumRes.data?.avg_cost_per_unit || 0);
+    // Avg cost for COGS
+    const stockRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').limit(1).maybeSingle();
+    const avgCost  = parseFloat(stockRes.data?.avg_cost_per_unit || 0);
 
+    // ── Monthly calendar mode ─────────────────────────────────────────────────
     if (mode === 'monthly') {
-      // ── Monthly Calendar Mode ─────────────────────────────────────────────
       const months = getMonthlyRanges(6);
 
-      const monthData = await Promise.all(months.map(async (m) => {
-        const [orders, ads] = await Promise.all([
-          fetchOrders(adminClient, m.fromUTC, m.toUTC),
-          fetchAds(adminClient, m.key + '-01', m.key + '-31'),
+      const monthData = await Promise.all(months.map(async m => {
+        const [movements, ads] = await Promise.all([
+          fetchMovements(adminClient, m.fromUTC, m.toUTC),
+          fetchAds(adminClient, m.spendDateFrom, m.spendDateTo),
         ]);
 
-        const revenue = orders.reduce((s, o) => s + parseAmount(o), 0);
-        const units_sold = orders.reduce((s, o) => s + parseQty(o), 0);
-        const total_ads = ads.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
-        const cogs = parseFloat((units_sold * avgCost).toFixed(2));
-        const gross_pnl = parseFloat((revenue - cogs).toFixed(2));
-        const net_pnl = parseFloat((gross_pnl - total_ads).toFixed(2));
-        const roas = total_ads > 0 ? parseFloat((revenue / total_ads).toFixed(2)) : null;
+        const subIds   = [...new Set(movements.map(mv => mv.reference_id).filter(Boolean))];
+        const revMap   = await fetchRevenues(adminClient, subIds);
 
-        const pkg = { 1: 0, 2: 0, 3: 0 };
-        orders.forEach(o => {
-          const k = Math.min(Math.max(parseQty(o), 1), 3);
-          pkg[k] = (pkg[k] || 0) + 1;
+        const pkg      = { 1: 0, 2: 0, 3: 0 };
+        let units_sold = 0, revenue = 0, orders = 0;
+        const seenSubs = new Set();
+
+        movements.forEach(mv => {
+          const qty    = parseInt(mv.qty) || 1;
+          const pkgKey = Math.min(Math.max(qty, 1), 3);
+          pkg[pkgKey]++;
+          units_sold += qty;
+          orders++;
+          if (mv.reference_id && !seenSubs.has(mv.reference_id)) {
+            revenue += revMap[mv.reference_id] || 0;
+            seenSubs.add(mv.reference_id);
+          }
         });
 
+        const total_ads  = ads.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
+        const cogs       = parseFloat((units_sold * avgCost).toFixed(2));
+        const gross_pnl  = parseFloat((revenue - cogs).toFixed(2));
+        const net_pnl    = parseFloat((gross_pnl - total_ads).toFixed(2));
+        const roas       = total_ads > 0 ? parseFloat((revenue / total_ads).toFixed(2)) : null;
+
         return {
-          ...m,
-          orders: orders.length,
-          revenue: parseFloat(revenue.toFixed(2)),
+          key: m.key, label: m.label,
+          orders,
+          revenue:    parseFloat(revenue.toFixed(2)),
           units_sold,
           pkg,
-          total_ads: parseFloat(total_ads.toFixed(2)),
+          total_ads:  parseFloat(total_ads.toFixed(2)),
           cogs,
           gross_pnl,
           net_pnl,
@@ -187,65 +215,67 @@ export async function GET(req) {
       return NextResponse.json({ success: true, mode: 'monthly', data: monthData });
     }
 
-    // ── Daily Mode ──────────────────────────────────────────────────────────
-    const { fromUTC, toUTC } = getDailyRange(period);
+    // ── Daily mode ────────────────────────────────────────────────────────────
+    const { fromUTC, toUTC } = getUTCRange(period);
 
-    // Date strings for ads_spend query (MYT)
-    const fromDateStr = toMYTDateStr(fromUTC);
-    const toDateStr   = toMYTDateStr(toUTC);
+    // Ads date range (MYT date strings)
+    const adsFrom = fromUTC ? toMYTDateStr(fromUTC) : null;
+    const adsTo   = toUTC   ? getMYTToday()         : null;
 
-    const [orders, ads] = await Promise.all([
-      fetchOrders(adminClient, fromUTC, toUTC),
-      fetchAds(adminClient, fromDateStr, toDateStr),
+    const [movements, ads] = await Promise.all([
+      fetchMovements(adminClient, fromUTC, toUTC),
+      fetchAds(adminClient, adsFrom, adsTo),
     ]);
+
+    // Batch-fetch revenues
+    const subIds   = [...new Set(movements.map(mv => mv.reference_id).filter(Boolean))];
+    const revenueMap = await fetchRevenues(adminClient, subIds);
 
     // Build ads map by date
     const adsMap = {};
     ads.forEach(a => { adsMap[a.spend_date] = a; });
 
     // Aggregate orders by MYT date
-    const ordersByDate = aggregateByDate(orders);
+    const ordersByDate = aggregateByDate(movements, revenueMap);
 
-    // Build full date range (fill in missing dates)
-    const allDates = new Set([
-      ...Object.keys(ordersByDate),
-      ...Object.keys(adsMap),
-    ]);
+    // Merge all dates (orders + ads)
+    const allDates = new Set([...Object.keys(ordersByDate), ...Object.keys(adsMap)]);
 
     const daily = Array.from(allDates).sort((a, b) => b.localeCompare(a)).map(date => {
-      const d   = ordersByDate[date] || { date, orders: 0, revenue: 0, pkg: { 1: 0, 2: 0, 3: 0 } };
-      const ad  = adsMap[date] || null;
-      const units_sold = Object.entries(d.pkg).reduce((s, [k, v]) => s + k * v, 0);
-      const cogs       = parseFloat((units_sold * avgCost).toFixed(2));
-      const gross_pnl  = parseFloat((d.revenue - cogs).toFixed(2));
-      const ads_cost   = ad ? parseFloat(ad.amount) : null;
-      const net_pnl    = ads_cost !== null ? parseFloat((gross_pnl - ads_cost).toFixed(2)) : null;
+      const d  = ordersByDate[date] || { date, orders: 0, units_sold: 0, revenue: 0, pkg: { 1: 0, 2: 0, 3: 0 } };
+      const ad = adsMap[date] || null;
+
+      const cogs      = parseFloat((d.units_sold * avgCost).toFixed(2));
+      const gross_pnl = parseFloat((d.revenue - cogs).toFixed(2));
+      const ads_cost  = ad ? parseFloat(ad.amount) : null;
+      const net_pnl   = ads_cost !== null ? parseFloat((gross_pnl - ads_cost).toFixed(2)) : null;
 
       return {
         date,
-        orders:     d.orders,
-        revenue:    parseFloat(d.revenue.toFixed(2)),
-        pkg:        d.pkg,
-        units_sold,
+        orders:    d.orders,
+        revenue:   parseFloat(d.revenue.toFixed(2)),
+        units_sold: d.units_sold,
+        pkg:       d.pkg,
         ads_cost,
-        ads_id:     ad?.id || null,
-        ads_notes:  ad?.notes || null,
+        ads_id:    ad?.id   || null,
+        ads_notes: ad?.notes || null,
         cogs,
         gross_pnl,
         net_pnl,
       };
     });
 
-    // Summary totals
-    const totalRevenue   = daily.reduce((s, d) => s + d.revenue, 0);
-    const totalUnits     = daily.reduce((s, d) => s + d.units_sold, 0);
-    const totalAds       = daily.reduce((s, d) => s + (d.ads_cost || 0), 0);
-    const totalCogs      = daily.reduce((s, d) => s + d.cogs, 0);
-    const totalGrossPnl  = parseFloat((totalRevenue - totalCogs).toFixed(2));
-    const totalNetPnl    = parseFloat((totalGrossPnl - totalAds).toFixed(2));
-    const roas           = totalAds > 0 ? parseFloat((totalRevenue / totalAds).toFixed(2)) : null;
-    const netMargin      = totalRevenue > 0 ? parseFloat(((totalNetPnl / totalRevenue) * 100).toFixed(1)) : 0;
-    const totalPkg       = { 1: 0, 2: 0, 3: 0 };
+    // Summary
+    const totalRevenue  = daily.reduce((s, d) => s + d.revenue, 0);
+    const totalUnits    = daily.reduce((s, d) => s + d.units_sold, 0);
+    const totalOrders   = daily.reduce((s, d) => s + d.orders, 0);
+    const totalAds      = daily.reduce((s, d) => s + (d.ads_cost || 0), 0);
+    const totalCogs     = parseFloat((totalUnits * avgCost).toFixed(2));
+    const grossPnl      = parseFloat((totalRevenue - totalCogs).toFixed(2));
+    const netPnl        = parseFloat((grossPnl - totalAds).toFixed(2));
+    const roas          = totalAds > 0 ? parseFloat((totalRevenue / totalAds).toFixed(2)) : null;
+    const netMargin     = totalRevenue > 0 ? parseFloat(((netPnl / totalRevenue) * 100).toFixed(1)) : 0;
+    const totalPkg      = { 1: 0, 2: 0, 3: 0 };
     daily.forEach(d => { [1, 2, 3].forEach(k => { totalPkg[k] += (d.pkg[k] || 0); }); });
 
     return NextResponse.json({
@@ -255,13 +285,13 @@ export async function GET(req) {
       avg_cost_per_unit: avgCost,
       summary: {
         total_revenue:  parseFloat(totalRevenue.toFixed(2)),
-        total_orders:   daily.reduce((s, d) => s + d.orders, 0),
+        total_orders:   totalOrders,
         total_units:    totalUnits,
         total_pkg:      totalPkg,
         total_ads:      parseFloat(totalAds.toFixed(2)),
-        total_cogs:     parseFloat(totalCogs.toFixed(2)),
-        gross_pnl:      totalGrossPnl,
-        net_pnl:        totalNetPnl,
+        total_cogs:     totalCogs,
+        gross_pnl:      grossPnl,
+        net_pnl:        netPnl,
         net_margin:     netMargin,
         roas,
       },
@@ -274,38 +304,36 @@ export async function GET(req) {
   }
 }
 
-// ─── POST — tambah/kemaskini ads cost (proxy ke ads_spend) ────────────────────
+// ─── POST — upsert ads spend for a date ──────────────────────────────────────
 export async function POST(req) {
   try {
-    const { adminClient } = await requireAdmin();
+    const adminClient = await requireAdmin();
     const { spend_date, amount, notes, id } = await req.json();
 
     if (!spend_date || amount === undefined) {
       return NextResponse.json({ success: false, error: 'Tarikh dan jumlah diperlukan' }, { status: 400 });
     }
-
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt < 0) {
       return NextResponse.json({ success: false, error: 'Jumlah tidak sah' }, { status: 400 });
     }
 
     if (id) {
-      // Update existing
       const { data, error } = await adminClient
         .from('ads_spend')
         .update({ amount: amt, notes: notes || null, updated_at: new Date().toISOString() })
         .eq('id', id).select().single();
       if (error) throw error;
       return NextResponse.json({ success: true, data, action: 'updated' });
-    } else {
-      // Insert new — upsert by spend_date
-      const { data, error } = await adminClient
-        .from('ads_spend')
-        .upsert({ spend_date, amount: amt, notes: notes || null }, { onConflict: 'spend_date' })
-        .select().single();
-      if (error) throw error;
-      return NextResponse.json({ success: true, data, action: 'created' });
     }
+
+    const { data, error } = await adminClient
+      .from('ads_spend')
+      .upsert({ spend_date, amount: amt, notes: notes || null }, { onConflict: 'spend_date' })
+      .select().single();
+    if (error) throw error;
+    return NextResponse.json({ success: true, data, action: 'created' });
+
   } catch (err) {
     const status = err.message === 'Unauthorized' ? 401 : err.message === 'Forbidden' ? 403 : 500;
     return NextResponse.json({ success: false, error: err.message }, { status });
