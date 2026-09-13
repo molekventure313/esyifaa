@@ -12,6 +12,8 @@ async function requireAdmin() {
   return { user, adminClient };
 }
 
+const EDITABLE_TYPES = ['in', 'adjustment'];
+
 /**
  * GET /api/stock/movements?product_id=&limit=50&offset=0
  * Returns paginated stock movement history with product name.
@@ -41,6 +43,84 @@ export async function GET(req) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, data: data || [], total: count || 0 });
+  } catch (err) {
+    const status = err.message === 'Unauthorized' ? 401 : err.message === 'Forbidden' ? 403 : 500;
+    return NextResponse.json({ success: false, error: err.message }, { status });
+  }
+}
+
+/**
+ * PATCH /api/stock/movements
+ * Edit a manual stock movement (only 'in' and 'adjustment' types).
+ * Body: { id, qty?, cost_per_unit?, notes? }
+ */
+export async function PATCH(req) {
+  try {
+    const { adminClient } = await requireAdmin();
+    const { id, qty, cost_per_unit, notes } = await req.json();
+
+    if (!id) return NextResponse.json({ success: false, error: 'ID diperlukan' }, { status: 400 });
+
+    // Verify movement exists and is editable type
+    const { data: existing, error: fetchErr } = await adminClient
+      .from('stock_movements').select('id, movement_type').eq('id', id).single();
+    if (fetchErr || !existing) return NextResponse.json({ success: false, error: 'Rekod tidak dijumpai' }, { status: 404 });
+    if (!EDITABLE_TYPES.includes(existing.movement_type)) {
+      return NextResponse.json({ success: false, error: `Rekod jenis '${existing.movement_type}' tidak boleh diedit — hanya rekod manual (in/adjustment) dibenarkan` }, { status: 403 });
+    }
+
+    const updates = {};
+    if (qty !== undefined) {
+      const q = parseInt(qty);
+      if (!q || q <= 0) return NextResponse.json({ success: false, error: 'Kuantiti mesti lebih dari 0' }, { status: 400 });
+      updates.qty = q;
+    }
+    if (cost_per_unit !== undefined) {
+      const c = parseFloat(cost_per_unit);
+      if (isNaN(c) || c < 0) return NextResponse.json({ success: false, error: 'Kos seunit tidak sah' }, { status: 400 });
+      updates.cost_per_unit = c;
+    }
+    if (notes !== undefined) updates.notes = notes?.trim() || null;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ success: false, error: 'Tiada perubahan untuk disimpan' }, { status: 400 });
+    }
+
+    const { data, error } = await adminClient
+      .from('stock_movements').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, data });
+  } catch (err) {
+    const status = err.message === 'Unauthorized' ? 401 : err.message === 'Forbidden' ? 403 : 500;
+    return NextResponse.json({ success: false, error: err.message }, { status });
+  }
+}
+
+/**
+ * DELETE /api/stock/movements
+ * Delete a manual stock movement (only 'in' and 'adjustment' types).
+ * Body: { id }
+ */
+export async function DELETE(req) {
+  try {
+    const { adminClient } = await requireAdmin();
+    const { id } = await req.json();
+
+    if (!id) return NextResponse.json({ success: false, error: 'ID diperlukan' }, { status: 400 });
+
+    // Verify movement exists and is editable type
+    const { data: existing, error: fetchErr } = await adminClient
+      .from('stock_movements').select('id, movement_type, qty, notes').eq('id', id).single();
+    if (fetchErr || !existing) return NextResponse.json({ success: false, error: 'Rekod tidak dijumpai' }, { status: 404 });
+    if (!EDITABLE_TYPES.includes(existing.movement_type)) {
+      return NextResponse.json({ success: false, error: `Rekod jenis '${existing.movement_type}' tidak boleh dipadam — hanya rekod manual dibenarkan` }, { status: 403 });
+    }
+
+    const { error } = await adminClient.from('stock_movements').delete().eq('id', id);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, deleted: { id, qty: existing.qty, notes: existing.notes } });
   } catch (err) {
     const status = err.message === 'Unauthorized' ? 401 : err.message === 'Forbidden' ? 403 : 500;
     return NextResponse.json({ success: false, error: err.message }, { status });

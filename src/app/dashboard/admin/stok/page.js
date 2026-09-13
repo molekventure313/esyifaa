@@ -47,6 +47,61 @@ function formatDate(d) {
 }
 function formatRM(v) { return v != null ? `RM ${parseFloat(v).toFixed(2)}` : '—'; }
 
+// ─── Edit Movement Modal ──────────────────────────────────────────────────────
+function EditMovementModal({ movement, onClose, onSuccess }) {
+  const [form, setForm] = useState({
+    qty: movement.qty || '',
+    cost_per_unit: movement.cost_per_unit ?? '',
+    notes: movement.notes || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setErr(''); setLoading(true);
+    try {
+      const res = await fetch('/api/stock/movements', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: movement.id, qty: parseInt(form.qty), cost_per_unit: parseFloat(form.cost_per_unit), notes: form.notes }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      onSuccess();
+    } catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9000, padding: '1rem' }}>
+      <div style={{ background: '#161B27', border: '2px solid #A78BFA', borderRadius: '16px', padding: '1.75rem', width: '100%', maxWidth: '440px', fontFamily: FF }}>
+        <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', fontWeight: 800, color: TEXT }}>✏️ Edit Rekod Stok</h3>
+        <p style={{ margin: '0 0 1.25rem', fontSize: '0.78rem', color: MUTED }}>Nota: {movement.notes || '—'}</p>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Kuantiti (unit)</label>
+              <input style={inputStyle} type="number" min="1" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} required />
+            </div>
+            <div>
+              <label style={labelStyle}>Kos Seunit (RM)</label>
+              <input style={inputStyle} type="number" min="0" step="0.01" value={form.cost_per_unit} onChange={e => setForm(f => ({ ...f, cost_per_unit: e.target.value }))} />
+            </div>
+          </div>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={labelStyle}>Nota</label>
+            <input style={inputStyle} type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          </div>
+          {err && <p style={{ color: '#F87171', fontSize: '0.82rem', margin: '0 0 1rem' }}>❌ {err}</p>}
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button type="submit" style={{ ...btnPrimary, background: '#7C3AED' }} disabled={loading}>{loading ? 'Menyimpan...' : '✓ Simpan'}</button>
+            <button type="button" style={btnGhost} onClick={onClose}>Batal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Add Stock Modal ──────────────────────────────────────────────────────────
 function AddStockModal({ products, onClose, onSuccess }) {
   const [form, setForm] = useState({ product_id: products[0]?.id || '', qty: '', cost_per_unit: '', notes: '' });
@@ -186,6 +241,7 @@ export default function StokPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [editForm,       setEditForm]       = useState({});
   const [saving,         setSaving]         = useState(false);
+  const [editingMovement, setEditingMovement] = useState(null); // movement object to edit
 
   const showToast = useCallback((msg, type = 'success') => setToast({ msg, type }), []);
 
@@ -230,6 +286,13 @@ export default function StokPage() {
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       {showAddStock   && <AddStockModal products={allActiveProducts} onClose={() => setShowAddStock(false)}   onSuccess={() => { setShowAddStock(false);   showToast(`Stok berjaya ditambah!`); fetchAll(); }} />}
       {showAddProduct && <AddProductModal onClose={() => setShowAddProduct(false)} onSuccess={() => { setShowAddProduct(false); showToast('Produk baru berjaya ditambah!'); fetchAll(); }} />}
+      {editingMovement && (
+        <EditMovementModal
+          movement={editingMovement}
+          onClose={() => setEditingMovement(null)}
+          onSuccess={() => { setEditingMovement(null); showToast('Rekod stok berjaya dikemaskini'); fetchAll(); }}
+        />
+      )}
 
       {/* Header */}
       <div style={{ padding: '1.25rem 1.5rem', borderRadius: '8px', marginBottom: '1.5rem', background: CARD, border: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -323,7 +386,7 @@ export default function StokPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                      {['Tarikh', 'Produk', 'Jenis', 'Qty', 'Kos/Unit', 'Rujukan', 'Nota'].map(h => (
+                      {['Tarikh', 'Produk', 'Jenis', 'Qty', 'Kos/Unit', 'Rujukan', 'Nota', ''].map(h => (
                         <th key={h} style={{ padding: '0.6rem 0.75rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -331,6 +394,7 @@ export default function StokPage() {
                   <tbody>
                     {movements.map(m => {
                       const cfg = MOVE_TYPE_CONFIG[m.movement_type] || MOVE_TYPE_CONFIG.in;
+                      const canEdit = m.movement_type === 'in' || m.movement_type === 'adjustment';
                       return (
                         <tr key={m.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
                           <td style={{ padding: '0.65rem 0.75rem', color: MUTED, whiteSpace: 'nowrap' }}>{formatDate(m.created_at)}</td>
@@ -345,7 +409,32 @@ export default function StokPage() {
                           <td style={{ padding: '0.65rem 0.75rem', color: MUTED, fontSize: '0.72rem' }}>
                             {m.reference_type === 'order' ? `📦 ${m.reference_id?.slice(0, 8)}...` : m.reference_type || '—'}
                           </td>
-                          <td style={{ padding: '0.65rem 0.75rem', color: MUTED, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.notes || '—'}</td>
+                          <td style={{ padding: '0.65rem 0.75rem', color: MUTED, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.notes || '—'}</td>
+                          <td style={{ padding: '0.65rem 0.5rem', whiteSpace: 'nowrap' }}>
+                            {canEdit ? (
+                              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                                <button
+                                  onClick={() => setEditingMovement(m)}
+                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '5px', background: 'rgba(167,139,250,0.08)', color: '#A78BFA', fontFamily: FF }}
+                                >✏️</button>
+                                <button
+                                  onClick={async () => {
+                                    if (!window.confirm(`Padam rekod ini?\n+${m.qty} unit — ${m.notes || 'tiada nota'}`)) return;
+                                    const res = await fetch('/api/stock/movements', {
+                                      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ id: m.id }),
+                                    });
+                                    const json = await res.json();
+                                    if (json.success) { showToast('Rekod berjaya dipadam'); fetchAll(); }
+                                    else showToast(json.error, 'error');
+                                  }}
+                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '5px', background: 'rgba(239,68,68,0.08)', color: '#F87171', fontFamily: FF }}
+                                >🗑️</button>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.65rem', color: 'rgba(156,163,175,0.4)' }}>Auto</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
