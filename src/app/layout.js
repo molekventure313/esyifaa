@@ -1,5 +1,6 @@
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { headers } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -21,61 +22,71 @@ export const metadata = {
   description: "Rawatan secara jarak jauh menggunakan bacaan ayat-ayat al-Quran dan doa berlandaskan syarak untuk membantu anda kembali tenang.",
 };
 
-// Fetch Pixel UTAMA ID — only used for 'lead' tracking pages
-async function getPixelId() {
-  try {
-    const adminClient = createAdminClient();
-    const { data } = await adminClient
-      .from('tracking_config')
-      .select('meta_pixel_id, is_active')
-      .limit(1)
-      .maybeSingle();
+// ─── Cached DB queries — revalidate setiap 5 minit ──────────────────────────
+// Pixel ID hampir tidak berubah — selamat di-cache
+const getCachedPixelId = unstable_cache(
+  async () => {
+    try {
+      const adminClient = createAdminClient();
+      const { data } = await adminClient
+        .from('tracking_config')
+        .select('meta_pixel_id, is_active')
+        .limit(1)
+        .maybeSingle();
 
-    if (data?.is_active && data?.meta_pixel_id) {
-      return data.meta_pixel_id;
+      if (data?.is_active && data?.meta_pixel_id) {
+        return data.meta_pixel_id;
+      }
+    } catch (e) {
+      console.warn('layout: failed to fetch pixel_id', e?.message);
     }
-  } catch (e) {
-    console.warn('layout: failed to fetch pixel_id', e?.message);
-  }
-  return null;
-}
+    return null;
+  },
+  ['layout-pixel-id'],
+  { revalidate: 300 } // 5 minit
+);
 
-// Check tracking_type for current page slug
-// Returns 'purchase' | 'lead' | null
-// 'purchase' pages use FPX pixel only — Pixel UTAMA must NOT load
-async function getTrackingType(slug) {
-  if (!slug) return 'lead';
-  try {
-    const adminClient = createAdminClient();
-    const { data } = await adminClient
-      .from('salespages')
-      .select('tracking_type')
-      .eq('slug', slug)
-      .maybeSingle();
-    return data?.tracking_type || 'lead';
-  } catch (e) {
-    console.warn('layout: failed to fetch tracking_type', e?.message);
-    return 'lead';
-  }
-}
+// Tracking type per slug — revalidate 5 minit
+const getCachedTrackingType = unstable_cache(
+  async (slug) => {
+    if (!slug) return 'lead';
+    try {
+      const adminClient = createAdminClient();
+      const { data } = await adminClient
+        .from('salespages')
+        .select('tracking_type')
+        .eq('slug', slug)
+        .maybeSingle();
+      return data?.tracking_type || 'lead';
+    } catch (e) {
+      console.warn('layout: failed to fetch tracking_type', e?.message);
+      return 'lead';
+    }
+  },
+  ['layout-tracking-type'],
+  { revalidate: 300 } // 5 minit
+);
 
 export default async function RootLayout({ children }) {
   // Get current page path from middleware-forwarded header
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') || '';
 
-  // Extract slug from pathname: '/fsp-checkout' → 'fsp-checkout'
+  // Extract slug: '/sabun-garam-1' → 'sabun-garam-1'
   const slug = pathname.replace(/^\//, '').split('/')[0] || '';
 
-  // Check if this page uses FPX pixel (Purchase) or Lead pixel
-  const trackingType = await getTrackingType(slug);
+  // ── Parallel fetch — kedua-dua queries jalan serentak ──────────────────
+  const [trackingType, pixelIdRaw] = await Promise.all([
+    getCachedTrackingType(slug),
+    getCachedPixelId(),
+  ]);
+
   const isFpxPage = trackingType === 'purchase';
 
-  // Skip Pixel UTAMA for FPX pages — FPX pixel loads via FspChipCheckoutForm instead
-  const pixelId = isFpxPage ? null : await getPixelId();
+  // Skip Pixel UTAMA untuk FPX pages — FPX pixel loads via FspChipCheckoutForm
+  const pixelId = isFpxPage ? null : pixelIdRaw;
 
-  // Official Meta Pixel base code — in <head> exactly per FB template
-  // Fires PageView on every page. /terima-kasih fires Lead via its own component.
+  // Official Meta Pixel base code — dalam <head> ikut FB template
   const pixelScript = pixelId ? `
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

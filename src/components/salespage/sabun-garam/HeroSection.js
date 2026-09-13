@@ -98,6 +98,7 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
                 objectFit: 'cover',
               }}
               loading="eager"
+              fetchPriority="high"
             />
           </div>
         )}
