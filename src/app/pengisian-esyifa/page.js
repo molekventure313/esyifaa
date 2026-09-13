@@ -1,5 +1,5 @@
 import PengisianHeroSection from '@/components/salespage/pengisian/HeroSection';
-import FspTestimonialSection from '@/components/salespage/fsp/TestimonialSection';
+import PengisianTestimonialSection from '@/components/salespage/pengisian/TestimonialSection';
 import PengisianProblemSection from '@/components/salespage/pengisian/ProblemSection';
 import PengisianFearsSection from '@/components/salespage/pengisian/FearsSection';
 import PengisianExpertSection from '@/components/salespage/pengisian/ExpertSection';
@@ -37,7 +37,7 @@ export default function PengisianEsyifaPage() {
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
 
       <PengisianHeroSection />
-      <FspTestimonialSection />
+      <PengisianTestimonialSection />
       <PengisianProblemSection />
       <PengisianFearsSection />
       <PengisianExpertSection />
