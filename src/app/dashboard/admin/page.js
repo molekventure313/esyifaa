@@ -90,6 +90,7 @@ export default function AdminDashboardPage() {
   const vsPrev   = data?.vs_previous || {};
   const bySP     = data?.by_salespage || [];
   const recent   = data?.recent_orders || [];
+  const pnl      = data?.pnl || {};
   const maxRev   = bySP[0]?.revenue || 1;
 
   const currentDate = new Date().toLocaleDateString('ms-MY', {
@@ -235,6 +236,69 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* ─── Gross PNL Banner ─── */}
+          {(() => {
+            const pnlPositive = pnl.gross_pnl > 0;
+            const pnlNegative = pnl.gross_pnl < 0;
+            const noCost      = !pnl.cost_configured;
+            const pnlColor    = noCost ? textMuted : pnlPositive ? '#10B981' : '#EF4444';
+            const pnlBg       = noCost
+              ? (lm ? '#F8FAFC' : 'rgba(255,255,255,0.03)')
+              : pnlPositive
+                ? (lm ? 'rgba(16,185,129,0.06)' : 'rgba(16,185,129,0.08)')
+                : (lm ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.08)');
+            const pnlBorder   = noCost ? cardBorder
+              : pnlPositive ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(239,68,68,0.25)';
+            return (
+              <div style={{
+                background: pnlBg, border: pnlBorder, borderRadius: '10px',
+                padding: '1rem 1.5rem', marginBottom: '1.5rem',
+                display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 700, color: pnlColor, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>
+                    💰 Gross PNL {noCost ? '(Kos belum diisi)' : ''}
+                  </div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 900, color: pnlColor, letterSpacing: '-0.03em', lineHeight: 1 }}>
+                    {noCost ? '—' : `${pnlPositive ? '+' : ''}${formatRM(pnl.gross_pnl)}`}
+                  </div>
+                  {!noCost && (
+                    <div style={{ fontSize: '0.75rem', color: pnlColor, marginTop: '0.2rem', fontWeight: 600 }}>
+                      Margin: {pnl.gross_margin}%
+                    </div>
+                  )}
+                </div>
+                <div style={{ height: '40px', width: '1px', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)' }} />
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>📦 COGS</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: textSecondary }}>
+                    {noCost ? '—' : formatRM(pnl.cogs)}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: '0.15rem' }}>
+                    {pnl.units_sold ?? 0} unit × {noCost ? 'kos ?' : `RM ${pnl.avg_cost?.toFixed(2)}`}
+                  </div>
+                </div>
+                <div style={{ height: '40px', width: '1px', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)' }} />
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>💵 Revenue</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: lm ? '#047857' : '#34D399' }}>
+                    {formatRM(totals.revenue)}
+                  </div>
+                </div>
+                {noCost && (
+                  <Link href="/dashboard/admin/stok" style={{
+                    marginLeft: 'auto', fontSize: '0.76rem', fontWeight: 700,
+                    color: lm ? '#3B82F6' : '#60A5FA', textDecoration: 'none',
+                    background: lm ? 'rgba(59,130,246,0.08)' : 'rgba(96,165,250,0.1)',
+                    border: '1px solid rgba(96,165,250,0.25)', padding: '0.4rem 0.9rem', borderRadius: '7px',
+                  }}>
+                    Isi Kos Seunit →
+                  </Link>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ─── Row 2: SP Breakdown + Recent Orders ─── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>

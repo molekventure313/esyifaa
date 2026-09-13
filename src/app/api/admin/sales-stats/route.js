@@ -146,8 +146,17 @@ export async function GET(req) {
 
     const { current, previous } = getMYTBounds(period);
 
-    // Fetch current + previous period + last 10 recent
-    const [currentOrders, previousOrders, allRecent] = await Promise.all([
+    // ── Build stock movements query for the current period ──────────────────
+    let stockMovQ = adminClient
+      .from('stock_movements')
+      .select('qty')
+      .eq('movement_type', 'out');
+
+    if (current.from) stockMovQ = stockMovQ.gte('created_at', current.from.toISOString());
+    if (current.to)   stockMovQ = stockMovQ.lte('created_at', current.to.toISOString());
+
+    // Fetch current + previous period + last 10 recent + stock data
+    const [currentOrders, previousOrders, allRecentRes, stockMovRes, stockSumRes] = await Promise.all([
       queryOrders(adminClient, current),
       queryOrders(adminClient, previous),
       adminClient
@@ -156,12 +165,23 @@ export async function GET(req) {
         .in('payment_type', ['fpx_payment', 'cod'])
         .eq('payment_status', 'completed')
         .order('created_at', { ascending: false })
-        .limit(10)
-        .then(r => r.data || []),
+        .limit(10),
+      stockMovQ,
+      adminClient.from('stock_summary').select('avg_cost_per_unit').limit(1).single(),
     ]);
 
     const totals   = aggregate(currentOrders);
     const prevAgg  = aggregate(previousOrders);
+
+    // ── Gross PNL calculation ────────────────────────────────────────────────
+    const units_sold     = (stockMovRes.data || []).reduce((s, m) => s + (m.qty || 0), 0);
+    const avg_cost       = parseFloat(stockSumRes.data?.avg_cost_per_unit || 0);
+    const cogs           = parseFloat((units_sold * avg_cost).toFixed(2));
+    const gross_pnl      = parseFloat((totals.revenue - cogs).toFixed(2));
+    const gross_margin   = totals.revenue > 0
+      ? parseFloat(((gross_pnl / totals.revenue) * 100).toFixed(1))
+      : 0;
+    const cost_configured = avg_cost > 0; // false = admin belum isi kos seunit
 
     // % change vs previous period
     const revPct = prevAgg.revenue > 0
@@ -172,7 +192,7 @@ export async function GET(req) {
       : (totals.orders > 0 ? 100 : 0);
 
     // Format recent orders
-    const recent_orders = allRecent.map(s => ({
+    const recent_orders = (allRecentRes.data || []).map(s => ({
       id: s.id,
       full_name: s.full_name,
       phone: s.phone,
@@ -196,6 +216,14 @@ export async function GET(req) {
         },
         by_salespage: totals.by_salespage,
         recent_orders,
+        pnl: {
+          units_sold,
+          avg_cost,
+          cogs,
+          gross_pnl,
+          gross_margin,
+          cost_configured,
+        },
       },
     });
   } catch (error) {
