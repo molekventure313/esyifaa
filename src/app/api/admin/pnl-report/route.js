@@ -143,7 +143,7 @@ export async function GET(req) {
     const period = searchParams.get('period') || 'month'; // 'week' | 'month' (for daily mode)
 
     // Fetch avg cost for COGS calculation
-    const stockSumRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').limit(1).single();
+    const stockSumRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').limit(1).maybeSingle();
     const avgCost = parseFloat(stockSumRes.data?.avg_cost_per_unit || 0);
 
     if (mode === 'monthly') {
