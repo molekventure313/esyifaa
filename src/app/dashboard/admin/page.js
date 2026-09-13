@@ -40,6 +40,15 @@ export default function AdminDashboardPage() {
   const [lastUpdated, setLastUpdated] = useState('');
   const [stockSummary, setStockSummary] = useState(null);
 
+  // ── PNL Tab state ────────────────────────────────────────────────────────
+  const [activeView,    setActiveView]    = useState('overview');
+  const [pnlMode,       setPnlMode]       = useState('daily');   // 'daily' | 'monthly'
+  const [pnlPeriod,     setPnlPeriod]     = useState('month');   // 'week' | 'month'
+  const [pnlData,       setPnlData]       = useState(null);
+  const [pnlLoading,    setPnlLoading]    = useState(false);
+  const [adsForm,       setAdsForm]       = useState({ spend_date: '', amount: '', notes: '', id: null });
+  const [adsSubmitting, setAdsSubmitting] = useState(false);
+
   const [isLightMode, setIsLightMode] = useState(false);
   useEffect(() => {
     const check = () => {
@@ -85,6 +94,31 @@ export default function AdminDashboardPage() {
     const interval = setInterval(fetchStats, 15000);
     return () => clearInterval(interval);
   }, [fetchStats]);
+
+  // ── PNL fetch ─────────────────────────────────────────────────────────────
+  const fetchPnl = useCallback(async () => {
+    if (activeView !== 'pnl') return;
+    setPnlLoading(true);
+    try {
+      const url = pnlMode === 'monthly'
+        ? '/api/admin/pnl-report?mode=monthly'
+        : `/api/admin/pnl-report?mode=daily&period=${pnlPeriod}`;
+      const res  = await fetch(url);
+      const json = await res.json();
+      if (json.success) setPnlData(json);
+    } catch (_) {}
+    finally { setPnlLoading(false); }
+  }, [activeView, pnlMode, pnlPeriod]);
+
+  useEffect(() => { fetchPnl(); }, [fetchPnl]);
+
+  // Auto-set ads date to today (MYT) when opening PNL tab
+  useEffect(() => {
+    if (activeView === 'pnl' && !adsForm.spend_date) {
+      const todayMYT = new Date(Date.now() + 8 * 3600 * 1000).toISOString().split('T')[0];
+      setAdsForm(f => ({ ...f, spend_date: todayMYT }));
+    }
+  }, [activeView]); // eslint-disable-line
 
   const totals   = data?.totals   || {};
   const vsPrev   = data?.vs_previous || {};
@@ -156,7 +190,13 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {loading ? (
+      {/* ─── View Tab Switcher ─── */}
+      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: lm ? '#F1F5F9' : '#090A0F', padding: '3px', borderRadius: '8px', width: 'fit-content', border: cardBorder }}>
+        <button onClick={() => setActiveView('overview')} style={{ padding: '0.4rem 1.1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: activeView === 'overview' ? 700 : 500, fontSize: '0.82rem', fontFamily: ff, background: activeView === 'overview' ? (lm ? '#FFFFFF' : '#064E3B') : 'transparent', color: activeView === 'overview' ? (lm ? '#047857' : '#34D399') : textSecondary }}>📊 Overview</button>
+        <button onClick={() => setActiveView('pnl')} style={{ padding: '0.4rem 1.1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: activeView === 'pnl' ? 700 : 500, fontSize: '0.82rem', fontFamily: ff, background: activeView === 'pnl' ? (lm ? '#FFFFFF' : '#1E1B4B') : 'transparent', color: activeView === 'pnl' ? (lm ? '#4F46E5' : '#A5B4FC') : textSecondary }}>💰 Laporan PNL</button>
+      </div>
+
+      {activeView === 'overview' && (loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px', gap: '0.75rem', flexDirection: 'column' }}>
           <div className="spinner" style={{ width: '32px', height: '32px', borderColor: 'rgba(16,185,129,0.2)', borderTopColor: '#10B981' }} />
           <span style={{ color: textSecondary, fontSize: '0.85rem' }}>Memuatkan data jualan...</span>
@@ -471,13 +511,192 @@ export default function AdminDashboardPage() {
                 background: cardBg, border: cardBorder,
                 boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                 display: 'block', transition: 'border-color 0.15s',
-              }}>
+              }}
+                >
                 <div style={{ fontSize: '1.4rem', marginBottom: '0.35rem' }}>{link.icon}</div>
                 <h4 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 700, color: textPrimary }}>{link.title}</h4>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: textSecondary }}>{link.desc}</p>
               </Link>
             ))}
           </div>
+        </>
+      ))}
+
+      {/* ─── PNL Tab ─── */}
+      {activeView === 'pnl' && (
+        <>
+          {/* Sub-period selector */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.25rem', background: lm ? '#F1F5F9' : '#090A0F', padding: '3px', borderRadius: '8px', border: cardBorder }}>
+              {[{ id: 'daily', label: '📋 Harian' }, { id: 'monthly', label: '📅 Bulanan' }].map(m => (
+                <button key={m.id} onClick={() => setPnlMode(m.id)} style={{ padding: '0.35rem 0.85rem', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: pnlMode === m.id ? 700 : 500, fontSize: '0.78rem', fontFamily: ff, background: pnlMode === m.id ? (lm ? '#FFFFFF' : '#1E1B4B') : 'transparent', color: pnlMode === m.id ? (lm ? '#4F46E5' : '#A5B4FC') : textSecondary }}>{m.label}</button>
+              ))}
+            </div>
+            {pnlMode === 'daily' && (
+              <div style={{ display: 'flex', gap: '0.25rem', background: lm ? '#F1F5F9' : '#090A0F', padding: '3px', borderRadius: '8px', border: cardBorder }}>
+                {[{ id: 'week', label: '7 Hari' }, { id: 'month', label: '30 Hari' }].map(p => (
+                  <button key={p.id} onClick={() => setPnlPeriod(p.id)} style={{ padding: '0.35rem 0.85rem', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: pnlPeriod === p.id ? 700 : 500, fontSize: '0.78rem', fontFamily: ff, background: pnlPeriod === p.id ? (lm ? '#FFFFFF' : '#064E3B') : 'transparent', color: pnlPeriod === p.id ? (lm ? '#047857' : '#34D399') : textSecondary }}>{p.label}</button>
+                ))}
+              </div>
+            )}
+            <button onClick={fetchPnl} style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', fontWeight: 600, border: cardBorder, borderRadius: '7px', background: 'transparent', color: textSecondary, cursor: 'pointer', fontFamily: ff }}>🔄 Refresh</button>
+          </div>
+
+          {/* Ads Quick Entry */}
+          <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1.25rem 1.5rem', marginBottom: '1.25rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#60A5FA', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.85rem' }}>💸 Isi / Kemaskini Kos Ads Harian</div>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: 700, color: textMuted, marginBottom: '0.3rem', textTransform: 'uppercase' }}>Tarikh</label>
+                <input type="date" value={adsForm.spend_date} onChange={e => setAdsForm(f => ({ ...f, spend_date: e.target.value, id: null, amount: '', notes: '' }))}
+                  style={{ padding: '0.55rem 0.85rem', background: lm ? '#F8FAFC' : '#090A0F', border: cardBorder, borderRadius: '7px', color: textPrimary, fontSize: '0.85rem', fontFamily: ff }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: 700, color: textMuted, marginBottom: '0.3rem', textTransform: 'uppercase' }}>Kos Ads (RM)</label>
+                <input type="number" min="0" step="0.01" placeholder="0.00" value={adsForm.amount} onChange={e => setAdsForm(f => ({ ...f, amount: e.target.value }))}
+                  style={{ padding: '0.55rem 0.85rem', background: lm ? '#F8FAFC' : '#090A0F', border: cardBorder, borderRadius: '7px', color: textPrimary, fontSize: '0.85rem', fontFamily: ff, width: '110px' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: '140px' }}>
+                <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: 700, color: textMuted, marginBottom: '0.3rem', textTransform: 'uppercase' }}>Nota (pilihan)</label>
+                <input type="text" placeholder="Cth: FB Ads Sep" value={adsForm.notes} onChange={e => setAdsForm(f => ({ ...f, notes: e.target.value }))}
+                  style={{ padding: '0.55rem 0.85rem', background: lm ? '#F8FAFC' : '#090A0F', border: cardBorder, borderRadius: '7px', color: textPrimary, fontSize: '0.85rem', fontFamily: ff, width: '100%', boxSizing: 'border-box' }} />
+              </div>
+              <button disabled={adsSubmitting || !adsForm.spend_date || !adsForm.amount}
+                onClick={async () => {
+                  if (!adsForm.spend_date || !adsForm.amount) return;
+                  setAdsSubmitting(true);
+                  try {
+                    const res = await fetch('/api/admin/pnl-report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spend_date: adsForm.spend_date, amount: parseFloat(adsForm.amount), notes: adsForm.notes || null, id: adsForm.id || undefined }) });
+                    const json = await res.json();
+                    if (json.success) { setAdsForm(f => ({ ...f, amount: '', notes: '', id: null })); fetchPnl(); }
+                  } catch (_) {}
+                  finally { setAdsSubmitting(false); }
+                }}
+                style={{ padding: '0.55rem 1.25rem', background: '#2563EB', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', fontFamily: ff, whiteSpace: 'nowrap', opacity: adsSubmitting ? 0.6 : 1 }}>
+                {adsSubmitting ? 'Menyimpan...' : adsForm.id ? '✓ Kemaskini' : '+ Simpan'}
+              </button>
+            </div>
+          </div>
+
+          {pnlLoading ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: textSecondary, fontSize: '0.9rem' }}>⏳ Memuatkan laporan PNL...</div>
+          ) : pnlData ? (
+            <>
+              {/* ── Summary Banner (Daily) ── */}
+              {pnlData.mode === 'daily' && pnlData.summary && (() => {
+                const s = pnlData.summary;
+                return (
+                  <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1.25rem 1.5rem', marginBottom: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+                    {[
+                      { label: '💵 Revenue',   val: formatRM(s.total_revenue), sub: `${s.total_orders} order`,        col: lm ? '#047857' : '#34D399' },
+                      { label: '📦 COGS',      val: formatRM(s.total_cogs),    sub: `${s.total_units} unit × kos`,    col: textSecondary },
+                      { label: '💸 Kos Ads',   val: formatRM(s.total_ads),     sub: s.roas ? `ROAS: ${s.roas}×` : 'Belum isi', col: '#60A5FA' },
+                      { label: '💰 Gross PNL', val: formatRM(s.gross_pnl),     sub: '(Revenue − COGS)',               col: s.gross_pnl >= 0 ? '#10B981' : '#EF4444' },
+                      { label: '🎯 Net PNL',   val: formatRM(s.net_pnl),       sub: `Margin: ${s.net_margin}%`,       col: s.net_pnl >= 0 ? '#10B981' : '#EF4444' },
+                    ].map(item => (
+                      <div key={item.label}>
+                        <div style={{ fontSize: '0.63rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', marginBottom: '0.25rem' }}>{item.label}</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: item.col }}>{item.val}</div>
+                        <div style={{ fontSize: '0.68rem', color: textMuted, marginTop: '0.12rem' }}>{item.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* ── Package Breakdown Summary ── */}
+              {pnlData.mode === 'daily' && pnlData.summary?.total_pkg && (
+                <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '0.9rem 1.5rem', marginBottom: '1.25rem', display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase' }}>📦 Pecahan Set:</div>
+                  {[1, 2, 3].map(k => (
+                    <div key={k} style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.62rem', color: textMuted, fontWeight: 700, textTransform: 'uppercase' }}>Set {k}U</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: k === 1 ? '#60A5FA' : k === 2 ? '#34D399' : '#F59E0B', lineHeight: 1 }}>{pnlData.summary.total_pkg[k] ?? 0}</div>
+                      <div style={{ fontSize: '0.62rem', color: textMuted }}>order</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Daily Breakdown Table ── */}
+              {pnlData.mode === 'daily' && (
+                <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1.5rem', overflowX: 'auto', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+                  <h3 style={{ margin: '0 0 1rem', fontSize: '0.88rem', fontWeight: 800, color: textPrimary }}>📋 Breakdown Harian</h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: cardBorder }}>
+                        {['Tarikh', '1U', '2U', '3U', 'Order', 'Revenue', 'Ads', 'Net PNL', ''].map(h => (
+                          <th key={h} style={{ padding: '0.5rem 0.6rem', textAlign: ['Revenue','Ads','Net PNL'].includes(h) ? 'right' : 'left', fontSize: '0.66rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(pnlData.daily || []).map(d => (
+                        <tr key={d.date} style={{ borderBottom: `1px solid ${lm ? '#F1F5F9' : 'rgba(255,255,255,0.04)'}` }}>
+                          <td style={{ padding: '0.6rem 0.6rem', color: textSecondary, whiteSpace: 'nowrap', fontSize: '0.79rem' }}>
+                            {new Date(d.date + 'T12:00:00Z').toLocaleDateString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                          {[1, 2, 3].map(k => (
+                            <td key={k} style={{ padding: '0.6rem 0.4rem', textAlign: 'center', fontWeight: (d.pkg?.[k] || 0) > 0 ? 800 : 400, color: (d.pkg?.[k] || 0) > 0 ? (k === 1 ? '#60A5FA' : k === 2 ? '#34D399' : '#F59E0B') : textMuted }}>
+                              {d.pkg?.[k] ?? 0}
+                            </td>
+                          ))}
+                          <td style={{ padding: '0.6rem 0.4rem', textAlign: 'center', color: textSecondary }}>{d.orders}</td>
+                          <td style={{ padding: '0.6rem 0.6rem', textAlign: 'right', fontWeight: 700, color: lm ? '#047857' : '#34D399' }}>{formatRM(d.revenue)}</td>
+                          <td style={{ padding: '0.6rem 0.6rem', textAlign: 'right', color: d.ads_cost ? '#60A5FA' : textMuted }}>{d.ads_cost ? formatRM(d.ads_cost) : '—'}</td>
+                          <td style={{ padding: '0.6rem 0.6rem', textAlign: 'right', fontWeight: 700, color: d.net_pnl !== null ? (d.net_pnl >= 0 ? '#10B981' : '#EF4444') : textMuted }}>
+                            {d.net_pnl !== null ? `${d.net_pnl >= 0 ? '+' : ''}${formatRM(d.net_pnl)}` : '—'}
+                          </td>
+                          <td style={{ padding: '0.6rem 0.4rem', whiteSpace: 'nowrap' }}>
+                            <button onClick={() => setAdsForm({ spend_date: d.date, amount: d.ads_cost ?? '', notes: d.ads_notes ?? '', id: d.ads_id })}
+                              style={{ padding: '0.2rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', border: `1px solid ${d.ads_id ? 'rgba(96,165,250,0.3)' : 'rgba(16,185,129,0.3)'}`, borderRadius: '5px', background: d.ads_id ? 'rgba(96,165,250,0.08)' : 'rgba(16,185,129,0.08)', color: d.ads_id ? '#60A5FA' : '#34D399', fontFamily: ff }}>
+                              {d.ads_id ? '✏️' : '+ Ads'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* ── Monthly Table ── */}
+              {pnlData.mode === 'monthly' && (
+                <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1.5rem', overflowX: 'auto', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+                  <h3 style={{ margin: '0 0 1rem', fontSize: '0.88rem', fontWeight: 800, color: textPrimary }}>📅 Laporan Bulanan (6 Bulan Terakhir)</h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: cardBorder }}>
+                        {['Bulan', '1U', '2U', '3U', 'Order', 'Revenue', 'Kos Ads', 'COGS', 'Net PNL', 'ROAS'].map(h => (
+                          <th key={h} style={{ padding: '0.5rem 0.6rem', textAlign: ['Bulan','1U','2U','3U','Order'].includes(h) ? 'left' : 'right', fontSize: '0.66rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(pnlData.data || []).map(m => (
+                        <tr key={m.key} style={{ borderBottom: `1px solid ${lm ? '#F1F5F9' : 'rgba(255,255,255,0.04)'}` }}>
+                          <td style={{ padding: '0.65rem 0.6rem', fontWeight: 700, color: textPrimary, whiteSpace: 'nowrap' }}>{m.label}</td>
+                          {[1, 2, 3].map(k => (
+                            <td key={k} style={{ padding: '0.65rem 0.4rem', fontWeight: (m.pkg?.[k] || 0) > 0 ? 800 : 400, color: (m.pkg?.[k] || 0) > 0 ? (k === 1 ? '#60A5FA' : k === 2 ? '#34D399' : '#F59E0B') : textMuted }}>
+                              {m.pkg?.[k] ?? 0}
+                            </td>
+                          ))}
+                          <td style={{ padding: '0.65rem 0.4rem', color: textSecondary }}>{m.orders}</td>
+                          <td style={{ padding: '0.65rem 0.6rem', textAlign: 'right', fontWeight: 700, color: lm ? '#047857' : '#34D399' }}>{formatRM(m.revenue)}</td>
+                          <td style={{ padding: '0.65rem 0.6rem', textAlign: 'right', color: m.total_ads > 0 ? '#60A5FA' : textMuted }}>{m.total_ads > 0 ? formatRM(m.total_ads) : '—'}</td>
+                          <td style={{ padding: '0.65rem 0.6rem', textAlign: 'right', color: textSecondary }}>{formatRM(m.cogs)}</td>
+                          <td style={{ padding: '0.65rem 0.6rem', textAlign: 'right', fontWeight: 700, color: m.net_pnl >= 0 ? '#10B981' : '#EF4444' }}>{`${m.net_pnl >= 0 ? '+' : ''}${formatRM(m.net_pnl)}`}</td>
+                          <td style={{ padding: '0.65rem 0.6rem', textAlign: 'right', color: m.roas ? '#A78BFA' : textMuted }}>{m.roas ? `${m.roas}×` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '3rem', color: textSecondary }}>Tiada data PNL tersedia.</div>
+          )}
         </>
       )}
     </div>
