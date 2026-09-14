@@ -99,8 +99,11 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
 
   // ─── Add-on: Kasturi Kijang E-Syifa' ──────────────────────────────────────
   const [addKasturi, setAddKasturi] = useState(false);
-  const KASTURI_PRICE = 20;
-  const grandTotal    = pkg.total + (addKasturi ? KASTURI_PRICE : 0);
+  const KASTURI_PRICE            = 20;
+  const KASTURI_POSTAGE_DISCOUNT = 5;   // RM5 off postage; Semenanjung: FREE, Sabah/Sarawak: RM5→RM5
+  const effectivePostage = addKasturi ? Math.max(0, postage - KASTURI_POSTAGE_DISCOUNT) : postage;
+  const postageIsFree    = addKasturi && effectivePostage === 0;
+  const grandTotal       = pkg.price + effectivePostage + (addKasturi ? KASTURI_PRICE : 0);
 
   // If Sabah/Sarawak selected and COD was active, switch to FPX
   useEffect(() => {
@@ -157,7 +160,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
       const address  = buildAddress();
 
       const kasturiNote = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa' +RM${KASTURI_PRICE}` : '';
-      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${pkg.postage}${kasturiNote}`;
+      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${effectivePostage}${kasturiNote}`;
 
       // Fire InitiateCheckout pixel
       try {
@@ -544,15 +547,24 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              {/* Badge */}
+              {/* Badge row — two badges */}
               <div style={{
                 position: 'absolute', top: '-11px', left: '1rem',
-                background: '#D97706', color: '#FFF',
-                fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
-                borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-                boxShadow: '0 2px 6px rgba(217,119,6,0.3)',
-                whiteSpace: 'nowrap',
-              }}>{'⚡ Tambahan Khas — Tawaran Sekali Sahaja'}</div>
+                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
+              }}>
+                <div style={{
+                  background: '#D97706', color: '#FFF',
+                  fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
+                  borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                  boxShadow: '0 2px 6px rgba(217,119,6,0.3)', whiteSpace: 'nowrap',
+                }}>{'⚡ Tambahan Khas — Tawaran Sekali Sahaja'}</div>
+                <div style={{
+                  background: '#059669', color: '#FFF',
+                  fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
+                  borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                  boxShadow: '0 2px 6px rgba(5,150,105,0.3)', whiteSpace: 'nowrap',
+                }}>{postageIsFree ? '🎁 POSTAGE FREE' : '🎁 DISKAUN POSTAGE RM5'}</div>
+              </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 {/* Tick checkbox */}
@@ -578,20 +590,19 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                     {'Ya! Tambah Kasturi Kijang E-Syifa\u2019 \uD83C\uDF3F'}
                   </div>
 
-                  {/* Price — left aligned, strikethrough */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.65rem' }}>
-                    <span style={{
-                      fontSize: '0.82rem', fontWeight: 600,
-                      color: '#94A3B8', textDecoration: 'line-through',
-                    }}>RM50</span>
-                    <span style={{
-                      fontSize: '1.05rem', fontWeight: 900, color: '#10B981',
-                    }}>RM{KASTURI_PRICE} sahaja</span>
+                  {/* Price + postage saving */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#94A3B8', textDecoration: 'line-through' }}>RM50</span>
+                    <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#10B981' }}>RM{KASTURI_PRICE} sahaja</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.65rem' }}>
+                    {postageIsFree
+                      ? '\uD83D\uDE9A Postage percuma terus! (Jimat RM5)'
+                      : '\uD83D\uDE9A Diskaun postage RM5 (bayar RM5 je)'}
                   </div>
 
-                  {/* Image + bullets — side by side on desktop, stacked on mobile */}
+                  {/* Image + bullets */}
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    {/* Image — left */}
                     <div style={{
                       width: '96px', height: '96px', flexShrink: 0,
                       borderRadius: '10px', overflow: 'hidden',
@@ -608,7 +619,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                       />
                     </div>
 
-                    {/* Bullets — right (minWidth forces wrap on narrow mobile) */}
+                    {/* Bullets */}
                     <div style={{ flex: 1, minWidth: '160px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.7 }}>
                       <div>{'🛡️ '}<strong>{'Wangian yang dibenci jin'}</strong>{' — benteng & pendinding sihir'}</div>
                       <div>{'✨ Diisi '}<strong>{'Ayat Ruqyah Benteng & Pendinding'}</strong>{' yang khas'}</div>
@@ -618,12 +629,29 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
 
                   {/* CTA text */}
                   <div style={{ marginTop: '0.55rem', fontSize: '0.72rem', fontWeight: 700, color: addKasturi ? '#059669' : '#D97706', transition: 'color 0.2s' }}>
-                    {addKasturi ? '\u2713 Kasturi Kijang telah ditambahkan ke order anda' : '\u2610 Klik untuk tambahkan ke order anda \u2192'}
+                    {addKasturi
+                      ? `\u2713 Kasturi ditambah — ${postageIsFree ? 'Postage percuma diaktifkan! \uD83C\uDF89' : 'Diskaun postage RM5 diaktifkan! \uD83C\uDF89'}`
+                      : '\u2610 Klik untuk tambahkan ke order anda \u2192'}
                   </div>
 
                 </div>
               </div>
             </div>
+
+            {/* ── Banner: postage saving active ── */}
+            {addKasturi && (
+              <div style={{
+                marginBottom: '0.75rem', padding: '0.6rem 0.85rem',
+                background: '#ECFDF5', border: '1px solid #6EE7B7',
+                borderRadius: '10px', fontSize: '0.78rem', fontWeight: 700, color: '#065F46',
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+              }}>
+                <span style={{ fontSize: '1rem' }}>🎉</span>
+                {postageIsFree
+                  ? 'Tahniah! Postage percuma diaktifkan kerana tambah Kasturi.'
+                  : 'Diskaun postage RM5 diaktifkan kerana tambah Kasturi.'}
+              </div>
+            )}
 
             {/* ── Ringkasan Order ── */}
             <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
@@ -634,9 +662,20 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
                 <span style={{ color: '#475569' }}>Sabun Garam — {pkg.label}</span>
                 <span style={{ fontWeight: 600, color: '#0F172A' }}>RM{pkg.price}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: addKasturi ? '0.4rem' : '0' }}>
+              {/* Postage row — dynamic */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', marginBottom: addKasturi ? '0.4rem' : '0' }}>
                 <span style={{ color: '#475569' }}>Postage</span>
-                <span style={{ fontWeight: 600, color: '#0F172A' }}>RM{pkg.postage}</span>
+                {addKasturi ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontWeight: 500, color: '#94A3B8', textDecoration: 'line-through', fontSize: '0.8rem' }}>RM{postage}</span>
+                    <span style={{ fontWeight: 700, color: postageIsFree ? '#059669' : '#0F172A' }}>
+                      {postageIsFree ? 'PERCUMA 🎁' : `RM${effectivePostage}`}
+                    </span>
+                    {!postageIsFree && <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 600 }}>(- RM{KASTURI_POSTAGE_DISCOUNT})</span>}
+                  </span>
+                ) : (
+                  <span style={{ fontWeight: 600, color: '#0F172A' }}>RM{postage}</span>
+                )}
               </div>
               {addKasturi && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
