@@ -48,6 +48,7 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'month';
+    const marketer_id = searchParams.get('marketer_id');
     const { from, to } = getDateRange(period);
 
     // Fetch ads_spend records
@@ -58,6 +59,8 @@ export async function GET(req) {
 
     if (from) spendQuery = spendQuery.gte('spend_date', from);
     if (to) spendQuery = spendQuery.lte('spend_date', to);
+    if (marketer_id === 'hq') spendQuery = spendQuery.is('marketer_id', null);
+    else if (marketer_id) spendQuery = spendQuery.eq('marketer_id', marketer_id);
 
     const { data: spendRecords, error: spendErr } = await spendQuery;
     if (spendErr) throw spendErr;

@@ -78,7 +78,7 @@ function getMonthlyRanges(count = 6) {
 }
 
 // ─── Fetch stock_movements for sabun only (type='out', SKU=SGH-200G) ──────────
-async function fetchMovements(adminClient, fromUTC, toUTC) {
+async function fetchMovements(adminClient, fromUTC, toUTC, marketer_id) {
   const { data: sabunProd } = await adminClient
     .from('products').select('id').eq('sku', 'SGH-200G').maybeSingle();
 
@@ -99,19 +99,30 @@ async function fetchMovements(adminClient, fromUTC, toUTC) {
   // Split: order-linked vs manual/other movements
   const orderMvs = movements.filter(m => m.reference_type === 'order' && m.reference_id);
   const otherMvs = movements.filter(m => m.reference_type !== 'order' || !m.reference_id);
-  if (orderMvs.length === 0) return otherMvs;
+
+  if (orderMvs.length === 0) {
+    if (marketer_id) return []; // Non-order movements don't belong to a marketer
+    return otherMvs;
+  }
 
   // Cross-check reference_ids — filter out orphans (deleted orders)
   const refIds = [...new Set(orderMvs.map(m => m.reference_id))];
-  const { data: subs } = await adminClient.from('submissions').select('id').in('id', refIds);
+  
+  let subQ = adminClient.from('submissions').select('id').in('id', refIds);
+  if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
+  else if (marketer_id) subQ = subQ.eq('marketer_id', marketer_id);
+  
+  const { data: subs } = await subQ;
   const existingIds = new Set((subs || []).map(s => s.id));
 
   const validMvs = orderMvs.filter(m => existingIds.has(m.reference_id));
+  
+  if (marketer_id) return validMvs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   return [...otherMvs, ...validMvs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 }
 
 // ─── Count kasturi add-on orders in period ────────────────────────────────────
-async function fetchKasturiCount(adminClient, fromUTC, toUTC) {
+async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
   const { data: prod } = await adminClient
     .from('products').select('id').eq('sku', 'KKE-01').maybeSingle();
   if (!prod?.id) return 0;
@@ -131,12 +142,19 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC) {
 
   // Cross-check — exclude orphaned movements (deleted orders)
   const refIds = [...new Set(movements.map(m => m.reference_id).filter(Boolean))];
-  if (refIds.length === 0) return movements.length;
+  if (refIds.length === 0) {
+    if (marketer_id) return 0;
+    return movements.length;
+  }
 
-  const { data: subs } = await adminClient.from('submissions').select('id').in('id', refIds);
+  let subQ = adminClient.from('submissions').select('id').in('id', refIds);
+  if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
+  else if (marketer_id) subQ = subQ.eq('marketer_id', marketer_id);
+  
+  const { data: subs } = await subQ;
   const existingIds = new Set((subs || []).map(s => s.id));
 
-  return movements.filter(m => !m.reference_id || existingIds.has(m.reference_id)).length;
+  return movements.filter(m => existingIds.has(m.reference_id) || (!m.reference_id && !marketer_id)).length;
 }
 
 // ─── Batch-fetch submission amounts ───────────────────────────────────────────
@@ -272,9 +290,9 @@ export async function GET(req) {
     const adsTo   = toUTC   ? getMYTToday()         : null;
 
     const [movements, ads, kasturiOrders] = await Promise.all([
-      fetchMovements(adminClient, fromUTC, toUTC),
-      fetchAds(adminClient, adsFrom, adsTo),
-      fetchKasturiCount(adminClient, fromUTC, toUTC),
+      fetchMovements(adminClient, fromUTC, toUTC, marketer_id),
+      fetchAds(adminClient, adsFrom, adsTo, marketer_id),
+      fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id),
     ]);
 
     // Batch-fetch revenues

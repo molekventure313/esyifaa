@@ -75,16 +75,30 @@ export default function AdminDashboardPage() {
   const textMuted     = lm ? '#64748B' : '#6B7280';
   const ff            = 'var(--font-inter), -apple-system, sans-serif';
 
+  // ── Marketer Filter state ──────────────────────────────────────────────────
+  const [marketerFilter, setMarketerFilter] = useState('all');
+  const [marketers, setMarketers] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/admin/marketers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setMarketers(data.data || []);
+      })
+      .catch(console.error);
+  }, []);
+
   const fetchStats = useCallback(async () => {
     try {
       // Map overview period to pnl-report period
       const pnlPeriodMap = { today: 'today', yesterday: 'yesterday', week: 'week', month: 'month', all: 'all' };
       const mappedPeriod = pnlPeriodMap[period] || 'today';
+      const mParam = marketerFilter !== 'all' ? `&marketer_id=${marketerFilter}` : '';
 
       const [statsRes, stockRes, pkgRes] = await Promise.all([
-        fetch(`/api/admin/sales-stats?period=${period}`).then(r => r.json()),
+        fetch(`/api/admin/sales-stats?period=${period}${mParam}`).then(r => r.json()),
         fetch('/api/stock/summary').then(r => r.json()).catch(() => ({ success: false })),
-        fetch(`/api/admin/pnl-report?mode=daily&period=${mappedPeriod}`).then(r => r.json()).catch(() => ({ success: false })),
+        fetch(`/api/admin/pnl-report?mode=daily&period=${mappedPeriod}${mParam}`).then(r => r.json()).catch(() => ({ success: false })),
       ]);
       if (statsRes.success) {
         setData(statsRes.data);
@@ -94,7 +108,7 @@ export default function AdminDashboardPage() {
       if (pkgRes.success)   setPkgData(pkgRes.summary);
     } catch (_) {}
     finally { setLoading(false); }
-  }, [period]);
+  }, [period, marketerFilter]);
 
   useEffect(() => {
     setLoading(true);
@@ -108,15 +122,16 @@ export default function AdminDashboardPage() {
     if (activeView !== 'pnl') return;
     setPnlLoading(true);
     try {
+      const mParam = marketerFilter !== 'all' ? `&marketer_id=${marketerFilter}` : '';
       const url = pnlMode === 'monthly'
-        ? '/api/admin/pnl-report?mode=monthly'
-        : `/api/admin/pnl-report?mode=daily&period=${pnlPeriod}`;
+        ? `/api/admin/pnl-report?mode=monthly${mParam}`
+        : `/api/admin/pnl-report?mode=daily&period=${pnlPeriod}${mParam}`;
       const res  = await fetch(url);
       const json = await res.json();
       if (json.success) setPnlData(json);
     } catch (_) {}
     finally { setPnlLoading(false); }
-  }, [activeView, pnlMode, pnlPeriod]);
+  }, [activeView, pnlMode, pnlPeriod, marketerFilter]);
 
   useEffect(() => { fetchPnl(); }, [fetchPnl]);
 
@@ -179,22 +194,47 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Period Selector */}
-        <div style={{
-          display: 'flex', background: lm ? '#F1F5F9' : '#090A0F',
-          padding: '3px', borderRadius: '8px',
-          border: lm ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.08)',
-        }}>
-          {PERIODS.map(p => (
-            <button key={p.id} onClick={() => setPeriod(p.id)} style={{
-              padding: '0.4rem 0.9rem', borderRadius: '5px', fontSize: '0.78rem',
-              fontWeight: period === p.id ? 700 : 500, border: 'none', cursor: 'pointer',
-              background: period === p.id ? (lm ? '#FFFFFF' : '#064E3B') : 'transparent',
-              color: period === p.id ? (lm ? '#047857' : '#34D399') : textSecondary,
-              boxShadow: period === p.id && lm ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.15s',
-            }}>{p.label}</button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          {/* Marketer Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: textSecondary }}>Marketer:</span>
+            <select
+              value={marketerFilter}
+              onChange={e => setMarketerFilter(e.target.value)}
+              style={{
+                padding: '0.4rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem',
+                background: lm ? '#F1F5F9' : '#090A0F',
+                border: lm ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.08)',
+                color: textPrimary,
+                fontFamily: ff,
+                outline: 'none', cursor: 'pointer'
+              }}
+            >
+              <option value="all">Semua (HQ + Marketers)</option>
+              <option value="hq">HQ Sahaja</option>
+              {marketers.map(m => (
+                <option key={m.id} value={m.id}>{m.full_name} ({m.marketer_code || 'Tiada Kod'})</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Period Selector */}
+          <div style={{
+            display: 'flex', background: lm ? '#F1F5F9' : '#090A0F',
+            padding: '3px', borderRadius: '8px',
+            border: lm ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.08)',
+          }}>
+            {PERIODS.map(p => (
+              <button key={p.id} onClick={() => setPeriod(p.id)} style={{
+                padding: '0.4rem 0.9rem', borderRadius: '5px', fontSize: '0.78rem',
+                fontWeight: period === p.id ? 700 : 500, border: 'none', cursor: 'pointer',
+                background: period === p.id ? (lm ? '#FFFFFF' : '#064E3B') : 'transparent',
+                color: period === p.id ? (lm ? '#047857' : '#34D399') : textSecondary,
+                boxShadow: period === p.id && lm ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s',
+              }}>{p.label}</button>
+            ))}
+          </div>
         </div>
       </div>
 
