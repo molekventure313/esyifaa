@@ -44,13 +44,23 @@ export default function LoginPage() {
           return;
         }
 
+        if (profile && profile.role === 'marketer' && !profile.is_active) {
+          await supabase.auth.signOut();
+          setError('Akaun marketer anda sedang MENUNGGU KELULUSAN oleh Admin. Sila hubungi pihak pentadbir.');
+          setLoading(false);
+          return;
+        }
+
         const role = profile?.role || 'practitioner';
         const isAdmin = role === 'admin' || role === 'super_admin';
+        const isMarketer = role === 'marketer';
 
-        showToast(`Berjaya log masuk sebagai ${isAdmin ? 'Admin' : 'Perawat'}!`, 'success');
+        showToast(`Berjaya log masuk sebagai ${isAdmin ? 'Admin' : isMarketer ? 'Marketer' : 'Perawat'}!`, 'success');
         
         if (isAdmin) {
           router.push('/dashboard/admin');
+        } else if (isMarketer) {
+          router.push('/dashboard/marketer');
         } else {
           router.push('/dashboard/perawat');
         }

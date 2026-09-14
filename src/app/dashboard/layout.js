@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -21,10 +21,17 @@ export default function DashboardLayout({ children }) {
       
       const role = profile?.role || user?.role || 'practitioner';
       const isAdmin = role === 'admin' || role === 'super_admin';
+      const isMarketer = role === 'marketer';
 
-      // Role Access Guard: Prevent perawat from accessing admin control pages
+      // Role Access Guard
       if (pathname.startsWith('/dashboard/admin') && !isAdmin) {
+        router.replace(isMarketer ? '/dashboard/marketer' : '/dashboard/perawat');
+      }
+      if (pathname.startsWith('/dashboard/marketer') && !isMarketer && !isAdmin) {
         router.replace('/dashboard/perawat');
+      }
+      if (pathname.startsWith('/dashboard/perawat') && isMarketer) {
+        router.replace('/dashboard/marketer');
       }
     }
   }, [user, profile, loading, pathname, router]);

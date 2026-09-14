@@ -87,6 +87,18 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Kes Saya', href: '/dashboard/perawat/kes-saya' },
     { label: 'Follow-up', href: '/dashboard/perawat/follow-up' }
   ];
+
+  const marketerNav = [
+    { section: 'UTAMA' },
+    { label: 'Dashboard', href: '/dashboard/marketer' },
+    { label: '📦 Orders Saya', href: '/dashboard/marketer/orders' },
+    { section: 'LAPORAN' },
+    { label: '💰 Gaji Marketer', href: '/dashboard/marketer/gaji' },
+    { label: '📊 Kos Ads', href: '/dashboard/marketer/ads' },
+    { section: 'TETAPAN' },
+    { label: '📱 Pixel & Tracking', href: '/dashboard/marketer/pixels' },
+    { label: '🔗 Link Marketing', href: '/dashboard/marketer/links' }
+  ];
   
   const adminNav = [
     { section: 'UTAMA' },
@@ -96,6 +108,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '🏪 Stok Produk',      href: '/dashboard/admin/stok' },
     { section: 'PENGURUSAN' },
     { label: 'Perawat', href: '/dashboard/admin/perawat' },
+    { label: 'Marketers', href: '/dashboard/admin/marketers' },
     { label: 'Pelanggan', href: '/dashboard/admin/pelanggan' },
     { section: 'TETAPAN' },
     { label: 'Kos Ads & Komisen', href: '/dashboard/admin/ads' },
@@ -105,14 +118,19 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '💬 WA Perawat', href: '/dashboard/admin/wasap' },
     { label: 'Log Aktiviti', href: '/dashboard/admin/log' }
   ];
+
+  const isMarketer = role === 'marketer';
+  const isMarketerPath = pathname.startsWith('/dashboard/marketer');
   
   let navItems = adminNav;
   if (isPerawatPath) {
     navItems = practitionerNav;
+  } else if (isMarketerPath) {
+    navItems = marketerNav;
   } else if (isAdminPath) {
     navItems = adminNav;
   } else {
-    navItems = isAdmin ? adminNav : practitionerNav;
+    navItems = isAdmin ? adminNav : isMarketer ? marketerNav : practitionerNav;
   }
 
   const initials = profile?.full_name ? profile.full_name.substring(0, 2).toUpperCase() : 'U';
