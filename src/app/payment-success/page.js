@@ -101,19 +101,22 @@ function PaymentSuccessContent() {
     return () => { isSubscribed = false; };
   }, [submissionId, isMock, isCod, amountParam, productParam]);
 
-  // Fire Purchase pixel when status = completed (covers FPX + COD)
+  // Fire Purchase pixel when status = completed — FPX only
+  // COD is already handled in SabunCheckoutForm.js (before redirect) with matching eventID
+  // FPX: eventID must match webhook CAPI → `purchase_${submissionId}` for dedup
   useEffect(() => {
     if (status !== 'completed' || !fpxPixelId) return;
+    if (isCod) return; // COD: server CAPI + checkout browser already deduplicated — skip here
     try {
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('trackSingle', fpxPixelId, 'Purchase', {
           value: amount,
           currency: 'MYR',
           content_name: productName,
-        }, { eventID: `ps_${submissionId || Date.now()}` });
+        }, { eventID: `purchase_${submissionId}` }); // matches webhook eventId
       }
     } catch (_) {}
-  }, [status, fpxPixelId, amount, productName, submissionId]);
+  }, [status, fpxPixelId, amount, productName, submissionId, isCod]);
 
   // ─── Display content — same message for both COD and FPX ───
   const displayTitle    = `Pesanan Diterima — RM${amount.toFixed(2)}`;
@@ -180,7 +183,7 @@ function PaymentSuccessContent() {
           }}>
             {data?.full_name && (
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '0.5rem' }}>
-                <span>{isOrder ? 'Nama Penerima:' : 'Nama Pesakit:'}</span>
+                <span>{isCod ? 'Nama Penerima:' : 'Nama Pesakit:'}</span>
                 <strong style={{ color: '#FFFFFF' }}>{data.full_name}</strong>
               </div>
             )}

@@ -174,7 +174,7 @@ export async function POST(req) {
         try {
           await sendFpxCAPIEvent({
             eventName: 'Purchase',
-            eventId: submission.event_id || submission.id,
+            eventId: `purchase_${submission.id}`,
             sourceUrl: submission.landing_page_url || null,
             userData: { phone: submission.phone, client_ip_address: submission.ip_address, client_user_agent: submission.user_agent },
             customData: { currency: 'MYR', value: amountValue, content_name: `ESyifaa FPX — RM${amountValue}` },
