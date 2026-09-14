@@ -71,13 +71,16 @@ function spLabel(source) {
 }
 
 // ─── Query Helper ────────────────────────────────────────────────────────────
-async function queryOrders(adminClient, { from, to }) {
+async function queryOrders(adminClient, { from, to }, marketer_id) {
   let q = adminClient
     .from('submissions')
     .select('id, full_name, phone, source, payment_type, payment_status, amount_paid, notes, created_at')
     .in('payment_type', ['fpx_payment', 'cod'])
     .eq('payment_status', 'completed')
     .order('created_at', { ascending: false });
+
+  if (marketer_id === 'hq') q = q.is('marketer_id', null);
+  else if (marketer_id) q = q.eq('marketer_id', marketer_id);
 
   if (from) q = q.gte('created_at', from.toISOString());
   if (to)   q = q.lte('created_at', to.toISOString());
@@ -143,6 +146,7 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'today';
+    const marketer_id = searchParams.get('marketer_id');
 
     const { current, previous } = getMYTBounds(period);
 
@@ -155,17 +159,22 @@ export async function GET(req) {
     if (current.from) stockMovQ = stockMovQ.gte('created_at', current.from.toISOString());
     if (current.to)   stockMovQ = stockMovQ.lte('created_at', current.to.toISOString());
 
+    let recentQ = adminClient
+      .from('submissions')
+      .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at')
+      .in('payment_type', ['fpx_payment', 'cod'])
+      .eq('payment_status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(10);
+      
+    if (marketer_id === 'hq') recentQ = recentQ.is('marketer_id', null);
+    else if (marketer_id) recentQ = recentQ.eq('marketer_id', marketer_id);
+
     // Fetch current + previous period + last 10 recent + stock data
     const [currentOrders, previousOrders, allRecentRes, stockMovRes, stockSumRes] = await Promise.all([
-      queryOrders(adminClient, current),
-      queryOrders(adminClient, previous),
-      adminClient
-        .from('submissions')
-        .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at')
-        .in('payment_type', ['fpx_payment', 'cod'])
-        .eq('payment_status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(10),
+      queryOrders(adminClient, current, marketer_id),
+      queryOrders(adminClient, previous, marketer_id),
+      recentQ,
       stockMovQ,
       adminClient.from('stock_summary').select('avg_cost_per_unit').eq('sku', 'SGH-200G').maybeSingle(),
     ]);

@@ -161,10 +161,12 @@ async function fetchRevenues(adminClient, subIds) {
 }
 
 // ─── Fetch ads_spend records ──────────────────────────────────────────────────
-async function fetchAds(adminClient, fromDate, toDate) {
+async function fetchAds(adminClient, fromDate, toDate, marketer_id) {
   let q = adminClient.from('ads_spend').select('*').order('spend_date', { ascending: true });
   if (fromDate) q = q.gte('spend_date', fromDate);
   if (toDate)   q = q.lte('spend_date', toDate);
+  if (marketer_id === 'hq') q = q.is('marketer_id', null);
+  else if (marketer_id) q = q.eq('marketer_id', marketer_id);
   const { data } = await q;
   return data || [];
 }
@@ -204,6 +206,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const mode   = searchParams.get('mode')   || 'daily';
     const period = searchParams.get('period') || 'today';
+    const marketer_id = searchParams.get('marketer_id');
 
     // Avg cost for COGS
     const stockRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').eq('sku', 'SGH-200G').maybeSingle();
@@ -216,7 +219,7 @@ export async function GET(req) {
       const monthData = await Promise.all(months.map(async m => {
         const [movements, ads] = await Promise.all([
           fetchMovements(adminClient, m.fromUTC, m.toUTC),
-          fetchAds(adminClient, m.spendDateFrom, m.spendDateTo),
+          fetchAds(adminClient, m.spendDateFrom, m.spendDateTo, marketer_id),
         ]);
 
         const subIds   = [...new Set(movements.map(mv => mv.reference_id).filter(Boolean))];
