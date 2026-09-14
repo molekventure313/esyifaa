@@ -81,10 +81,9 @@ export async function PATCH(req) {
 
     if (!id) return NextResponse.json({ success: false, error: 'id diperlukan' }, { status: 400 });
 
-    // Sanitize
+    // Sanitize — cost_price excluded: auto-calculated as weighted avg from stock-in movements
     const allowed = {};
     if (updates.name !== undefined)                allowed.name                = updates.name.trim();
-    if (updates.cost_price !== undefined)           allowed.cost_price          = parseFloat(updates.cost_price) || 0;
     if (updates.selling_price !== undefined)        allowed.selling_price       = parseFloat(updates.selling_price) || 0;
     if (updates.low_stock_threshold !== undefined)  allowed.low_stock_threshold = parseInt(updates.low_stock_threshold) || 10;
     if (updates.unit !== undefined)                 allowed.unit                = updates.unit.trim();

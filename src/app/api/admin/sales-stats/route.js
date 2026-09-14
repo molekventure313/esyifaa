@@ -167,7 +167,7 @@ export async function GET(req) {
         .order('created_at', { ascending: false })
         .limit(10),
       stockMovQ,
-      adminClient.from('stock_summary').select('avg_cost_per_unit').limit(1).single(),
+      adminClient.from('stock_summary').select('avg_cost_per_unit').eq('sku', 'SGH-200G').maybeSingle(),
     ]);
 
     const totals   = aggregate(currentOrders);

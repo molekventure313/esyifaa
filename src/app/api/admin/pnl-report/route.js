@@ -185,7 +185,7 @@ export async function GET(req) {
     const period = searchParams.get('period') || 'today';
 
     // Avg cost for COGS
-    const stockRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').limit(1).maybeSingle();
+    const stockRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').eq('sku', 'SGH-200G').maybeSingle();
     const avgCost  = parseFloat(stockRes.data?.avg_cost_per_unit || 0);
 
     // ── Monthly calendar mode ─────────────────────────────────────────────────

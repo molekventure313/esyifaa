@@ -23,9 +23,10 @@ export async function GET(req) {
     await requireAdmin();
     const adminClient = createAdminClient();
     const { searchParams } = new URL(req.url);
-    const product_id = searchParams.get('product_id') || null;
-    const limit      = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
-    const offset     = parseInt(searchParams.get('offset') || '0');
+    const product_id    = searchParams.get('product_id')    || null;
+    const movement_type = searchParams.get('movement_type') || null;
+    const limit         = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const offset        = parseInt(searchParams.get('offset') || '0');
 
     let query = adminClient
       .from('stock_movements')
@@ -37,7 +38,8 @@ export async function GET(req) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (product_id) query = query.eq('product_id', product_id);
+    if (product_id)    query = query.eq('product_id', product_id);
+    if (movement_type) query = query.eq('movement_type', movement_type);
 
     const { data, error, count } = await query;
     if (error) throw error;

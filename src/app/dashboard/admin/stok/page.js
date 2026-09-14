@@ -203,10 +203,6 @@ function AddProductModal({ onClose, onSuccess }) {
               <input style={inputStyle} type="text" placeholder="unit / kotak / botol" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} />
             </div>
             <div>
-              <label style={labelStyle}>Kos Seunit (RM)</label>
-              <input style={inputStyle} type="number" min="0" step="0.01" placeholder="0.00" value={form.cost_price} onChange={e => setForm(f => ({ ...f, cost_price: e.target.value }))} />
-            </div>
-            <div>
               <label style={labelStyle}>Harga Jual (RM)</label>
               <input style={inputStyle} type="number" min="0" step="0.01" placeholder="0.00" value={form.selling_price} onChange={e => setForm(f => ({ ...f, selling_price: e.target.value }))} />
             </div>
@@ -214,6 +210,9 @@ function AddProductModal({ onClose, onSuccess }) {
               <label style={labelStyle}>Alert Stok Rendah (unit)</label>
               <input style={inputStyle} type="number" min="1" placeholder="10" value={form.low_stock_threshold} onChange={e => setForm(f => ({ ...f, low_stock_threshold: e.target.value }))} />
             </div>
+          </div>
+          <div style={{ padding: '0.6rem 0.85rem', borderRadius: '7px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', marginBottom: '1rem', fontSize: '0.75rem', color: '#34D399' }}>
+            💡 Kos Seunit akan dikira secara automatik sebagai purata berwajaran dari setiap batch stok yang ditambah.
           </div>
           {err && <p style={{ color: '#F87171', fontSize: '0.82rem', margin: '0 0 1rem' }}>❌ {err}</p>}
           <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -241,24 +240,28 @@ export default function StokPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [editForm,       setEditForm]       = useState({});
   const [saving,         setSaving]         = useState(false);
-  const [editingMovement, setEditingMovement] = useState(null); // movement object to edit
+  const [editingMovement, setEditingMovement] = useState(null);
+  const [moveFilter,     setMoveFilter]     = useState('all'); // 'all'|'in'|'out'|'return'
 
   const showToast = useCallback((msg, type = 'success') => setToast({ msg, type }), []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
+      const moveUrl = moveFilter === 'all'
+        ? '/api/stock/movements?limit=50'
+        : `/api/stock/movements?limit=50&movement_type=${moveFilter}`;
       const [sumRes, prodRes, moveRes] = await Promise.all([
         fetch('/api/stock/summary').then(r => r.json()),
         fetch('/api/stock/products').then(r => r.json()),
-        fetch('/api/stock/movements?limit=50').then(r => r.json()),
+        fetch(moveUrl).then(r => r.json()),
       ]);
       if (sumRes.success)  setSummary(sumRes.data);
       if (prodRes.success) setProducts(prodRes.data || []);
       if (moveRes.success) { setMovements(moveRes.data || []); setTotalMoves(moveRes.total || 0); }
     } catch (e) { showToast('Gagal memuatkan data stok', 'error'); }
     finally { setLoading(false); }
-  }, [showToast]);
+  }, [showToast, moveFilter]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -328,54 +331,65 @@ export default function StokPage() {
         </div>
       ) : activeTab === 'stok' ? (
         <>
-          {/* Summary cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+          {/* Summary cards — per product */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
             {(summary?.products || []).map(p => (
-              <div key={p.id}>
-                {/* Stock qty card */}
-                <div style={{
-                  padding: '1.25rem', borderRadius: '10px', marginBottom: '0.75rem',
-                  background: p.is_out_of_stock ? 'rgba(239,68,68,0.1)' : p.is_low_stock ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.08)',
-                  border: `1px solid ${p.is_out_of_stock ? 'rgba(239,68,68,0.3)' : p.is_low_stock ? 'rgba(245,158,11,0.3)' : 'rgba(16,185,129,0.2)'}`,
-                }}>
-                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: MUTED, textTransform: 'uppercase', marginBottom: '0.4rem' }}>{p.name}</div>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 900, lineHeight: 1, color: p.is_out_of_stock ? '#EF4444' : p.is_low_stock ? '#F59E0B' : GREEN }}>
-                    {p.current_stock}
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: MUTED, marginTop: '0.3rem' }}>{p.unit} tersedia</div>
-                  {p.is_low_stock && !p.is_out_of_stock && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#F59E0B', fontWeight: 700 }}>⚠️ Stok rendah (alert: {p.low_stock_threshold})</div>
-                  )}
-                  {p.is_out_of_stock && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#EF4444', fontWeight: 700 }}>🚫 Stok habis!</div>
-                  )}
+              <div key={p.id} style={{
+                padding: '1.25rem', borderRadius: '10px',
+                background: p.is_out_of_stock ? 'rgba(239,68,68,0.1)' : p.is_low_stock ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.08)',
+                border: `1px solid ${p.is_out_of_stock ? 'rgba(239,68,68,0.3)' : p.is_low_stock ? 'rgba(245,158,11,0.3)' : 'rgba(16,185,129,0.2)'}`,
+              }}>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: MUTED, textTransform: 'uppercase', marginBottom: '0.4rem' }}>{p.name}</div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, lineHeight: 1, color: p.is_out_of_stock ? '#EF4444' : p.is_low_stock ? '#F59E0B' : GREEN }}>
+                  {p.current_stock}
                 </div>
+                <div style={{ fontSize: '0.78rem', color: MUTED, marginTop: '0.3rem' }}>{p.unit} tersedia</div>
+                {/* Avg cost per unit — auto dari stock-in movements */}
+                <div style={{ marginTop: '0.65rem', paddingTop: '0.65rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: '0.62rem', color: MUTED, fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.2rem' }}>💲 Kos Seunit (avg)</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 800, color: p.avg_cost_per_unit > 0 ? '#F59E0B' : MUTED }}>
+                    {p.avg_cost_per_unit > 0 ? formatRM(p.avg_cost_per_unit) : '—'}
+                  </div>
+                </div>
+                {p.is_low_stock && !p.is_out_of_stock && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#F59E0B', fontWeight: 700 }}>⚠️ Stok rendah (alert: {p.low_stock_threshold})</div>
+                )}
+                {p.is_out_of_stock && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: '#EF4444', fontWeight: 700 }}>🚫 Stok habis!</div>
+                )}
               </div>
             ))}
 
-            {/* Value card */}
+            {/* Total nilai stok */}
             <div style={{ padding: '1.25rem', borderRadius: '10px', background: CARD, border: `1px solid ${BORDER}` }}>
               <div style={{ fontSize: '0.68rem', fontWeight: 700, color: MUTED, textTransform: 'uppercase', marginBottom: '0.4rem' }}>💰 Nilai Stok</div>
               <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#34D399' }}>{formatRM(summary?.total_value)}</div>
               <div style={{ fontSize: '0.75rem', color: MUTED, marginTop: '0.3rem' }}>Jumlah keseluruhan</div>
             </div>
-
-            {/* Avg cost card */}
-            {summary?.products?.[0] && (
-              <div style={{ padding: '1.25rem', borderRadius: '10px', background: CARD, border: `1px solid ${BORDER}` }}>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: MUTED, textTransform: 'uppercase', marginBottom: '0.4rem' }}>💲 Kos Seunit</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: TEXT }}>{formatRM(summary.products[0].avg_cost_per_unit || summary.products[0].cost_price)}</div>
-                <div style={{ fontSize: '0.75rem', color: MUTED, marginTop: '0.3rem' }}>Weighted average</div>
-              </div>
-            )}
           </div>
 
           {/* Movement history */}
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>📊 Sejarah Pergerakan Stok</h2>
                 <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: MUTED }}>{totalMoves} rekod keseluruhan</p>
+              </div>
+              {/* Movement type filter tabs */}
+              <div style={{ display: 'flex', gap: '0.25rem', background: '#090A0F', padding: '3px', borderRadius: '7px', border: `1px solid ${BORDER}` }}>
+                {[
+                  { key: 'all',    label: 'Semua' },
+                  { key: 'in',     label: '✅ Masuk' },
+                  { key: 'out',    label: '📦 Keluar' },
+                  { key: 'return', label: '🔄 Return' },
+                ].map(f => (
+                  <button key={f.key} onClick={() => setMoveFilter(f.key)} style={{
+                    padding: '0.3rem 0.75rem', border: 'none', borderRadius: '5px', cursor: 'pointer',
+                    fontWeight: moveFilter === f.key ? 700 : 500, fontSize: '0.75rem', fontFamily: FF,
+                    background: moveFilter === f.key ? '#064E3B' : 'transparent',
+                    color: moveFilter === f.key ? '#34D399' : MUTED,
+                  }}>{f.label}</button>
+                ))}
               </div>
             </div>
 
@@ -467,16 +481,20 @@ export default function StokPage() {
                         <input style={inputStyle} value={editForm.name ?? p.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
                       </div>
                       <div>
-                        <label style={labelStyle}>Kos Seunit (RM) ★</label>
-                        <input style={{ ...inputStyle, borderColor: '#34D399' }} type="number" min="0" step="0.01" value={editForm.cost_price ?? p.cost_price} onChange={e => setEditForm(f => ({ ...f, cost_price: e.target.value }))} />
-                      </div>
-                      <div>
                         <label style={labelStyle}>Harga Jual (RM)</label>
                         <input style={inputStyle} type="number" min="0" step="0.01" value={editForm.selling_price ?? p.selling_price} onChange={e => setEditForm(f => ({ ...f, selling_price: e.target.value }))} />
                       </div>
                       <div>
                         <label style={labelStyle}>Alert Stok (unit)</label>
                         <input style={inputStyle} type="number" min="1" value={editForm.low_stock_threshold ?? p.low_stock_threshold} onChange={e => setEditForm(f => ({ ...f, low_stock_threshold: e.target.value }))} />
+                      </div>
+                      {/* Kos Seunit — read-only, auto dari stock-in movements */}
+                      <div>
+                        <label style={labelStyle}>💲 Kos Seunit (Auto)</label>
+                        <div style={{ ...inputStyle, color: '#F59E0B', fontWeight: 700, display: 'flex', alignItems: 'center' }}>
+                          {(() => { const sp = summary?.products?.find(s => s.id === p.id); return sp?.avg_cost_per_unit > 0 ? formatRM(sp.avg_cost_per_unit) : '—'; })()}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: MUTED, marginTop: '0.25rem' }}>Purata berwajaran dari batch stok masuk</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.6rem' }}>
@@ -496,10 +514,16 @@ export default function StokPage() {
                     </div>
                     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.65rem', color: MUTED, fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.15rem' }}>Kos Seunit</div>
-                        <div style={{ fontSize: '1rem', fontWeight: 800, color: p.cost_price > 0 ? '#F59E0B' : '#EF4444' }}>
-                          {p.cost_price > 0 ? formatRM(p.cost_price) : '⚠️ Belum diisi'}
-                        </div>
+                        <div style={{ fontSize: '0.65rem', color: MUTED, fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.15rem' }}>Kos Seunit (avg)</div>
+                        {(() => {
+                          const sp = summary?.products?.find(s => s.id === p.id);
+                          const avg = sp?.avg_cost_per_unit;
+                          return (
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: avg > 0 ? '#F59E0B' : MUTED }}>
+                              {avg > 0 ? formatRM(avg) : '—'}
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '0.65rem', color: MUTED, fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.15rem' }}>Harga Jual</div>

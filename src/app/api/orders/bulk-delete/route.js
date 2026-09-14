@@ -42,6 +42,14 @@ export async function POST(req) {
     // Delete associated cases first
     await adminClient.from('cases').delete().in('submission_id', validIds);
 
+    // Reverse stock: delete auto-deducted out movements for these orders
+    // This restores stock qty when an order is deleted (both sabun + kasturi add-on)
+    await adminClient
+      .from('stock_movements')
+      .delete()
+      .in('reference_id', validIds)
+      .eq('movement_type', 'out');
+
     // Bulk delete submissions
     const { error } = await adminClient.from('submissions').delete().in('id', validIds);
     if (error) throw error;
