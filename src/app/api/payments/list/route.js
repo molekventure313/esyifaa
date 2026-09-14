@@ -106,13 +106,26 @@ export async function GET(req) {
         if (m) displayAddress = m[1].trim();
       }
 
-      // Extract produk label dari notes
+      // Extract produk label dari notes/problem
       let produkLabel = null;
       if (s.payment_type === 'cod') {
-        const m = (s.notes || '').match(/\[PRODUK:\s*([^\]]+)\]/i);
-        produkLabel = m ? m[1].trim() : 'Sabun Garam';
+        const produkMatch = (s.notes || '').match(/\[PRODUK:\s*([^\]]+)\]/i);
+        const qtyMatch    = (s.notes || '').match(/\[QTY:\s*([^\]]+)\]/i);
+        const addonMatch  = (s.notes || '').match(/\[ADD-ON:\s*([^\]]+)\]/i);
+        produkLabel = produkMatch ? produkMatch[1].trim() : 'Sabun Garam';
+        if (qtyMatch)   produkLabel += ` — ${qtyMatch[1].trim()}`;
+        if (addonMatch) produkLabel += ` + ${addonMatch[1].trim()}`;
       } else if (s.payment_type === 'fpx_payment') {
-        produkLabel = s.source?.includes('pengisian') ? 'Pengisian ESyifaa' : 'FPX';
+        if (s.source?.includes('pengisian')) {
+          produkLabel = 'Pengisian ESyifaa';
+        } else {
+          // Parse dari problem field: "Pakej: 2 Unit | ... | Add-On: Kasturi Kijang E-Syifa' +RM20"
+          const pakejMatch  = (s.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
+          const hasKasturi  = /Add-On:\s*Kasturi Kijang/i.test(s.problem || '');
+          produkLabel = 'Sabun Garam';
+          if (pakejMatch) produkLabel += ` — ${pakejMatch[1]} Unit`;
+          if (hasKasturi) produkLabel += ' + Kasturi Kijang';
+        }
       }
 
       // Revenue for this record — parse dari notes (handle "RM95" COD & "MYR 95.00" FPX format)

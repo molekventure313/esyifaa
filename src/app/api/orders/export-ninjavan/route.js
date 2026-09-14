@@ -88,9 +88,12 @@ function generateNinjaVanCSV(orders) {
     // C: Phone
     const phone = formatPhone(s.phone);
 
-    // K: UNIT cell — product name + qty
+    // K: UNIT cell — product name + qty + add-on jika ada
     const qty = parseQuantity(s);
-    const unitCell = `Sabun Garam Himalaya ESyifaa (200g)\n${qty} UNIT`;
+    const hasKasturi = /\[ADD-ON:\s*Kasturi Kijang/i.test(s.notes || '') ||
+                       /Add-On:\s*Kasturi Kijang/i.test(s.problem || '');
+    let unitCell = `Sabun Garam Himalaya ESyifaa (200g)\n${qty} UNIT`;
+    if (hasKasturi) unitCell += `\n+ Kasturi Kijang E-Syifa'`;
 
     // J: Payment method
     const paymentMethod = s.payment_type === 'cod'

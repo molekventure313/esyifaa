@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
 // ─── Packages ─────────────────────────────────────────────────────────────────
@@ -385,130 +386,22 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               );
             })}
           </div>
-
-          {/* Selected Package Summary */}
-          <div style={{
-            marginTop: '0.85rem', padding: '0.85rem 1.15rem',
-            background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '12px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            flexWrap: 'wrap', gap: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-          }}>
-            <span style={{ fontSize: '0.88rem', color: '#475569', fontWeight: 500 }}>
-              {pkg.label} · Sabun Garam Himalaya 200g (RM{pkg.price} + RM{pkg.postage} postage)
-            </span>
-            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#047857' }}>
-              Jumlah: RM{grandTotal}
-            </span>
-          </div>
         </div>
 
-        {/* ── Bump Offer: Kasturi Kijang E-Syifa' ── */}
-        <div
-          onClick={() => setAddKasturi(v => !v)}
-          role="checkbox"
-          aria-checked={addKasturi}
-          style={{
-            position: 'relative',
-            border: addKasturi ? '2px solid #10B981' : '2px dashed #D97706',
-            borderRadius: '16px',
-            padding: '1.1rem 1.25rem',
-            marginBottom: '1.75rem',
-            cursor: 'pointer',
-            background: addKasturi ? 'rgba(16,185,129,0.04)' : 'rgba(251,191,36,0.04)',
-            transition: 'all 0.2s ease',
-            userSelect: 'none',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {/* Badge */}
-          <div style={{
-            position: 'absolute', top: '-11px', left: '1rem',
-            background: '#D97706', color: '#FFF',
-            fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
-            borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-            boxShadow: '0 2px 6px rgba(217,119,6,0.3)',
-          }}>{'⚡ Tambahan Khas — Tawaran Sekali Sahaja'}</div>
-
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.9rem' }}>
-            {/* Tick checkbox */}
-            <div style={{
-              flexShrink: 0, marginTop: '2px',
-              width: '26px', height: '26px', borderRadius: '7px',
-              background: addKasturi ? '#10B981' : '#FFFFFF',
-              border: addKasturi ? '2px solid #10B981' : '2px solid #CBD5E1',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.18s ease',
-              boxShadow: addKasturi ? '0 0 0 3px rgba(16,185,129,0.15)' : 'none',
-            }}>
-              {addKasturi && (
-                <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>{'✓'}</span>
-              )}
-            </div>
-
-            {/* Content */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.25rem 0.75rem', marginBottom: '0.45rem' }}>
-                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
-                  {'Ya! Tambah Kasturi Kijang E-Syifa\u2019 \uD83C\uDF3F'}
-                </div>
-                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#10B981', whiteSpace: 'nowrap' }}>
-                  +RM{KASTURI_PRICE} sahaja
-                </div>
-              </div>
-
-              <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.65 }}>
-                {'🛡️ '}
-                <strong>{'Wangian yang dibenci jin'}</strong>
-                {' — sesuai untuk protection & benteng'}
-                <br />
-                {'✨ Diisi '}
-                <strong>{'Ayat Ruqyah Benteng & Pendinding'}</strong>
-                {' yang khas'}
-                <br />
-                {'💚 Perlindungan aktif '}
-                <strong>{'selagi bauan masih ada pada badan'}</strong>
-              </div>
-
-              <div style={{
-                marginTop: '0.55rem', fontSize: '0.73rem', fontWeight: 700,
-                color: addKasturi ? '#059669' : '#D97706',
-                transition: 'color 0.2s',
-              }}>
-                {addKasturi
-                  ? '\u2713 Kasturi Kijang telah ditambahkan ke dalam order anda'
-                  : '\u2610 Klik di sini untuk tambahkan Kasturi Kijang ke order anda \u2192'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── 2. Form Card ── */}
+        {/* ── 2. Form Card (Langkah 2: Maklumat Penghantaran) ── */}
         <div style={{
           background: '#FFFFFF', borderRadius: '20px',
           padding: '2.25rem 2rem', border: '1px solid #CBD5E1',
           boxShadow: '0 10px 35px rgba(0,0,0,0.05)',
         }}>
-          {/* Header Inside Card */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            paddingBottom: '1.25rem', marginBottom: '1.5rem',
-            borderBottom: '1px solid #F1F5F9', flexWrap: 'wrap', gap: '0.5rem',
+          <p style={{
+            fontSize: '0.8rem', fontWeight: 700, color: '#0F172A',
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+            marginBottom: '1.5rem', paddingBottom: '1.25rem',
+            borderBottom: '1px solid #F1F5F9',
           }}>
-            <div>
-              <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Langkah 2: Maklumat Penghantaran
-              </div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>
-                {pkg.label} · Sabun Pengisian (200g)
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>Jumlah Bayaran</div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#047857', lineHeight: 1 }}>
-                RM{grandTotal}
-              </div>
-            </div>
-          </div>
+            Langkah 2: Maklumat Penghantaran
+          </p>
 
           {/* Error Message */}
           {errorMsg && (
@@ -626,7 +519,139 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               )}
             </div>
 
-            {/* ── Langkah 3: Payment Method ── (bawah sekali) */}
+            {/* ── Bump Offer Header ── */}
+            <div style={{ textAlign: 'center', marginBottom: '0.65rem' }}>
+              <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0F172A' }}>
+                {'Nak Benteng Diri Lebih Lengkap? Tambah Ni \uD83D\uDC47'}
+              </span>
+            </div>
+
+            {/* ── Bump Offer: Kasturi Kijang E-Syifa' ── */}
+            <div
+              onClick={() => setAddKasturi(v => !v)}
+              role="checkbox"
+              aria-checked={addKasturi}
+              style={{
+                position: 'relative',
+                border: addKasturi ? '2px solid #10B981' : '2px dashed #D97706',
+                borderRadius: '16px',
+                padding: '1.75rem 1.15rem 1rem',
+                marginBottom: '1.25rem',
+                cursor: 'pointer',
+                background: addKasturi ? 'rgba(16,185,129,0.04)' : 'rgba(251,191,36,0.04)',
+                transition: 'all 0.2s ease',
+                userSelect: 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {/* Badge */}
+              <div style={{
+                position: 'absolute', top: '-11px', left: '1rem',
+                background: '#D97706', color: '#FFF',
+                fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
+                borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                boxShadow: '0 2px 6px rgba(217,119,6,0.3)',
+                whiteSpace: 'nowrap',
+              }}>{'⚡ Tambahan Khas — Tawaran Sekali Sahaja'}</div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                {/* Tick checkbox */}
+                <div style={{
+                  flexShrink: 0, marginTop: '3px',
+                  width: '26px', height: '26px', borderRadius: '7px',
+                  background: addKasturi ? '#10B981' : '#FFFFFF',
+                  border: addKasturi ? '2px solid #10B981' : '2px solid #CBD5E1',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.18s ease',
+                  boxShadow: addKasturi ? '0 0 0 3px rgba(16,185,129,0.15)' : 'none',
+                }}>
+                  {addKasturi && (
+                    <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>{'✓'}</span>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+
+                  {/* Title row */}
+                  <div style={{ fontSize: '0.97rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3, marginBottom: '0.3rem' }}>
+                    {'Ya! Tambah Kasturi Kijang E-Syifa\u2019 \uD83C\uDF3F'}
+                  </div>
+
+                  {/* Price — left aligned, strikethrough */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.65rem' }}>
+                    <span style={{
+                      fontSize: '0.82rem', fontWeight: 600,
+                      color: '#94A3B8', textDecoration: 'line-through',
+                    }}>RM50</span>
+                    <span style={{
+                      fontSize: '1.05rem', fontWeight: 900, color: '#10B981',
+                    }}>RM{KASTURI_PRICE} sahaja</span>
+                  </div>
+
+                  {/* Image + bullets — side by side on desktop, stacked on mobile */}
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    {/* Image — left */}
+                    <div style={{
+                      width: '96px', height: '96px', flexShrink: 0,
+                      borderRadius: '10px', overflow: 'hidden',
+                      border: '1.5px solid #E2E8F0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                    }}>
+                      <Image
+                        src="/images/kasturi-kijang-opt.jpg"
+                        alt="Kasturi Kijang E-Syifa'"
+                        width={96}
+                        height={96}
+                        style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {/* Bullets — right (minWidth forces wrap on narrow mobile) */}
+                    <div style={{ flex: 1, minWidth: '160px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.7 }}>
+                      <div>{'🛡️ '}<strong>{'Wangian yang dibenci jin'}</strong>{' — benteng & pendinding sihir'}</div>
+                      <div>{'✨ Diisi '}<strong>{'Ayat Ruqyah Benteng & Pendinding'}</strong>{' yang khas'}</div>
+                      <div>{'💚 Perlindungan aktif '}<strong>{'selagi bauan masih ada pada badan'}</strong></div>
+                    </div>
+                  </div>
+
+                  {/* CTA text */}
+                  <div style={{ marginTop: '0.55rem', fontSize: '0.72rem', fontWeight: 700, color: addKasturi ? '#059669' : '#D97706', transition: 'color 0.2s' }}>
+                    {addKasturi ? '\u2713 Kasturi Kijang telah ditambahkan ke order anda' : '\u2610 Klik untuk tambahkan ke order anda \u2192'}
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            {/* ── Ringkasan Order ── */}
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.85rem' }}>
+                🧾 Ringkasan Order
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '0.4rem' }}>
+                <span style={{ color: '#475569' }}>Sabun Garam — {pkg.label}</span>
+                <span style={{ fontWeight: 600, color: '#0F172A' }}>RM{pkg.price}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: addKasturi ? '0.4rem' : '0' }}>
+                <span style={{ color: '#475569' }}>Postage</span>
+                <span style={{ fontWeight: 600, color: '#0F172A' }}>RM{pkg.postage}</span>
+              </div>
+              {addKasturi && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                  <span style={{ color: '#059669' }}>{'🌿 Kasturi Kijang E-Syifa\u2019'}</span>
+                  <span style={{ fontWeight: 600, color: '#059669' }}>RM{KASTURI_PRICE}</span>
+                </div>
+              )}
+              <div style={{ borderTop: '1px solid #E2E8F0', margin: '0.75rem 0 0.6rem' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Jumlah Bayaran</span>
+                <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#047857' }}>RM{grandTotal}</span>
+              </div>
+            </div>
+
+            {/* ── Langkah 3: Payment Method ── */}
             <div style={{
               paddingTop: '1.25rem', marginBottom: '1.5rem',
               borderTop: '1px solid #F1F5F9',
@@ -723,8 +748,8 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               ) : (
                 <>
                   {paymentMethod === 'fpx'
-                    ? `Bayar RM${pkg.total} Melalui FPX Sekarang →`
-                    : `Sahkan Pesanan COD (RM${pkg.total}) Sekarang →`}
+                    ? `Bayar RM${grandTotal} Melalui FPX Sekarang →`
+                    : `Sahkan Pesanan COD (RM${grandTotal}) Sekarang →`}
                 </>
               )}
             </button>
