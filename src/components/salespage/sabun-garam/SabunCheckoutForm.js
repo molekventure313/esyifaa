@@ -80,10 +80,6 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
   const [loading,    setLoading]    = useState(false);
   const [errorMsg,   setErrorMsg]   = useState('');
   const [fpxPixelId, setFpxPixelId] = useState(null);
-  const [addKasturi, setAddKasturi] = useState(false); // Kasturi Kijang add-on
-
-  const KASTURI_PRICE = 20;
-  const grandTotal    = pkg.total + (addKasturi ? KASTURI_PRICE : 0);
 
   const ff  = 'var(--font-inter), -apple-system, sans-serif';
 
@@ -154,8 +150,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
       const utms     = getUTMParams();
       const address  = buildAddress();
 
-      const kasturiNote = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa' +RM${KASTURI_PRICE}` : '';
-      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${pkg.postage}${kasturiNote}`;
+      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${pkg.postage}`;
 
       // Fire InitiateCheckout pixel
       try {
@@ -179,8 +174,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           source,
           source_page: window.location.pathname,
           event_id: eventId,
-          amount_in_myr: grandTotal,
-          addon_kasturi: addKasturi,
+          amount_in_myr: pkg.total,
           landing_page_url: window.location.href,
           referrer_url: document.referrer,
           fbp: fbp || null,
@@ -232,8 +226,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           units_label: pkg.label,
           product: 'Sabun Garam Himalaya Pengisian ESyifaa (200g)',
           amount_base: pkg.price,
-          amount_total: grandTotal,
-          addon_kasturi: addKasturi,
+          amount_total: pkg.total,
           honeypot: formData.honeypot,
           source,
           landing_page_url: window.location.href,
@@ -396,81 +389,8 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
               {pkg.label} · Sabun Garam Himalaya 200g (RM{pkg.price} + RM{pkg.postage} postage)
             </span>
             <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#047857' }}>
-              Jumlah: RM{grandTotal}
+              Jumlah: RM{pkg.total}
             </span>
-          </div>
-        </div>
-
-        {/* ── Bump Offer: Kasturi Kijang E-Syifa' ── */}
-        <div
-          onClick={() => setAddKasturi(v => !v)}
-          role="checkbox"
-          aria-checked={addKasturi}
-          style={{
-            position: 'relative',
-            border: addKasturi ? '2px solid #10B981' : '2px dashed #D97706',
-            borderRadius: '16px',
-            padding: '1.1rem 1.25rem',
-            marginBottom: '1.75rem',
-            cursor: 'pointer',
-            background: addKasturi ? 'rgba(16,185,129,0.04)' : 'rgba(251,191,36,0.04)',
-            transition: 'all 0.2s ease',
-            userSelect: 'none',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {/* Badge */}
-          <div style={{
-            position: 'absolute', top: '-11px', left: '1rem',
-            background: '#D97706', color: '#FFF',
-            fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
-            borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-            boxShadow: '0 2px 6px rgba(217,119,6,0.3)',
-          }}>⚡ Tambahan Khas — Tawaran Sekali Sahaja</div>
-
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.9rem' }}>
-            {/* Tick checkbox */}
-            <div style={{
-              flexShrink: 0, marginTop: '2px',
-              width: '26px', height: '26px', borderRadius: '7px',
-              background: addKasturi ? '#10B981' : '#FFFFFF',
-              border: addKasturi ? '2px solid #10B981' : '2px solid #CBD5E1',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.18s ease',
-              boxShadow: addKasturi ? '0 0 0 3px rgba(16,185,129,0.15)' : 'none',
-            }}>
-              {addKasturi && (
-                <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>✓</span>
-              )}
-            </div>
-
-            {/* Content */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.25rem 0.75rem', marginBottom: '0.45rem' }}>
-                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3 }}>
-                  Ya! Tambah Kasturi Kijang E-Syifa&#x2019; 🌿
-                </div>
-                <div style={{ fontSize: '1rem', fontWeight: 900, color: '#10B981', whiteSpace: 'nowrap' }}>
-                  +RM{KASTURI_PRICE} sahaja
-                </div>
-              </div>
-
-              <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.65 }}>
-                🛡️ <strong>Wangian yang dibenci jin</strong> — sesuai untuk protection & benteng<br />
-                ✨ Diisi <strong>Ayat Ruqyah Benteng & Pendinding</strong> yang khas<br />
-                💚 Perlindungan aktif <strong>selagi bauan masih ada pada badan</strong>
-              </div>
-
-              <div style={{
-                marginTop: '0.55rem', fontSize: '0.73rem', fontWeight: 700,
-                color: addKasturi ? '#059669' : '#D97706',
-                transition: 'color 0.2s',
-              }}>
-                {addKasturi
-                  ? '✓ Kasturi Kijang telah ditambahkan ke dalam order anda'
-                  : '☐ Klik di sini untuk tambahkan Kasturi Kijang ke order anda →'}
-              </div>
-            </div>
           </div>
         </div>
 

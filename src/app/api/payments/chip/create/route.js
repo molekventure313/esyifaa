@@ -15,7 +15,6 @@ export async function POST(req) {
       honeypot,
       event_id,
       amount_in_myr = 50.00,
-      addon_kasturi,  // ← Kasturi Kijang add-on
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
       landing_page_url, referrer_url, fbclid, fbp, fbc,
     } = body;
@@ -41,9 +40,7 @@ export async function POST(req) {
     const user_agent = req.headers.get('user-agent') || 'unknown';
 
     const supabase = createAdminClient();
-    const kasturiTag = addon_kasturi ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
-    const initialProblemNotes = `[Bayaran FPX: RM${amount_in_myr.toFixed(2)}] ${problem ? `Simptom: ${problem}` : ''}${kasturiTag}`;
-
+    const initialProblemNotes = `[Bayaran FPX: RM${amount_in_myr.toFixed(2)}] ${problem ? `Simptom: ${problem}` : ''}`;
 
     // ─── Try Check/Create Customer ───
     let customerId = null;
