@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
@@ -68,6 +69,9 @@ const LABEL_STYLE = {
 const REQ = <span style={{ color: '#E11D48', marginLeft: '2px' }}>*</span>;
 
 export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
+  const searchParams = useSearchParams();
+  const marketerCode = searchParams?.get('m') || '';
+  
   const [selectedPkg,   setSelectedPkg]   = useState(2); // index 2 = 3 unit (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
   const [formData,      setFormData]      = useState({
@@ -182,6 +186,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           problem: orderNotes,
           honeypot: formData.honeypot,
           source,
+          marketer_code: marketerCode,
           source_page: window.location.pathname,
           event_id: eventId,
           amount_in_myr: grandTotal,
@@ -241,6 +246,7 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
           addon_kasturi: addKasturi,
           honeypot: formData.honeypot,
           source,
+          marketer_code: marketerCode,
           landing_page_url: window.location.href,
           referrer_url: document.referrer,
           ...utms,

@@ -11,7 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { slug } = body;
+    const { slug, marketer_code } = body;
 
     if (!slug) {
       return NextResponse.json({ success: false, error: 'slug required' }, { status: 400 });
@@ -25,10 +25,25 @@ export async function POST(req) {
 
     const adminClient = createAdminClient();
 
+    let marketerId = null;
+    if (marketer_code) {
+      const { data: marketer } = await adminClient
+        .from('profiles')
+        .select('id')
+        .eq('marketer_code', marketer_code)
+        .eq('role', 'marketer')
+        .single();
+      
+      if (marketer) {
+        marketerId = marketer.id;
+      }
+    }
+
     const { error } = await adminClient.from('page_views').insert({
       salespage_slug: slug,
       ip_address:     ip,
       user_agent:     userAgent,
+      marketer_id:    marketerId,
     });
 
     if (error) {

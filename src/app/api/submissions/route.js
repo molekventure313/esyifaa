@@ -32,6 +32,7 @@ export async function POST(req) {
       fbclid,
       fbp,
       fbc,
+      marketer_code,
     } = body;
 
     // Check honeypot (spam protection)
@@ -67,6 +68,21 @@ export async function POST(req) {
     const user_agent = req.headers.get('user-agent') || 'unknown';
 
     const supabase = createAdminClient();
+
+    // ─── Resolve marketer_id ───
+    let marketerId = null;
+    if (marketer_code) {
+      const { data: marketer } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('marketer_code', marketer_code)
+        .eq('role', 'marketer')
+        .single();
+      
+      if (marketer) {
+        marketerId = marketer.id;
+      }
+    }
 
     // ─── Check if customer already exists (repeat detection) ───
     const { data: existingCustomer, error: customerSearchError } = await supabase
@@ -150,6 +166,7 @@ export async function POST(req) {
         user_agent,
         event_id: event_id || null,
         consent_contact: consent_contact ?? true,
+        marketer_id: marketerId,
       })
       .select()
       .single();
@@ -218,6 +235,7 @@ export async function POST(req) {
         submission_id: submission.id,
         status: caseInitialStatus,
         assigned_to: assignedPractitioner ? assignedPractitioner.id : null,
+        marketer_id: marketerId,
       })
       .select()
       .single();

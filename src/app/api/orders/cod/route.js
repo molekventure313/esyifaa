@@ -14,7 +14,7 @@ export async function POST(req) {
       product, amount_total, amount_base, honeypot, source,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
       landing_page_url, referrer_url, fbclid,
-      addon_kasturi,
+      addon_kasturi, marketer_code,
     } = body;
 
     if (honeypot) {
@@ -64,6 +64,24 @@ export async function POST(req) {
       console.warn('Customer upsert skipped:', e.message);
     }
 
+    // Resolve marketer code to user ID
+    let marketerId = null;
+    if (marketer_code) {
+      try {
+        const { data: mData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('marketer_code', marketer_code)
+          .eq('role', 'marketer')
+          .maybeSingle();
+        if (mData) {
+          marketerId = mData.id;
+        }
+      } catch (e) {
+        console.warn('Marketer resolve skipped:', e.message);
+      }
+    }
+
     // Create submission with payment_type: 'cod'
     let submissionId = `cod_${Date.now()}`;
     const kasturiNote = addon_kasturi ? ' [ADD-ON: Kasturi Kijang +RM20]' : '';
@@ -83,6 +101,7 @@ export async function POST(req) {
       referrer_url: referrer_url || null, fbclid: fbclid || null,
       ip_address: ip, user_agent, consent_contact: true,
       qty: parseInt(quantity) || 1,
+      marketer_id: marketerId,
     };
     if (customerId) submissionData.customer_id = customerId;
 

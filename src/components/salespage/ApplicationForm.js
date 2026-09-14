@@ -1,16 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const FALLBACK_NUMBER = '601135172611';
 const WA_MESSAGE = encodeURIComponent('Assalamualaikum, saya ingin dapatkan Diagnos Percuma. Boleh bantu saya?');
-const buildWaLink = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
+const buildWaLink = (num, m) => {
+  let link = `https://wa.me/${num}?text=${WA_MESSAGE}`;
+  if (m) link += `&m=${m}`;
+  return link;
+};
 const LS_KEY = 'esyifaa_sp_wa_idx'; // key berbeza dari /wa page
 
 // ─── Hook: fetch & rotate WA numbers ─────────────────────────────────────────
-function useWaLink() {
-  const [waLink, setWaLink] = useState(buildWaLink(FALLBACK_NUMBER));
+function useWaLink(marketerCode) {
+  const [waLink, setWaLink] = useState(buildWaLink(FALLBACK_NUMBER, marketerCode));
 
   useEffect(() => {
     const init = async () => {
@@ -24,24 +29,24 @@ function useWaLink() {
         const lastIdx = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
         const nextIdx = (lastIdx + 1) % numbers.length;
         localStorage.setItem(LS_KEY, String(nextIdx));
-        setWaLink(buildWaLink(numbers[nextIdx]));
+        setWaLink(buildWaLink(numbers[nextIdx], marketerCode));
       } catch {
-        setWaLink(buildWaLink(FALLBACK_NUMBER));
+        setWaLink(buildWaLink(FALLBACK_NUMBER, marketerCode));
       }
     };
     init();
-  }, []);
+  }, [marketerCode]);
 
   return waLink;
 }
 
 // ─── Fire Lead pixel ──────────────────────────────────────────────────────────
-function fireLead() {
-  try { window.fbq('track', 'Lead'); } catch (_) {}
+function fireLead(marketerCode) {
+  try { window.fbq('track', 'Lead', marketerCode ? { marketer_code: marketerCode } : {}); } catch (_) {}
 }
 
 // ─── Sticky Bar ───────────────────────────────────────────────────────────────
-function StickyBar({ waLink }) {
+function StickyBar({ waLink, marketerCode }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -66,7 +71,7 @@ function StickyBar({ waLink }) {
         href={waLink}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={fireLead}
+        onClick={() => fireLead(marketerCode)}
         id="cta-sticky-sp"
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -95,7 +100,9 @@ const BADGES = [
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ApplicationForm({ source }) {
-  const waLink = useWaLink();
+  const searchParams = useSearchParams();
+  const marketerCode = searchParams.get('m') || '';
+  const waLink = useWaLink(marketerCode);
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   return (
@@ -195,7 +202,7 @@ export default function ApplicationForm({ source }) {
               href={waLink}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={fireLead}
+              onClick={() => fireLead(marketerCode)}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 gap: '0.65rem', width: '100%', maxWidth: '420px',
@@ -262,7 +269,7 @@ export default function ApplicationForm({ source }) {
       </section>
 
       {/* Sticky WA Bar — muncul selepas scroll 400px */}
-      <StickyBar waLink={waLink} />
+      <StickyBar waLink={waLink} marketerCode={marketerCode} />
     </>
   );
 }

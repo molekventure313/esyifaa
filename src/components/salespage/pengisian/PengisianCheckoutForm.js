@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
 function getUTMParams() {
@@ -24,6 +25,9 @@ const DIAL_CODES = [
 ];
 
 export default function PengisianCheckoutForm() {
+  const searchParams = useSearchParams();
+  const marketerCode = searchParams?.get('m') || '';
+
   const [fpxPixelId, setFpxPixelId] = useState(null);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -90,6 +94,7 @@ export default function PengisianCheckoutForm() {
           problem: 'Pengisian E-Syifa\' — perawat akan hubungi untuk gambar item',
           honeypot: formData.honeypot,
           source: 'pengisian-esyifa',
+          marketer_code: marketerCode,
           event_id: eventId,
           amount_in_myr: 90.00,
           landing_page_url: typeof window !== 'undefined' ? window.location.href : null,

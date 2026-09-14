@@ -11,7 +11,7 @@ export async function POST(req) {
       amount_in_myr = 50.00,
       addon_kasturi,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-      landing_page_url, referrer_url, fbclid, fbp, fbc,
+      landing_page_url, referrer_url, fbclid, fbp, fbc, marketer_code,
     } = body;
 
     // Honeypot
@@ -56,6 +56,24 @@ export async function POST(req) {
       console.warn('Customer DB skipped (RLS):', e.message);
     }
 
+    // ─── Resolve Marketer Code to ID ───
+    let marketerId = null;
+    if (marketer_code) {
+      try {
+        const { data: mData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('marketer_code', marketer_code)
+          .eq('role', 'marketer')
+          .maybeSingle();
+        if (mData) {
+          marketerId = mData.id;
+        }
+      } catch (e) {
+        console.warn('Marketer resolve skipped:', e.message);
+      }
+    }
+
     // ─── Create Submission with payment_type = fpx_payment ───
     let submissionId = `sub_${Date.now()}`;
     const submissionData = {
@@ -72,6 +90,7 @@ export async function POST(req) {
       referrer_url: referrer_url || null, fbclid: fbclid || null,
       fbp: fbp || null, fbc: fbc || null,
       ip_address: ip, user_agent, event_id: event_id || null, consent_contact: true,
+      marketer_id: marketerId,
     };
     if (customerId) submissionData.customer_id = customerId;
 

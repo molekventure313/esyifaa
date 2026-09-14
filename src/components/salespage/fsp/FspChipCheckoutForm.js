@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
 // Read UTM params from URL
@@ -27,6 +27,8 @@ const DIAL_CODES = [
 
 export default function FspChipCheckoutForm({ source = 'fsp-checkout' }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const marketerCode = searchParams?.get('m') || '';
   const [fpxPixelId, setFpxPixelId] = useState(null);
 
   // On mount: inject FPX pixel script + fetch fpx_pixel_id for trackSingle
@@ -106,6 +108,7 @@ export default function FspChipCheckoutForm({ source = 'fsp-checkout' }) {
           problem: formData.problem,
           honeypot: formData.honeypot,
           source: source,
+          marketer_code: marketerCode,
           event_id: eventId,
           amount_in_myr: 50.00,
           landing_page_url: typeof window !== 'undefined' ? window.location.href : null,

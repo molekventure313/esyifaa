@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
 function getUTMParams() {
@@ -24,6 +25,9 @@ const DIAL_CODES = [
 ];
 
 export default function EVideoCheckoutForm() {
+  const searchParams = useSearchParams();
+  const marketerCode = searchParams?.get('m') || '';
+
   const [fpxPixelId, setFpxPixelId] = useState(null);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -89,6 +93,7 @@ export default function EVideoCheckoutForm() {
           problem: 'E-Video Rawatan Ruqyah — perawat akan hubungi untuk hantar video via WhatsApp',
           honeypot: formData.honeypot,
           source: 'e-video',
+          marketer_code: marketerCode,
           event_id: eventId,
           amount_in_myr: 60.00,
           landing_page_url: typeof window !== 'undefined' ? window.location.href : null,
