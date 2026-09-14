@@ -7,40 +7,31 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const {
-      full_name,
-      phone,
-      problem,
-      source,
-      source_page,
-      honeypot,
-      event_id,
+      full_name, phone, problem, source, source_page, honeypot, event_id,
       amount_in_myr = 50.00,
+      addon_kasturi,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
       landing_page_url, referrer_url, fbclid, fbp, fbc,
     } = body;
 
     // Honeypot
-    if (honeypot) {
-      return NextResponse.json({ success: true, checkout_url: '/payment-success?mock=true' });
-    }
+    if (honeypot) return NextResponse.json({ success: true, checkout_url: '/payment-success?mock=true' });
 
-    // Validate
-    if (!full_name?.trim() || !phone?.trim()) {
+    if (!full_name?.trim() || !phone?.trim())
       return NextResponse.json({ success: false, error: 'Sila isi nama penuh dan nombor telefon.' }, { status: 400 });
-    }
 
     const phoneResult = validateMalaysianPhone(phone);
-    if (!phoneResult.valid) {
+    if (!phoneResult.valid)
       return NextResponse.json({ success: false, error: phoneResult.error || 'Sila masukkan nombor telefon yang sah.' }, { status: 400 });
-    }
 
     const formattedPhone = phoneResult.formatted;
-    const cleanName = full_name.trim();
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+    const cleanName  = full_name.trim();
+    const ip         = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
     const user_agent = req.headers.get('user-agent') || 'unknown';
 
-    const supabase = createAdminClient();
-    const initialProblemNotes = `[Bayaran FPX: RM${amount_in_myr.toFixed(2)}] ${problem ? `Simptom: ${problem}` : ''}`;
+    const supabase       = createAdminClient();
+    const kasturiTag     = addon_kasturi ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
+    const initialProblemNotes = `[Bayaran FPX: RM${amount_in_myr.toFixed(2)}] ${problem ? `Simptom: ${problem}` : ''}${kasturiTag}`;
 
     // ─── Try Check/Create Customer ───
     let customerId = null;

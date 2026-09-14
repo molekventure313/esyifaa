@@ -2,12 +2,15 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 // ─── Source → Product SKU mapping ────────────────────────────────────────────
 export const SOURCE_TO_SKU = {
+  // Sabun Garam Himalaya
   'sabun-garam':   'SGH-200G',
   'sabun-garam-1': 'SGH-200G',
   'sabun-garam-2': 'SGH-200G',
   'sabun-garam-3': 'SGH-200G',
   'sabun-garam-4': 'SGH-200G',
   'sabun-garam-5': 'SGH-200G',
+  // Add-on: Kasturi Kijang E-Syifa'
+  'addon-kasturi': 'KKE-01',
 };
 
 // ─── Get product by SKU ───────────────────────────────────────────────────────

@@ -190,7 +190,6 @@ export async function POST(req) {
         // 5. Auto-deduct stock (FPX sabun orders only — non-blocking)
         try {
           if (submission.source?.includes('sabun')) {
-            // Parse qty from problem field: "Pakej: 3 Unit"
             const qtyMatch = (submission.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
             const qty = qtyMatch ? parseInt(qtyMatch[1]) : (parseInt(submission.qty) || 1);
             await deductStock({
@@ -200,6 +199,18 @@ export async function POST(req) {
               referenceId: submission.id,
               notes: `FPX Order — RM${amountValue}`,
             });
+
+            // Deduct kasturi add-on stock if selected
+            const hasKasturi = /Add-On:\s*Kasturi Kijang/i.test(submission.problem || '');
+            if (hasKasturi) {
+              await deductStock({
+                adminClient: supabase,
+                source: 'addon-kasturi',
+                qty: 1,
+                referenceId: submission.id,
+                notes: `FPX Add-On — Kasturi Kijang`,
+              });
+            }
           }
         } catch (e) {
           console.error('Stock deduct FPX error (non-blocking):', e.message);
