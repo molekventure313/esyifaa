@@ -77,13 +77,19 @@ function getMonthlyRanges(count = 6) {
   });
 }
 
-// ─── Fetch stock_movements (type='out') ───────────────────────────────────────
+// ─── Fetch stock_movements for sabun only (type='out', SKU=SGH-200G) ──────────
 async function fetchMovements(adminClient, fromUTC, toUTC) {
+  // Filter to sabun only — prevent kasturi add-on movements from inflating PNL counts
+  const { data: sabunProd } = await adminClient
+    .from('products').select('id').eq('sku', 'SGH-200G').maybeSingle();
+
   let q = adminClient
     .from('stock_movements')
     .select('id, qty, reference_id, created_at')
     .eq('movement_type', 'out')
     .order('created_at', { ascending: true });
+
+  if (sabunProd?.id) q = q.eq('product_id', sabunProd.id);
 
   if (fromUTC) q = q.gte('created_at', fromUTC);
   if (toUTC)   q = q.lte('created_at', toUTC);
@@ -91,6 +97,25 @@ async function fetchMovements(adminClient, fromUTC, toUTC) {
   const { data, error } = await q;
   if (error) throw error;
   return data || [];
+}
+
+// ─── Count kasturi add-on orders in period ────────────────────────────────────
+async function fetchKasturiCount(adminClient, fromUTC, toUTC) {
+  const { data: prod } = await adminClient
+    .from('products').select('id').eq('sku', 'KKE-01').maybeSingle();
+  if (!prod?.id) return 0; // product not in DB yet (before migration)
+
+  let q = adminClient
+    .from('stock_movements')
+    .select('id', { count: 'exact', head: true })
+    .eq('movement_type', 'out')
+    .eq('product_id', prod.id);
+
+  if (fromUTC) q = q.gte('created_at', fromUTC);
+  if (toUTC)   q = q.lte('created_at', toUTC);
+
+  const { count } = await q;
+  return count || 0;
 }
 
 // ─── Batch-fetch submission amounts ───────────────────────────────────────────
@@ -222,9 +247,10 @@ export async function GET(req) {
     const adsFrom = fromUTC ? toMYTDateStr(fromUTC) : null;
     const adsTo   = toUTC   ? getMYTToday()         : null;
 
-    const [movements, ads] = await Promise.all([
+    const [movements, ads, kasturiOrders] = await Promise.all([
       fetchMovements(adminClient, fromUTC, toUTC),
       fetchAds(adminClient, adsFrom, adsTo),
+      fetchKasturiCount(adminClient, fromUTC, toUTC),
     ]);
 
     // Batch-fetch revenues
@@ -288,6 +314,7 @@ export async function GET(req) {
         total_orders:   totalOrders,
         total_units:    totalUnits,
         total_pkg:      totalPkg,
+        kasturi_orders: kasturiOrders,
         total_ads:      parseFloat(totalAds.toFixed(2)),
         total_cogs:     totalCogs,
         gross_pnl:      grossPnl,

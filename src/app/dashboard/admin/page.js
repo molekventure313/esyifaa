@@ -359,6 +359,12 @@ export default function AdminDashboardPage() {
                   <span style={{ fontSize: '0.68rem', color: textMuted }}>order</span>
                 </div>
               ))}
+              {/* Kasturi add-on count */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: lm ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.1)', paddingLeft: '1.25rem' }}>
+                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase' }}>🌿 Add-On Kasturi</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#A78BFA' }}>{pkgData.kasturi_orders ?? 0}</span>
+                <span style={{ fontSize: '0.68rem', color: textMuted }}>order</span>
+              </div>
               <div style={{ marginLeft: 'auto', fontSize: '0.68rem', color: textMuted }}>{pkgData.total_orders ?? 0} order · {pkgData.total_units ?? 0} unit</div>
             </div>
           )}
