@@ -200,6 +200,18 @@ export async function POST(req) {
               referenceId: submission.id,
               notes: `FPX Order — RM${amountValue}`,
             });
+
+            // Deduct kasturi add-on stock if selected
+            const hasKasturi = /Add-On:\s*Kasturi Kijang/i.test(submission.problem || '');
+            if (hasKasturi) {
+              await deductStock({
+                adminClient: supabase,
+                source: 'addon-kasturi',
+                qty: 1,
+                referenceId: submission.id,
+                notes: `FPX Add-On — Kasturi Kijang`,
+              });
+            }
           }
         } catch (e) {
           console.error('Stock deduct FPX error (non-blocking):', e.message);

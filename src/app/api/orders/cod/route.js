@@ -14,6 +14,7 @@ export async function POST(req) {
       product, amount_total, amount_base, honeypot, source,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
       landing_page_url, referrer_url, fbclid,
+      addon_kasturi,  // ← Kasturi Kijang add-on
     } = body;
 
     if (honeypot) {
@@ -37,7 +38,8 @@ export async function POST(req) {
     const supabase = createAdminClient();
 
     // Build order label for problem field
-    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM5 = RM${amount_total} | Alamat: ${address.trim()}`;
+    const kasturiTag = addon_kasturi ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
+    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM5 = RM${amount_total}${kasturiTag} | Alamat: ${address.trim()}`;
 
     // Upsert customer
     let customerId = null;
@@ -64,12 +66,13 @@ export async function POST(req) {
 
     // Create submission with payment_type: 'cod'
     let submissionId = `cod_${Date.now()}`;
+    const kasturiNote = addon_kasturi ? ' [ADD-ON: Kasturi Kijang +RM20]' : '';
     const submissionData = {
       full_name: cleanName,
       phone: formattedPhone,
       address: address?.trim() || null,
       problem: problemNotes,
-      notes: `[COD ORDER] [STATUS: completed] [AMOUNT: RM${amount_total}] [QTY: ${quantity} unit] [PRODUK: ${product || 'Sabun Garam'}]`,
+      notes: `[COD ORDER] [STATUS: completed] [AMOUNT: RM${amount_total}] [QTY: ${quantity} unit] [PRODUK: ${product || 'Sabun Garam'}]${kasturiNote}`,
       source: source || 'sabun-garam',
       payment_type: 'cod',
       payment_status: 'completed',
@@ -92,7 +95,7 @@ export async function POST(req) {
 
       if (!subErr && submission) submissionId = submission.id;
 
-      // Auto-deduct stock (non-blocking)
+      // Auto-deduct sabun stock (non-blocking)
       await deductStock({
         adminClient: supabase,
         source: source || 'sabun-garam',
@@ -100,6 +103,17 @@ export async function POST(req) {
         referenceId: submissionId,
         notes: `COD Order — ${units_label}`,
       });
+
+      // Auto-deduct kasturi stock if add-on selected (non-blocking)
+      if (addon_kasturi) {
+        await deductStock({
+          adminClient: supabase,
+          source: 'addon-kasturi',
+          qty: 1,
+          referenceId: submissionId,
+          notes: `COD Add-On — Kasturi Kijang`,
+        });
+      }
     } catch (e) {
       console.warn('COD submission DB error:', e.message);
     }
@@ -139,10 +153,11 @@ export async function POST(req) {
 
     // WasapBot Notification — order baru
     try {
+      const kasturiLabel = addon_kasturi ? ' + Kasturi Kijang E-Syifa\'' : '';
       const msg = buildOrderMessage({
         name: cleanName,
         phone: formattedPhone,
-        product: `${product || 'Sabun Garam'} — ${units_label}`,
+        product: `${product || 'Sabun Garam'} — ${units_label}${kasturiLabel}`,
         amount: `RM${amount_total} (COD — Bayar Masa Terima)`,
         address: address?.trim() || '—',
         source: source || 'sabun-garam',
