@@ -79,43 +79,64 @@ function getMonthlyRanges(count = 6) {
 
 // ─── Fetch stock_movements for sabun only (type='out', SKU=SGH-200G) ──────────
 async function fetchMovements(adminClient, fromUTC, toUTC) {
-  // Filter to sabun only — prevent kasturi add-on movements from inflating PNL counts
   const { data: sabunProd } = await adminClient
     .from('products').select('id').eq('sku', 'SGH-200G').maybeSingle();
 
   let q = adminClient
     .from('stock_movements')
-    .select('id, qty, reference_id, created_at')
+    .select('id, qty, reference_id, reference_type, created_at')
     .eq('movement_type', 'out')
     .order('created_at', { ascending: true });
 
   if (sabunProd?.id) q = q.eq('product_id', sabunProd.id);
-
   if (fromUTC) q = q.gte('created_at', fromUTC);
   if (toUTC)   q = q.lte('created_at', toUTC);
 
-  const { data, error } = await q;
+  const { data: raw, error } = await q;
   if (error) throw error;
-  return data || [];
+  const movements = raw || [];
+
+  // Split: order-linked vs manual/other movements
+  const orderMvs = movements.filter(m => m.reference_type === 'order' && m.reference_id);
+  const otherMvs = movements.filter(m => m.reference_type !== 'order' || !m.reference_id);
+  if (orderMvs.length === 0) return otherMvs;
+
+  // Cross-check reference_ids — filter out orphans (deleted orders)
+  const refIds = [...new Set(orderMvs.map(m => m.reference_id))];
+  const { data: subs } = await adminClient.from('submissions').select('id').in('id', refIds);
+  const existingIds = new Set((subs || []).map(s => s.id));
+
+  const validMvs = orderMvs.filter(m => existingIds.has(m.reference_id));
+  return [...otherMvs, ...validMvs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 }
 
 // ─── Count kasturi add-on orders in period ────────────────────────────────────
 async function fetchKasturiCount(adminClient, fromUTC, toUTC) {
   const { data: prod } = await adminClient
     .from('products').select('id').eq('sku', 'KKE-01').maybeSingle();
-  if (!prod?.id) return 0; // product not in DB yet (before migration)
+  if (!prod?.id) return 0;
 
   let q = adminClient
     .from('stock_movements')
-    .select('id', { count: 'exact', head: true })
+    .select('id, reference_id')
     .eq('movement_type', 'out')
     .eq('product_id', prod.id);
 
   if (fromUTC) q = q.gte('created_at', fromUTC);
   if (toUTC)   q = q.lte('created_at', toUTC);
 
-  const { count } = await q;
-  return count || 0;
+  const { data: raw } = await q;
+  const movements = raw || [];
+  if (movements.length === 0) return 0;
+
+  // Cross-check — exclude orphaned movements (deleted orders)
+  const refIds = [...new Set(movements.map(m => m.reference_id).filter(Boolean))];
+  if (refIds.length === 0) return movements.length;
+
+  const { data: subs } = await adminClient.from('submissions').select('id').in('id', refIds);
+  const existingIds = new Set((subs || []).map(s => s.id));
+
+  return movements.filter(m => !m.reference_id || existingIds.has(m.reference_id)).length;
 }
 
 // ─── Batch-fetch submission amounts ───────────────────────────────────────────
