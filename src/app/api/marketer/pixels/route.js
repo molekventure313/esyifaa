@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -50,7 +50,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -79,7 +79,7 @@ export async function POST(request) {
       .eq('marketer_id', user.id)
       .eq('salespage_slug', salespage_slug)
       .eq('pixel_type', pixel_type)
-      .single();
+      .maybeSingle();
       
     if (existing) {
         return NextResponse.json({ error: 'Pixel already exists for this salespage' }, { status: 400 });
@@ -110,7 +110,7 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -162,7 +162,7 @@ export async function PATCH(request) {
 
 export async function DELETE(request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

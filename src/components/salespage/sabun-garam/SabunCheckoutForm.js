@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
@@ -68,7 +68,7 @@ const LABEL_STYLE = {
 
 const REQ = <span style={{ color: '#E11D48', marginLeft: '2px' }}>*</span>;
 
-export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
+function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
   
@@ -809,5 +809,13 @@ export default function SabunCheckoutForm({ source = 'sabun-garam' }) {
 
       </div>
     </section>
+  );
+}
+
+export default function SabunCheckoutForm(props) {
+  return (
+    <Suspense fallback={null}>
+      <SabunCheckoutFormInner {...props} />
+    </Suspense>
   );
 }

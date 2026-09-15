@@ -1,22 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 /**
- * PageViewTracker — Client component untuk record page view.
- * Letak dalam setiap salespage page.js.
- * Fail silently — tidak crash salespage jika tracking gagal.
- *
+ * PageViewTrackerInner — Client component untuk record page view.
  * @param {string} slug - Slug salespage (e.g. 'sihir', 'saka')
  */
-export default function PageViewTracker({ slug }) {
+function PageViewTrackerInner({ slug }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams.get('m') || '';
 
   useEffect(() => {
     if (!slug) return;
-    // Fire and forget — tidak perlu await
     fetch('/api/track-visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -24,5 +20,13 @@ export default function PageViewTracker({ slug }) {
     }).catch(() => {}); // Silent fail
   }, [slug, marketerCode]);
 
-  return null; // Tiada UI
+  return null;
+}
+
+export default function PageViewTracker({ slug }) {
+  return (
+    <Suspense fallback={null}>
+      <PageViewTrackerInner slug={slug} />
+    </Suspense>
+  );
 }

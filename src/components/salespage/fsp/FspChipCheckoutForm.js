@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
@@ -25,7 +25,7 @@ const DIAL_CODES = [
   { code: '+62',  flag: '🇮🇩', label: 'ID' },
 ];
 
-export default function FspChipCheckoutForm({ source = 'fsp-checkout' }) {
+function FspChipCheckoutFormInner({ source = 'fsp-checkout' }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
@@ -468,5 +468,13 @@ export default function FspChipCheckoutForm({ source = 'fsp-checkout' }) {
 
       </div>
     </section>
+  );
+}
+
+export default function FspChipCheckoutForm(props) {
+  return (
+    <Suspense fallback={null}>
+      <FspChipCheckoutFormInner {...props} />
+    </Suspense>
   );
 }

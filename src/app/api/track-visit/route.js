@@ -32,7 +32,7 @@ export async function POST(req) {
         .select('id')
         .eq('marketer_code', marketer_code)
         .eq('role', 'marketer')
-        .single();
+        .maybeSingle();
       
       if (marketer) {
         marketerId = marketer.id;

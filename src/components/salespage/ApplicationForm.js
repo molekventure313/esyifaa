@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ const BADGES = [
 ];
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function ApplicationForm({ source }) {
+function ApplicationFormInner({ source }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams.get('m') || '';
   const waLink = useWaLink(marketerCode);
@@ -271,5 +271,13 @@ export default function ApplicationForm({ source }) {
       {/* Sticky WA Bar — muncul selepas scroll 400px */}
       <StickyBar waLink={waLink} marketerCode={marketerCode} />
     </>
+  );
+}
+
+export default function ApplicationForm({ source }) {
+  return (
+    <Suspense fallback={null}>
+      <ApplicationFormInner source={source} />
+    </Suspense>
   );
 }

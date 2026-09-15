@@ -84,8 +84,8 @@ export async function GET(req) {
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
       
-      const daySubs = subs.filter(s => s.created_at.startsWith(dateStr) || new Date(s.created_at).toLocaleDateString('en-CA') === dateStr); // simplified check
-      // more robust date check
+      
+      // Date check with UTC+8 conversion
       const daySalesArr = subs.filter(s => {
           const sDate = new Date(s.created_at);
           // convert to UTC+8

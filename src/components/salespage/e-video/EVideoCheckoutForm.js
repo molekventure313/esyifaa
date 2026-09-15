@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
@@ -24,7 +24,7 @@ const DIAL_CODES = [
   { code: '+62',  flag: '🇮🇩', label: 'ID' },
 ];
 
-export default function EVideoCheckoutForm() {
+function EVideoCheckoutFormInner() {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
 
@@ -286,5 +286,13 @@ export default function EVideoCheckoutForm() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function EVideoCheckoutForm(props) {
+  return (
+    <Suspense fallback={null}>
+      <EVideoCheckoutFormInner {...props} />
+    </Suspense>
   );
 }
