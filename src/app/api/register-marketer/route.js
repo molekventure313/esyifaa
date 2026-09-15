@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request) {
   try {
@@ -27,16 +27,8 @@ export async function POST(request) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cvygzimtwhezxulvydrn.supabase.co';
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    // Service role client bypassing RLS
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
+    // Use shared admin client — same SUPABASE_SERVICE_ROLE_KEY as all other admin routes
+    const supabaseAdmin = createAdminClient();
 
     // Check uniqueness of marketerCode
     const { data: existingMarketer, error: checkError } = await supabaseAdmin
@@ -81,8 +73,9 @@ export async function POST(request) {
 
     const userId = authData.user.id;
 
-    // 2. Insert profile into profiles table with is_active: false (pending approval)
-    const { error: profileError } = await supabaseAdmin
+    // 2. Upsert profile — is_active: false = pending approval
+    // onConflict: 'id' handles case where handle_new_user trigger already created the row
+    const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
         id: userId,
@@ -90,19 +83,31 @@ export async function POST(request) {
         email,
         phone: phone || null,
         role: 'marketer',
-        is_active: false,
+        is_active: false,           // pending admin approval
         marketer_code: marketerCode,
         marketer_basic_salary: 1700.00,
         marketer_commission_pct: 10.00,
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: 'id' })
+      .select('id, role, is_active')
+      .single();
 
     if (profileError) {
-      console.error('Supabase Profile Insert Error:', profileError);
+      console.error('Supabase Profile Upsert Error:', profileError);
       return Response.json(
         { error: profileError.message || 'Akaun dicipta tetapi profil gagal dikemaskini.' },
         { status: 500 }
       );
+    }
+
+    // Verify the upsert actually set role = 'marketer'
+    if (profileData && profileData.role !== 'marketer') {
+      console.error('Profile role mismatch after upsert:', profileData);
+      // Force-update role separately (handles trigger overwrite scenario)
+      await supabaseAdmin
+        .from('profiles')
+        .update({ role: 'marketer', is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', userId);
     }
 
     return Response.json({
