@@ -20,7 +20,7 @@ export default function SakaPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="saka" />
-      <MarketerPixelProvider slug="saka" />
+      <MarketerPixelProvider />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />

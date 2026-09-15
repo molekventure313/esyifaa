@@ -46,7 +46,7 @@ export default function SabunGaramPageContent({
 
   return (
     <main style={{ minHeight: '100vh', background: '#FFFFFF', color: '#0F172A' }}>
-      <MarketerPixelProvider slug={source} />
+      <MarketerPixelProvider />
 
       {/* #01 — Hero Banner (variant-specific) */}
       <SabunHeroSection

@@ -21,7 +21,7 @@ export default function KedaiTutupPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="kedai-tutup" />
-      <MarketerPixelProvider slug="kedai-tutup" />
+      <MarketerPixelProvider />
       {/* SECTION 1: HERO BANNER */}
       <HeroSection />
 

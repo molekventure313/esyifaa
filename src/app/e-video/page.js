@@ -52,7 +52,7 @@ import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider'
 export default function EVideoPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
-      <MarketerPixelProvider slug="e-video" />
+      <MarketerPixelProvider />
 
       {/* #1 — Hero */}
       <EVideoHeroSection />

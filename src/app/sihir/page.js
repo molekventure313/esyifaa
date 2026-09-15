@@ -20,7 +20,7 @@ export default function SihirPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="sihir" />
-      <MarketerPixelProvider slug="sihir" />
+      <MarketerPixelProvider />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />

@@ -49,7 +49,7 @@ import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider'
 export default function FspPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
-      <MarketerPixelProvider slug="fsp" />
+      <MarketerPixelProvider />
 
       {/* SECTION #1 — Hero Banner */}
       <FspHeroSection />

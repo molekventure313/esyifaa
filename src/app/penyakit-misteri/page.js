@@ -20,7 +20,7 @@ export default function PenyakitMisteriPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="penyakit-misteri" />
-      <MarketerPixelProvider slug="penyakit-misteri" />
+      <MarketerPixelProvider />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />

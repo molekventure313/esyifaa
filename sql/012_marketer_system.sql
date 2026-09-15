@@ -10,6 +10,8 @@ END $$;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS marketer_code TEXT UNIQUE;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS marketer_basic_salary NUMERIC(10,2) DEFAULT 1700.00;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS marketer_commission_pct NUMERIC(5,2) DEFAULT 10.00;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS meta_access_token TEXT;
 
 
 -- 2. Create marketer_pixels table

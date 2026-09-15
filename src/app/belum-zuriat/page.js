@@ -21,7 +21,7 @@ export default function BelumZuriatPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="belum-zuriat" />
-      <MarketerPixelProvider slug="belum-zuriat" />
+      <MarketerPixelProvider />
       {/* SECTION 1: HERO BANNER */}
       <HeroSection />
 

@@ -21,7 +21,7 @@ export default function GangguanBerulangPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="gangguan-berulang" />
-      <MarketerPixelProvider slug="gangguan-berulang" />
+      <MarketerPixelProvider />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />

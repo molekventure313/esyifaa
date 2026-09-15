@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-function PixelLogic({ slug }) {
+function PixelLogic() {
   const searchParams = useSearchParams();
   const [pixelId, setPixelId] = useState(null);
 
@@ -11,15 +11,14 @@ function PixelLogic({ slug }) {
     const code = searchParams.get('m');
     if (!code) return;
 
-    fetch(`/api/pixel-resolve?slug=${slug}&m=${code}`)
+    // No slug needed — 1 global pixel per marketer
+    fetch(`/api/pixel-resolve?m=${code}`)
       .then(res => res.json())
       .then(data => {
-        if (data.pixel_id) {
-          setPixelId(data.pixel_id);
-        }
+        if (data.pixel_id) setPixelId(data.pixel_id);
       })
-      .catch(err => console.error('Error fetching marketer pixel:', err));
-  }, [searchParams, slug]);
+      .catch(() => {}); // Silent fail
+  }, [searchParams]);
 
   useEffect(() => {
     if (!pixelId || typeof window === 'undefined') return;
@@ -34,10 +33,10 @@ function PixelLogic({ slug }) {
   return null;
 }
 
-export default function MarketerPixelProvider({ slug }) {
+export default function MarketerPixelProvider() {
   return (
     <Suspense fallback={null}>
-      <PixelLogic slug={slug} />
+      <PixelLogic />
     </Suspense>
   );
 }
