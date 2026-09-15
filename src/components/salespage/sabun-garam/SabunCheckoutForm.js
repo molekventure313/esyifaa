@@ -105,9 +105,10 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const [addKasturi, setAddKasturi] = useState(false);
   const KASTURI_PRICE            = 20;
   const KASTURI_POSTAGE_DISCOUNT = 5;   // RM5 off postage; Semenanjung: FREE, Sabah/Sarawak: RM5→RM5
-  const effectivePostage = addKasturi ? Math.max(0, postage - KASTURI_POSTAGE_DISCOUNT) : postage;
-  const postageIsFree    = addKasturi && effectivePostage === 0;
-  const grandTotal       = pkg.price + effectivePostage + (addKasturi ? KASTURI_PRICE : 0);
+  const effectivePostage         = addKasturi ? Math.max(0, postage - KASTURI_POSTAGE_DISCOUNT) : postage;
+  const postageIsFree            = addKasturi && effectivePostage === 0;          // selepas tick: untuk Ringkasan
+  const kasturiGivesFreePostage  = postage <= KASTURI_POSTAGE_DISCOUNT;           // sebelum tick: untuk badge/sub-text
+  const grandTotal               = pkg.price + effectivePostage + (addKasturi ? KASTURI_PRICE : 0);
 
   // If Sabah/Sarawak selected and COD was active, switch to FPX
   useEffect(() => {
@@ -573,7 +574,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                   fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
                   borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
                   boxShadow: '0 2px 6px rgba(5,150,105,0.3)', whiteSpace: 'nowrap',
-                }}>{postageIsFree ? '🎁 POSTAGE FREE' : '🎁 DISKAUN POSTAGE RM5'}</div>
+                }}>{kasturiGivesFreePostage ? '🎁 POSTAGE FREE' : '🎁 DISKAUN POSTAGE RM5'}</div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
@@ -606,9 +607,9 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                     <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#10B981' }}>RM{KASTURI_PRICE} sahaja</span>
                   </div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.65rem' }}>
-                    {postageIsFree
-                      ? '\uD83D\uDE9A Postage percuma terus! (Jimat RM5)'
-                      : '\uD83D\uDE9A Diskaun postage RM5 (bayar RM5 je)'}
+                    {kasturiGivesFreePostage
+                      ? '\uD83D\uDE9A Tambah Kasturi ni, Kami belanja Free Postage'
+                      : '\uD83D\uDE9A Diskaun postage RM5 untuk Sabah/Sarawak'}
                   </div>
 
                   {/* Image + bullets */}
