@@ -13,7 +13,7 @@ export async function POST(req) {
       full_name, phone, address, quantity, units_label,
       product, amount_total, amount_base, honeypot, source,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
-      landing_page_url, referrer_url, fbclid,
+      landing_page_url, referrer_url, fbclid, fbp, fbc,
       addon_kasturi, marketer_code,
     } = body;
 
@@ -155,6 +155,8 @@ export async function POST(req) {
         },
         clientIpAddress: ip,
         clientUserAgent: user_agent,
+        fbp: fbp || null,
+        fbc: fbc || null,
       });
     } catch (e) {
       console.error('CAPI COD Purchase Error (non-blocking):', e.message);

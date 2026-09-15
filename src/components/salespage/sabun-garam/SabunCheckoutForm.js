@@ -230,6 +230,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
       const rawPhone = `${formData.dialCode}${formData.phone.replace(/^0+/, '')}`;
       const utms     = getUTMParams();
       const address  = buildAddress();
+      const { fbp, fbc } = getPixelCookies();
 
       const res = await fetch('/api/orders/cod', {
         method: 'POST',
@@ -249,6 +250,9 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
           marketer_code: marketerCode,
           landing_page_url: window.location.href,
           referrer_url: document.referrer,
+          fbp: fbp || null,
+          fbc: fbc || (utms.fbclid ? `fb.1.${Date.now()}.${utms.fbclid}` : null),
+          fbclid: utms.fbclid || null,
           ...utms,
         }),
       });
