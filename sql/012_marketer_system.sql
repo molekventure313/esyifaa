@@ -38,6 +38,7 @@ ALTER TABLE ads_spend ADD COLUMN IF NOT EXISTS marketer_id UUID REFERENCES profi
 DO $$
 BEGIN
     ALTER TABLE ads_spend DROP CONSTRAINT IF EXISTS ads_spend_spend_date_key;
+    ALTER TABLE ads_spend DROP CONSTRAINT IF EXISTS ads_spend_marketer_id_spend_date_key;
     ALTER TABLE ads_spend ADD CONSTRAINT ads_spend_marketer_id_spend_date_key UNIQUE(marketer_id, spend_date);
 EXCEPTION
     WHEN duplicate_object THEN null;
