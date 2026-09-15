@@ -194,7 +194,7 @@ export default function PengisianTestimonialSection() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
           gap: '1.1rem',
         }}>
-          {TESTIMONIALS.map((t, i) => <WaBubble key={i} t={t} />)}
+          {TESTIMONIALS.slice(0, 5).map((t, i) => <WaBubble key={i} t={t} />)}
         </div>
 
       </div>

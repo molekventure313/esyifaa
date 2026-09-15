@@ -1,12 +1,12 @@
 import PengisianHeroSection from '@/components/salespage/pengisian/HeroSection';
-import FspTestimonialSection from '@/components/salespage/fsp/TestimonialSection';
+import PengisianTestimonialSection from '@/components/salespage/pengisian/TestimonialSection';
 import PengisianProblemSection from '@/components/salespage/pengisian/ProblemSection';
 import PengisianFearsSection from '@/components/salespage/pengisian/FearsSection';
 import PengisianExpertSection from '@/components/salespage/pengisian/ExpertSection';
 import PengisianSolutionSection from '@/components/salespage/pengisian/SolutionSection';
 import PengisianHowItWorksSection from '@/components/salespage/pengisian/HowItWorksSection';
 import PengisianGoalsSection from '@/components/salespage/pengisian/GoalsSection';
-import FspTestimonialPart2Section from '@/components/salespage/fsp/TestimonialPart2Section';
+import PengisianTestimonialPart2Section from '@/components/salespage/pengisian/TestimonialPart2Section';
 import PengisianComparisonSection from '@/components/salespage/pengisian/ComparisonSection';
 import PengisianWasapProcessSection from '@/components/salespage/pengisian-wasap/ProcessSection';
 import PengisianWasapPaymentSection from '@/components/salespage/pengisian-wasap/PaymentSection';
@@ -36,14 +36,14 @@ export default function PengisianWasapPage() {
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
 
       <PengisianHeroSection />
-      <FspTestimonialSection />
+      <PengisianTestimonialSection />
       <PengisianProblemSection />
       <PengisianFearsSection />
       <PengisianExpertSection />
       <PengisianSolutionSection />
       <PengisianHowItWorksSection />
       <PengisianGoalsSection />
-      <FspTestimonialPart2Section />
+      <PengisianTestimonialPart2Section />
       <PengisianComparisonSection />
       <PengisianWasapProcessSection />
       <PengisianWasapPaymentSection />
