@@ -11,23 +11,32 @@ function PixelLogic() {
     const code = searchParams.get('m');
     if (!code) return;
 
-    // No slug needed — 1 global pixel per marketer
     fetch(`/api/pixel-resolve?m=${code}`)
       .then(res => res.json())
       .then(data => {
         if (data.pixel_id) setPixelId(data.pixel_id);
       })
-      .catch(() => {}); // Silent fail
+      .catch(() => {});
   }, [searchParams]);
 
   useEffect(() => {
     if (!pixelId || typeof window === 'undefined') return;
     
-    // Add marketer pixel alongside HQ pixel
-    if (window.fbq) {
-      window.fbq('init', pixelId);
-      window.fbq('track', 'PageView');
+    // Load fbq library if not already loaded (HQ pixel skipped it when ?m= present)
+    if (!window.fbq) {
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
     }
+    
+    // Init ONLY marketer pixel — no HQ pixel
+    window.fbq('init', pixelId);
+    window.fbq('track', 'PageView');
   }, [pixelId]);
 
   return null;
