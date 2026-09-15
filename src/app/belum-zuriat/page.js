@@ -14,12 +14,14 @@ import ApplicationForm from '@/components/salespage/ApplicationForm';
 import FAQSection from '@/components/salespage/variants/belum-zuriat/FAQSection';
 import ClosingSection from '@/components/salespage/variants/belum-zuriat/ClosingSection';
 import PageViewTracker from '@/components/salespage/PageViewTracker';
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
-export default function Home() {
+export default function BelumZuriatPage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="belum-zuriat" />
+      <MarketerPixelProvider slug="belum-zuriat" />
       {/* SECTION 1: HERO BANNER */}
       <HeroSection />
 

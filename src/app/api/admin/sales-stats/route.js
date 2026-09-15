@@ -161,7 +161,7 @@ export async function GET(req) {
 
     let recentQ = adminClient
       .from('submissions')
-      .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at')
+      .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at, marketer_id')
       .in('payment_type', ['fpx_payment', 'cod'])
       .eq('payment_status', 'completed')
       .order('created_at', { ascending: false })
@@ -210,6 +210,7 @@ export async function GET(req) {
       payment_type: s.payment_type,
       amount: parseAmount(s),
       created_at: s.created_at,
+      marketer_id: s.marketer_id,
     }));
 
     return NextResponse.json({

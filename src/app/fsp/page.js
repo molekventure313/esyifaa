@@ -44,9 +44,12 @@ export const metadata = {
  * #15 FAQ
  * Closing
  */
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
+
 export default function FspPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
+      <MarketerPixelProvider slug="fsp" />
 
       {/* SECTION #1 — Hero Banner */}
       <FspHeroSection />

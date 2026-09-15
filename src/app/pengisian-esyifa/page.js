@@ -32,9 +32,12 @@ export const metadata = {
  * ──── [BORANG FPX CHECKOUT — RM90] ────
  * #14 FAQ · #15 Closing
  */
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
+
 export default function PengisianEsyifaPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
+      <MarketerPixelProvider slug="pengisian-esyifa" />
 
       <PengisianHeroSection />
       <PengisianTestimonialSection />

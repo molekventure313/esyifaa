@@ -500,15 +500,26 @@ export default function AdminDashboardPage() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  {recent.map(o => (
+                  {recent.map(o => {
+                    const marketer = o.marketer_id ? marketers.find(m => m.id === o.marketer_id) : null;
+                    return (
                     <div key={o.id} style={{
                       padding: '0.7rem 0.9rem', borderRadius: '8px',
                       background: subCardBg, border: lm ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.05)',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem',
                     }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, fontSize: '0.85rem', color: textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {o.full_name}
+                          {marketer && (
+                            <span style={{ 
+                              fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px',
+                              background: 'rgba(124, 58, 237, 0.15)', color: lm ? '#6D28D9' : '#A78BFA', fontWeight: 700,
+                              marginLeft: '0.5rem', display: 'inline-flex', alignItems: 'center'
+                            }}>
+                              📢 {marketer.marketer_code || 'Marketer'}
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '0.7rem', color: textMuted, marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {o.source_label} · {formatTimeAgo(o.created_at)}
@@ -529,7 +540,7 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

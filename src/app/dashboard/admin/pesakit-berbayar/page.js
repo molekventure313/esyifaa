@@ -26,6 +26,16 @@ export default function PengurusanOrderPage() {
     total_cod: 0, total_fpx: 0, total_revenue_rm: 0,
   });
 
+  const [marketers, setMarketers] = useState([]);
+  useEffect(() => {
+    fetch('/api/admin/marketers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setMarketers(data.data || []);
+      })
+      .catch(console.error);
+  }, []);
+
   // Multi-select delete
   const [selectedIds,   setSelectedIds]   = useState(new Set());
   const [deleting,      setDeleting]      = useState(false);
@@ -474,7 +484,18 @@ export default function PengurusanOrderPage() {
 
                     {/* Pelanggan */}
                     <td style={{ padding: '0.85rem 0.5rem', minWidth: '140px' }}>
-                      <div style={{ fontWeight: 700, color: textPrimary, fontSize: '0.875rem' }}>{order.full_name}</div>
+                      <div style={{ fontWeight: 700, color: textPrimary, fontSize: '0.875rem' }}>
+                        {order.full_name}
+                        {order.marketer_id && marketers.find(m => m.id === order.marketer_id) && (
+                          <span style={{ 
+                            fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px',
+                            background: 'rgba(124, 58, 237, 0.15)', color: isLightMode ? '#6D28D9' : '#A78BFA', fontWeight: 700,
+                            marginLeft: '0.5rem', display: 'inline-block'
+                          }}>
+                            📢 {marketers.find(m => m.id === order.marketer_id).marketer_code || 'Marketer'}
+                          </span>
+                        )}
+                      </div>
                       {order.source && (
                         <div style={{ fontSize: '0.65rem', color: textMuted, marginTop: '0.15rem' }}>
                           Dari: <span style={{ fontWeight: 600 }}>{order.source}</span>

@@ -5,11 +5,11 @@ import { useSearchParams } from 'next/navigation';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const FALLBACK_NUMBER = '601135172611';
-const WA_MESSAGE = encodeURIComponent('Assalamualaikum, saya ingin dapatkan Diagnos Percuma. Boleh bantu saya?');
+const WA_BASE_MSG = 'Assalamualaikum, saya ingin dapatkan Diagnos Percuma. Boleh bantu saya?';
 const buildWaLink = (num, m) => {
-  let link = `https://wa.me/${num}?text=${WA_MESSAGE}`;
-  if (m) link += `&m=${m}`;
-  return link;
+  let msg = WA_BASE_MSG;
+  if (m) msg += ` [Ref: ${m.toUpperCase()}]`;
+  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 };
 const LS_KEY = 'esyifaa_sp_wa_idx'; // key berbeza dari /wa page
 

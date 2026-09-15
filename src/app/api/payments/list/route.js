@@ -28,7 +28,7 @@ export async function GET(req) {
       .select(`
         id, full_name, phone, address, problem, source,
         payment_type, payment_status, chip_bill_id, amount_paid,
-        ninjavan_exported_at, returned_at, qty,
+        ninjavan_exported_at, returned_at, qty, marketer_id,
         created_at, notes, customer_id,
         cases:cases!cases_submission_id_fkey (
           id, status, assigned_to, created_at,
@@ -154,6 +154,7 @@ export async function GET(req) {
         case_status: caseRecord?.status || null,
         assigned_to: caseRecord?.assigned_to || null,
         practitioner_name: caseRecord?.practitioner?.full_name || null,
+        marketer_id: s.marketer_id || null,
       };
     });
 

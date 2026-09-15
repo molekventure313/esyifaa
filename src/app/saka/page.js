@@ -13,12 +13,14 @@ import ApplicationForm from '@/components/salespage/ApplicationForm';
 import FAQSection from '@/components/salespage/variants/saka/FAQSection';
 import ClosingSection from '@/components/salespage/variants/saka/ClosingSection';
 import PageViewTracker from '@/components/salespage/PageViewTracker';
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export default function SakaPage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="saka" />
+      <MarketerPixelProvider slug="saka" />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />

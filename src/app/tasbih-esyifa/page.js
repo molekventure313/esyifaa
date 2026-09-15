@@ -43,9 +43,12 @@ export const metadata = {
  * #14 FAQ
  * #15 Closing
  */
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
+
 export default function TasbihEsyifaPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
+      <MarketerPixelProvider slug="tasbih-esyifa" />
 
       {/* #1 — Hero */}
       <PengisianHeroSection />

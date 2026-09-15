@@ -13,12 +13,14 @@ import ApplicationForm from '@/components/salespage/ApplicationForm';
 import FAQSection from '@/components/salespage/variants/penyakit-misteri/FAQSection';
 import ClosingSection from '@/components/salespage/variants/penyakit-misteri/ClosingSection';
 import PageViewTracker from '@/components/salespage/PageViewTracker';
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export default function PenyakitMisteriPage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="penyakit-misteri" />
+      <MarketerPixelProvider slug="penyakit-misteri" />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />

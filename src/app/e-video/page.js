@@ -47,9 +47,12 @@ export const metadata = {
  * #14 FAQ (new — E-Video specific)
  * #15 Closing (new)
  */
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
+
 export default function EVideoPage() {
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
+      <MarketerPixelProvider slug="e-video" />
 
       {/* #1 — Hero */}
       <EVideoHeroSection />

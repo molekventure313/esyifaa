@@ -72,10 +72,11 @@ export async function POST(req) {
     // ─── Resolve marketer_id ───
     let marketerId = null;
     if (marketer_code) {
+      const code = marketer_code.toLowerCase().trim();
       const { data: marketer } = await supabase
         .from('profiles')
         .select('id')
-        .eq('marketer_code', marketer_code)
+        .ilike('marketer_code', code)
         .eq('role', 'marketer')
         .maybeSingle();
       

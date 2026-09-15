@@ -13,12 +13,14 @@ import ApplicationForm from '@/components/salespage/ApplicationForm';
 import FAQSection from '@/components/salespage/variants/sihir/FAQSection';
 import ClosingSection from '@/components/salespage/variants/sihir/ClosingSection';
 import PageViewTracker from '@/components/salespage/PageViewTracker';
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export default function SihirPage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="sihir" />
+      <MarketerPixelProvider slug="sihir" />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />

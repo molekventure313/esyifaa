@@ -35,6 +35,8 @@ const IMAGE_MAP = {
   'sabun-garam-5': { hero: `${BASE}/hero-anak-meracau.jpeg`,       solution: `${BASE}/solution-anak-meracau.jpeg` },
 };
 
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
+
 export default function SabunGaramPageContent({
   heroHeadline,
   heroSubheadline,
@@ -44,6 +46,7 @@ export default function SabunGaramPageContent({
 
   return (
     <main style={{ minHeight: '100vh', background: '#FFFFFF', color: '#0F172A' }}>
+      <MarketerPixelProvider slug={source} />
 
       {/* #01 — Hero Banner (variant-specific) */}
       <SabunHeroSection

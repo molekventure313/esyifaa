@@ -14,12 +14,14 @@ import ApplicationForm from '@/components/salespage/ApplicationForm';
 import FAQSection from '@/components/salespage/variants/gangguan-berulang/FAQSection';
 import ClosingSection from '@/components/salespage/variants/gangguan-berulang/ClosingSection';
 import PageViewTracker from '@/components/salespage/PageViewTracker';
+import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export default function GangguanBerulangPage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#042E23' }}>
       <PageViewTracker slug="gangguan-berulang" />
+      <MarketerPixelProvider slug="gangguan-berulang" />
       <HeroSection />
       <TestimonialSection />
       <ProblemSection />
