@@ -230,12 +230,6 @@ export default function LoginPage() {
               Daftar Akaun Perawat
             </Link>
           </div>
-          <div>
-            Setup Sistem?{' '}
-            <Link href="/setup" style={{ color: '#9CA3AF', fontWeight: 500, textDecoration: 'none' }}>
-              Super Admin Setup
-            </Link>
-          </div>
         </div>
       </div>
     </main>
