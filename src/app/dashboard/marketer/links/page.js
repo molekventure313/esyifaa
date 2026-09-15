@@ -74,7 +74,7 @@ export default function MarketerLinksPage() {
             <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: textPrimary, borderBottom: cardBorder, paddingBottom: '0.5rem' }}>{category}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
               {items.map((item) => {
-                const link = `https://esyifaa.com/${item.slug}?m=${marketerCode}`;
+                const link = `https://e-syifa.com/${item.slug}?m=${marketerCode}`;
                 const isCopied = copiedLink === item.slug;
                 
                 return (
