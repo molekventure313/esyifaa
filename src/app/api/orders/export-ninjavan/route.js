@@ -98,8 +98,9 @@ function generateNinjaVanCSV(orders) {
 
     // K: UNIT cell — product name + qty + add-on jika ada
     const qty = parseQuantity(s);
-    const hasKasturi = /\[ADD-ON:\s*Kasturi Kijang/i.test(s.notes || '') ||
-                       /Add-On:\s*Kasturi Kijang/i.test(s.problem || '');
+    // Cari "kasturi kijang" (case-insensitive) dalam mana-mana field — lebih robust
+    const combinedText = `${s.notes || ''} ${s.problem || ''}`;
+    const hasKasturi = /kasturi\s*kijang/i.test(combinedText);
     let unitCell = `Sabun Garam Himalaya ESyifaa (200g)\n${qty} UNIT`;
     if (hasKasturi) unitCell += `\n+ Kasturi Kijang E-Syifa'`;
 
