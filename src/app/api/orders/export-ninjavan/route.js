@@ -84,8 +84,14 @@ function generateNinjaVanCSV(orders) {
     // A: Tracking number — DDMMYYXX
     const tracking = `${dd}${mm}${yy}${String(index % 100).padStart(2, '0')}`;
 
-    // Address parts
-    const addr = parseAddressParts(s.address || '');
+    // Address — kolum dedicated (order baru), fallback parse dari problem text (order lama)
+    let addressStr = s.address || '';
+    if (!addressStr) {
+      // Order lama: problem text format "Alamat: No 12, Jln..., 81300, Skudai, Johor | Pakej: ..."
+      const alamatMatch = (s.problem || '').match(/Alamat:\s*([^|]+)/);
+      if (alamatMatch) addressStr = alamatMatch[1].trim();
+    }
+    const addr = parseAddressParts(addressStr);
 
     // C: Phone
     const phone = formatPhone(s.phone);
@@ -166,10 +172,11 @@ export async function GET(req) {
     if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
-    const idsParam   = searchParams.get('ids') || '';
-    const status     = searchParams.get('status') || '';
-    const dateFrom   = searchParams.get('date_from') || '';
-    const dateTo     = searchParams.get('date_to') || '';
+    const idsParam      = searchParams.get('ids') || '';
+    const status        = searchParams.get('status') || '';
+    const dateFrom      = searchParams.get('date_from') || '';
+    const dateTo        = searchParams.get('date_to') || '';
+    const notExported   = searchParams.get('not_exported') === 'true';
 
     // ─── Query submissions ───
     let query = adminClient
@@ -183,9 +190,10 @@ export async function GET(req) {
       if (ids.length > 0) query = query.in('id', ids);
     }
 
-    if (status)   query = query.eq('payment_status', status);
-    if (dateFrom) query = query.gte('created_at', dateFrom);
-    if (dateTo)   query = query.lte('created_at', dateTo + 'T23:59:59Z');
+    if (status)       query = query.eq('payment_status', status);
+    if (dateFrom)     query = query.gte('created_at', dateFrom);
+    if (dateTo)       query = query.lte('created_at', dateTo + 'T23:59:59Z');
+    if (notExported)  query = query.is('ninjavan_exported_at', null);   // ← belum diexport
 
     query = query.order('created_at', { ascending: true });
 

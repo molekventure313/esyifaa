@@ -7,7 +7,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const {
-      full_name, phone, problem, source, source_page, honeypot, event_id,
+      full_name, phone, problem, address, source, source_page, honeypot, event_id,
       amount_in_myr = 50.00,
       addon_kasturi,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
@@ -81,6 +81,7 @@ export async function POST(req) {
       full_name: cleanName,
       phone: formattedPhone,
       problem: initialProblemNotes,
+      address: address || null,              // ← simpan alamat penghantaran
       notes: `[STATUS: pending_payment] [AMOUNT: MYR ${amount_in_myr.toFixed(2)}]`,
       source: source || 'fsp-checkout',
       payment_type: 'fpx_payment',      // ← KEY: mark as FPX payment

@@ -27,6 +27,7 @@ const PENGISIAN_PAGES = [
   { label: "Pengisian E-Syifa' (WA Lead)", desc: "Clone pengisian — CTA = WhatsApp sahaja. Tiada FPX. Tracking: Lead pixel.",     url: '/pengisian-wasap',  color: '#059669', icon: '🟢', isNew: true },
   { label: "Rawat Sendiri — Pengisian V2", desc: "Angle baru: 'Berhenti bergantung perawat & rawat diri sendiri'. RM90.",          url: '/rawat-sendiri',    color: '#10B981', icon: '🛡️', isNew: true },
   { label: "Tasbih E-Syifa' (FSP V2)",     desc: "Clone tasbih — 15 sections FSP, Fears, Authority, Goals & comparison.",          url: '/tasbih-v2',        color: '#F59E0B', icon: '📿', isNew: true },
+  { label: "Pengisian Item — Simple WA",   desc: "Landing page simple & laju — hero + 4 testimoni + harga card + sticky WA. Angle: Rawat sendiri tanpa bergantung perawat.", url: '/pengisian-item', color: '#25D366', icon: '⚡', isNew: true },
 ];
 
 // TAB 3: E-Video

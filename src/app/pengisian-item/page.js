@@ -1,6 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
+import PageViewTracker from '@/components/salespage/PageViewTracker';
+
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const FALLBACK_WA = '601135172611';
@@ -132,6 +134,8 @@ export default function PengisianItemPage() {
 
   return (
     <main style={{ minHeight: '100vh', background: '#042E23', fontFamily: ff }}>
+
+      <PageViewTracker slug="pengisian-item" />
 
       {/* ── HERO ──────────────────────────────────────── */}
       <section style={{

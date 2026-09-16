@@ -42,7 +42,8 @@ export default function PengurusanOrderPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Export
-  const [exporting,   setExporting]   = useState(false);
+  const [exporting,       setExporting]       = useState(false);
+  const [notExportedOnly, setNotExportedOnly] = useState(false);
 
   // Return COD
   const [returningId, setReturningId] = useState(null);
@@ -154,6 +155,7 @@ export default function PengurusanOrderPage() {
         if (paymentTypeFilter === 'physical') params.set('physical', 'true');
         else if (paymentTypeFilter !== 'all') params.set('payment_type', paymentTypeFilter);
         if (paymentStatusFilter !== 'all') params.set('status', paymentStatusFilter);
+        if (notExportedOnly) params.set('not_exported', 'true'); // ← filter belum diexport
       }
 
       const res = await fetch(`/api/orders/export-ninjavan?${params.toString()}`);
@@ -253,14 +255,35 @@ export default function PengurusanOrderPage() {
             Semua order FPX (Pengisian ESyifaa) &amp; COD (Sabun Garam) — dikemaskini setiap 15 saat
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* Toggle: Belum Diexport Sahaja */}
+          <button
+            onClick={() => setNotExportedOnly(v => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.5rem 0.9rem', borderRadius: '8px', fontSize: '0.78rem',
+              fontWeight: 700, cursor: 'pointer',
+              background: notExportedOnly
+                ? (isLightMode ? '#FEF3C7' : 'rgba(253,224,71,0.15)')
+                : subCardBg,
+              color: notExportedOnly ? '#D97706' : textSecondary,
+              border: notExportedOnly
+                ? '1.5px solid #F59E0B'
+                : cardBorder,
+              transition: 'all 0.15s',
+            }}
+          >
+            {notExportedOnly ? '✅' : '⬜'} Belum Diexport Sahaja
+          </button>
+
           {/* Export All Physical Completed Button */}
           <button
             onClick={() => {
-              // Quick export: set filter to physical + completed, export all
+              // Quick export: physical + completed, honoring notExportedOnly filter
               const physicalCompleted = orders.filter(o =>
                 o.payment_status === 'completed' &&
-                (o.payment_type === 'cod' || (o.payment_type === 'fpx_payment' && (o.source || '').includes('sabun')))
+                (o.payment_type === 'cod' || (o.payment_type === 'fpx_payment' && (o.source || '').includes('sabun'))) &&
+                (!notExportedOnly || !o.ninjavan_exported_at)   // ← filter belum diexport
               );
               handleExport(physicalCompleted.map(o => o.id));
             }}
@@ -276,6 +299,8 @@ export default function PengurusanOrderPage() {
           >
             {exporting ? '⏳ Exporting...' : '📦 Export NinjaVan'}
           </button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '0.75rem', color: textMuted, background: subCardBg, padding: '0.4rem 0.85rem', borderRadius: '6px', border: cardBorder }}>
             Dikemaskini: <strong style={{ color: '#60A5FA' }}>{lastUpdated || 'Baru sahaja'}</strong>
           </div>

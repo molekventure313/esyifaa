@@ -185,6 +185,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
           full_name: formData.full_name,
           phone: rawPhone,
           problem: orderNotes,
+          address,                          // ← simpan address ke kolum dedicated
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,
