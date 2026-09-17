@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import PixelProviderServer from '@/components/salespage/PixelProviderServer';
 
 export const metadata = {

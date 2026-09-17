@@ -36,7 +36,8 @@ function PixelLogic() {
     
     // Init ONLY marketer pixel — no HQ pixel
     window.fbq('init', pixelId);
-    window.fbq('track', 'PageView');
+    // trackSingle: fire PageView untuk marketer pixel SAHAJA — walaupun HQ pixel terbuka
+    window.fbq('trackSingle', pixelId, 'PageView');
   }, [pixelId]);
 
   return null;
