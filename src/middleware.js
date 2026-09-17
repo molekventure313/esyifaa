@@ -4,6 +4,10 @@ import { NextResponse } from 'next/server';
 export async function middleware(request) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', request.nextUrl.pathname);
+  // Forward marketer param — server components baca header ini untuk skip HQ pixel
+  if (request.nextUrl.searchParams.has('m')) {
+    requestHeaders.set('x-has-marketer', '1');
+  }
   const pathname = request.nextUrl.pathname;
 
   // ── PUBLIC ROUTES: SEMAK DULU — skip Supabase auth sepenuhnya ────────────

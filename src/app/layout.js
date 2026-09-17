@@ -71,6 +71,7 @@ export default async function RootLayout({ children }) {
   // Get current page path from middleware-forwarded header
   const headersList = await headers();
   const pathname = headersList.get('x-pathname') || '';
+  const hasMarketer = headersList.get('x-has-marketer') === '1'; // ?m= param present
 
   // Extract slug: '/sabun-garam-1' → 'sabun-garam-1'
   const slug = pathname.replace(/^\//, '').split('/')[0] || '';
@@ -83,27 +84,24 @@ export default async function RootLayout({ children }) {
 
   const isFpxPage = trackingType === 'purchase';
 
-  // Skip Pixel UTAMA untuk FPX pages — FPX pixel loads via FspChipCheckoutForm
-  const pixelId = isFpxPage ? null : pixelIdRaw;
+  // Skip Pixel UTAMA untuk:
+  //   1. FPX pages — FPX pixel loads via FspChipCheckoutForm
+  //   2. Marketer links (?m=) — MarketerPixelProvider handle pixel marketer
+  const pixelId = (isFpxPage || hasMarketer) ? null : pixelIdRaw;
 
   // Official Meta Pixel base code — dalam <head> ikut FB template
-  // PENTING: Wrap dalam IIFE untuk skip HQ pixel bila marketer link (?m=) digunakan.
-  // MarketerPixelProvider (client component) akan handle pixel marketer gantikan.
+  // pixelId = null bila FPX page atau marketer link → tiada script langsung
   const pixelScript = pixelId ? `
-    (function(){
-      var params = new URLSearchParams(window.location.search);
-      if (params.get('m')) return; // marketer link — skip HQ pixel
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '${pixelId}');
-      fbq('track', 'PageView');
-    })();
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '${pixelId}');
+    fbq('track', 'PageView');
   ` : null;
 
   return (
