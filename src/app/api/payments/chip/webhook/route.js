@@ -211,6 +211,18 @@ export async function POST(req) {
                 notes: `FPX Add-On — Kasturi Kijang`,
               });
             }
+
+            // Deduct sabun add-on stock if selected
+            const hasSabun = /Add-On:\s*Sabun Garam/i.test(submission.problem || '');
+            if (hasSabun) {
+              await deductStock({
+                adminClient: supabase,
+                source: 'sabun-garam',
+                qty: 1,
+                referenceId: submission.id,
+                notes: `FPX Add-On — Sabun Garam`,
+              });
+            }
           }
         } catch (e) {
           console.error('Stock deduct FPX error (non-blocking):', e.message);

@@ -10,6 +10,7 @@ export async function POST(req) {
       full_name, phone, problem, address, source, source_page, honeypot, event_id,
       amount_in_myr = 50.00,
       addon_kasturi,
+      addon_sabun,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
       landing_page_url, referrer_url, fbclid, fbp, fbc, marketer_code,
     } = body;
@@ -31,7 +32,8 @@ export async function POST(req) {
 
     const supabase       = createAdminClient();
     const kasturiTag     = addon_kasturi ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
-    const initialProblemNotes = `[Bayaran FPX: RM${amount_in_myr.toFixed(2)}] ${problem ? `Simptom: ${problem}` : ''}${kasturiTag}`;
+    const sabunTag       = addon_sabun   ? ' | Add-On: Sabun Garam Pengisian +RM25' : '';
+    const initialProblemNotes = `[Bayaran FPX: RM${amount_in_myr.toFixed(2)}] ${problem ? `Simptom: ${problem}` : ''}${kasturiTag}${sabunTag}`;
 
     // ─── Try Check/Create Customer ───
     let customerId = null;
