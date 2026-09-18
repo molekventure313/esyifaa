@@ -4,6 +4,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { createAdminClient } from '@/lib/supabase/admin';
 import ClientPixelProvider from '@/components/salespage/ClientPixelProvider';
+import SocialProofToast from '@/components/salespage/SocialProofToast';
 
 
 const inter = Inter({
@@ -62,6 +63,9 @@ export default async function RootLayout({ children }) {
         {/* ClientPixelProvider — handle HQ pixel client-side
             Skip bila ?m= (marketer) atau FPX pages */}
         <ClientPixelProvider hqPixelId={pixelIdRaw} />
+        {/* SocialProofToast — popup notifikasi pembeli terkini
+            Self-skips untuk dashboard / checkout pages */}
+        <SocialProofToast />
         <ToastProvider>
           {children}
         </ToastProvider>
