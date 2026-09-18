@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from 'react';
 
@@ -16,7 +16,10 @@ export default function ClientPixelProvider({ hqPixelId }) {
 
     // Marketer link — MarketerPixelProvider yang handle pixel
     const hasMarketer = new URLSearchParams(window.location.search).has('m');
-    if (hasMarketer) return;
+    // /m/ routes = dedicated marketer SP — HQ pixel SENTIASA skip, tanpa syarat
+    const isMarketerRoute = window.location.pathname.startsWith('/m/');
+    if (hasMarketer || isMarketerRoute) return;
+
 
     // FPX pages — HQ pixel jangan fire, FPX pixel handled by FspChipCheckoutForm
     const isFpxPage = FPX_PATHS.some(p => window.location.pathname.startsWith(p));
