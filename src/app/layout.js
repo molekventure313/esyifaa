@@ -1,9 +1,10 @@
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
-import { headers } from 'next/headers';
 import { unstable_cache } from 'next/cache';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { createAdminClient } from '@/lib/supabase/admin';
+import ClientPixelProvider from '@/components/salespage/ClientPixelProvider';
+
 
 const inter = Inter({
   subsets: ['latin'],
@@ -46,88 +47,21 @@ const getCachedPixelId = unstable_cache(
   { revalidate: 300 } // 5 minit
 );
 
-// Tracking type per slug — revalidate 5 minit
-const getCachedTrackingType = unstable_cache(
-  async (slug) => {
-    if (!slug) return 'lead';
-    try {
-      const adminClient = createAdminClient();
-      const { data } = await adminClient
-        .from('salespages')
-        .select('tracking_type')
-        .eq('slug', slug)
-        .maybeSingle();
-      return data?.tracking_type || 'lead';
-    } catch (e) {
-      console.warn('layout: failed to fetch tracking_type', e?.message);
-      return 'lead';
-    }
-  },
-  ['layout-tracking-type'],
-  { revalidate: 300 } // 5 minit
-);
 
 export default async function RootLayout({ children }) {
-  // Get current page path from middleware-forwarded header
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname') || '';
-  const hasMarketer = headersList.get('x-has-marketer') === '1'; // ?m= param present
-
-  // Extract slug: '/sabun-garam-1' → 'sabun-garam-1'
-  const slug = pathname.replace(/^\//, '').split('/')[0] || '';
-
-  // ── Parallel fetch — kedua-dua queries jalan serentak ──────────────────
-  const [trackingType, pixelIdRaw] = await Promise.all([
-    getCachedTrackingType(slug),
-    getCachedPixelId(),
-  ]);
-
-  const isFpxPage = trackingType === 'purchase';
-
-  // Skip Pixel UTAMA untuk:
-  //   1. FPX pages — FPX pixel loads via FspChipCheckoutForm
-  //   2. Marketer links (?m=) — MarketerPixelProvider handle pixel marketer
-  const pixelId = (isFpxPage || hasMarketer) ? null : pixelIdRaw;
-
-  // Official Meta Pixel base code — dalam <head> ikut FB template
-  // pixelId = null bila FPX page atau marketer link → tiada script langsung
-  const pixelScript = pixelId ? `
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '${pixelId}');
-    fbq('track', 'PageView');
-  ` : null;
+  // Fetch HQ pixel ID — pass to ClientPixelProvider sebagai prop
+  // Client akan decide sama ada nak init pixel atau skip (cek ?m= dan FPX pages)
+  const pixelIdRaw = await getCachedPixelId();
 
   return (
     <html lang="ms" className={`${inter.variable} ${jakarta.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {/* Meta Pixel — loaded in <head> exactly per FB official template */}
-        {pixelScript && (
-          <script
-            dangerouslySetInnerHTML={{ __html: pixelScript }}
-          />
-        )}
       </head>
       <body>
-        {/* noscript fallback — for users with JS disabled */}
-        {pixelId && (
-          <noscript>
-            <img
-              height="1"
-              width="1"
-              style={{ display: 'none' }}
-              src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
-              alt=""
-            />
-          </noscript>
-        )}
+        {/* ClientPixelProvider — handle HQ pixel client-side
+            Skip bila ?m= (marketer) atau FPX pages */}
+        <ClientPixelProvider hqPixelId={pixelIdRaw} />
         <ToastProvider>
           {children}
         </ToastProvider>
