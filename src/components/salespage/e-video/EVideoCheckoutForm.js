@@ -39,6 +39,12 @@ function EVideoCheckoutFormInner() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
+    // Marketer routes — jangan load HQ FPX pixel
+    const isMarketerRoute =
+      new URLSearchParams(window.location.search).has('m') ||
+      window.location.pathname.startsWith('/m/');
+    if (isMarketerRoute) return;
+
     const script = document.createElement('script');
     script.src = '/api/pixel-fpx-init';
     script.async = true;

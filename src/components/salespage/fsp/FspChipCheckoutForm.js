@@ -33,6 +33,12 @@ function FspChipCheckoutFormInner({ source = 'fsp-checkout' }) {
 
   // On mount: inject FPX pixel script + fetch fpx_pixel_id for trackSingle
   useEffect(() => {
+    // Marketer routes — jangan load HQ FPX pixel
+    const isMarketerRoute =
+      new URLSearchParams(window.location.search).has('m') ||
+      window.location.pathname.startsWith('/m/');
+    if (isMarketerRoute) return;
+
     // Inject /api/pixel-fpx-init script (sets fbq init for FPX pixel + window.__fpxPixelId)
     const script = document.createElement('script');
     script.src = '/api/pixel-fpx-init';
