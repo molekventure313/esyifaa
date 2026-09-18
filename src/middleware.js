@@ -35,6 +35,7 @@ export async function middleware(request) {
     '/fsp',
     '/fsp-checkout',
     '/garam-pengasihan',
+    '/kasturi-kijang',
     '/payment-success',
     '/tasbih-v2',
     // Public APIs — tidak perlukan auth

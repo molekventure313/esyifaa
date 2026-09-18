@@ -6,32 +6,33 @@ import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
 // ─── Packages ─────────────────────────────────────────────────────────────────
+// Pakej mengikut arahan: 1 botol RM20, 3 botol RM30, 5 botol RM40
 const BASE_PACKAGES = [
   {
-    units: 3,
-    label: '3 Bekas (500g x 3)',
-    sublabel: 'Rawatan Penuh 40 Hari — Seisi Rumah & Pemulihan Hati',
-    price: 99,
-    originalPrice: 135,
-    savings: 36,
-    badge: 'PALING POPULAR (JIMAT RM36)',
+    units: 5,
+    label: '5 Botol (Pakej Seisi Keluarga)',
+    sublabel: 'RM8 sebotol sahaja — Jimat RM60! Benteng lengkap satu rumah',
+    price: 40,
+    originalPrice: 100,
+    savings: 60,
+    badge: 'PALING POPULAR (JIMAT RM60)',
     recommended: true,
   },
   {
-    units: 2,
-    label: '2 Bekas (500g x 2)',
-    sublabel: 'Rawatan Intensif Suami Isteri & Makanan Harian',
-    price: 79,
-    originalPrice: 90,
-    savings: 11,
-    badge: 'JIMAT RM11',
+    units: 3,
+    label: '3 Botol (Pakej Rawatan Lengkap)',
+    sublabel: 'RM10 sebotol sahaja — Simpan di rumah, bilik & kereta',
+    price: 30,
+    originalPrice: 60,
+    savings: 30,
+    badge: 'JIMAT RM30',
   },
   {
     units: 1,
-    label: '1 Bekas (500g)',
-    sublabel: 'Pek Percubaan & Pengenalan Masakan Berkat',
-    price: 45,
-    originalPrice: 55,
+    label: '1 Botol (Pek Percubaan)',
+    sublabel: 'Sesuai untuk mencuba khasiat pati kasturi kijang ruqyah',
+    price: 20,
+    originalPrice: 35,
     savings: null,
     badge: null,
   },
@@ -93,11 +94,11 @@ const LABEL_STYLE = {
 
 const REQ = <span style={{ color: '#E11D48', marginLeft: '2px' }}>*</span>;
 
-function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
+function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
 
-  const [selectedPkg, setSelectedPkg] = useState(0); // index 0 = 3 Bekas (recommended)
+  const [selectedPkg, setSelectedPkg] = useState(0); // index 0 = 5 Botol (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
   const [formData, setFormData] = useState({
     full_name: '', dialCode: '+60', phone: '',
@@ -114,18 +115,17 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
   const isEastMalaysia = EAST_MALAYSIA.includes(formData.negeri);
   const postage = isEastMalaysia ? POSTAGE_EAST : POSTAGE_NORMAL;
 
-  // ─── 2 Add-ons State ───
-  // Add-on 1: Minyak Kasturi Kijang E-Syifa' (+RM20)
-  const [addKasturi, setAddKasturi] = useState(false);
-  const KASTURI_PRICE = 20;
-
-  // Add-on 2: Sabun Garam Himalaya Pengisian 200g (+RM25)
+  // ─── Add-on: Sabun Garam Pengisian 200g (+RM25) ───
   const [addSabun, setAddSabun] = useState(false);
   const SABUN_PRICE = 25;
 
+  // ─── Add-on: Garam Masakan Pengasihan 500g (+RM25) ───
+  const [addGaramMasakan, setAddGaramMasakan] = useState(false);
+  const GARAM_MASAKAN_PRICE = 25;
+
   const pkg = BASE_PACKAGES[selectedPkg];
   const effectivePostage = postage;
-  const grandTotal = pkg.price + effectivePostage + (addKasturi ? KASTURI_PRICE : 0) + (addSabun ? SABUN_PRICE : 0);
+  const grandTotal = pkg.price + effectivePostage + (addSabun ? SABUN_PRICE : 0) + (addGaramMasakan ? GARAM_MASAKAN_PRICE : 0);
 
   // If East Malaysia, COD is disabled
   useEffect(() => {
@@ -193,15 +193,15 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
       const utms     = getUTMParams();
       const address  = buildAddress();
 
-      const kasturiNote = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa' +RM${KASTURI_PRICE}` : '';
-      const sabunNote   = addSabun   ? ` | Add-On: Sabun Garam Pengisian +RM${SABUN_PRICE}` : '';
-      const orderNotes  = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${effectivePostage}${kasturiNote}${sabunNote}`;
+      const sabunNote = addSabun ? ` | Add-On: Sabun Garam Pengisian +RM${SABUN_PRICE}` : '';
+      const garamNote = addGaramMasakan ? ` | Add-On: Garam Masakan Pengasihan +RM${GARAM_MASAKAN_PRICE}` : '';
+      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${effectivePostage}${sabunNote}${garamNote}`;
 
       try {
         if (window.fbq) {
           if (pid) window.fbq('trackSingle', pid, 'InitiateCheckout', {
             value: grandTotal, currency: 'MYR',
-            content_name: `Garam Pengasihan — ${pkg.label}`,
+            content_name: `Kasturi Kijang — ${pkg.label}`,
           }, { eventID: eventId });
           else window.fbq('track', 'InitiateCheckout', { value: grandTotal, currency: 'MYR' });
         }
@@ -221,7 +221,6 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
           source_page: window.location.pathname,
           event_id: eventId,
           amount_in_myr: grandTotal,
-          addon_kasturi: addKasturi,
           addon_sabun: addSabun,
           landing_page_url: window.location.href,
           referrer_url: document.referrer,
@@ -273,10 +272,9 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
           address,
           quantity: pkg.units,
           units_label: pkg.label,
-          product: 'Garam Pengasihan Masakan ESyifaa (500g)',
+          product: 'Minyak Kasturi Kijang Ruqyah E-Syifa',
           amount_base: pkg.price,
           amount_total: grandTotal,
-          addon_kasturi: addKasturi,
           addon_sabun: addSabun,
           honeypot: formData.honeypot,
           source,
@@ -296,7 +294,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
 
       const json = await res.json();
       if (res.ok && json.success) {
-        window.location.href = `/payment-success?order_id=${json.order_id}&amount=${grandTotal}&product=${encodeURIComponent(`Garam Pengasihan Masakan — ${pkg.label}`)}&type=cod`;
+        window.location.href = `/payment-success?order_id=${json.order_id}&amount=${grandTotal}&product=${encodeURIComponent(`Minyak Kasturi Kijang — ${pkg.label}`)}&type=cod`;
       } else {
         throw new Error(json.error || 'Gagal menghantar pesanan COD. Sila cuba lagi.');
       }
@@ -317,7 +315,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
     <section
       id="borang"
       style={{
-        background: 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%)',
+        background: 'linear-gradient(180deg, #ECFDF5 0%, #FFFFFF 100%)',
         padding: '4.5rem 1.25rem',
         fontFamily: ff,
       }}
@@ -328,9 +326,9 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <span style={{
             display: 'inline-block',
-            background: '#FFEDD5',
-            border: '1.5px solid #FDBA74',
-            color: '#C2410C',
+            background: '#D1FAE5',
+            border: '1.5px solid #6EE7B7',
+            color: '#065F46',
             padding: '0.4rem 1.2rem',
             borderRadius: '9999px',
             fontSize: '0.78rem',
@@ -349,7 +347,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
             letterSpacing: '-0.025em',
             lineHeight: 1.25,
           }}>
-            Pilih Pakej Garam Pengasihan Masakan
+            Pilih Pakej Minyak Kasturi Kijang
           </h2>
           <p style={{
             fontSize: '1rem',
@@ -358,7 +356,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
             maxWidth: '560px',
             margin: '0 auto',
           }}>
-            Isi maklumat penghantaran di bawah. Pesanan anda akan dibungkus rapi dalam bungkusan privasi &amp; dihantar segera!
+            Isi maklumat penghantaran di bawah. Bungkusan privasi berinsurans dihantar terus ke pintu rumah anda!
           </p>
         </div>
 
@@ -392,15 +390,15 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                   key={idx}
                   onClick={() => setSelectedPkg(idx)}
                   style={{
-                    background: isSelected ? '#FFF7ED' : '#FFFFFF',
-                    border: isSelected ? '2px solid #EA580C' : '1.5px solid #CBD5E1',
+                    background: isSelected ? '#ECFDF5' : '#FFFFFF',
+                    border: isSelected ? '2px solid #059669' : '1.5px solid #CBD5E1',
                     borderRadius: '16px',
                     padding: '1.25rem 1.4rem',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    boxShadow: isSelected ? '0 4px 20px rgba(234, 88, 12, 0.12)' : '0 1px 4px rgba(0,0,0,0.02)',
+                    boxShadow: isSelected ? '0 4px 20px rgba(5, 150, 105, 0.12)' : '0 1px 4px rgba(0,0,0,0.02)',
                     transition: 'all 0.15s ease',
                     position: 'relative',
                   }}
@@ -411,7 +409,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                       width: '22px',
                       height: '22px',
                       borderRadius: '50%',
-                      border: isSelected ? '6px solid #EA580C' : '2px solid #94A3B8',
+                      border: isSelected ? '6px solid #059669' : '2px solid #94A3B8',
                       background: '#FFFFFF',
                       flexShrink: 0,
                     }} />
@@ -423,7 +421,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                         </span>
                         {p.badge && (
                           <span style={{
-                            background: '#EA580C',
+                            background: '#059669',
                             color: '#FFFFFF',
                             fontSize: '0.68rem',
                             fontWeight: 800,
@@ -443,7 +441,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
 
                   {/* Price */}
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#C2410C' }}>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#047857' }}>
                       RM{p.price}
                     </div>
                     {p.originalPrice && (
@@ -487,7 +485,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
             <input
               type="text"
               name="full_name"
-              placeholder="Contoh: Siti Fatimah Binti Ismail"
+              placeholder="Contoh: Ahmad Danial Bin Razak"
               value={formData.full_name}
               onChange={handleChange}
               style={INPUT_STYLE}
@@ -531,7 +529,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               />
             </div>
             <p style={{ margin: '0.3rem 0 0', fontSize: '0.76rem', color: '#64748B' }}>
-              Nombor tracking &amp; kemaskini posmen akan dihantar melalui WhatsApp ini.
+              Nombor tracking &amp; status kurier dihantar melalui WhatsApp ini.
             </p>
           </div>
 
@@ -541,7 +539,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
             <textarea
               name="street"
               rows={2}
-              placeholder="Contoh: No. 12, Jalan Melati 3, Taman Seri Melati"
+              placeholder="Contoh: No. 15, Jalan Nilam 2, Taman Nilam Sari"
               value={formData.street}
               onChange={handleChange}
               style={{ ...INPUT_STYLE, resize: 'vertical' }}
@@ -556,7 +554,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               <input
                 type="text"
                 name="poskod"
-                placeholder="40000"
+                placeholder="43000"
                 value={formData.poskod}
                 onChange={handleChange}
                 style={INPUT_STYLE}
@@ -568,7 +566,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               <input
                 type="text"
                 name="daerah"
-                placeholder="Shah Alam"
+                placeholder="Kajang"
                 value={formData.daerah}
                 onChange={handleChange}
                 style={INPUT_STYLE}
@@ -599,160 +597,55 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
             </select>
           </div>
 
-          {/* ── 3. DUAL BUMP OFFERS (SELEPAS ISI BUTIRAN DIRI) ── */}
+          {/* ── 3. BUMP OFFERS (SELEPAS ISI BUTIRAN DIRI) ── */}
           <div style={{ marginBottom: '1.75rem' }}>
             <div style={{ textAlign: 'center', marginBottom: '0.85rem' }}>
               <span style={{ fontSize: '0.94rem', fontWeight: 800, color: '#0F172A' }}>
-                Nak Rawatan &amp; Pendinding Diri Lebih Lengkap? Tambah Ni 👇
+                Nak Perlindungan &amp; Rawatan Lebih Menyeluruh? Tambah Ni 👇
               </span>
             </div>
 
-            {/* ── BUMP OFFER 1: Kasturi Kijang E-Syifa' (+RM20) ── */}
-            <div
-              onClick={() => setAddKasturi(v => !v)}
-              role="checkbox"
-              aria-checked={addKasturi}
-              style={{
-                position: 'relative',
-                border: addKasturi ? '2px solid #EA580C' : '2px dashed #D97706',
-                borderRadius: '16px',
-                padding: '1.75rem 1.15rem 1rem',
-                marginBottom: '1.25rem',
-                cursor: 'pointer',
-                background: addKasturi ? 'rgba(234,88,12,0.04)' : 'rgba(251,191,36,0.04)',
-                transition: 'all 0.2s ease',
-                userSelect: 'none',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {/* Badges row */}
-              <div style={{
-                position: 'absolute', top: '-11px', left: '1rem',
-                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
-              }}>
-                <div style={{
-                  background: '#D97706', color: '#FFF',
-                  fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
-                  borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  boxShadow: '0 2px 6px rgba(217,119,6,0.3)', whiteSpace: 'nowrap',
-                }}>
-                  ⚡ Tambahan Khas — Tawaran Sekali Sahaja
-                </div>
-                <div style={{
-                  background: '#059669', color: '#FFF',
-                  fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
-                  borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  boxShadow: '0 2px 6px rgba(5,150,105,0.3)', whiteSpace: 'nowrap',
-                }}>
-                  🎁 Diskaun RM30
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                {/* Tick Checkbox */}
-                <div style={{
-                  flexShrink: 0, marginTop: '3px',
-                  width: '26px', height: '26px', borderRadius: '7px',
-                  background: addKasturi ? '#EA580C' : '#FFFFFF',
-                  border: addKasturi ? '2px solid #EA580C' : '2px solid #CBD5E1',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.18s ease',
-                  boxShadow: addKasturi ? '0 0 0 3px rgba(234,88,12,0.15)' : 'none',
-                }}>
-                  {addKasturi && (
-                    <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>✓</span>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.97rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3, marginBottom: '0.2rem' }}>
-                    Ya! Tambah Minyak Kasturi Kijang E-Syifa’ 🌿
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.55rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#94A3B8', textDecoration: 'line-through' }}>RM50</span>
-                    <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#EA580C' }}>RM{KASTURI_PRICE} sahaja</span>
-                  </div>
-
-                  {/* Image + Bullets (Identikal macam SP Sabun) */}
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    <div style={{
-                      width: '96px', height: '96px', flexShrink: 0,
-                      borderRadius: '10px', overflow: 'hidden',
-                      border: '1.5px solid #E2E8F0',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                      position: 'relative',
-                    }}>
-                      <Image
-                        src="/images/kasturi-kijang-opt.jpg"
-                        alt="Kasturi Kijang E-Syifa'"
-                        width={96}
-                        height={96}
-                        style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
-                        loading="lazy"
-                      />
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: '160px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.7 }}>
-                      <div>🛡️ <strong>Wangian yang dibenci jin</strong> — benteng &amp; pendinding sihir</div>
-                      <div>✨ Diisi <strong>Ayat Ruqyah Benteng &amp; Pendinding</strong> yang khas</div>
-                      <div>💚 Perlindungan aktif <strong>selagi bauan masih ada pada badan</strong></div>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '0.55rem', fontSize: '0.74rem', fontWeight: 700, color: addKasturi ? '#059669' : '#D97706', transition: 'color 0.2s' }}>
-                    {addKasturi
-                      ? '✓ Kasturi Kijang ditambah ke pesanan anda! 🎉'
-                      : '☐ Klik untuk tambahkan ke order anda →'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── BUMP OFFER 2: Sabun Garam Pengisian 200g (+RM25) ── */}
+            {/* ── BUMP OFFER 1: Sabun Garam Himalaya Pengisian 200g (+RM25) ── */}
             <div
               onClick={() => setAddSabun(v => !v)}
               role="checkbox"
               aria-checked={addSabun}
               style={{
                 position: 'relative',
-                border: addSabun ? '2px solid #059669' : '2px dashed #0D9488',
+                border: addSabun ? '2px solid #059669' : '2px dashed #059669',
                 borderRadius: '16px',
                 padding: '1.75rem 1.15rem 1rem',
                 marginBottom: '1.25rem',
                 cursor: 'pointer',
-                background: addSabun ? 'rgba(5,150,105,0.04)' : 'rgba(13,148,136,0.04)',
+                background: addSabun ? 'rgba(5,150,105,0.04)' : 'rgba(16,185,129,0.04)',
                 transition: 'all 0.2s ease',
                 userSelect: 'none',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              {/* Badges row */}
               <div style={{
                 position: 'absolute', top: '-11px', left: '1rem',
                 display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
               }}>
                 <div style={{
-                  background: '#0D9488', color: '#FFF',
+                  background: '#047857', color: '#FFF',
                   fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
                   borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  boxShadow: '0 2px 6px rgba(13,148,136,0.3)', whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 6px rgba(4,120,87,0.3)', whiteSpace: 'nowrap',
                 }}>
-                  ⚡ Kombo Lengkap: Rawatan Luar &amp; Dalam
+                  ⚡ Tawaran Khas Kombo
                 </div>
                 <div style={{
-                  background: '#059669', color: '#FFF',
+                  background: '#D97706', color: '#FFF',
                   fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
                   borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  boxShadow: '0 2px 6px rgba(5,150,105,0.3)', whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 6px rgba(217,119,6,0.3)', whiteSpace: 'nowrap',
                 }}>
                   🎁 Jimat RM14 (RM25 Sahaja)
                 </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                {/* Tick Checkbox */}
                 <div style={{
                   flexShrink: 0, marginTop: '3px',
                   width: '26px', height: '26px', borderRadius: '7px',
@@ -767,7 +660,6 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                   )}
                 </div>
 
-                {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.97rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3, marginBottom: '0.2rem' }}>
                     Ya! Tambah Sabun Garam Himalaya Pengisian (200g) 🧼
@@ -778,7 +670,6 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                     <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#059669' }}>RM{SABUN_PRICE} sahaja</span>
                   </div>
 
-                  {/* Image + Bullets */}
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     <div style={{
                       width: '96px', height: '96px', flexShrink: 0,
@@ -790,7 +681,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                     }}>
                       <Image
                         src="/images/sabun-garam/hero-saka-sihir-santau.png"
-                        alt="Sabun Garam Himalaya Pengisian"
+                        alt="Sabun Garam Pengisian"
                         width={96}
                         height={96}
                         style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
@@ -799,13 +690,13 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                     </div>
 
                     <div style={{ flex: 1, minWidth: '160px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.7 }}>
-                      <div>🚿 <strong>Mandian Ruqyah 200g</strong> — cuci bisa sihir &amp; gangguan dari luar tubuh</div>
-                      <div>🌿 <strong>Melengkapi Garam Masakan</strong> — rawatan dalam (makanan) &amp; luar (mandian) serentak</div>
-                      <div>✨ Hilangkan <strong>rasa berat badan, lesu &amp; sengal urat</strong> semasa mandi</div>
+                      <div>🚿 <strong>Mandian Ruqyah 200g</strong> — leraikan bisa sihir &amp; santau semasa mandi</div>
+                      <div>🌿 <strong>Kombo Hebat</strong> — mandi sabun ruqyah, kemudian sapu kasturi kijang</div>
+                      <div>✨ Hilangkan <strong>badan lesu, bisa urat &amp; mimpi buruk</strong></div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '0.55rem', fontSize: '0.74rem', fontWeight: 700, color: addSabun ? '#059669' : '#0D9488', transition: 'color 0.2s' }}>
+                  <div style={{ marginTop: '0.55rem', fontSize: '0.74rem', fontWeight: 700, color: addSabun ? '#059669' : '#047857', transition: 'color 0.2s' }}>
                     {addSabun
                       ? '✓ Sabun Garam Pengisian ditambah ke pesanan anda! 🎉'
                       : '☐ Klik untuk tambahkan ke order anda →'}
@@ -813,6 +704,86 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                 </div>
               </div>
             </div>
+
+            {/* ── BUMP OFFER 2: Garam Masakan Pengasihan 500g (+RM25) ── */}
+            <div
+              onClick={() => setAddGaramMasakan(v => !v)}
+              role="checkbox"
+              aria-checked={addGaramMasakan}
+              style={{
+                position: 'relative',
+                border: addGaramMasakan ? '2px solid #EA580C' : '2px dashed #EA580C',
+                borderRadius: '16px',
+                padding: '1.75rem 1.15rem 1rem',
+                marginBottom: '1.25rem',
+                cursor: 'pointer',
+                background: addGaramMasakan ? 'rgba(234,88,12,0.04)' : 'rgba(254,243,199,0.2)',
+                transition: 'all 0.2s ease',
+                userSelect: 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: '-11px', left: '1rem',
+                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
+              }}>
+                <div style={{
+                  background: '#C2410C', color: '#FFF',
+                  fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
+                  borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                  boxShadow: '0 2px 6px rgba(194,65,12,0.3)', whiteSpace: 'nowrap',
+                }}>
+                  ⚡ Khas Rumahtangga
+                </div>
+                <div style={{
+                  background: '#EA580C', color: '#FFF',
+                  fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
+                  borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                  boxShadow: '0 2px 6px rgba(234,88,12,0.3)', whiteSpace: 'nowrap',
+                }}>
+                  🎁 Jimat RM20 (RM25 Sahaja)
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <div style={{
+                  flexShrink: 0, marginTop: '3px',
+                  width: '26px', height: '26px', borderRadius: '7px',
+                  background: addGaramMasakan ? '#EA580C' : '#FFFFFF',
+                  border: addGaramMasakan ? '2px solid #EA580C' : '2px solid #CBD5E1',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.18s ease',
+                  boxShadow: addGaramMasakan ? '0 0 0 3px rgba(234,88,12,0.15)' : 'none',
+                }}>
+                  {addGaramMasakan && (
+                    <span style={{ color: '#FFF', fontSize: '14px', fontWeight: 900, lineHeight: 1 }}>✓</span>
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.97rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3, marginBottom: '0.2rem' }}>
+                    Ya! Tambah Garam Masakan Pengasihan ESyifaa (500g) 🍲
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.55rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#94A3B8', textDecoration: 'line-through' }}>RM45</span>
+                    <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#EA580C' }}>RM{GARAM_MASAKAN_PRICE} sahaja</span>
+                  </div>
+
+                  <div style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.65 }}>
+                    <div>🍲 <strong>Secubit dalam masakan harian</strong> — merungkai sihir pemisah dari dalam darah</div>
+                    <div>🤍 <strong>Melembutkan hati pasangan yang panas baran</strong> &amp; mengikat kasih sekeluarga</div>
+                  </div>
+
+                  <div style={{ marginTop: '0.55rem', fontSize: '0.74rem', fontWeight: 700, color: addGaramMasakan ? '#EA580C' : '#C2410C', transition: 'color 0.2s' }}>
+                    {addGaramMasakan
+                      ? '✓ Garam Masakan ditambah ke pesanan anda! 🎉'
+                      : '☐ Klik untuk tambahkan ke order anda →'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* ── 4. PAYMENT METHOD (FPX vs COD) ── */}
@@ -827,8 +798,8 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               <div
                 onClick={() => setPaymentMethod('fpx')}
                 style={{
-                  background: paymentMethod === 'fpx' ? '#FFF7ED' : '#FFFFFF',
-                  border: paymentMethod === 'fpx' ? '2px solid #EA580C' : '1.5px solid #CBD5E1',
+                  background: paymentMethod === 'fpx' ? '#ECFDF5' : '#FFFFFF',
+                  border: paymentMethod === 'fpx' ? '2px solid #059669' : '1.5px solid #CBD5E1',
                   borderRadius: '14px',
                   padding: '1rem',
                   cursor: 'pointer',
@@ -853,8 +824,8 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                 style={{
                   background: isEastMalaysia
                     ? '#F1F5F9'
-                    : paymentMethod === 'cod' ? '#FFF7ED' : '#FFFFFF',
-                  border: paymentMethod === 'cod' ? '2px solid #EA580C' : '1.5px solid #CBD5E1',
+                    : paymentMethod === 'cod' ? '#ECFDF5' : '#FFFFFF',
+                  border: paymentMethod === 'cod' ? '2px solid #059669' : '1.5px solid #CBD5E1',
                   borderRadius: '14px',
                   padding: '1rem',
                   cursor: isEastMalaysia ? 'not-allowed' : 'pointer',
@@ -888,17 +859,17 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               <strong style={{ color: '#0F172A' }}>RM{pkg.price}</strong>
             </div>
 
-            {addKasturi && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#EA580C' }}>
-                <span>Add-on: Kasturi Kijang E-Syifa’:</span>
-                <strong>+RM{KASTURI_PRICE}</strong>
-              </div>
-            )}
-
             {addSabun && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#059669' }}>
                 <span>Add-on: Sabun Garam Pengisian (200g):</span>
                 <strong>+RM{SABUN_PRICE}</strong>
+              </div>
+            )}
+
+            {addGaramMasakan && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#EA580C' }}>
+                <span>Add-on: Garam Masakan Pengasihan (500g):</span>
+                <strong>+RM{GARAM_MASAKAN_PRICE}</strong>
               </div>
             )}
 
@@ -911,7 +882,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.05rem', fontWeight: 900 }}>
               <span style={{ color: '#0F172A' }}>Jumlah Keseluruhan:</span>
-              <span style={{ color: '#C2410C', fontSize: '1.4rem' }}>
+              <span style={{ color: '#047857', fontSize: '1.4rem' }}>
                 RM{grandTotal}
               </span>
             </div>
@@ -929,11 +900,11 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               color: '#FFFFFF',
               background: loading
                 ? '#94A3B8'
-                : 'linear-gradient(180deg, #EA580C 0%, #C2410C 100%)',
+                : 'linear-gradient(180deg, #059669 0%, #047857 100%)',
               border: 'none',
               borderRadius: '12px',
               cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: loading ? 'none' : '0 8px 25px rgba(234, 88, 12, 0.4)',
+              boxShadow: loading ? 'none' : '0 8px 25px rgba(5, 150, 105, 0.4)',
               transition: 'all 0.15s ease',
               display: 'flex',
               alignItems: 'center',
@@ -961,10 +932,10 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
   );
 }
 
-export default function GaramCheckoutForm(props) {
+export default function KasturiCheckoutForm(props) {
   return (
     <Suspense fallback={null}>
-      <GaramCheckoutFormInner {...props} />
+      <KasturiCheckoutFormInner {...props} />
     </Suspense>
   );
 }
