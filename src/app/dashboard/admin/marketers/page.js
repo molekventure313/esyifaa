@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useToast } from '@/components/ui/Toast';
 
 export default function MarketersPage() {
@@ -163,6 +164,15 @@ export default function MarketersPage() {
             Urus akaun marketer, tetapkan gaji &amp; komisen, serta pantau jualan dan kos iklan (Ads Spend).
           </p>
         </div>
+        <Link href="/dashboard/admin/marketers/report" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+          padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700,
+          background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
+          color: '#A5B4FC', textDecoration: 'none', whiteSpace: 'nowrap',
+          transition: 'background 0.15s',
+        }}>
+          📊 Laporan Prestasi →
+        </Link>
       </div>
 
       {/* Summary Status Bar */}
