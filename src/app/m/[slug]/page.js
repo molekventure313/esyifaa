@@ -1,4 +1,4 @@
-﻿/**
+/**
  * /m/[slug] — Dedicated Marketer SP Route
  * Server Component — boleh import kedua-dua server & client page components.
  *
@@ -28,6 +28,8 @@ import SabunGaram2Page from '@/app/sabun-garam-2/page';
 import SabunGaram3Page from '@/app/sabun-garam-3/page';
 import SabunGaram4Page from '@/app/sabun-garam-4/page';
 import SabunGaram5Page from '@/app/sabun-garam-5/page';
+import GaramPengasihanPage from '@/app/garam-pengasihan/page';
+import KasturiKijangPage from '@/app/kasturi-kijang/page';
 
 const PAGE_MAP = {
   'sihir':             SihirPage,
@@ -47,6 +49,8 @@ const PAGE_MAP = {
   'sabun-garam-3':     SabunGaram3Page,
   'sabun-garam-4':     SabunGaram4Page,
   'sabun-garam-5':     SabunGaram5Page,
+  'garam-pengasihan':  GaramPengasihanPage,
+  'kasturi-kijang':    KasturiKijangPage,
 };
 
 // Next.js 15: params is a Promise

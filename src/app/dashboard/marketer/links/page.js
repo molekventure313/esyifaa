@@ -16,6 +16,8 @@ const SALESPAGES = [
   { slug: 'sabun-garam-3', label: 'Sabun Garam #3 — Sakit Misteri', category: 'Produk Fizikal' },
   { slug: 'sabun-garam-4', label: 'Sabun Garam #4 — Emosi/Bisikan', category: 'Produk Fizikal' },
   { slug: 'sabun-garam-5', label: 'Sabun Garam #5 — Anak Meracau', category: 'Produk Fizikal' },
+  { slug: 'garam-pengasihan', label: 'Garam Pengasihan Masakan', category: 'Produk Fizikal' },
+  { slug: 'kasturi-kijang',   label: 'Minyak Kasturi Kijang Asli', category: 'Produk Fizikal' },
   { slug: 'pengisian-esyifa', label: 'Pengisian ESyifa', category: 'Pengisian' },
   { slug: 'rawat-sendiri', label: 'Rawat Sendiri', category: 'Pengisian' },
   { slug: 'tasbih-esyifa', label: 'Tasbih ESyifa', category: 'Pengisian' },

@@ -14,7 +14,7 @@ export async function POST(req) {
       product, amount_total, amount_base, honeypot, source,
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
       landing_page_url, referrer_url, fbclid, fbp, fbc,
-      addon_kasturi, addon_sabun, marketer_code,
+      addon_kasturi, addon_sabun, addon_garam_masakan, marketer_code,
     } = body;
 
     if (honeypot) {
@@ -38,9 +38,10 @@ export async function POST(req) {
     const supabase = createAdminClient();
 
     // Build order label for problem field
-    const kasturiTag = addon_kasturi ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
-    const sabunTag   = addon_sabun   ? ' | Add-On: Sabun Garam Pengisian +RM25' : '';
-    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM5 = RM${amount_total}${kasturiTag}${sabunTag} | Alamat: ${address.trim()}`;
+    const kasturiTag     = addon_kasturi      ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
+    const sabunTag       = addon_sabun        ? ' | Add-On: Sabun Garam Pengisian +RM25' : '';
+    const garamMasakanTag = addon_garam_masakan ? ' | Add-On: Garam Masakan Pengasihan +RM25' : '';
+    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM5 = RM${amount_total}${kasturiTag}${sabunTag}${garamMasakanTag} | Alamat: ${address.trim()}`;
 
     // Upsert customer
     let customerId = null;
@@ -145,6 +146,17 @@ export async function POST(req) {
           qty: 1,
           referenceId: submissionId,
           notes: `COD Add-On — Sabun Garam`,
+        });
+      }
+
+      // Auto-deduct garam masakan stock if add-on selected (non-blocking)
+      if (addon_garam_masakan) {
+        await deductStock({
+          adminClient: supabase,
+          source: 'addon-garam-masakan',
+          qty: 1,
+          referenceId: submissionId,
+          notes: `COD Add-On — Garam Masakan Pengasihan`,
         });
       }
     } catch (e) {

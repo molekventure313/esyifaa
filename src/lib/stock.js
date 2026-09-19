@@ -9,8 +9,14 @@ export const SOURCE_TO_SKU = {
   'sabun-garam-3': 'SGH-200G',
   'sabun-garam-4': 'SGH-200G',
   'sabun-garam-5': 'SGH-200G',
-  // Add-on: Kasturi Kijang E-Syifa'
+  // Garam Pengasihan Masakan (produk utama)
+  'garam-pengasihan': 'GPM-500G',
+  // Minyak Kasturi Kijang (produk utama)
+  'kasturi-kijang': 'KKE-01',
+  // Add-on: Kasturi Kijang E-Syifa' (apabila ditambah dari borang lain)
   'addon-kasturi': 'KKE-01',
+  // Add-on: Garam Pengasihan (apabila ditambah dari borang Kasturi)
+  'addon-garam-masakan': 'GPM-500G',
 };
 
 // ─── Get product by SKU ───────────────────────────────────────────────────────

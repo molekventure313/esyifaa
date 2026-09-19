@@ -187,9 +187,16 @@ export async function POST(req) {
           console.error('CAPI FPX Purchase Error (non-blocking):', e.message);
         }
 
-        // 5. Auto-deduct stock (FPX sabun orders only — non-blocking)
+        // 5. Auto-deduct stock (produk fizikal FPX orders — non-blocking)
         try {
-          if (submission.source?.includes('sabun')) {
+          const PHYSICAL_SOURCES = [
+            'sabun-garam', 'sabun-garam-1', 'sabun-garam-2',
+            'sabun-garam-3', 'sabun-garam-4', 'sabun-garam-5',
+            'garam-pengasihan', 'kasturi-kijang',
+          ];
+          const isPhysicalProduct = PHYSICAL_SOURCES.includes(submission.source);
+
+          if (isPhysicalProduct) {
             const qtyMatch = (submission.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
             const qty = qtyMatch ? parseInt(qtyMatch[1]) : (parseInt(submission.qty) || 1);
             await deductStock({
@@ -221,6 +228,18 @@ export async function POST(req) {
                 qty: 1,
                 referenceId: submission.id,
                 notes: `FPX Add-On — Sabun Garam`,
+              });
+            }
+
+            // Deduct garam masakan add-on stock if selected
+            const hasGaramMasakan = /Add-On:\s*Garam Masakan Pengasihan/i.test(submission.problem || '');
+            if (hasGaramMasakan) {
+              await deductStock({
+                adminClient: supabase,
+                source: 'addon-garam-masakan',
+                qty: 1,
+                referenceId: submission.id,
+                notes: `FPX Add-On — Garam Masakan Pengasihan`,
               });
             }
           }

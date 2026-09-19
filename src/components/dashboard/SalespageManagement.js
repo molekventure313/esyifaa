@@ -43,6 +43,8 @@ const PRODUK_PAGES = [
   { label: 'Sabun Garam #3 — Penyakit Misteri',   desc: 'Pilihan 3 FSP formula: "Alhamdulillah sakit misteri yg doktor tak tahu punca...makin pulih"',                url: '/sabun-garam-3', color: '#D97706', icon: '🧼', isNew: true },
   { label: 'Sabun Garam #4 — Emosi/Bisikan/Tidur', desc: 'Pilihan 4 FSP formula: "Alhamdulillah bisikan halus, emosi tak terkawal & susah tidur...reda"',            url: '/sabun-garam-4', color: '#D97706', icon: '🧼', isNew: true },
   { label: 'Sabun Garam #5 — Keluarga/Anak',       desc: 'Pilihan 5 FSP formula: "Alhamdulillah anak meracau malam, gatal-gatal & berat sekeluarga...hilang"',       url: '/sabun-garam-5', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Garam Pengasihan Masakan',               desc: 'SP FSP 10% — Ikhtiar keretakan rumahtangga, sihir pemisah & lembutkan hati pasangan. COD + FPX.',        url: '/garam-pengasihan', color: '#EA580C', icon: '🧂', isNew: true },
+  { label: 'Minyak Kasturi Kijang Asli',             desc: 'SP FSP 10% — Ikhtiar gangguan halus, tindih tidur, sihir & ketenangan jiwa. 100% bebas alkohol.',        url: '/kasturi-kijang',   color: '#D97706', icon: '🦌', isNew: true },
 ];
 
 const TABS = [

@@ -56,14 +56,16 @@ function parseAmount(s) {
 
 // ─── SP Label Map ────────────────────────────────────────────────────────────
 const SP_LABELS = {
-  'sabun-garam':   '🧂 Sabun Garam (Base)',
-  'sabun-garam-1': '👻 SP1 — Saka / Sihir / Santau',
-  'sabun-garam-2': '💪 SP2 — Lenguh Badan',
-  'sabun-garam-3': '🏥 SP3 — Sakit Misteri',
-  'sabun-garam-4': '🌙 SP4 — Bisikan & Emosi',
-  'sabun-garam-5': '👶 SP5 — Anak Meracau',
-  'fsp-checkout':  '✨ Pengisian ESyifaa (FPX)',
-  'pengisian':     '✨ Pengisian ESyifaa',
+  'sabun-garam':    '🧂 Sabun Garam (Base)',
+  'sabun-garam-1':  '👻 SP1 — Saka / Sihir / Santau',
+  'sabun-garam-2':  '💪 SP2 — Lenguh Badan',
+  'sabun-garam-3':  '🏥 SP3 — Sakit Misteri',
+  'sabun-garam-4':  '🌙 SP4 — Bisikan & Emosi',
+  'sabun-garam-5':  '👶 SP5 — Anak Meracau',
+  'garam-pengasihan': '🧂 Garam Pengasihan Masakan',
+  'kasturi-kijang':   '🦌 Minyak Kasturi Kijang',
+  'fsp-checkout':   '✨ Pengisian ESyifaa (FPX)',
+  'pengisian':      '✨ Pengisian ESyifaa',
 };
 
 function spLabel(source) {
