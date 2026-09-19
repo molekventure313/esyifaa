@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -17,6 +17,14 @@ async function requireAdmin() {
 const MYT_MS = 8 * 3600 * 1000;
 function toMYTStr(utcDate) {
   return new Date(new Date(utcDate).getTime() + MYT_MS).toISOString().split('T')[0];
+}
+
+// ─── Amount Parser (sama logic dgn sales-stats) ───────────────────────────────
+// COD orders kadang simpan amount dalam notes: [AMOUNT: MYR 95.00]
+function parseAmount(s) {
+  if (s.amount_paid && parseFloat(s.amount_paid) > 0) return parseFloat(s.amount_paid);
+  const m = (s.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9.]+)\]/i);
+  return m ? parseFloat(m[1]) : 0;
 }
 
 // ─── Date range for period ─────────────────────────────────────────────────────
@@ -86,7 +94,7 @@ function computeStats(marketers, submissions, adsSpend, avgCost) {
   for (const m of marketers) {
     const subs = subMap[m.id] || [];
     const orders  = subs.length;
-    const revenue = subs.reduce((s, sub) => s + parseFloat(sub.amount_paid || 0), 0);
+    const revenue = subs.reduce((s, sub) => s + parseAmount(sub), 0);  // parseAmount handles notes fallback
     const sabunUnits = subs
       .filter(sub => (sub.source || '').includes('sabun'))
       .reduce((s, sub) => s + (parseInt(sub.qty) || 0), 0);
@@ -117,7 +125,7 @@ function computeStats(marketers, submissions, adsSpend, avgCost) {
   // HQ row (marketer_id IS NULL)
   const hqSubs = subMap['__hq__'] || [];
   const hqOrders  = hqSubs.length;
-  const hqRevenue = hqSubs.reduce((s, sub) => s + parseFloat(sub.amount_paid || 0), 0);
+  const hqRevenue = hqSubs.reduce((s, sub) => s + parseAmount(sub), 0);  // parseAmount handles notes fallback
   const hqSabunUnits = hqSubs
     .filter(sub => (sub.source || '').includes('sabun'))
     .reduce((s, sub) => s + (parseInt(sub.qty) || 0), 0);
@@ -155,7 +163,7 @@ function computeStats(marketers, submissions, adsSpend, avgCost) {
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 async function fetchSubs(admin, from, to) {
   let q = admin.from('submissions')
-    .select('marketer_id, amount_paid, source, qty')
+    .select('marketer_id, amount_paid, notes, source, qty')  // notes diperlukan untuk parseAmount
     .eq('payment_status', 'completed')
     .in('payment_type', ['cod', 'fpx_payment']);
   if (from) q = q.gte('created_at', from);
