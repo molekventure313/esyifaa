@@ -50,7 +50,10 @@ function getUTCRange(period) {
     return { fromUTC: new Date(Date.now() - 6 * DAY).toISOString(), toUTC: new Date().toISOString() };
   }
   if (period === 'month') {
-    return { fromUTC: new Date(Date.now() - 29 * DAY).toISOString(), toUTC: new Date().toISOString() };
+    // 1hb bulan semasa MYT → hari ini (calendar month, konsisten dgn sales-stats & marketers/report)
+    const nowMYT2 = new Date(Date.now() + MYT_MS);
+    const mStr = `${nowMYT2.getUTCFullYear()}-${String(nowMYT2.getUTCMonth() + 1).padStart(2, '0')}-01`;
+    return { fromUTC: new Date(`${mStr}T00:00:00+08:00`).toISOString(), toUTC: new Date().toISOString() };
   }
   // 'all' — no filter
   return { fromUTC: null, toUTC: null };

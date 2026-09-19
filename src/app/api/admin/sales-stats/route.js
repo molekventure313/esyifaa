@@ -35,10 +35,17 @@ function getMYTBounds(period) {
       current  = { from: new Date(nowUTC - 7 * DAY), to: nowUTC };
       previous = { from: new Date(nowUTC - 14 * DAY), to: new Date(nowUTC - 7 * DAY) };
       break;
-    case 'month':
-      current  = { from: new Date(nowUTC - 30 * DAY), to: nowUTC };
-      previous = { from: new Date(nowUTC - 60 * DAY), to: new Date(nowUTC - 30 * DAY) };
+    case 'month': {
+      // 1hb bulan semasa MYT → hari ini (calendar month, bukan rolling 30 hari)
+      const startOfMonthMYT = new Date(Date.UTC(nowMYT.getUTCFullYear(), nowMYT.getUTCMonth(), 1));
+      const startOfMonthUTC = new Date(startOfMonthMYT.getTime() - MYT_OFFSET_MS);
+      // Previous = bulan lepas
+      const startOfPrevMYT = new Date(Date.UTC(nowMYT.getUTCFullYear(), nowMYT.getUTCMonth() - 1, 1));
+      const startOfPrevUTC = new Date(startOfPrevMYT.getTime() - MYT_OFFSET_MS);
+      current  = { from: startOfMonthUTC, to: nowUTC };
+      previous = { from: startOfPrevUTC, to: startOfMonthUTC };
       break;
+    }
     default: // 'all'
       current  = { from: null, to: null };
       previous = { from: null, to: null };
