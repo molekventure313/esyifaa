@@ -108,10 +108,16 @@ export default function PengurusanOrderPage() {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
+  // ─── Display filter (client-side) ─────────────────────────────────────────
+  // notExportedOnly toggle menapis display table, bukan sekadar export action
+  const displayOrders = notExportedOnly
+    ? orders.filter(o => !o.ninjavan_exported_at)
+    : orders;
+
   // ─── Selection ─────────────────────────────────────────────────────────────
   const toggleSelect    = (id) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleSelectAll = () => setSelectedIds(prev => prev.size === orders.length ? new Set() : new Set(orders.map(o => o.id)));
-  const allSelected     = orders.length > 0 && selectedIds.size === orders.length;
+  const toggleSelectAll = () => setSelectedIds(prev => prev.size === displayOrders.length ? new Set() : new Set(displayOrders.map(o => o.id)));
+  const allSelected     = displayOrders.length > 0 && selectedIds.size === displayOrders.length;
   const someSelected    = selectedIds.size > 0;
 
   // ─── Delete ────────────────────────────────────────────────────────────────
@@ -305,7 +311,7 @@ export default function PengurusanOrderPage() {
             Dikemaskini: <strong style={{ color: '#60A5FA' }}>{lastUpdated || 'Baru sahaja'}</strong>
           </div>
           <div style={{ fontSize: '0.8rem', fontWeight: 700, background: subCardBg, padding: '0.4rem 0.85rem', borderRadius: '6px', border: cardBorder }}>
-            {orders.length} rekod
+            {displayOrders.length}{notExportedOnly && orders.length !== displayOrders.length ? ` / ${orders.length}` : ''} rekod
           </div>
         </div>
       </div>
@@ -491,7 +497,7 @@ export default function PengurusanOrderPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.map(order => {
+              {displayOrders.map(order => {
                 const isSelected = selectedIds.has(order.id);
                 const isExported = !!order.ninjavan_exported_at;
                 return (
@@ -686,10 +692,12 @@ export default function PengurusanOrderPage() {
                 );
               })}
 
-              {orders.length === 0 && !loading && (
+              {displayOrders.length === 0 && !loading && (
                 <tr>
                   <td colSpan={10} style={{ padding: '3rem 0', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>
-                    Tiada rekod order lagi.
+                    {notExportedOnly && orders.length > 0
+                      ? '✅ Semua order dalam tempoh ini sudah diexport.'
+                      : 'Tiada rekod order lagi.'}
                   </td>
                 </tr>
               )}
