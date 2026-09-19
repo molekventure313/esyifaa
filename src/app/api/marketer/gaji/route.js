@@ -35,7 +35,7 @@ export async function GET(req) {
     // Fetch total sales
     const { data: submissions } = await adminClient
       .from('submissions')
-      .select('id, amount_paid, source, created_at')
+      .select('id, amount_paid, source, qty, created_at')
       .eq('marketer_id', user.id)
       .eq('payment_status', 'completed')
       .gte('created_at', startDate)
@@ -61,8 +61,8 @@ export async function GET(req) {
       const { data: stock } = await adminClient
         .from('stock_summary')
         .select('avg_cost_per_unit')
-        .eq('product_code', 'SGH-200G')
-        .single();
+        .eq('sku', 'SGH-200G')   // fix: was 'product_code' (column tak wujud)
+        .maybeSingle();
       if (stock) {
         avgCost = parseFloat(stock.avg_cost_per_unit) || 0;
       }
@@ -70,8 +70,11 @@ export async function GET(req) {
       // Ignore stock error
     }
 
-    const sabunCount = subs.filter(s => s.source && s.source.toLowerCase().includes('sabun')).length;
-    const totalCOGS = sabunCount * avgCost;
+    // COGS kira berdasarkan unit (qty), bukan order count
+    const sabunUnits = subs
+      .filter(s => s.source && s.source.toLowerCase().includes('sabun'))
+      .reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
+    const totalCOGS = sabunUnits * avgCost;
 
     const profit = totalSales - totalAds - totalCOGS;
     const komisen = Math.max(0, profit * (commission_pct / 100));
@@ -94,12 +97,15 @@ export async function GET(req) {
       });
 
       const daySales = daySalesArr.reduce((sum, s) => sum + (parseFloat(s.amount_paid) || 0), 0);
-      const daySabunCount = daySalesArr.filter(s => s.source && s.source.toLowerCase().includes('sabun')).length;
+      // COGS harian: kira unit (qty), bukan bilangan order
+      const daySabunUnits = daySalesArr
+        .filter(s => s.source && s.source.toLowerCase().includes('sabun'))
+        .reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
       
       const dayAdsArr = ads.filter(a => a.spend_date === dateStr);
       const dayAds = dayAdsArr.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
 
-      const dayCOGS = daySabunCount * avgCost;
+      const dayCOGS = daySabunUnits * avgCost;
       const dayProfit = daySales - dayAds - dayCOGS;
       const dayKomisen = Math.max(0, dayProfit * (commission_pct / 100));
 

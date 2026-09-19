@@ -74,7 +74,7 @@ function spLabel(source) {
 async function queryOrders(adminClient, { from, to }, marketer_id) {
   let q = adminClient
     .from('submissions')
-    .select('id, full_name, phone, source, payment_type, payment_status, amount_paid, notes, created_at')
+    .select('id, full_name, phone, source, payment_type, payment_status, amount_paid, notes, qty, created_at')
     .in('payment_type', ['fpx_payment', 'cod'])
     .eq('payment_status', 'completed')
     .order('created_at', { ascending: false });
@@ -150,15 +150,6 @@ export async function GET(req) {
 
     const { current, previous } = getMYTBounds(period);
 
-    // ── Build stock movements query for the current period ──────────────────
-    let stockMovQ = adminClient
-      .from('stock_movements')
-      .select('qty')
-      .eq('movement_type', 'out');
-
-    if (current.from) stockMovQ = stockMovQ.gte('created_at', current.from.toISOString());
-    if (current.to)   stockMovQ = stockMovQ.lte('created_at', current.to.toISOString());
-
     let recentQ = adminClient
       .from('submissions')
       .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at, marketer_id')
@@ -170,12 +161,11 @@ export async function GET(req) {
     if (marketer_id === 'hq') recentQ = recentQ.is('marketer_id', null);
     else if (marketer_id) recentQ = recentQ.eq('marketer_id', marketer_id);
 
-    // Fetch current + previous period + last 10 recent + stock data
-    const [currentOrders, previousOrders, allRecentRes, stockMovRes, stockSumRes] = await Promise.all([
+    // Fetch current + previous period + last 10 recent + avg cost
+    const [currentOrders, previousOrders, allRecentRes, stockSumRes] = await Promise.all([
       queryOrders(adminClient, current, marketer_id),
       queryOrders(adminClient, previous, marketer_id),
       recentQ,
-      stockMovQ,
       adminClient.from('stock_summary').select('avg_cost_per_unit').eq('sku', 'SGH-200G').maybeSingle(),
     ]);
 
@@ -183,7 +173,10 @@ export async function GET(req) {
     const prevAgg  = aggregate(previousOrders);
 
     // ── Gross PNL calculation ────────────────────────────────────────────────
-    const units_sold     = (stockMovRes.data || []).reduce((s, m) => s + (m.qty || 0), 0);
+    // units_sold: kira dari sabun orders yg dah filtered by marketer — elak COGS silap
+    const units_sold     = currentOrders
+      .filter(o => (o.source || '').includes('sabun'))
+      .reduce((s, o) => s + (parseInt(o.qty) || 0), 0);
     const avg_cost       = parseFloat(stockSumRes.data?.avg_cost_per_unit || 0);
     const cogs           = parseFloat((units_sold * avg_cost).toFixed(2));
     const gross_pnl      = parseFloat((totals.revenue - cogs).toFixed(2));

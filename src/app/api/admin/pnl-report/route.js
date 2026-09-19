@@ -236,7 +236,7 @@ export async function GET(req) {
 
       const monthData = await Promise.all(months.map(async m => {
         const [movements, ads] = await Promise.all([
-          fetchMovements(adminClient, m.fromUTC, m.toUTC),
+          fetchMovements(adminClient, m.fromUTC, m.toUTC, marketer_id),
           fetchAds(adminClient, m.spendDateFrom, m.spendDateTo, marketer_id),
         ]);
 
