@@ -95,6 +95,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { section: 'LAPORAN' },
     { label: '💰 Gaji Marketer', href: '/dashboard/marketer/gaji' },
     { label: '📊 Kos Ads', href: '/dashboard/marketer/ads' },
+    { label: '📊 UTM Analytics', href: '/dashboard/marketer/utm-analytics' },
     { section: 'TETAPAN' },
     { label: '📱 Pixel & Tracking', href: '/dashboard/marketer/pixels' },
     { label: '🔗 Link Marketing', href: '/dashboard/marketer/links' }
