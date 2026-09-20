@@ -5,35 +5,80 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
-// ─── Packages ─────────────────────────────────────────────────────────────────
+// ─── Packages (FSP PRO: Terbesar di Kiri/Atas -> Terkecil di Kanan/Bawah) ──────────
 const BASE_PACKAGES = [
+  {
+    units: 5,
+    label: '5 Bekas (500g x 5)',
+    sublabel: 'Rawatan Lengkap Seisi Keluarga & Perlindungan Berpanjangan',
+    pillLabel: '5 BEKAS — PALING JIMAT',
+    price: 135,
+    originalPrice: 250,
+    savings: 115,
+    badge: 'PALING JIMAT',
+    features: [
+      'JIMAT RM115',
+      'FREE POS & COD',
+      'RAWATAN LENGKAP SEISI RUMAH',
+      'BEKALAN TAHAN 6-8 BULAN',
+    ],
+    itemsCount: 5,
+    hasCod: true,
+  },
   {
     units: 3,
     label: '3 Bekas (500g x 3)',
     sublabel: 'Rawatan Penuh 40 Hari — Seisi Rumah & Pemulihan Hati',
-    price: 99,
-    originalPrice: 135,
-    savings: 36,
-    badge: 'PALING POPULAR (JIMAT RM36)',
+    pillLabel: '3 BEKAS — PILIHAN RAMAI',
+    price: 90,
+    originalPrice: 150,
+    savings: 60,
+    badge: 'PILIHAN RAMAI',
     recommended: true,
+    features: [
+      'JIMAT RM60',
+      'FREE POS & COD',
+      'IKHTIAR BERTERUSAN 3 BULAN',
+      'PILIHAN PALING POPULAR',
+    ],
+    itemsCount: 3,
+    hasCod: true,
   },
   {
     units: 2,
     label: '2 Bekas (500g x 2)',
     sublabel: 'Rawatan Intensif Suami Isteri & Makanan Harian',
-    price: 79,
-    originalPrice: 90,
-    savings: 11,
-    badge: 'JIMAT RM11',
+    pillLabel: '2 BEKAS — BERDUA',
+    price: 70,
+    originalPrice: 100,
+    savings: 30,
+    badge: 'JIMAT RM30',
+    features: [
+      'JIMAT RM30',
+      'FREE POS & COD',
+      'PENGGUNAAN 2 BULAN',
+      'KHAS SUAMI ISTERI',
+    ],
+    itemsCount: 2,
+    hasCod: true,
   },
   {
     units: 1,
     label: '1 Bekas (500g)',
     sublabel: 'Pek Percubaan & Pengenalan Masakan Berkat',
+    pillLabel: '1 BEKAS — PERCUBAAN',
     price: 45,
-    originalPrice: 55,
-    savings: null,
+    originalPrice: 60,
+    savings: 15,
     badge: null,
+    features: [
+      'JIMAT RM15',
+      'FREE POS & COD',
+      '1 BEKAS (500G) SAHAJA',
+      'PEK PERCUBAAN',
+    ],
+    itemsCount: 1,
+    hasCod: true,
   },
 ];
 
@@ -322,10 +367,30 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
         fontFamily: ff,
       }}
     >
-      <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
 
-        {/* Form Header */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        {/* CSS for Responsive Vertical Pricing Cards Grid */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          .fsp-pricing-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.15rem;
+            margin-bottom: 3.5rem;
+          }
+          @media (max-width: 960px) {
+            .fsp-pricing-grid-4 {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+          @media (max-width: 600px) {
+            .fsp-pricing-grid-4 {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}} />
+
+        {/* Section #13: CTA & Pakej Headline (Formula FSP PRO) */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem', maxWidth: '860px', margin: '0 auto 3rem auto' }}>
           <span style={{
             display: 'inline-block',
             background: '#FFEDD5',
@@ -337,28 +402,29 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
             fontWeight: 800,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            marginBottom: '0.85rem',
+            marginBottom: '1rem',
           }}>
-            📦 Borang Pesanan Rasmi
+            📦 Tawaran Khas &amp; Pilihan Pakej
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.65rem, 3.5vw, 2.35rem)',
+            fontSize: 'clamp(1.65rem, 3.5vw, 2.45rem)',
             fontWeight: 900,
             color: '#0F172A',
-            margin: '0.2rem 0 0.75rem',
+            margin: '0.2rem 0 1rem',
             letterSpacing: '-0.025em',
-            lineHeight: 1.25,
+            lineHeight: 1.28,
           }}>
-            Pilih Pakej Garam Pengasihan Masakan
+            Jangan Tunggu Lagi, Pulihkan Keretakan Rumahtangga &amp; Lembutkan Hati Pasangan Dengan Garam Pengasihan Masakan Sekarang
           </h2>
           <p style={{
-            fontSize: '1rem',
-            color: '#64748B',
+            fontSize: '1.08rem',
+            color: '#475569',
             lineHeight: 1.65,
-            maxWidth: '560px',
+            maxWidth: '620px',
             margin: '0 auto',
+            fontWeight: 500,
           }}>
-            Isi maklumat penghantaran di bawah. Pesanan anda akan dibungkus rapi dalam bungkusan privasi &amp; dihantar segera!
+            Pilih pakej anda sekarang sementara harga promosi &amp; kuota pos percuma masih dibuka!
           </p>
         </div>
 
@@ -373,90 +439,258 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
             fontSize: '0.9rem',
             fontWeight: 600,
             marginBottom: '1.5rem',
+            maxWidth: '680px',
+            margin: '0 auto 1.5rem auto',
           }}>
             ⚠️ {errorMsg}
           </div>
         )}
 
-        {/* ── 1. SELECT PACKAGE (Cards) ── */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <label style={{ ...LABEL_STYLE, fontSize: '1rem', marginBottom: '0.85rem', color: '#0F172A' }}>
-            Langkah 1: Pilih Pakej Anda {REQ}
-          </label>
+        {/* ── Vertical Pricing Cards Grid (Mengikut Gambar Rujukan FSP PRO) ── */}
+        <div id="pilih-pakej" className="fsp-pricing-grid-4">
+          {BASE_PACKAGES.map((p, idx) => {
+            const isSelected = selectedPkg === idx;
+            return (
+              <div
+                key={idx}
+                onClick={() => setSelectedPkg(idx)}
+                style={{
+                  background: '#FFFFFF',
+                  border: isSelected ? '2.5px solid #EA580C' : '1.5px solid #CBD5E1',
+                  borderRadius: '16px',
+                  padding: '1.75rem 1.15rem 1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  position: 'relative',
+                  boxShadow: isSelected
+                    ? '0 12px 30px rgba(234, 88, 12, 0.16)'
+                    : '0 4px 14px rgba(0, 0, 0, 0.04)',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                }}
+              >
+                {/* 1. Visual Stack of Items */}
+                <div style={{
+                  height: '95px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1rem',
+                  width: '100%',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    flexWrap: 'wrap',
+                    maxWidth: '150px',
+                  }}>
+                    {Array.from({ length: p.itemsCount }).map((_, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: p.itemsCount > 3 ? '32px' : '38px',
+                          height: p.itemsCount > 3 ? '42px' : '50px',
+                          background: 'linear-gradient(180deg, #FDBA74 0%, #EA580C 100%)',
+                          borderRadius: '8px 8px 10px 10px',
+                          border: '1.5px solid #C2410C',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#FFFFFF',
+                          fontWeight: 900,
+                          fontSize: '0.62rem',
+                          boxShadow: '0 2px 6px rgba(234, 88, 12, 0.2)',
+                          position: 'relative',
+                        }}
+                      >
+                        <div style={{
+                          width: '65%',
+                          height: '4px',
+                          background: '#9A3412',
+                          borderRadius: '2px 2px 0 0',
+                          position: 'absolute',
+                          top: '-4px',
+                        }} />
+                        <span>500g</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#EA580C' }}>
+                    {p.itemsCount}x Bekas (500g)
+                  </div>
+                </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {BASE_PACKAGES.map((p, idx) => {
-              const isSelected = selectedPkg === idx;
-              return (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedPkg(idx)}
+                {/* 2. Dark Pill Label */}
+                <div style={{
+                  background: isSelected ? '#C2410C' : '#1E293B',
+                  color: '#FFFFFF',
+                  padding: '0.42rem 1rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  marginBottom: '1rem',
+                  width: '90%',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}>
+                  {p.pillLabel}
+                </div>
+
+                {/* 3. Original Price Strikethrough */}
+                <div style={{
+                  fontSize: '0.88rem',
+                  color: '#64748B',
+                  fontWeight: 600,
+                  marginBottom: '0.2rem',
+                }}>
+                  Harga Asal <span style={{ textDecoration: 'line-through' }}>RM{p.originalPrice}</span>
+                </div>
+
+                {/* 4. Promo Price (Big & Bold) */}
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 900,
+                  color: '#0F172A',
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.1,
+                  marginBottom: '1.25rem',
+                }}>
+                  RM{p.price}
+                </div>
+
+                {/* 5. Features Checkmarks */}
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: '0 0 1.5rem 0',
+                  textAlign: 'left',
+                  width: '100%',
+                  fontSize: '0.84rem',
+                  color: '#334155',
+                  fontWeight: 600,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                }}>
+                  {p.features.map((feat, fIdx) => (
+                    <li key={fIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ color: '#059669', fontWeight: 900, fontSize: '0.95rem' }}>✓</span>
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* 6. Guide Text */}
+                <p style={{
+                  fontSize: '0.8rem',
+                  color: '#64748B',
+                  margin: '0 0 0.5rem 0',
+                  fontWeight: 600,
+                }}>
+                  Klik button di bawah untuk beli
+                  <span style={{ display: 'block', fontSize: '1.1rem', marginTop: '0.15rem' }}>👇🏻</span>
+                </p>
+
+                {/* 7. CTA Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPkg(idx);
+                    const target = document.getElementById('maklumat-pesanan');
+                    if (target) {
+                      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
                   style={{
-                    background: isSelected ? '#FFF7ED' : '#FFFFFF',
-                    border: isSelected ? '2px solid #EA580C' : '1.5px solid #CBD5E1',
-                    borderRadius: '16px',
-                    padding: '1.25rem 1.4rem',
+                    width: '100%',
+                    padding: '0.85rem 0.75rem',
+                    background: '#0F172A',
+                    color: '#FFFFFF',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    boxShadow: isSelected ? '0 4px 20px rgba(234, 88, 12, 0.12)' : '0 1px 4px rgba(0,0,0,0.02)',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
                     transition: 'all 0.15s ease',
-                    position: 'relative',
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    {/* Radio circle */}
-                    <div style={{
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: '50%',
-                      border: isSelected ? '6px solid #EA580C' : '2px solid #94A3B8',
-                      background: '#FFFFFF',
-                      flexShrink: 0,
-                    }} />
+                  👉🏻 BELI SEKARANG
+                </button>
 
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 900, fontSize: '1.05rem', color: '#0F172A' }}>
-                          {p.label}
-                        </span>
-                        {p.badge && (
-                          <span style={{
-                            background: '#EA580C',
-                            color: '#FFFFFF',
-                            fontSize: '0.68rem',
-                            fontWeight: 800,
-                            padding: '2px 8px',
-                            borderRadius: '99px',
-                            letterSpacing: '0.04em',
-                          }}>
-                            {p.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: '#64748B' }}>
-                        {p.sublabel}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Price */}
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#C2410C' }}>
-                      RM{p.price}
-                    </div>
-                    {p.originalPrice && (
-                      <div style={{ fontSize: '0.78rem', color: '#94A3B8', textDecoration: 'line-through' }}>
-                        RM{p.originalPrice}
-                      </div>
-                    )}
-                  </div>
+                {/* 8. Payment Icons / Text */}
+                <div style={{
+                  marginTop: '0.85rem',
+                  fontSize: '0.72rem',
+                  color: '#94A3B8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  fontWeight: 600,
+                }}>
+                  <span>FPX</span> · <span>Mastercard</span> · <span>VISA</span> · <span>COD</span>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
+
+        {/* ── Form Section ── */}
+        <div id="maklumat-pesanan" style={{ maxWidth: '680px', margin: '0 auto' }}>
+
+          {/* Active Selected Package Banner */}
+          <div style={{
+            background: '#FFF7ED',
+            border: '2px solid #FDBA74',
+            borderRadius: '14px',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.6rem',
+          }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#C2410C', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Pakej Dipilih Anda:
+              </span>
+              <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F172A' }}>
+                {pkg.label} — <span style={{ color: '#EA580C' }}>RM{pkg.price}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => document.getElementById('pilih-pakej')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                background: '#FFFFFF',
+                border: '1.5px solid #CBD5E1',
+                padding: '0.4rem 0.85rem',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#334155',
+                cursor: 'pointer',
+              }}
+            >
+              Tukar Pakej ↺
+            </button>
+          </div>
 
         {/* ── 2. FORM FIELDS ── */}
         <form onSubmit={handleSubmit} style={{
@@ -955,6 +1189,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
           </p>
 
         </form>
+        </div>
 
       </div>
     </section>

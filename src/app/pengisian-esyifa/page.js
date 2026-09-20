@@ -13,7 +13,6 @@ import PengisianProcessSection from '@/components/salespage/pengisian/ProcessSec
 import PengisianTestimonialPart2Section from '@/components/salespage/pengisian/TestimonialPart2Section';
 import PengisianComparisonSection from '@/components/salespage/pengisian/ComparisonSection';
 import PengisianGuaranteeSection from '@/components/salespage/pengisian/GuaranteeSection';
-import PengisianPaymentSection from '@/components/salespage/pengisian/PaymentSection';
 import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianCheckoutForm';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
@@ -76,10 +75,7 @@ export default function PengisianEsyifaPage() {
       {/* #15 — Jaminan 30 Hari Tanpa Risiko */}
       <PengisianGuaranteeSection />
 
-      {/* #16 — Pakej & Urgensi Slot Promo */}
-      <PengisianPaymentSection />
-
-      {/* #17 — Borang Tempahan FPX Bertingkat (Volume Offer + Addon) */}
+      {/* #16 — Section CTA, Pakej FSP PRO & Borang Tempahan */}
       <PengisianCheckoutForm source="pengisian-esyifa" />
 
       {/* FAQ 8 Soalan Lazim */}

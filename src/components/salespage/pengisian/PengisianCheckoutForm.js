@@ -4,35 +4,59 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
-// ─── 3 Volume Packages ────────────────────────────────────────────────────────
+// ─── 3 Volume Packages (FSP PRO: Terbesar di Kiri/Atas -> Terkecil di Kanan/Bawah) ──────────
 const PACKAGES = [
   {
     items: 3,
     label: '3 Item (Pakej Seisi Keluarga)',
     sublabel: 'RM66.30 seunit — Jimat RM71! Perlindungan lengkap suami, isteri & anak',
+    pillLabel: '3 ITEM — PALING JIMAT',
     price: 199,
     originalPrice: 270,
     savings: 71,
-    badge: 'PALING JIMAT / POPULAR',
+    badge: 'PALING JIMAT',
     recommended: true,
+    features: [
+      'JIMAT RM71',
+      'DIISI 3 HARI BERTURUT',
+      'PELARASAN MINGGUAN PERCUMA',
+      'UNTUK SEISI KELUARGA',
+    ],
+    itemsCount: 3,
   },
   {
     items: 2,
     label: '2 Item (Pakej Suami Isteri)',
     sublabel: 'RM75 seunit — Jimat RM30! Perlindungan bersama pasangan',
+    pillLabel: '2 ITEM — BERDUA',
     price: 150,
     originalPrice: 180,
     savings: 30,
     badge: 'PILIHAN BERDUA',
+    features: [
+      'JIMAT RM30',
+      'DIISI 3 HARI BERTURUT',
+      'PELARASAN MINGGUAN PERCUMA',
+      'KHAS SUAMI ISTERI',
+    ],
+    itemsCount: 2,
   },
   {
     items: 1,
     label: '1 Item (Pek Percubaan Diri Sendiri)',
     sublabel: 'Sesuai untuk memulakan ikhtiar mandiri di rumah',
+    pillLabel: '1 ITEM — PERCUBAAN',
     price: 90,
     originalPrice: 120,
     savings: 30,
     badge: null,
+    features: [
+      'JIMAT RM30',
+      'DIISI 3 HARI BERTURUT',
+      '1 BARANG SAHAJA',
+      'PEK PERCUBAAN DIRI SENDIRI',
+    ],
+    itemsCount: 1,
   },
 ];
 
@@ -195,99 +219,348 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
         fontFamily: ff,
       }}
     >
-      <div style={{ maxWidth: '780px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
 
-        {/* Form Container (Clean White & High Contrast) */}
+        {/* CSS for Responsive Vertical Pricing Cards Grid */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          .fsp-pricing-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 3.5rem;
+          }
+          @media (max-width: 860px) {
+            .fsp-pricing-grid-3 {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}} />
+
+        {/* Urgency Slot Bar */}
         <div style={{
           background: '#FFFFFF',
-          border: '2px solid #CBD5E1',
-          borderRadius: '24px',
-          padding: '2.5rem 1.75rem',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.06)',
+          border: '1.5px solid #FECACA',
+          borderRadius: '18px',
+          padding: '1.25rem 1.75rem',
+          marginBottom: '2.5rem',
+          boxShadow: '0 4px 20px rgba(220, 38, 38, 0.06)',
+          maxWidth: '860px',
+          margin: '0 auto 2.5rem auto',
         }}>
-
-          {/* Form Header */}
-          <div style={{ textAlign: 'center', marginBottom: '2.25rem' }}>
-            <span style={{
-              display: 'inline-block',
-              background: '#ECFDF5', border: '1.5px solid #86EFAC',
-              color: '#065F46', padding: '0.4rem 1.2rem', borderRadius: '50px',
-              fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase',
-              letterSpacing: '0.04em', marginBottom: '0.75rem',
-            }}>
-              Langkah 1: Pilih Pakej Pengisian
-            </span>
-            <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.55rem', fontWeight: 900, color: '#0F172A' }}>
-              Borang Tempahan Pengisian Jarak Jauh
-            </h3>
-            <p style={{ margin: 0, fontSize: '0.92rem', color: '#64748B' }}>
-              Diisi selama 3 hari berturut-turut · Pelarasan mingguan percuma selamanya
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+            marginBottom: '0.75rem',
+          }}>
+            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              🔴 Slot Promosi Pengenalan — 42/50 Diambil
+            </p>
+            <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#059669' }}>
+              Baki 8 slot sahaja lagi
             </p>
           </div>
+          <div style={{ background: '#F1F5F9', borderRadius: '999px', height: '10px', overflow: 'hidden', marginBottom: '0.75rem' }}>
+            <div style={{
+              width: '84%',
+              height: '100%',
+              background: 'linear-gradient(90deg, #EF4444, #DC2626)',
+              borderRadius: '999px',
+            }} />
+          </div>
+          <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748B' }}>
+            Selepas 50 slot terawal habis, yuran pengisian akan kembali ke harga asal <strong style={{ color: '#DC2626' }}>RM120 seunit</strong>.
+          </p>
+        </div>
 
-          {/* ── 3 Volume Packages Grid ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginBottom: '2.25rem' }}>
-            {PACKAGES.map((p, idx) => {
-              const isSelected = selectedPkg === idx;
-              return (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedPkg(idx)}
-                  style={{
-                    border: isSelected ? '2.5px solid #059669' : '1.5px solid #E2E8F0',
-                    background: isSelected ? '#F0FDF4' : '#FFFFFF',
-                    borderRadius: '16px',
-                    padding: '1.35rem 1.5rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    position: 'relative',
-                    boxShadow: isSelected ? '0 4px 20px rgba(5, 150, 105, 0.12)' : 'none',
-                  }}
-                >
-                  {p.badge && (
-                    <div style={{
-                      position: 'absolute', top: '-11px', right: '18px',
-                      background: 'linear-gradient(90deg, #FDE047, #EAB308)',
-                      color: '#042E23', fontSize: '0.7rem', fontWeight: 900,
-                      padding: '0.25rem 0.75rem', borderRadius: '999px',
-                      textTransform: 'uppercase', letterSpacing: '0.04em',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-                    }}>
-                      {p.badge}
-                    </div>
-                  )}
+        {/* Section #13: CTA & Pakej Headline (Formula FSP PRO) */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem', maxWidth: '860px', margin: '0 auto 3rem auto' }}>
+          <span style={{
+            display: 'inline-block',
+            background: '#ECFDF5',
+            border: '1.5px solid #86EFAC',
+            color: '#065F46',
+            padding: '0.4rem 1.2rem',
+            borderRadius: '9999px',
+            fontSize: '0.78rem',
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            marginBottom: '1rem',
+          }}>
+            💎 Tawaran Khas &amp; Pilihan Pakej
+          </span>
+          <h2 style={{
+            fontSize: 'clamp(1.65rem, 3.5vw, 2.45rem)',
+            fontWeight: 900,
+            color: '#0F172A',
+            margin: '0.2rem 0 1rem',
+            letterSpacing: '-0.025em',
+            lineHeight: 1.28,
+          }}>
+            Jangan Tunggu Lagi, Tamatkan Azab Gangguan Berulang &amp; Rawat Diri Sendiri Dengan Pengisian E-Syifa Sekarang
+          </h2>
+          <p style={{
+            fontSize: '1.08rem',
+            color: '#475569',
+            lineHeight: 1.65,
+            maxWidth: '620px',
+            margin: '0 auto',
+            fontWeight: 500,
+          }}>
+            Pilih bilangan item anda di bawah sebelum kuota pengisian jarak jauh bulan ini ditutup!
+          </p>
+        </div>
 
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.9rem' }}>
-                      <input
-                        type="radio"
-                        checked={isSelected}
-                        onChange={() => setSelectedPkg(idx)}
-                        style={{ accentColor: '#059669', width: '22px', height: '22px', marginTop: '3px', cursor: 'pointer' }}
-                      />
-                      <div>
-                        <div style={{ fontSize: '1.08rem', fontWeight: 900, color: '#0F172A', marginBottom: '0.25rem' }}>
-                          {p.label}
-                        </div>
-                        <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.45 }}>
-                          {p.sublabel}
-                        </div>
-                      </div>
-                    </div>
+        {/* Error Alert */}
+        {errorMessage && (
+          <div style={{
+            background: '#FEF2F2',
+            border: '1.5px solid #FCA5A5',
+            borderRadius: '12px',
+            padding: '1rem',
+            color: '#DC2626',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            marginBottom: '1.5rem',
+            maxWidth: '680px',
+            margin: '0 auto 1.5rem auto',
+          }}>
+            ⚠️ {errorMessage}
+          </div>
+        )}
 
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#059669', lineHeight: 1 }}>
-                        RM{p.price}
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#94A3B8', textDecoration: 'line-through', marginTop: '0.25rem' }}>
-                        RM{p.originalPrice}
-                      </div>
-                    </div>
+        {/* ── Vertical Pricing Cards Grid (Mengikut Gambar Rujukan FSP PRO) ── */}
+        <div id="pilih-pakej" className="fsp-pricing-grid-3">
+          {PACKAGES.map((p, idx) => {
+            const isSelected = selectedPkg === idx;
+            return (
+              <div
+                key={idx}
+                onClick={() => setSelectedPkg(idx)}
+                style={{
+                  background: '#FFFFFF',
+                  border: isSelected ? '2.5px solid #059669' : '1.5px solid #CBD5E1',
+                  borderRadius: '16px',
+                  padding: '1.75rem 1.25rem 1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  position: 'relative',
+                  boxShadow: isSelected
+                    ? '0 12px 30px rgba(5, 150, 105, 0.16)'
+                    : '0 4px 14px rgba(0, 0, 0, 0.04)',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                }}
+              >
+                {/* 1. Visual Representation of Items */}
+                <div style={{
+                  height: '100px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1rem',
+                  width: '100%',
+                }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {p.itemsCount === 3 ? (
+                      <>
+                        <span style={{ fontSize: '1.75rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>💍</span>
+                        <span style={{ fontSize: '1.75rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>📿</span>
+                        <span style={{ fontSize: '1.75rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>✨</span>
+                      </>
+                    ) : p.itemsCount === 2 ? (
+                      <>
+                        <span style={{ fontSize: '1.85rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>💍</span>
+                        <span style={{ fontSize: '1.85rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>📿</span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: '2.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>✨</span>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#059669' }}>
+                    {p.itemsCount}x Barang Ruqyah Pasak
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* 2. Dark Pill Label */}
+                <div style={{
+                  background: isSelected ? '#047857' : '#064E3B',
+                  color: '#FFFFFF',
+                  padding: '0.42rem 1.15rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  marginBottom: '1rem',
+                  width: '90%',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}>
+                  {p.pillLabel}
+                </div>
+
+                {/* 3. Original Price Strikethrough */}
+                <div style={{
+                  fontSize: '0.88rem',
+                  color: '#64748B',
+                  fontWeight: 600,
+                  marginBottom: '0.2rem',
+                }}>
+                  Harga Asal <span style={{ textDecoration: 'line-through' }}>RM{p.originalPrice}</span>
+                </div>
+
+                {/* 4. Promo Price (Big & Bold) */}
+                <div style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 900,
+                  color: '#0F172A',
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.1,
+                  marginBottom: '1.25rem',
+                }}>
+                  RM{p.price}
+                </div>
+
+                {/* 5. Features Checkmarks */}
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: '0 0 1.5rem 0',
+                  textAlign: 'left',
+                  width: '100%',
+                  fontSize: '0.86rem',
+                  color: '#334155',
+                  fontWeight: 600,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                }}>
+                  {p.features.map((feat, fIdx) => (
+                    <li key={fIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ color: '#059669', fontWeight: 900, fontSize: '0.95rem' }}>✓</span>
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* 6. Guide Text */}
+                <p style={{
+                  fontSize: '0.8rem',
+                  color: '#64748B',
+                  margin: '0 0 0.5rem 0',
+                  fontWeight: 600,
+                }}>
+                  Klik button di bawah untuk beli
+                  <span style={{ display: 'block', fontSize: '1.1rem', marginTop: '0.15rem' }}>👇🏻</span>
+                </p>
+
+                {/* 7. CTA Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPkg(idx);
+                    const target = document.getElementById('maklumat-pesanan');
+                    if (target) {
+                      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem 0.75rem',
+                    background: '#0F172A',
+                    color: '#FFFFFF',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    transition: 'all 0.15s ease',
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
+                  }}
+                >
+                  👉🏻 BELI SEKARANG
+                </button>
+
+                {/* 8. Payment Icons / Text */}
+                <div style={{
+                  marginTop: '0.85rem',
+                  fontSize: '0.72rem',
+                  color: '#94A3B8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  fontWeight: 600,
+                }}>
+                  <span>FPX Online Banking</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Form Section ── */}
+        <div id="maklumat-pesanan" style={{ maxWidth: '680px', margin: '0 auto' }}>
+
+          <div style={{
+            background: '#FFFFFF',
+            border: '2px solid #CBD5E1',
+            borderRadius: '24px',
+            padding: '2.5rem 1.75rem',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.06)',
+          }}>
+
+            {/* Active Selected Package Banner */}
+            <div style={{
+              background: '#ECFDF5',
+              border: '2px solid #6EE7B7',
+              borderRadius: '14px',
+              padding: '1rem 1.25rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.6rem',
+            }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#065F46', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Pakej Dipilih Anda:
+                </span>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F172A' }}>
+                  {pkg.label} — <span style={{ color: '#047857' }}>RM{pkg.price}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => document.getElementById('pilih-pakej')?.scrollIntoView({ behavior: 'smooth' })}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '8px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#334155',
+                  cursor: 'pointer',
+                }}
+              >
+                Tukar Pakej ↺
+              </button>
+            </div>
 
           {/* ── Form Inputs ── */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.35rem' }}>
@@ -474,6 +747,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
 
           </form>
 
+        </div>
         </div>
 
       </div>
