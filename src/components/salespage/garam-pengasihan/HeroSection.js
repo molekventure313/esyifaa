@@ -18,50 +18,9 @@ export default function GaramHeroSection() {
     }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
-        {/* Ceria & Khusus Rumahtangga Pill Badge */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: '#FFFFFF',
-          border: '1px solid #FDBA74',
-          padding: '0.45rem 1.15rem',
-          borderRadius: '9999px',
-          marginBottom: '1.5rem',
-          boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)',
-        }}>
-          <span style={{ fontSize: '1rem' }}>🧂🍲</span>
-          <span style={{
-            fontSize: '0.78rem',
-            fontWeight: 800,
-            color: '#C2410C',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}>
-            Garam Bukit Himalaya Pengisian Ruqyah Syar&apos;iyyah &amp; Mahabbah Masakan
-          </span>
-        </div>
-
-        {/* Rating Star Badge */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.4rem',
-          marginBottom: '1rem',
-          fontSize: '0.9rem',
-          color: '#D97706',
-          fontWeight: 700,
-        }}>
-          <span>⭐⭐⭐⭐⭐</span>
-          <span style={{ color: '#475569', fontSize: '0.84rem' }}>
-            Dinilai <strong>4.9/5</strong> oleh lebih 1,240+ pasangan &amp; keluarga
-          </span>
-        </div>
-
-        {/* H1 Headline (FSP PRO Formula: Testimoni Hasil + 3 Masalah Selesai) */}
+        {/* 1. H1 HEADLINE (Paling Atas Mengikut Formula FSP PRO) */}
         <h1 style={{
-          fontSize: 'clamp(1.75rem, 4vw, 2.75rem)',
+          fontSize: 'clamp(1.8rem, 4.2vw, 2.85rem)',
           fontWeight: 900,
           lineHeight: 1.3,
           color: '#0F172A',
@@ -80,22 +39,41 @@ export default function GaramHeroSection() {
           lepas amalkan Garam Pengasihan Masakan ESyifaa&rdquo;
         </h1>
 
-        {/* Subtitle / Description (Pengalaman yang prospek akan lalui) */}
-        <p style={{
-          fontSize: '1.05rem',
+        {/* 2. H4 DESCRIPTION */}
+        <h4 style={{
+          fontSize: 'clamp(1.05rem, 2.2vw, 1.25rem)',
           lineHeight: 1.75,
           color: '#475569',
-          marginBottom: '2rem',
-          maxWidth: '720px',
-          margin: '0 auto 2rem auto',
-          fontWeight: 400,
+          marginBottom: '1.5rem',
+          maxWidth: '740px',
+          margin: '0 auto 1.5rem auto',
+          fontWeight: 500,
         }}>
-          Ikhtiar senyap &amp; penuh rahmah dari dapur — <strong>tanpa perlu paksa pasangan berubat</strong>. Cukup secubit dalam lauk, sup atau minuman harian. Tenaga ruqyah pemusnah sihir &amp; ayat pengasihan meresap ke dalam darah daging untuk merungkai sihir pemisah serta mengikat kembali jiwa sekeluarga dengan izin Allah.
-        </p>
+          Ikhtiar senyap &amp; penuh rahmah dari dapur — tanpa perlu paksa pasangan berubat. Cukup secubit dalam lauk, sup atau minuman harian. Tenaga ruqyah pemusnah sihir &amp; ayat pengasihan meresap ke dalam darah daging untuk merungkai sihir pemisah serta mengikat kembali jiwa sekeluarga dengan izin Allah 👇🏻
+        </h4>
 
-        {/* Highlight Image Box */}
+        {/* 3. RATING STAR BADGE (Tepat Di Bawah H4) */}
         <div style={{
-          margin: '1.5rem auto 2.25rem',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.45rem',
+          background: '#FFFFFF',
+          border: '1px solid #FED7AA',
+          padding: '0.45rem 1.25rem',
+          borderRadius: '9999px',
+          marginBottom: '2rem',
+          boxShadow: '0 2px 8px rgba(234, 88, 12, 0.06)',
+        }}>
+          <span style={{ color: '#D97706', fontSize: '1rem', letterSpacing: '2px' }}>⭐⭐⭐⭐⭐</span>
+          <span style={{ color: '#334155', fontSize: '0.86rem', fontWeight: 700 }}>
+            Dinilai <strong style={{ color: '#0F172A' }}>4.9/5</strong> oleh lebih 1,240+ pasangan &amp; keluarga
+          </span>
+        </div>
+
+        {/* 4. MEDIA VISUAL (Highlight Product Box) */}
+        <div style={{
+          margin: '0 auto 2rem',
           maxWidth: '520px',
           width: '100%',
           position: 'relative',
@@ -171,14 +149,14 @@ export default function GaramHeroSection() {
           ))}
         </div>
 
-        {/* CTA Button */}
+        {/* 5. BUTTON CTA */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
           <button
             onClick={scrollToForm}
             style={{
-              padding: '1.15rem 2.8rem',
-              fontSize: '1.12rem',
-              fontWeight: 800,
+              padding: '1.2rem 3rem',
+              fontSize: '1.15rem',
+              fontWeight: 900,
               color: '#FFFFFF',
               background: 'linear-gradient(180deg, #EA580C 0%, #C2410C 100%)',
               border: 'none',

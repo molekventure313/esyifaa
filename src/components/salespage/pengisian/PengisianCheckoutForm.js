@@ -70,19 +70,12 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
     honeypot: '',
   });
 
-  // ─── 2 Add-ons State ───
-  const [addKasturi, setAddKasturi] = useState(false);
-  const KASTURI_PRICE = 20;
-
-  const [addSabun, setAddSabun] = useState(false);
-  const SABUN_PRICE = 25;
-
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const ff = 'var(--font-inter), -apple-system, sans-serif';
   const pkg = PACKAGES[selectedPkg];
-  const grandTotal = pkg.price + (addKasturi ? KASTURI_PRICE : 0) + (addSabun ? SABUN_PRICE : 0);
+  const grandTotal = pkg.price; // Fokus 100% pada pakej pengisian item tanpa add-on
 
   // FPX Pixel Init
   useEffect(() => {
@@ -148,9 +141,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
       const fbcValue = fbc || (utmParams.fbclid ? `fb.1.${Date.now()}.${utmParams.fbclid}` : null);
       const rawPhone = `${formData.dialCode}${formData.phone.replace(/^0+/, '')}`;
 
-      const kasturiTag = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa +RM${KASTURI_PRICE}` : '';
-      const sabunTag = addSabun ? ` | Add-On: Sabun Garam Pengisian +RM${SABUN_PRICE}` : '';
-      const orderProblem = `Pengisian E-Syifa (${pkg.label}) | Barang: ${formData.item_description.trim()}${kasturiTag}${sabunTag}`;
+      const orderProblem = `Pengisian E-Syifa (${pkg.label}) | Barang: ${formData.item_description.trim()}`;
 
       const response = await fetch('/api/payments/chip/create', {
         method: 'POST',
@@ -160,8 +151,6 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
           phone: rawPhone,
           problem: orderProblem,
           amount_in_myr: grandTotal,
-          addon_kasturi: addKasturi,
-          addon_sabun: addSabun,
           source: source || 'pengisian-esyifa',
           marketer_code: marketerCode,
           source_page: window.location.pathname,
@@ -404,89 +393,8 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 }}
               />
               <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.78rem', color: '#64748B' }}>
-                Nyatakan mengikut bilangan item dalam pakej yang anda pilih di atas (1, 2 atau 3 barang).
+                Nyatakan mengikut bilangan item dalam pakej yang anda pilih di atas ({pkg.items} barang).
               </p>
-            </div>
-
-            {/* ── Dual Bump Offers (Add-ons) (Clean Light Theme) ── */}
-            <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
-              <div style={{
-                background: '#FFFBEB',
-                border: '1.5px solid #FCD34D',
-                borderRadius: '16px',
-                padding: '1.35rem',
-              }}>
-                <div style={{
-                  fontSize: '0.92rem', fontWeight: 900, color: '#92400E',
-                  marginBottom: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
-                }}>
-                  <span>⚡</span> Nak Benteng Fizikal Tambahan Di Rumah? (Pilihan Tambahan)
-                </div>
-
-                {/* Add-on 1: Kasturi Kijang RM20 */}
-                <label
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: '0.75rem', padding: '0.9rem 1rem',
-                    background: addKasturi ? '#FEF3C7' : '#FFFFFF',
-                    border: addKasturi ? '2px solid #D97706' : '1px solid #E2E8F0',
-                    borderRadius: '12px', cursor: 'pointer', marginBottom: '0.75rem',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={addKasturi}
-                      onChange={e => setAddKasturi(e.target.checked)}
-                      style={{ accentColor: '#D97706', width: '20px', height: '20px', cursor: 'pointer' }}
-                    />
-                    <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>
-                        + Minyak Kasturi Kijang Ruqyah Asli (Pati)
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
-                        Bauan sunnah yang dibenci jin, benteng lebam &amp; ditindih malam
-                      </div>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '1rem', fontWeight: 900, color: '#B45309', flexShrink: 0 }}>
-                    +RM20
-                  </span>
-                </label>
-
-                {/* Add-on 2: Sabun Garam RM25 */}
-                <label
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: '0.75rem', padding: '0.9rem 1rem',
-                    background: addSabun ? '#FEF3C7' : '#FFFFFF',
-                    border: addSabun ? '2px solid #D97706' : '1px solid #E2E8F0',
-                    borderRadius: '12px', cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={addSabun}
-                      onChange={e => setAddSabun(e.target.checked)}
-                      style={{ accentColor: '#D97706', width: '20px', height: '20px', cursor: 'pointer' }}
-                    />
-                    <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>
-                        + Sabun Bidara Garam Bukit Pengisian (200g)
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
-                        Mandian buang angin bisa saka &amp; sihir pada liang roma
-                      </div>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '1rem', fontWeight: 900, color: '#B45309', flexShrink: 0 }}>
-                    +RM25
-                  </span>
-                </label>
-              </div>
             </div>
 
             {/* Error Message */}
@@ -507,21 +415,9 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
               borderRadius: '18px', padding: '1.35rem 1.5rem', marginTop: '0.5rem',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.92rem', color: '#475569' }}>
-                <span>{pkg.label}:</span>
-                <span style={{ fontWeight: 800, color: '#0F172A' }}>RM{pkg.price}</span>
+                <span>Pakej Terpilih:</span>
+                <span style={{ fontWeight: 800, color: '#0F172A' }}>{pkg.label}</span>
               </div>
-              {addKasturi && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.88rem', color: '#475569' }}>
-                  <span>+ Kasturi Kijang Ruqyah:</span>
-                  <span style={{ fontWeight: 800, color: '#B45309' }}>+RM{KASTURI_PRICE}</span>
-                </div>
-              )}
-              {addSabun && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.88rem', color: '#475569' }}>
-                  <span>+ Sabun Bidara Garam:</span>
-                  <span style={{ fontWeight: 800, color: '#B45309' }}>+RM{SABUN_PRICE}</span>
-                </div>
-              )}
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 borderTop: '1.5px solid #E2E8F0', paddingTop: '0.85rem', marginTop: '0.6rem',

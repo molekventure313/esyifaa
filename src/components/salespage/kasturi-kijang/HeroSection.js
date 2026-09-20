@@ -20,50 +20,9 @@ export default function KasturiHeroSection() {
     }}>
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
 
-        {/* Pill Badge */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: '#FFFFFF',
-          border: '1px solid #6EE7B7',
-          padding: '0.45rem 1.15rem',
-          borderRadius: '9999px',
-          marginBottom: '1.5rem',
-          boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
-        }}>
-          <span style={{ fontSize: '1rem' }}>🦌🌿</span>
-          <span style={{
-            fontSize: '0.78rem',
-            fontWeight: 800,
-            color: '#065F46',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}>
-            Pati Kasturi Kijang Asli · Diisi 4 Lapisan Ayat Ruqyah Pendinding Syar&apos;iyyah
-          </span>
-        </div>
-
-        {/* Rating Star Badge */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.4rem',
-          marginBottom: '1rem',
-          fontSize: '0.9rem',
-          color: '#D97706',
-          fontWeight: 700,
-        }}>
-          <span>⭐⭐⭐⭐⭐</span>
-          <span style={{ color: '#475569', fontSize: '0.84rem' }}>
-            Dinilai <strong>4.9/5</strong> oleh lebih 3,450+ pengguna di Malaysia &amp; Singapura
-          </span>
-        </div>
-
-        {/* H1 Headline (FSP PRO Formula: Testimoni Hasil + 3 Masalah Selesai) */}
+        {/* 1. H1 HEADLINE (Paling Atas Mengikut Formula FSP PRO) */}
         <h1 style={{
-          fontSize: 'clamp(1.75rem, 4vw, 2.75rem)',
+          fontSize: 'clamp(1.8rem, 4.2vw, 2.85rem)',
           fontWeight: 900,
           lineHeight: 1.3,
           color: '#0F172A',
@@ -82,22 +41,41 @@ export default function KasturiHeroSection() {
           lepas amalkan Minyak Kasturi Kijang E-Syifa&rsquo;&rdquo;
         </h1>
 
-        {/* Subheadline (Pengalaman yang prospek akan lalui) */}
-        <p style={{
-          fontSize: '1.05rem',
+        {/* 2. H4 SUBHEADLINE */}
+        <h4 style={{
+          fontSize: 'clamp(1.05rem, 2.2vw, 1.25rem)',
           lineHeight: 1.75,
           color: '#475569',
-          marginBottom: '2rem',
-          maxWidth: '720px',
-          margin: '0 auto 2rem auto',
-          fontWeight: 400,
+          marginBottom: '1.5rem',
+          maxWidth: '740px',
+          margin: '0 auto 1.5rem auto',
+          fontWeight: 500,
         }}>
-          Wangian sunnah kegemaran baginda Nabi ﷺ yang amat ditakuti oleh jin, syaitan dan tukang sihir. Cukup sekadar sapuan halus pada titik nadi dan tengkuk — bertindak sebagai <strong>benteng pendinding aktif 24 jam</strong> serta aromaterapi penenang jiwa yang resah.
-        </p>
+          Wangian sunnah kegemaran baginda Nabi ﷺ yang amat ditakuti oleh jin, syaitan dan tukang sihir. Cukup sekadar sapuan halus pada titik nadi dan tengkuk — bertindak sebagai <strong>benteng pendinding aktif 24 jam</strong> serta aromaterapi penenang jiwa yang resah 👇🏻
+        </h4>
 
-        {/* Highlight Image Box */}
+        {/* 3. RATING STAR BADGE (Tepat Di Bawah H4) */}
         <div style={{
-          margin: '1.5rem auto 2.25rem',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.45rem',
+          background: '#FFFFFF',
+          border: '1px solid #A7F3D0',
+          padding: '0.45rem 1.25rem',
+          borderRadius: '9999px',
+          marginBottom: '2rem',
+          boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
+        }}>
+          <span style={{ color: '#D97706', fontSize: '1rem', letterSpacing: '2px' }}>⭐⭐⭐⭐⭐</span>
+          <span style={{ color: '#334155', fontSize: '0.86rem', fontWeight: 700 }}>
+            Dinilai <strong style={{ color: '#0F172A' }}>4.9/5</strong> oleh lebih 3,450+ pengguna di Malaysia &amp; Singapura
+          </span>
+        </div>
+
+        {/* 4. MEDIA VISUAL (Highlight Image Box) */}
+        <div style={{
+          margin: '0 auto 2rem',
           maxWidth: '460px',
           width: '100%',
         }}>
@@ -173,14 +151,14 @@ export default function KasturiHeroSection() {
           ))}
         </div>
 
-        {/* CTA Button */}
+        {/* 5. BUTTON CTA */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
           <button
             onClick={scrollToForm}
             style={{
-              padding: '1.15rem 2.8rem',
-              fontSize: '1.12rem',
-              fontWeight: 800,
+              padding: '1.2rem 3rem',
+              fontSize: '1.15rem',
+              fontWeight: 900,
               color: '#FFFFFF',
               background: 'linear-gradient(180deg, #059669 0%, #047857 100%)',
               border: 'none',
