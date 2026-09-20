@@ -36,41 +36,6 @@ const TESTIMONIALS = [
     tag: '❤️ Rumahtangga Panas → Kembali Harmoni',
     text: '"Ustaz nak share berita gembira.. Dulu saya ngan suami asal pandang muka je nak bertekak, rumah rse berasap panas mcm kena sihir pemisah. Lepas buat pengisian minyak wangi & amalkan sembur kat bilik n diri ikut cara ustaz ajar, alhamdulillah suasana rumah bertukar sejuk giler. Suami pun dah x baran, balik keja senyum mesra je layan sy. Rasa mcm baru kawin balik ustaz 😭❤️"',
   },
-  {
-    name: 'Ummi R.',
-    location: 'Ipoh, Perak',
-    time: '6 hari lepas',
-    tag: '👧 Anak Histeria → Tidur Lena',
-    text: '"Assalam ustaz, nk bgtau psl anak sy kat asrama yg selalu kena histeria n meracau mlm tu. Sy buatkan pengisian rantai/minyak wangi utk dia. Sy ajar dia cara amalkan bila rasa gelisah mcm ustaz ajar sy. Alhamdulillah dah masuk 2 mggu dia ckp dah x nampak kelibat menakutkan n tido nyenyak sgt kat dorm. Sy kat rumah pon dah x risau dah syukur ya Allah 🤲"',
-  },
-  {
-    name: 'Kamariah Z.',
-    location: 'Kedah',
-    time: '1 minggu lepas',
-    tag: '🧠 Bisikan Halus → Fikiran Lapang',
-    text: '"Salam ustaz tq sgt2 tlg buat pengisian tasbih sy tu. Dulu kepala sy bising sgt ngan bisikan2 suruh takut n was2 smbahyang smpai rasa nk gila. Sejak sy pegang tasbih ni n amalkan zikir ruqyah ikut bimbingan ustaz, bisikan tu terus senyap serap tak berani kaco dah. Fikiran rse tenang giler skrg lapang xde serabut dah ustaz! 😊"',
-  },
-  {
-    name: 'Rizal A.',
-    location: 'Pulau Pinang',
-    time: '1 minggu lepas',
-    tag: '🏪 Kedai Tersekat → Pelanggan Masuk Balik',
-    text: '"Ustaz btol la berkesan! Barang kedai yg sy minta ustaz buat pengisian aritu sy dah letak kat kaunter & amalkan pagar kedai ikut nota ustaz. Sebelum ni pelanggan lalu depan kedai buat donno je ckp kedai tutup. Hari ke-3 lepas amalkan, pelanggan beratur masuk balik mcm dlu! Suasana kedai pon rasa sejuk lapang x rse suram lg. Tq ustaz bantu selesaikan masalah rezeki sy ni 🤲"',
-  },
-  {
-    name: 'Salmah N.',
-    location: 'Pahang',
-    time: '2 minggu lepas',
-    tag: '💰 Berhenti Bakar Duit Berubat Luar',
-    text: '"Assalam ustaz ikhlas ckp mmg jimat byk. Sblom ni entah bpe ribu habis melayang asyik bayar yuran rawatan luar asal gangguan datang balik. Skrg bila ada item pengisian ni, rse berbaloi sgt skali bayar je sy dah ada alat ikhtiar sndiri kat rumah. Bila anak demam pelik ke bdan sy sengal ke, terus guna item ni rawat sndiri smpai sembuh 👍"',
-  },
-  {
-    name: 'Fadilah T.',
-    location: 'Terengganu',
-    time: '2 minggu lepas',
-    tag: '🔄 Pelarasan Mingguan → Kekuatan Sentiasa Fresh',
-    text: '"Ustaz, sy perasan setiap kali lepas ustaz buat pelarasan mingguan tu, barang ni rasa makin bertenaga bila sy pegang masa amalkan zikir. Rse berangin sejuk meremang kat tangan. Bagus sgt ada sistem pelarasan automatik ni, x risau kekuatan bacaan luput. Moga ustaz dimurahkan rezeki selalu tlg pesakit2 mcm kitorang ni 🙏"',
-  },
 ];
 
 const ff = 'var(--font-inter), -apple-system, sans-serif';
@@ -86,7 +51,7 @@ function WaBubble({ t }) {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
     }}>
       {/* Header bar */}
       <div style={{
@@ -174,17 +139,17 @@ export default function PengisianTestimonialSection() {
             textTransform: 'uppercase', marginBottom: '0.85rem',
             boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
           }}>
-            💬 Maklum Balas Pelanggan
+            💬 Bukti Pengalaman Pesakit (Gelombang 1)
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.45rem, 3.2vw, 2rem)',
+            fontSize: 'clamp(1.5rem, 3.2vw, 2.1rem)',
             fontWeight: 800, color: '#0F172A',
             margin: '0.3rem 0 0.5rem', letterSpacing: '-0.02em',
           }}>
-            Apa Kata Mereka Yang Sudah Cuba
+            Kisah Mereka Yang Berjaya Selesaikan Gangguan Berulang
           </h2>
-          <p style={{ fontSize: '0.95rem', color: '#64748B', lineHeight: 1.65, maxWidth: '520px', margin: '0 auto' }}>
-            Mesej WhatsApp terus daripada pelanggan — ikhtiar mandiri dari rumah dengan item pengisian ruqyah, dengan izin Allah.
+          <p style={{ fontSize: '0.95rem', color: '#64748B', lineHeight: 1.65, maxWidth: '540px', margin: '0 auto' }}>
+            Mesej WhatsApp terus daripada pelanggan — ikhtiar mandiri dari rumah dengan item pengisian ruqyah syar&apos;iyyah, dengan izin Allah.
           </p>
         </div>
 
@@ -194,7 +159,7 @@ export default function PengisianTestimonialSection() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
           gap: '1.1rem',
         }}>
-          {TESTIMONIALS.slice(0, 5).map((t, i) => <WaBubble key={i} t={t} />)}
+          {TESTIMONIALS.map((t, i) => <WaBubble key={i} t={t} />)}
         </div>
 
       </div>

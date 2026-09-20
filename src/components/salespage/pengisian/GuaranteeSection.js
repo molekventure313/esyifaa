@@ -2,76 +2,75 @@
 
 const GUARANTEES = [
   {
-    icon: '📦',
-    badge: 'JAMINAN 1 — HASIL',
-    title: 'Refund Jika Langsung Tiada Perubahan',
-    desc: 'Selepas menggunakan item pengisian dalam kehidupan harian, jika anda dapati langsung tiada sebarang perubahan — PM perawat. Kami akan proses refund 100% tanpa banyak soal.',
-    steps: ['Guna item 14 hari', 'Tiada langsung perubahan', 'PM perawat → Refund diproses'],
+    icon: '🛡️',
+    badge: 'JAMINAN 1 — HASIL & KEBERKESANAN',
+    title: '30 Hari Pulangan Wang 100% Penuh',
+    desc: 'Kami yakin dengan keberkatan kalamullah. Jika selepas 30 hari mengamalkan item pengisian ini mengikut bimbingan perawat dan anda dapati langsung tiada sebarang perubahan positif pada ketenangan diri atau gangguan anda — hubungi kami. Wang anda akan dipulangkan 100% tanpa sebarang pertikaian.',
+    steps: ['Guna item selama 30 hari', 'Tiada sebarang perubahan positif', 'WhatsApp kami → Wang dipulangkan 100%'],
     color: '#22C55E',
   },
   {
     icon: '📖',
-    badge: 'JAMINAN 2 — KESUCIAN',
-    title: 'Bebas 100% Unsur Jin, Syirik & Khurafat',
-    desc: 'Pengisian ESyifaa dijamin menggunakan HANYA ayat-ayat Al-Quran dan Asma\' Allah yang sahih. Tiada jampi serapah. Tiada unsur jin atau syirik dalam apa jua bentuk. Jika terbukti sebaliknya — refund penuh.',
-    steps: ['100% Ayat Quran & Asma\' Allah', 'Tiada unsur khurafat', 'Patuh Syariah sepenuhnya'],
+    badge: 'JAMINAN 2 — KESUCIAN SYARAK',
+    title: '100% Bebas Jin, Khodam & Khurafat',
+    desc: 'Pengisian ESyifaa dijamin menggunakan HANYA ayat-ayat suci Al-Quran, doa ma\'thurat dan Asma\'ul Husna. Sifar unsur khodam, jin pelindung, wafak atau tangkal jampi pemujaan. Jika ada sebarang unsur khurafat — kami pulangkan wang anda serta-merta.',
+    steps: ['100% Al-Quran & Sunnah', 'Sifar Khodam & Jin', 'Patuh Syariah Sepenuhnya'],
     color: '#FDE047',
   },
 ];
 
 export default function PengisianGuaranteeSection() {
+  const ff = 'var(--font-inter), -apple-system, sans-serif';
+
   return (
     <section style={{
       background: 'linear-gradient(180deg, #042E23 0%, #021812 100%)',
       color: '#FFFFFF',
-      padding: '4rem 1rem',
-      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+      padding: '4.5rem 1.25rem',
+      fontFamily: ff,
+      borderBottom: '1px solid rgba(254, 243, 199, 0.15)',
     }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+      <div style={{ maxWidth: '860px', margin: '0 auto', textAlign: 'center' }}>
 
         <span style={{
-          fontSize: '0.75rem', fontWeight: 800, color: '#FDE047',
+          display: 'inline-block',
+          fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
           textTransform: 'uppercase', letterSpacing: '0.12em',
+          background: 'rgba(253,224,71,0.12)', border: '1px solid #FDE047',
+          padding: '0.35rem 1.1rem', borderRadius: '50px',
+          marginBottom: '1rem',
         }}>
-          JAMINAN KAMI
+          🛡️ Sifar Risiko Untuk Anda
         </span>
 
         <h2 style={{
           fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)',
           fontWeight: 800, color: '#FEF3C7',
-          marginTop: '0.4rem', marginBottom: '0.5rem',
+          marginTop: '0.25rem', marginBottom: '0.6rem',
           letterSpacing: '-0.02em', lineHeight: 1.3,
         }}>
-          2 Jaminan Yang Kami Pegang
+          Dua Jaminan Teguh Yang Kami Pegang
         </h2>
 
         <p style={{
           color: '#A7F3D0', fontSize: '1rem',
           lineHeight: 1.7, marginBottom: '2.5rem',
-          maxWidth: '580px', margin: '0 auto 2.5rem',
+          maxWidth: '640px', margin: '0 auto 2.75rem',
         }}>
-          Kami yakin dengan pengisian yang kami lakukan — kerana ia berlandaskan Al-Quran dan
-          keyakinan kepada kekuasaan Allah SWT. Dua jaminan ini kami beri dengan penuh tanggungjawab.
+          Kami berkhidmat atas dasar amanah agama dan niat ikhlas membantu mereka yang dizalimi gangguan ghaib. Anda berikhtiar dengan tenang tanpa sebarang risiko kewangan.
         </p>
 
         {/* Two guarantee cards */}
-        <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+        <div style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
           {GUARANTEES.map((g, idx) => (
             <div key={idx} style={{
               background: 'linear-gradient(135deg, #1E3A2F 0%, #14532D 100%)',
               border: `2px solid ${g.color}`,
-              borderRadius: '20px', padding: '2rem 1.75rem',
+              borderRadius: '20px', padding: '2rem 1.8rem',
               boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
               textAlign: 'left', position: 'relative', overflow: 'hidden',
+              display: 'flex', flexDirection: 'column',
             }}>
-              {/* Glow */}
-              <div style={{
-                position: 'absolute', top: '-60px', right: '-60px',
-                width: '200px', height: '200px',
-                background: `radial-gradient(circle, ${g.color}22 0%, transparent 70%)`,
-                borderRadius: '50%', pointerEvents: 'none',
-              }} />
-
               {/* Icon */}
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', lineHeight: 1 }}>
                 {g.icon}
@@ -89,32 +88,33 @@ export default function PengisianGuaranteeSection() {
               </div>
 
               <h3 style={{
-                fontSize: '1.05rem', fontWeight: 800, color: '#FEF3C7',
-                margin: '0 0 0.75rem', lineHeight: 1.3,
+                fontSize: '1.1rem', fontWeight: 800, color: '#FEF3C7',
+                margin: '0 0 0.75rem', lineHeight: 1.35,
               }}>
                 {g.title}
               </h3>
 
               <p style={{
                 fontSize: '0.88rem', color: '#D1FAE5',
-                lineHeight: 1.75, margin: '0 0 1.25rem',
+                lineHeight: 1.7, margin: '0 0 1.25rem',
+                flex: 1,
               }}>
                 {g.desc}
               </p>
 
               {/* Steps */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {g.steps.map((step, i) => (
                   <div key={i} style={{
                     display: 'flex', alignItems: 'center', gap: '0.6rem',
                     background: 'rgba(255,255,255,0.06)',
                     border: `1px solid ${g.color}33`,
-                    borderRadius: '8px', padding: '0.45rem 0.85rem',
+                    borderRadius: '10px', padding: '0.5rem 0.85rem',
                   }}>
                     <span style={{
-                      width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
-                      background: g.color, color: idx === 0 ? '#042E23' : '#042E23',
-                      fontWeight: 800, fontSize: '0.68rem',
+                      width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
+                      background: g.color, color: '#042E23',
+                      fontWeight: 800, fontSize: '0.7rem',
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     }}>{i + 1}</span>
                     <span style={{ fontSize: '0.82rem', color: '#D1FAE5', fontWeight: 600 }}>{step}</span>
@@ -123,23 +123,6 @@ export default function PengisianGuaranteeSection() {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Doa note */}
-        <div style={{
-          marginTop: '1.75rem',
-          background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(253,224,71,0.2)',
-          borderRadius: '12px', padding: '1rem 1.25rem',
-          display: 'flex', gap: '0.75rem', alignItems: 'flex-start', textAlign: 'left',
-          maxWidth: '660px', margin: '1.75rem auto 0',
-        }}>
-          <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>⚠️</span>
-          <p style={{ margin: 0, fontSize: '0.82rem', color: '#FEF3C7', lineHeight: 1.7, fontStyle: 'italic' }}>
-            Jaminan ini adalah atas dasar kepercayaan dan niat yang ikhlas. Jika ada yang
-            cuba menipu atau mengada-adakan alasan —{' '}
-            <strong style={{ color: '#FDE047' }}>kami serahkan kepada Allah SWT. Moga Allah membalas seadilnya.</strong>{' '}
-            Kami hanya mampu berbaik sangka kepada semua yang hadir dengan niat tulus ingin mendapat perlindungan.
-          </p>
         </div>
 
       </div>

@@ -4,6 +4,45 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
+// ─── 3 Volume Packages ────────────────────────────────────────────────────────
+const PACKAGES = [
+  {
+    items: 3,
+    label: '3 Item (Pakej Seisi Keluarga)',
+    sublabel: 'RM66.30 seunit — Jimat RM71! Perlindungan lengkap suami, isteri & anak',
+    price: 199,
+    originalPrice: 270,
+    savings: 71,
+    badge: 'PALING JIMAT / POPULAR',
+    recommended: true,
+  },
+  {
+    items: 2,
+    label: '2 Item (Pakej Suami Isteri)',
+    sublabel: 'RM75 seunit — Jimat RM30! Perlindungan bersama pasangan',
+    price: 150,
+    originalPrice: 180,
+    savings: 30,
+    badge: 'PILIHAN BERDUA',
+  },
+  {
+    items: 1,
+    label: '1 Item (Pek Percubaan Diri Sendiri)',
+    sublabel: 'Sesuai untuk memulakan ikhtiar mandiri di rumah',
+    price: 90,
+    originalPrice: 120,
+    savings: 30,
+    badge: null,
+  },
+];
+
+const DIAL_CODES = [
+  { code: '+60',  flag: '🇲🇾', label: 'MY' },
+  { code: '+673', flag: '🇧🇳', label: 'BN' },
+  { code: '+65',  flag: '🇸🇬', label: 'SG' },
+  { code: '+62',  flag: '🇮🇩', label: 'ID' },
+];
+
 function getUTMParams() {
   if (typeof window === 'undefined') return {};
   const p = new URLSearchParams(window.location.search);
@@ -17,30 +56,36 @@ function getUTMParams() {
   };
 }
 
-const DIAL_CODES = [
-  { code: '+60',  flag: '🇲🇾', label: 'MY' },
-  { code: '+673', flag: '🇧🇳', label: 'BN' },
-  { code: '+65',  flag: '🇸🇬', label: 'SG' },
-  { code: '+62',  flag: '🇮🇩', label: 'ID' },
-];
-
-function PengisianCheckoutFormInner() {
+function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
 
+  const [selectedPkg, setSelectedPkg] = useState(0); // Default index 0 = 3 Item (Recommended)
   const [fpxPixelId, setFpxPixelId] = useState(null);
   const [formData, setFormData] = useState({
     full_name: '',
     dialCode: '+60',
     phone: '',
+    item_description: '',
     honeypot: '',
   });
+
+  // ─── 2 Add-ons State ───
+  const [addKasturi, setAddKasturi] = useState(false);
+  const KASTURI_PRICE = 20;
+
+  const [addSabun, setAddSabun] = useState(false);
+  const SABUN_PRICE = 25;
+
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Inject FPX pixel script + fetch pixel ID (same pattern as FspChipCheckoutForm)
+  const ff = 'var(--font-inter), -apple-system, sans-serif';
+  const pkg = PACKAGES[selectedPkg];
+  const grandTotal = pkg.price + (addKasturi ? KASTURI_PRICE : 0) + (addSabun ? SABUN_PRICE : 0);
+
+  // FPX Pixel Init
   useEffect(() => {
-    // Marketer routes — jangan load HQ FPX pixel
     const isMarketerRoute =
       new URLSearchParams(window.location.search).has('m') ||
       window.location.pathname.startsWith('/m/');
@@ -68,28 +113,44 @@ function PengisianCheckoutFormInner() {
     e.preventDefault();
     setErrorMessage('');
 
-    if (!formData.full_name.trim() || !formData.phone.trim()) {
-      setErrorMessage('Sila isi nama penuh dan nombor WhatsApp anda.');
+    if (!formData.full_name.trim()) {
+      setErrorMessage('Sila masukkan nama penuh anda.');
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setErrorMessage('Sila masukkan nombor WhatsApp anda.');
+      return;
+    }
+    if (!formData.item_description.trim()) {
+      setErrorMessage('Sila nyatakan jenis dan nama barang yang ingin diisikan (cth: Cincin perak suami, tasbih isteri).');
       return;
     }
 
     setLoading(true);
 
-    // Fire InitiateCheckout — FPX pixel only
     try {
       const pid = fpxPixelId || (typeof window !== 'undefined' && window.__fpxPixelId);
-      if (typeof window !== 'undefined' && window.fbq && pid) {
-        window.fbq('trackSingle', pid, 'InitiateCheckout', { value: 90.00, currency: 'MYR' });
-      }
-    } catch (_) {}
-
-    try {
       const eventId = generateEventId();
+      if (typeof window !== 'undefined' && window.fbq) {
+        if (pid) {
+          window.fbq('trackSingle', pid, 'InitiateCheckout', {
+            value: grandTotal,
+            currency: 'MYR',
+            content_name: `Pengisian E-Syifa — ${pkg.label}`,
+          }, { eventID: eventId });
+        } else {
+          window.fbq('track', 'InitiateCheckout', { value: grandTotal, currency: 'MYR' });
+        }
+      }
+
       const { fbp, fbc } = getPixelCookies();
       const utmParams = getUTMParams();
       const fbcValue = fbc || (utmParams.fbclid ? `fb.1.${Date.now()}.${utmParams.fbclid}` : null);
-
       const rawPhone = `${formData.dialCode}${formData.phone.replace(/^0+/, '')}`;
+
+      const kasturiTag = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa +RM${KASTURI_PRICE}` : '';
+      const sabunTag = addSabun ? ` | Add-On: Sabun Garam Pengisian +RM${SABUN_PRICE}` : '';
+      const orderProblem = `Pengisian E-Syifa (${pkg.label}) | Barang: ${formData.item_description.trim()}${kasturiTag}${sabunTag}`;
 
       const response = await fetch('/api/payments/chip/create', {
         method: 'POST',
@@ -97,244 +158,437 @@ function PengisianCheckoutFormInner() {
         body: JSON.stringify({
           full_name: formData.full_name,
           phone: rawPhone,
-          problem: 'Pengisian E-Syifa\' — perawat akan hubungi untuk gambar item',
-          honeypot: formData.honeypot,
-          source: 'pengisian-esyifa',
+          problem: orderProblem,
+          amount_in_myr: grandTotal,
+          addon_kasturi: addKasturi,
+          addon_sabun: addSabun,
+          source: source || 'pengisian-esyifa',
           marketer_code: marketerCode,
+          source_page: window.location.pathname,
           event_id: eventId,
-          amount_in_myr: 90.00,
-          landing_page_url: typeof window !== 'undefined' ? window.location.href : null,
-          referrer_url: typeof window !== 'undefined' ? document.referrer : null,
+          honeypot: formData.honeypot,
+          landing_page_url: window.location.href,
+          referrer_url: document.referrer,
           fbp: fbp || null,
           fbc: fbcValue,
-          fbclid: utmParams.fbclid || null,
-          utm_source:   utmParams.utm_source,
-          utm_medium:   utmParams.utm_medium,
+          fbclid: utmParams.fbclid,
+          utm_source: utmParams.utm_source,
+          utm_medium: utmParams.utm_medium,
           utm_campaign: utmParams.utm_campaign,
-          utm_content:  utmParams.utm_content,
-          utm_term:     utmParams.utm_term,
+          utm_content: utmParams.utm_content,
+          utm_term: utmParams.utm_term,
         }),
       });
 
-      const json = await response.json();
+      const rawText = await response.text();
+      let json = {};
+      try { json = JSON.parse(rawText); }
+      catch { throw new Error('Respons pelayan tidak sah. Sila cuba lagi.'); }
 
-      if (!response.ok || !json.success) {
-        throw new Error(json.error || 'Ralat semasa membuat tempahan.');
-      }
-
-      if (json.checkout_url) {
+      if (response.ok && json.checkout_url) {
         window.location.href = json.checkout_url;
       } else {
-        throw new Error('URL pembayaran tidak ditemui.');
+        throw new Error(json.error || 'Gagal memulakan bayaran FPX. Sila cuba lagi.');
       }
     } catch (err) {
-      setErrorMessage(err.message || 'Ralat tidak dijangka. Sila cuba lagi.');
+      setErrorMessage(err.message || 'Ralat berlaku. Sila cuba sebentar lagi.');
       setLoading(false);
     }
   };
 
-  // Shared styles
-  const inputStyle = {
-    width: '100%', boxSizing: 'border-box',
-    background: '#0D1117', border: '1.5px solid rgba(52,211,153,0.2)',
-    borderRadius: '10px', padding: '0.85rem 1rem',
-    fontSize: '0.95rem', color: '#FEF3C7',
-    outline: 'none', fontFamily: 'var(--font-inter), -apple-system, sans-serif',
-    transition: 'border-color 0.2s',
-  };
-  const labelStyle = {
-    display: 'block', fontSize: '0.88rem',
-    fontWeight: 700, color: '#D1FAE5', marginBottom: '0.5rem',
-  };
-
   return (
-    <section id="borang" style={{
-      background: '#10131A', color: '#FFFFFF',
-      padding: '4rem 1rem',
-      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
-    }}>
-      <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+    <section
+      id="borang"
+      style={{
+        background: 'linear-gradient(180deg, #031E17 0%, #042E23 50%, #021812 100%)',
+        color: '#FFFFFF',
+        padding: '2rem 1.25rem 5rem',
+        fontFamily: ff,
+      }}
+    >
+      <div style={{ maxWidth: '780px', margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <span style={{
-            display: 'inline-block',
-            background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
-            color: '#34D399', padding: '0.35rem 1rem', borderRadius: '50px',
-            fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em',
-            textTransform: 'uppercase', marginBottom: '1rem',
-          }}>
-            Langkah Pertama
-          </span>
-          <h2 style={{
-            fontSize: 'clamp(1.4rem, 3.5vw, 2rem)',
-            fontWeight: 800, color: '#FEF3C7',
-            marginTop: '0.3rem', marginBottom: '0.6rem',
-            letterSpacing: '-0.02em', lineHeight: 1.25,
-          }}>
-            Tempah Pengisian &amp; Bayar RM90 Melalui FPX
-          </h2>
-          <p style={{ fontSize: '0.9rem', color: '#A7F3D0', lineHeight: 1.65 }}>
-            Isi maklumat anda di bawah dan teruskan ke pembayaran FPX.
-          </p>
-        </div>
-
-        {/* Trust badges */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1.75rem' }}>
-          {[
-            { icon: '💎', text: 'Pengisian 3 Hari' },
-            { icon: '🔄', text: 'Pelarasan Mingguan' },
-            { icon: '🔒', text: 'Bayaran Selamat' },
-            { icon: '⚡', text: 'Respon 24 Jam' },
-          ].map((b, i) => (
-            <div key={i} style={{
-              background: 'rgba(52,211,153,0.07)',
-              border: '1px solid rgba(52,211,153,0.2)',
-              borderRadius: '8px', padding: '0.6rem 0.8rem',
-              fontSize: '0.82rem', color: '#A7F3D0',
-              display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 600,
-            }}>
-              <span>{b.icon}</span> {b.text}
-            </div>
-          ))}
-        </div>
-
-        {/* Form card */}
+        {/* Form Container */}
         <div style={{
-          background: '#0D1117', border: '1.5px solid rgba(52,211,153,0.25)',
-          borderRadius: '16px', padding: '2rem',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+          background: '#042E23',
+          border: '2px solid rgba(253,224,71,0.4)',
+          borderRadius: '24px',
+          padding: '2rem 1.5rem',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
         }}>
-          <form onSubmit={handleSubmit}>
-            {/* Honeypot */}
-            <input type="text" name="honeypot" value={formData.honeypot}
-              onChange={handleChange} style={{ display: 'none' }}
-              tabIndex="-1" autoComplete="off" />
 
-            {/* Nama */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>Nama Penuh *</label>
-              <input type="text" name="full_name" value={formData.full_name}
-                onChange={handleChange} required placeholder="Masukkan nama penuh anda"
-                style={inputStyle} />
+          {/* Form Header */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <span style={{
+              display: 'inline-block',
+              background: 'rgba(253,224,71,0.12)', border: '1px solid #FDE047',
+              color: '#FDE047', padding: '0.35rem 1rem', borderRadius: '50px',
+              fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase',
+              letterSpacing: '0.08em', marginBottom: '0.75rem',
+            }}>
+              Langkah 1: Pilih Pakej Pengisian
+            </span>
+            <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.45rem', fontWeight: 900, color: '#FEF3C7' }}>
+              Borang Tempahan Pengisian Jarak Jauh
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: '#A7F3D0' }}>
+              Diisi selama 3 hari berturut-turut · Pelarasan mingguan percuma selamanya
+            </p>
+          </div>
+
+          {/* ── 3 Volume Packages Grid ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginBottom: '2rem' }}>
+            {PACKAGES.map((p, idx) => {
+              const isSelected = selectedPkg === idx;
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedPkg(idx)}
+                  style={{
+                    border: isSelected ? '2px solid #FDE047' : '1.5px solid rgba(74,222,128,0.25)',
+                    background: isSelected ? 'linear-gradient(135deg, rgba(253,224,71,0.12), rgba(6,95,70,0.4))' : 'rgba(2,24,18,0.6)',
+                    borderRadius: '16px',
+                    padding: '1.25rem 1.4rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    position: 'relative',
+                    boxShadow: isSelected ? '0 0 25px rgba(253,224,71,0.15)' : 'none',
+                  }}
+                >
+                  {p.badge && (
+                    <div style={{
+                      position: 'absolute', top: '-10px', right: '16px',
+                      background: 'linear-gradient(90deg, #FDE047, #EAB308)',
+                      color: '#042E23', fontSize: '0.68rem', fontWeight: 900,
+                      padding: '0.2rem 0.65rem', borderRadius: '999px',
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    }}>
+                      {p.badge}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+                      <input
+                        type="radio"
+                        checked={isSelected}
+                        onChange={() => setSelectedPkg(idx)}
+                        style={{ accentColor: '#FDE047', width: '20px', height: '20px', marginTop: '3px', cursor: 'pointer' }}
+                      />
+                      <div>
+                        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FEF3C7', marginBottom: '0.25rem' }}>
+                          {p.label}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#A7F3D0', lineHeight: 1.4 }}>
+                          {p.sublabel}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#FDE047', lineHeight: 1 }}>
+                        RM{p.price}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#F87171', textDecoration: 'line-through', marginTop: '0.2rem' }}>
+                        RM{p.originalPrice}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Form Inputs ── */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Honeypot */}
+            <input
+              type="text"
+              name="honeypot"
+              value={formData.honeypot}
+              onChange={handleChange}
+              style={{ display: 'none' }}
+              tabIndex={-1}
+              autoComplete="off"
+            />
+
+            <div style={{ borderTop: '1px dashed rgba(74,222,128,0.3)', paddingTop: '1.5rem' }}>
+              <span style={{
+                display: 'inline-block',
+                fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
+                textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1rem',
+              }}>
+                Langkah 2: Maklumat Pelanggan &amp; Item
+              </span>
             </div>
 
-            {/* Phone */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>Nombor WhatsApp *</label>
+            {/* Nama Penuh */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#FEF3C7', marginBottom: '0.4rem' }}>
+                Nama Penuh Anda <span style={{ color: '#F87171' }}>*</span>
+              </label>
+              <input
+                type="text"
+                name="full_name"
+                value={formData.full_name}
+                onChange={handleChange}
+                placeholder="Cth: Ahmad bin Sulaiman"
+                required
+                style={{
+                  width: '100%', padding: '0.85rem 1rem', borderRadius: '10px',
+                  background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
+                  color: '#FFFFFF', fontSize: '0.94rem', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Nombor WhatsApp */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#FEF3C7', marginBottom: '0.4rem' }}>
+                Nombor WhatsApp <span style={{ color: '#F87171' }}>*</span>
+              </label>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <select name="dialCode" value={formData.dialCode} onChange={handleChange}
-                  style={{ ...inputStyle, width: 'auto', minWidth: '95px', padding: '0.85rem 0.6rem', flexShrink: 0 }}>
+                <select
+                  name="dialCode"
+                  value={formData.dialCode}
+                  onChange={handleChange}
+                  style={{
+                    padding: '0.85rem 0.6rem', borderRadius: '10px',
+                    background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
+                    color: '#FFFFFF', fontSize: '0.94rem', outline: 'none', cursor: 'pointer',
+                  }}
+                >
                   {DIAL_CODES.map(d => (
-                    <option key={d.code} value={d.code}>{d.flag} {d.label} {d.code}</option>
+                    <option key={d.code} value={d.code} style={{ background: '#021812', color: '#fff' }}>
+                      {d.flag} {d.code}
+                    </option>
                   ))}
                 </select>
-                <input type="tel" name="phone" value={formData.phone}
-                  onChange={handleChange} required placeholder="123456789"
-                  style={{ ...inputStyle, flex: 1 }} />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="123456789"
+                  required
+                  style={{
+                    flex: 1, padding: '0.85rem 1rem', borderRadius: '10px',
+                    background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
+                    color: '#FFFFFF', fontSize: '0.94rem', outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
               </div>
+              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.74rem', color: '#6EE7B7' }}>
+                Perawat akan menghubungi nombor ini dalam masa 24 jam untuk pengesahan pengisian.
+              </p>
             </div>
 
-            {/* Perawat contact note — replace item field */}
-            <div style={{ marginBottom: '1.5rem' }}>
+            {/* Jenis / Nama Barang Yang Ingin Diisi */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#FEF3C7', marginBottom: '0.4rem' }}>
+                Jenis &amp; Nama Barang Yang Ingin Diisikan <span style={{ color: '#F87171' }}>*</span>
+              </label>
+              <textarea
+                name="item_description"
+                value={formData.item_description}
+                onChange={handleChange}
+                placeholder="Cth: Cincin perak suami, tasbih kayu isteri, atau jam tangan anak"
+                rows={3}
+                required
+                style={{
+                  width: '100%', padding: '0.85rem 1rem', borderRadius: '10px',
+                  background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
+                  color: '#FFFFFF', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box',
+                  fontFamily: ff, lineHeight: 1.5,
+                }}
+              />
+              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.74rem', color: '#6EE7B7' }}>
+                Nyatakan mengikut bilangan item dalam pakej yang anda pilih di atas (1, 2 atau 3 barang).
+              </p>
+            </div>
+
+            {/* ── Dual Bump Offers (Add-ons) ── */}
+            <div style={{ borderTop: '1px dashed rgba(74,222,128,0.3)', paddingTop: '1.5rem' }}>
               <div style={{
                 background: 'rgba(253,224,71,0.08)',
                 border: '1.5px solid rgba(253,224,71,0.3)',
-                borderLeft: '4px solid #FDE047',
-                borderRadius: '10px', padding: '1rem 1.15rem',
-                display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+                borderRadius: '16px',
+                padding: '1.25rem',
               }}>
-                <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>📸</span>
-                <div>
-                  <p style={{ margin: '0 0 0.35rem 0', fontSize: '0.88rem', fontWeight: 800, color: '#FDE047' }}>
-                    Langkah Seterusnya — Gambar Item Anda
-                  </p>
-                  <p style={{ margin: 0, fontSize: '0.83rem', color: '#D1FAE5', lineHeight: 1.65 }}>
-                    Perawat akan menghubungi anda melalui WhatsApp untuk meminta{' '}
-                    <strong style={{ color: '#FEF3C7' }}>gambar item yang ingin dibuat pengisian E-Syifa&apos;</strong>.
-                  </p>
-                  <p style={{ margin: '0.5rem 0 0', fontSize: '0.83rem', color: '#FCA5A5', fontWeight: 700 }}>
-                    ⚠️ Pastikan nombor WhatsApp anda betul.
-                  </p>
+                <div style={{
+                  fontSize: '0.88rem', fontWeight: 800, color: '#FDE047',
+                  marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                }}>
+                  <span>⚡</span> Nak Benteng Fizikal Tambahan Di Rumah? (Pilihan Tambahan)
                 </div>
+
+                {/* Add-on 1: Kasturi Kijang RM20 */}
+                <label
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: '0.75rem', padding: '0.85rem 1rem',
+                    background: addKasturi ? 'rgba(253,224,71,0.15)' : 'rgba(2,24,18,0.6)',
+                    border: addKasturi ? '1.5px solid #FDE047' : '1px solid rgba(74,222,128,0.2)',
+                    borderRadius: '12px', cursor: 'pointer', marginBottom: '0.75rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={addKasturi}
+                      onChange={e => setAddKasturi(e.target.checked)}
+                      style={{ accentColor: '#FDE047', width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FEF3C7' }}>
+                        + Minyak Kasturi Kijang Ruqyah Asli (Pati)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: '#A7F3D0' }}>
+                        Bauan sunnah yang dibenci jin, benteng lebam &amp; ditindih malam
+                      </div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FDE047', flexShrink: 0 }}>
+                    +RM20
+                  </span>
+                </label>
+
+                {/* Add-on 2: Sabun Garam RM25 */}
+                <label
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: '0.75rem', padding: '0.85rem 1rem',
+                    background: addSabun ? 'rgba(253,224,71,0.15)' : 'rgba(2,24,18,0.6)',
+                    border: addSabun ? '1.5px solid #FDE047' : '1px solid rgba(74,222,128,0.2)',
+                    borderRadius: '12px', cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={addSabun}
+                      onChange={e => setAddSabun(e.target.checked)}
+                      style={{ accentColor: '#FDE047', width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FEF3C7' }}>
+                        + Sabun Bidara Garam Bukit Pengisian (200g)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: '#A7F3D0' }}>
+                        Mandian buang angin bisa saka &amp; sihir pada liang roma
+                      </div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FDE047', flexShrink: 0 }}>
+                    +RM25
+                  </span>
+                </label>
               </div>
             </div>
 
-            {/* Error */}
+            {/* Error Message */}
             {errorMessage && (
               <div style={{
-                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)',
-                borderRadius: '8px', padding: '0.85rem 1rem',
-                fontSize: '0.875rem', color: '#FCA5A5', marginBottom: '1.25rem',
+                background: 'rgba(239,68,68,0.15)', border: '1.5px solid #EF4444',
+                color: '#FCA5A5', padding: '0.85rem 1rem', borderRadius: '10px',
+                fontSize: '0.85rem', textAlign: 'center', fontWeight: 600,
               }}>
                 ⚠️ {errorMessage}
               </div>
             )}
 
-            {/* Submit */}
-            <button type="submit" disabled={loading} style={{
-              width: '100%', padding: '1.1rem',
-              fontSize: '1.05rem', fontWeight: 800,
-              color: loading ? '#6EE7B7' : '#042E23',
-              background: loading
-                ? 'rgba(52,211,153,0.15)'
-                : 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-              border: loading ? '2px solid rgba(52,211,153,0.3)' : '2px solid #FEF08A',
-              borderRadius: '50px', cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: loading ? 'none' : '0 8px 25px rgba(234,179,8,0.4)',
-              transition: 'all 0.2s',
-              letterSpacing: '-0.01em',
-            }}>
-              {loading ? '⏳ Memproses Tempahan...' : '💎 Tempah & Bayar RM90 via FPX'}
-            </button>
-
-            {/* Divider */}
+            {/* ── Ringkasan & Submit ── */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '0.75rem',
-              margin: '1.1rem 0',
+              background: '#021812',
+              border: '1.5px solid rgba(253,224,71,0.3)',
+              borderRadius: '16px', padding: '1.25rem 1.4rem', marginTop: '0.5rem',
             }}>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(167,243,208,0.15)' }} />
-              <span style={{ fontSize: '0.78rem', color: '#6EE7B7', fontWeight: 700, letterSpacing: '0.05em' }}>ATAU</span>
-              <div style={{ flex: 1, height: '1px', background: 'rgba(167,243,208,0.15)' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#A7F3D0' }}>
+                <span>{pkg.label}:</span>
+                <span style={{ fontWeight: 700, color: '#FEF3C7' }}>RM{pkg.price}</span>
+              </div>
+              {addKasturi && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#A7F3D0' }}>
+                  <span>+ Kasturi Kijang Ruqyah:</span>
+                  <span style={{ fontWeight: 700, color: '#FDE047' }}>+RM{KASTURI_PRICE}</span>
+                </div>
+              )}
+              {addSabun && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#A7F3D0' }}>
+                  <span>+ Sabun Bidara Garam:</span>
+                  <span style={{ fontWeight: 700, color: '#FDE047' }}>+RM{SABUN_PRICE}</span>
+                </div>
+              )}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                borderTop: '1px solid rgba(74,222,128,0.2)', paddingTop: '0.75rem', marginTop: '0.5rem',
+              }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF' }}>Jumlah Bayaran:</span>
+                <span style={{ fontSize: '1.6rem', fontWeight: 900, color: '#FDE047' }}>RM{grandTotal}</span>
+              </div>
             </div>
 
-            {/* WA Button */}
-            <a
-              href={`https://wa.me/601118939984?text=${encodeURIComponent('Saya nak buat pengisian item RM90')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => { try { window.fbq('track', 'Lead'); } catch (_) {} }}
+            {/* Submit FPX Button */}
+            <button
+              type="submit"
+              disabled={loading}
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: '0.6rem', width: '100%', padding: '1rem',
-                fontSize: '1rem', fontWeight: 800, color: '#FFFFFF',
-                background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-                borderRadius: '50px', textDecoration: 'none',
-                boxShadow: '0 6px 20px rgba(37,211,102,0.4)',
-                border: '2px solid rgba(255,255,255,0.2)',
+                width: '100%', padding: '1.2rem',
+                borderRadius: '50px', border: '2px solid #FEF08A',
+                background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
+                color: '#042E23', fontSize: '1.15rem', fontWeight: 900,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
+                opacity: loading ? 0.7 : 1,
                 letterSpacing: '-0.01em',
+                transition: 'transform 0.15s ease',
               }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
-              🟢 Bayar Melalui WhatsApp
-            </a>
+              {loading ? '⏳ Memproses Bayaran FPX...' : `💳 Bayar RM${grandTotal} Melalui FPX Online Banking`}
+            </button>
 
-            <p style={{ textAlign: 'center', marginTop: '0.85rem', fontSize: '0.78rem', color: '#6EE7B7' }}>
-              🔒 Bayaran diproses selamat oleh CHIP · 256-bit SSL
+            <p style={{ margin: 0, textAlign: 'center', fontSize: '0.78rem', color: '#6EE7B7' }}>
+              🔒 Transaksi Selamat 256-bit SSL via Chip In (Maybank, CIMB, Bank Islam, RHB, BSN &amp; semua bank utama)
             </p>
+
+            {/* WhatsApp Alternative */}
+            <div style={{ textAlign: 'center', marginTop: '1rem', borderTop: '1px solid rgba(74,222,128,0.2)', paddingTop: '1.25rem' }}>
+              <p style={{ margin: '0 0 0.6rem 0', fontSize: '0.85rem', color: '#A7F3D0' }}>
+                Ada kesulitan membuat bayaran online banking?
+              </p>
+              <a
+                href={`https://wa.me/601118939984?text=Assalamualaikum%20ustaz,%20saya%20nak%20buat%20pengisian%20item%20(${encodeURIComponent(pkg.label)})`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                  color: '#4ADE80', fontSize: '0.86rem', fontWeight: 700,
+                  textDecoration: 'none', borderBottom: '1px dashed #4ADE80',
+                  paddingBottom: '2px',
+                }}
+              >
+                <span>💬</span> Klik Sini Untuk Daftar &amp; Bayar Manual Melalui WhatsApp
+              </a>
+            </div>
+
           </form>
+
         </div>
+
       </div>
     </section>
   );
 }
 
-export default function PengisianCheckoutForm(props) {
+export default function PengisianCheckoutForm({ source = 'pengisian-esyifa' }) {
   return (
-    <Suspense fallback={null}>
-      <PengisianCheckoutFormInner {...props} />
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#A7F3D0' }}>Memuatkan borang tempahan...</div>}>
+      <PengisianCheckoutFormInner source={source} />
     </Suspense>
   );
 }

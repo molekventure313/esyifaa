@@ -1,141 +1,145 @@
 'use client';
 
 const BENEFITS = [
-  { icon: '♾️', title: 'Rawatan Tanpa Had — Seumur Hidup', desc: 'Tidak ada had bilangan rawatan. Guna setiap hari, setiap minggu — kekuatan barang berisian tidak pernah habis atau perlu diisi semula.' },
-  { icon: '⚡', title: 'Bertindak Balas Bila-Bila Masa Diserang', desc: 'Diserang malam-malam? Tidak perlu tunggu appointment. Tidak perlu tunggu perawat. Guna barang berisian anda terus ketika itu juga.' },
-  { icon: '🏠', title: 'Rawat Di Rumah Sendiri — Tiada Perlu Keluar', desc: 'Dalam keselesaan rumah anda sendiri. Tiada perlu keluar, tiada perlu buat appointment, tiada perlu tunggu giliran.' },
-  { icon: '💧', title: 'Buat Air Penawar Sendiri Bila Perlu', desc: 'Gunakan barang berisian untuk buat air penawar sendiri — tidak perlu bergantung pada orang lain untuk dapatkan air berisian.' },
-  { icon: '🚿', title: 'Buat Air Mandian Ruqyah Sendiri', desc: 'Boleh digunakan untuk buat air mandian — membersihkan badan dan melindungi diri dari gangguan luar.' },
-  { icon: '🛡️', title: 'Perlindungan 24 Jam Setiap Hari', desc: 'Ibarat ada perawat private di rumah. Perlindungan berterusan tanpa henti — siang atau malam.' },
-  { icon: '👨‍👩‍👧', title: 'Boleh Bantu Seluruh Keluarga', desc: 'Satu barang berisian boleh membantu semua ahli keluarga — isteri, suami, anak-anak. Jimat kos berbanding rawatan berasingan.' },
-  { icon: '💰', title: 'Jimat Kos Jangka Panjang', desc: 'Bayar sekali sahaja, guna seumur hidup. Bandingkan dengan kos berulang kali ke perawat — penjimatan yang luar biasa.' },
-  { icon: '📖', title: '100% Ruqyah Syar\'iyyah', desc: 'Diisi oleh perawat ESyifaa dengan bacaan Al-Quran dan doa berlandaskan syarak semata-mata. Tiada unsur syirik.' },
-  { icon: '🔄', title: 'Kekuatan Sentiasa Penuh — Pelarasan Mingguan', desc: 'Perawat ESyifaa buat pelarasan setiap minggu secara automatik. Berbeza dengan air penawar — kekuatan tidak pernah berkurang.' },
+  { icon: '♾️', title: 'Rawatan Mandiri Seumur Hidup Tanpa Had', desc: 'Tiada kuota atau had penggunaan. Guna setiap hari, bila-bila masa — kekuatan bacaan tidak pernah luput.' },
+  { icon: '⚡', title: 'Tindak Balas Pantas Bila Diserang Malam', desc: 'Kena tindih atau sesak dada jam 3 pagi? Tak perlu tunggu siang, tak perlu cari perawat. Terus guna item di tangan anda.' },
+  { icon: '🏠', title: 'Rawat Sendiri Dari Rumah Penuh Privasi', desc: 'Semua ikhtiar dilakukan dalam keselesaan rumah sendiri. Tidak perlu bersusah payah beratur atau keluar jauh.' },
+  { icon: '💧', title: 'Boleh Hasilkan Air Penawar Sendiri', desc: 'Gunakan item berisian untuk memasak air penawar syifa\' sendiri bila anak demam panas atau emosi terganggu.' },
+  { icon: '🚿', title: 'Boleh Hasilkan Air Mandian Ruqyah', desc: 'Rendamkan seketika dalam baldi mandian untuk membuang bisa-bisa angin saka dan sihir dari liang roma.' },
+  { icon: '🛡️', title: 'Dinding Perlindungan Ghaib 24 Jam', desc: 'Ibarat mempunyai perawat peribadi di sisi. Menjadi benteng aktif menghalang sihir baru dihantar semula.' },
+  { icon: '👨‍👩‍👧', title: 'Manfaat Untuk Seisi Keluarga', desc: 'Satu item berisian boleh dikongsi khasiatnya untuk merawat pasangan dan anak-anak yang meragam tanpa kos tambahan.' },
+  { icon: '💰', title: 'Jimat Ribuan Ringgit Kos Berulang', desc: 'Hanya sekali bayar upah pengisian, nikmati ikhtiar berterusan seumur hidup tanpa membakar duit setiap bulan.' },
+  { icon: '📖', title: '100% Ruqyah Syar\'iyyah Bebas Syirik', desc: 'Diisi dengan bacaan suci Al-Quran dan doa mustajab Rasulullah SAW. Hati tenang berikhtiar tanpa was-was.' },
+  { icon: '🔄', title: 'Pelarasan Mingguan Automatik Percuma', desc: 'Perawat ESyifaa memperbaharui dan menguatkan bacaan setiap minggu secara jarak jauh agar tenaga syifa\' sentiasa segar.' },
 ];
 
 export default function PengisianSolutionSection() {
+  const ff = 'var(--font-inter), -apple-system, sans-serif';
+
   return (
     <section style={{
-      background: '#FFFFFF', color: '#0F172A',
-      padding: '4rem 1rem',
-      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+      background: '#FFFFFF',
+      color: '#0F172A',
+      padding: '4.5rem 1.25rem',
+      fontFamily: ff,
+      borderBottom: '1px solid #E2E8F0',
     }}>
-      <div style={{ maxWidth: '920px', margin: '0 auto', textAlign: 'center' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-          Penyelesaian
+      <div style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center' }}>
+        
+        <span style={{
+          display: 'inline-block',
+          fontSize: '0.78rem', fontWeight: 800, color: '#047857',
+          textTransform: 'uppercase', letterSpacing: '0.12em',
+          background: '#ECFDF5',
+          border: '1px solid #A7F3D0',
+          padding: '0.35rem 1rem', borderRadius: '999px',
+          marginBottom: '0.85rem',
+        }}>
+          💡 Solusi Muktamad
         </span>
-        <h2 style={{
-          fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)',
-          fontWeight: 800, color: '#042E23',
-          marginTop: '0.4rem', marginBottom: '0.75rem',
-          letterSpacing: '-0.02em', lineHeight: 1.25,
-        }}>
-          Pengisian E-Syifa&apos; — Perawat Private Anda Yang Sentiasa Bersama
-        </h2>
-        <p style={{ fontSize: '1rem', color: '#4B5563', lineHeight: 1.65, maxWidth: '720px', margin: '0 auto 2rem auto' }}>
-          Satu pelaburan. Rawatan tanpa had. Boleh guna seumur hidup. Tidak perlu tunggu appointment.
-          Tidak perlu ulang alik. Tidak perlu bergantung pada orang lain —{' '}
-          <strong style={{ color: '#047857' }}>setiap kali diserang, rawat terus.</strong>
-        </p>
 
-        {/* Brand badge */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.75rem',
-          background: 'linear-gradient(135deg, #042E23 0%, #065F46 100%)',
-          border: '2px solid #FDE047', borderRadius: '16px',
-          padding: '1rem 2rem', marginBottom: '3rem',
-          boxShadow: '0 8px 24px rgba(4,46,35,0.2)',
+        <h2 style={{
+          fontSize: 'clamp(1.55rem, 3.5vw, 2.35rem)',
+          fontWeight: 900, color: '#042E23',
+          marginTop: '0.25rem', marginBottom: '0.75rem',
+          letterSpacing: '-0.025em', lineHeight: 1.25,
         }}>
-          <span style={{ fontSize: '2rem' }}>💎</span>
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FDE047' }}>Pengisian E-Syifa&apos;</div>
-            <div style={{ fontSize: '0.78rem', color: '#A7F3D0', fontWeight: 600 }}>Ruqyah Syar&apos;iyyah · 4 Lapisan Ayat · Pelarasan Mingguan</div>
-          </div>
-        </div>
+          Pengisian E-Syifa&apos; — Perawat Peribadi Yang Sentiasa Bersama Anda
+        </h2>
+
+        <p style={{ fontSize: '1.02rem', color: '#4B5563', lineHeight: 1.75, maxWidth: '740px', margin: '0 auto 2.5rem auto' }}>
+          Satu ikhtiar yang membebaskan anda daripada kebergantungan rawatan luar.
+          Tidak perlu tunggu temujanji, tidak perlu menempuh kesesakan —{' '}
+          <strong style={{ color: '#047857' }}>setiap kali diserang, anda ada kuasa merawat diri sendiri serta-merta.</strong>
+        </p>
 
         {/* ── Apa Itu Pengisian E-Syifa'? ── */}
         <div style={{
           background: 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%)',
           border: '2px solid #BBF7D0',
           borderRadius: '20px', padding: '2rem 2.25rem',
-          marginBottom: '3rem', textAlign: 'left',
-          maxWidth: '780px', margin: '0 auto 3rem auto',
+          textAlign: 'left',
+          maxWidth: '820px', margin: '0 auto 3.5rem auto',
+          boxShadow: '0 8px 30px rgba(4, 46, 35, 0.06)',
         }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
             background: '#042E23', color: '#FDE047',
             padding: '0.35rem 1rem', borderRadius: '50px',
             fontSize: '0.75rem', fontWeight: 800,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
             marginBottom: '1.25rem',
           }}>
-            💎 Apa Itu Pengisian E-Syifa&apos;?
+            💎 Bagaimana Pengisian Berfungsi?
           </div>
 
-          <p style={{ fontSize: '1rem', color: '#042E23', lineHeight: 1.75, marginBottom: '1.25rem', fontWeight: 500 }}>
-            Pengisian E-Syifa&apos; adalah satu kaedah di mana{' '}
-            <strong style={{ color: '#047857' }}>tenaga ayat-ayat ruqyah, doa &amp; zikir dipaksakan ke dalam item peribadi pesakit</strong>{' '}
-            — supaya pesakit boleh menggunakan item tersebut untuk{' '}
-            <strong style={{ color: '#047857' }}>berubat diri sendiri tanpa perlu bergantung pada perawat</strong>.
+          <p style={{ fontSize: '1.02rem', color: '#042E23', lineHeight: 1.8, marginBottom: '1.25rem', fontWeight: 600 }}>
+            Pengisian E-Syifa&apos; adalah kaedah di mana{' '}
+            <span style={{ color: '#047857' }}>getaran bacaan ayat-ayat ruqyah pemusnah jin, pembatal sihir dan benteng ghaib dipasakkan ke dalam barang peribadi anda</span>{' '}
+            secara jarak jauh selama 3 hari berturut-turut.
           </p>
 
-          <p style={{ fontSize: '0.95rem', color: '#374151', lineHeight: 1.7, marginBottom: '1.25rem' }}>
-            Sama kaedah seperti air tawar &amp; minyak pendiding — tetapi{' '}
-            <strong style={{ color: '#DC2626' }}>lebih intensif &amp; padu</strong> kerana:
+          <p style={{ fontSize: '0.94rem', color: '#374151', lineHeight: 1.7, marginBottom: '1.25rem' }}>
+            Sama prinsipnya seperti air ruqyah &amp; minyak syifa&apos; — tetapi{' '}
+            <strong style={{ color: '#DC2626' }}>jauh lebih padu &amp; tahan lama</strong> kerana:
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {[
-              { text: 'Diisi selama 3 hari berturut-turut (bukan sekali sahaja)' },
-              { text: 'Didoakan khusus untuk masalah gangguan berulang anda' },
-              { text: '4 lapisan ayat: Pembakar Jin · Pembatal Sihir · Benteng · Kesembuhan' },
-              { text: 'Pelarasan semula setiap minggu secara automatik — PERCUMA selamanya, supaya tenaga kekuatan pada item tidak berkurang' },
+              { text: 'Diisi melalui solat hajat dan wirid ruqyah khusus selama 3 hari berturut-turut.' },
+              { text: 'Didoakan spesifik mengikut nama dan masalah gangguan berulang yang anda hadapi.' },
+              { text: 'Dipasakkan 4 lapisan ayat: Pembakar Jin, Pembatal Sihir, Benteng Dinding, & Kesembuhan.' },
+              { text: 'Pelarasan mingguan secara automatik — PERCUMA seumur hidup supaya aura kekuatan syifa sentiasa segar.' },
             ].map((p, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{
-                  width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
+                  width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0,
                   background: '#042E23', display: 'inline-flex',
                   alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.72rem', color: '#FDE047', fontWeight: 900, marginTop: '1px',
+                  fontSize: '0.75rem', color: '#FDE047', fontWeight: 900, marginTop: '2px',
                 }}>✓</span>
-                <span style={{ fontSize: '0.9rem', color: '#042E23', lineHeight: 1.55, fontWeight: 500 }}>{p.text}</span>
+                <span style={{ fontSize: '0.92rem', color: '#042E23', lineHeight: 1.6, fontWeight: 500 }}>{p.text}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            10 Kelebihan Utama
+        {/* 10 Manfaat Header */}
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            10 Manfaat Menyeluruh
           </span>
           <h3 style={{
-            fontSize: 'clamp(1.25rem, 3vw, 1.8rem)',
+            fontSize: 'clamp(1.3rem, 3vw, 1.85rem)',
             fontWeight: 800, color: '#042E23',
-            marginTop: '0.4rem', marginBottom: '0.5rem',
+            marginTop: '0.3rem', marginBottom: '0.5rem',
           }}>
-            Kenapa Pengisian E-Syifa&apos; Berbeza Dari Yang Lain?
+            Apa Yang Anda Bakal Nikmati Apabila Memiliki Item Berisian Ini?
           </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', textAlign: 'left' }}>
+        {/* Benefits Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.1rem', textAlign: 'left' }}>
           {BENEFITS.map((b, i) => (
             <div key={i} style={{
               background: '#F8FAFC', border: '1.5px solid #E2E8F0',
-              borderRadius: '12px', padding: '1.2rem',
-              display: 'flex', gap: '0.85rem', alignItems: 'flex-start',
+              borderRadius: '16px', padding: '1.35rem',
+              display: 'flex', gap: '0.9rem', alignItems: 'flex-start',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
             }}>
               <span style={{
-                fontSize: '1.5rem', flexShrink: 0,
-                background: '#ECFDF5', borderRadius: '10px',
-                padding: '0.35rem', display: 'inline-flex', lineHeight: 1,
+                fontSize: '1.6rem', flexShrink: 0,
+                background: '#ECFDF5', borderRadius: '12px',
+                padding: '0.4rem', display: 'inline-flex', lineHeight: 1,
               }}>{b.icon}</span>
               <div>
-                <p style={{ margin: '0 0 0.2rem 0', fontWeight: 800, fontSize: '0.88rem', color: '#042E23' }}>{b.title}</p>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#4B5563', lineHeight: 1.55 }}>{b.desc}</p>
+                <p style={{ margin: '0 0 0.3rem 0', fontWeight: 800, fontSize: '0.92rem', color: '#042E23' }}>{b.title}</p>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: '#4B5563', lineHeight: 1.6 }}>{b.desc}</p>
               </div>
             </div>
           ))}
         </div>
+
       </div>
     </section>
   );

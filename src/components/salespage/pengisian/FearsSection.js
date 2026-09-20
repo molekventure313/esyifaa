@@ -1,75 +1,143 @@
 'use client';
 
 const FEARS = [
-  { icon: '📉', title: 'Gangguan Makin Parah Bila Dibiarkan', desc: 'Setiap hari tanpa rawatan, gangguan mengakar lebih dalam. Apa yang boleh diselesaikan awal, menjadi semakin sukar apabila ditangguh.' },
-  { icon: '🔗', title: 'Sihir Penghalang Rezeki Terus Mengikat', desc: 'Selagi sihir tidak dinyahkan sepenuhnya, pintu rezeki kekal terkunci. Perniagaan terus sunyi. Peluang datang tapi hilang begitu sahaja.' },
-  { icon: '👨‍👩‍👧', title: 'Keluarga & Anak-Anak Turut Terdedah', desc: 'Gangguan di dalam rumah boleh merebak kepada ahli keluarga lain — terutama anak-anak yang lebih sensitif dan mudah terdedah kepada gangguan ghaib.' },
-  { icon: '🧠', title: 'Mental & Emosi Terhakis Perlahan-Lahan', desc: 'Serangan berulang tanpa perlindungan menyebabkan tekanan, anxiety, dan kemurungan. Lama-kelamaan, kekuatan diri semakin lemah dan tidak terasa.' },
-  { icon: '💔', title: 'Rumahtangga Retak Kerana Campur Tangan Sihir', desc: 'Sihir pemisah yang tidak dirawat boleh membuatkan pasangan berubah hati secara perlahan. Perbalahan tanpa sebab. Perasaan dingin. Rumah tangga perlahan-lahan hancur.' },
-  { icon: '💰', title: 'Kos Rawatan Berulang Terus Membebankan', desc: 'Tanpa cara rawatan sendiri, anda terpaksa terus bergantung pada perawat luar. Kos bertimbun. Jika ada perlindungan sendiri, semua ini boleh dielakkan.' },
+  {
+    icon: '📉',
+    title: 'Gangguan Makin Berakar Bila Dibiarkan',
+    desc: 'Setiap hari tanpa benteng ruqyah, jin dan racun sihir membina sarang lebih dalam di saraf dan sendi. Apa yang awalnya ringan akan menjadi penyakit misteri yang sukar diubati.',
+  },
+  {
+    icon: '🔗',
+    title: 'Pintu Rezeki & Kerjaya Terus Terkunci',
+    desc: 'Sihir penghalang rezeki menyebabkan usaha gigih anda sia-sia. Perniagaan tiba-tiba sunyi, pelanggan lari tanpa sebab, dan wang simpanan bocor begitu sahaja.',
+  },
+  {
+    icon: '👨‍👩‍👧',
+    title: 'Keluarga & Anak Kecil Jadi Mangsa Tempias',
+    desc: 'Bila rumah tiada benteng dan diri anda dipenuhi aura gelap sihir, anak-anak kecil yang bersih mudah histeria, sawan tangis waktu malam, dan kerap jatuh sakit.',
+  },
+  {
+    icon: '🧠',
+    title: 'Akal & Emosi Terhakis — Jadi Panas Baran',
+    desc: 'Bisikan was-was dan panik malam berpanjangan menyebabkan anxiety kronik, insomnia dan kemurungan. Lama-kelamaan anda hilang kawalan terhadap fikiran sendiri.',
+  },
+  {
+    icon: '💔',
+    title: 'Masjid Rumahtangga Runtuh Dalam Sekelip Mata',
+    desc: 'Sihir pemisah (tafriq) bertindak secara senyap. Suami isteri mula membenci satu sama lain, hilang nafsu di bilik tidur, dan kerap berbalah sehingga berakhir dengan penceraian.',
+  },
+  {
+    icon: '💸',
+    title: 'Bakar Duit Ribuan Ringgit Tanpa Kesudahan',
+    desc: 'Tanpa kaedah merawat diri sendiri di rumah, anda akan terus dipermainkan oleh kitaran sihir berulang — terpaksa mengeluarkan wang belanja rawatan luar berkali-kali.',
+  },
 ];
 
 export default function PengisianFearsSection() {
+  const ff = 'var(--font-inter), -apple-system, sans-serif';
+
   return (
     <section style={{
-      background: 'linear-gradient(180deg, #0B382D 0%, #1A0A0A 100%)',
-      color: '#FFFFFF', padding: '4rem 1rem',
-      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+      background: 'linear-gradient(180deg, #0B382D 0%, #170707 100%)',
+      color: '#FFFFFF',
+      padding: '4.5rem 1.25rem',
+      fontFamily: ff,
+      borderBottom: '1px solid rgba(248, 113, 113, 0.25)',
     }}>
-      <div style={{ maxWidth: '920px', margin: '0 auto', textAlign: 'center' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#F87171', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-          ⚠️ Amaran Penting
+      <div style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center' }}>
+        
+        <span style={{
+          display: 'inline-block',
+          fontSize: '0.78rem', fontWeight: 800, color: '#F87171',
+          textTransform: 'uppercase', letterSpacing: '0.12em',
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          padding: '0.35rem 1rem', borderRadius: '999px',
+          marginBottom: '1rem',
+        }}>
+          ⚠️ Sila Beri Perhatian: Perkara Ini Boleh Melarat!
         </span>
+
         <h2 style={{
-          fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)',
+          fontSize: 'clamp(1.5rem, 3.5vw, 2.3rem)',
           fontWeight: 800, color: '#FEF3C7',
-          marginTop: '0.4rem', marginBottom: '0.75rem',
+          marginTop: '0.25rem', marginBottom: '0.75rem',
           letterSpacing: '-0.02em', lineHeight: 1.25,
         }}>
-          Jika Gangguan Berulang Ini Tidak Diselesaikan Segera...
+          Apa Yang Bakal Terjadi Jika Sihir &amp; Gangguan Berulang Dibiarkan?
         </h2>
-        <p style={{ fontSize: '1rem', color: '#FCA5A5', lineHeight: 1.65, maxWidth: '720px', margin: '0 auto 2.5rem auto' }}>
-          Ramai yang buat-buat tak kisah. Tapi pengalaman pesakit kami menunjukkan —{' '}
-          <strong style={{ color: '#FDE047' }}>semakin lama dibiarkan, semakin teruk akibatnya.</strong>
+
+        <p style={{ fontSize: '1rem', color: '#FCA5A5', lineHeight: 1.7, maxWidth: '720px', margin: '0 auto 2.5rem auto' }}>
+          Jangan ambil mudah dan anggap gangguan akan hilang sendiri. Pengalaman kami merawat ratusan pesakit membuktikan —{' '}
+          <strong style={{ color: '#FDE047' }}>semakin lama ditangguhkan, semakin parah kerosakannya pada jasad dan rumahtangga.</strong>
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '1.2rem', textAlign: 'left', marginBottom: '2rem' }}>
+        {/* Hadith Callout Box */}
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.08)',
+          border: '1px solid rgba(239, 68, 68, 0.35)',
+          borderRadius: '16px',
+          padding: '1.25rem 1.75rem',
+          maxWidth: '780px',
+          margin: '0 auto 2.5rem auto',
+          textAlign: 'center',
+        }}>
+          <p style={{ margin: '0 0 0.4rem 0', fontSize: '1.05rem', color: '#FEF3C7', fontStyle: 'italic', lineHeight: 1.7 }}>
+            &ldquo;Sesungguhnya syaitan itu berjalan di dalam tubuh anak Adam mengikut aliran darah.&rdquo;
+          </p>
+          <span style={{ fontSize: '0.8rem', color: '#FCA5A5', fontWeight: 700 }}>
+            — Hadith Sahih al-Bukhari (No. 3281) &amp; Muslim (No. 2175)
+          </span>
+        </div>
+
+        {/* 6 Fears Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', textAlign: 'left', marginBottom: '2.5rem' }}>
           {FEARS.map((f, i) => (
             <div key={i} style={{
-              background: 'rgba(248,113,113,0.07)', border: '1.5px solid rgba(248,113,113,0.25)',
-              borderRadius: '14px', padding: '1.4rem 1.2rem',
+              background: 'rgba(248,113,113,0.06)',
+              border: '1.5px solid rgba(248,113,113,0.25)',
+              borderRadius: '16px', padding: '1.5rem 1.3rem',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
                 <span style={{
                   fontSize: '1.6rem', lineHeight: 1, flexShrink: 0,
                   background: 'rgba(248,113,113,0.12)', borderRadius: '10px',
                   padding: '0.35rem', display: 'inline-flex',
                 }}>{f.icon}</span>
-                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#FCA5A5', lineHeight: 1.35 }}>{f.title}</h3>
+                <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#FCA5A5', lineHeight: 1.35 }}>
+                  {f.title}
+                </h3>
               </div>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#FEF3C7', lineHeight: 1.65 }}>{f.desc}</p>
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#FEF3C7', lineHeight: 1.65 }}>
+                {f.desc}
+              </p>
             </div>
           ))}
         </div>
 
         {/* Penyelesaian callout */}
         <div style={{
-          background: 'rgba(253,224,71,0.07)', border: '1px solid rgba(253,224,71,0.35)',
-          borderLeft: '4px solid #FDE047', borderRadius: '12px',
-          padding: '1.4rem 1.6rem', display: 'flex', gap: '1rem',
+          background: 'rgba(253,224,71,0.07)',
+          border: '1px solid rgba(253,224,71,0.35)',
+          borderLeft: '4px solid #FDE047',
+          borderRadius: '14px',
+          padding: '1.4rem 1.6rem',
+          display: 'flex', gap: '1.1rem',
           alignItems: 'flex-start', textAlign: 'left',
+          maxWidth: '820px', margin: '0 auto',
         }}>
-          <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>💎</span>
+          <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>🛡️</span>
           <div>
-            <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.95rem', color: '#FEF3C7', fontWeight: 800 }}>
-              Penyelesaian: Perlindungan Yang Sentiasa Bersama
+            <p style={{ margin: '0 0 0.35rem 0', fontSize: '1rem', color: '#FEF3C7', fontWeight: 800 }}>
+              Putuskan Kitaran Ini: Miliki Benteng Yang Sentiasa Bersama Jasad Anda
             </p>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: '#A7F3D0', lineHeight: 1.75 }}>
-              Dengan Pengisian E-Syifa&apos; pada barang anda, anda tidak perlu bergantung pada perawat untuk setiap serangan.
-              Rawat sendiri, bila-bila masa, di mana sahaja — tanpa had.
+            <p style={{ margin: 0, fontSize: '0.88rem', color: '#A7F3D0', lineHeight: 1.75 }}>
+              Dengan memasakkan ayat-ayat ruqyah pemutus sihir dan pembakar jin ke dalam barang peribadi anda,
+              anda kini ada alat ikhtiar 24 jam untuk membatalkan serangan serta-merta tanpa perlu menunggu perawat luar.
             </p>
           </div>
         </div>
+
       </div>
     </section>
   );

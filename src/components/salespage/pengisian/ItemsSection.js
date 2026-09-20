@@ -1,21 +1,52 @@
 'use client';
 
 const ITEMS = [
-  { icon: '💍', title: 'Cincin', desc: 'Paling berkesan — sentiasa di jari anda. Sentuhan terus dengan kulit memberikan kesan perlindungan yang berterusan.', badge: '⭐ Paling Popular', badgeColor: '#FDE047', badgeText: '#042E23' },
-  { icon: '📿', title: 'Tasbih', desc: 'Selalu dalam tangan ketika berzikir. Pengisian menjadikan setiap genggaman sebagai sumber kekuatan dan perlindungan.', badge: null },
-  { icon: '⌚', title: 'Jam Tangan / Gelang', desc: 'Dipakai setiap hari, sentiasa di pergelangan tangan. Perlindungan yang tidak pernah tertanggal.', badge: '✅ Popular', badgeColor: '#4ADE80', badgeText: '#042E23' },
-  { icon: '🔑', title: 'Barang Lain Yang Selalu Digunakan', desc: 'Rantai, beg, telefon case, atau apa-apa sahaja yang sentiasa bersama anda. Bebas pilih barang yang paling bermakna.', badge: null },
+  {
+    icon: '💍',
+    title: 'Cincin Perak / Batu Permata',
+    desc: 'Paling popular dan sangat disyorkan. Sentiasa melekat di jari dan bersentuhan terus dengan kulit serta saluran darah untuk perlindungan benteng berterusan.',
+    badge: '⭐ Paling Popular',
+    badgeColor: '#FDE047',
+    badgeText: '#042E23',
+  },
+  {
+    icon: '📿',
+    title: 'Tasbih Zikir',
+    desc: 'Sangat sesuai digenggam ketika berzikir dan membaca ayat Ruqyah. Setiap biji tasbih menjadi penguat aura benteng ketika anda diserang gangguan.',
+    badge: '✅ Sangat Disyorkan',
+    badgeColor: '#A7F3D0',
+    badgeText: '#042E23',
+  },
+  {
+    icon: '⌚',
+    title: 'Jam Tangan / Gelang',
+    desc: 'Dipakai sepanjang hari ketika keluar rumah, ke tempat kerja atau berniaga. Melindungi titik nadi pergelangan tangan dari serangan santau dan angin sihir.',
+    badge: '🔥 Pilihan Ramai',
+    badgeColor: '#FEF08A',
+    badgeText: '#042E23',
+  },
+  {
+    icon: '✨',
+    title: 'Minyak Wangi / Rantai / Loket',
+    desc: 'Sebarang barangan peribadi kesayangan anda yang kerap dibawa bersama. Tiada sekatan bahan — asalkan ia suci dan sentiasa berada dekat dengan anda.',
+    badge: null,
+  },
 ];
 
 export default function PengisianItemsSection() {
+  const ff = 'var(--font-inter), -apple-system, sans-serif';
+
   return (
     <section style={{
-      background: '#042E23', color: '#FFFFFF',
-      padding: '4rem 1rem',
-      fontFamily: 'var(--font-inter), -apple-system, sans-serif',
+      background: '#042E23',
+      color: '#FFFFFF',
+      padding: '4.5rem 1.25rem',
+      fontFamily: ff,
+      borderBottom: '1px solid rgba(254, 243, 199, 0.15)',
     }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+        
+        <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
           <span style={{
             display: 'inline-block',
             background: 'rgba(253,224,71,0.1)', border: '1px solid rgba(253,224,71,0.4)',
@@ -23,29 +54,30 @@ export default function PengisianItemsSection() {
             fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em',
             textTransform: 'uppercase', marginBottom: '1rem',
           }}>
-            💎 Barang Yang Boleh Diisi
+            💎 Fleksibiliti Pilihan Item
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)',
+            fontSize: 'clamp(1.5rem, 3.5vw, 2.3rem)',
             fontWeight: 800, color: '#FDE047',
             marginTop: '0.4rem', marginBottom: '0.75rem',
             letterSpacing: '-0.02em', lineHeight: 1.25,
           }}>
-            Pilih Barang Yang Paling Selalu Bersama Anda
+            Pilih Barang Yang Paling Kerap Berada Bersama Anda
           </h2>
-          <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '640px', margin: '0 auto' }}>
-            Perawat ESyifaa buat pengisian secara <strong style={{ color: '#FDE047' }}>jarak jauh</strong> — anda tidak perlu pos atau hantar barang ke mana-mana.
-            Pilih barang yang selalu berada bersama anda untuk perlindungan maksimum.
+          <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '680px', margin: '0 auto' }}>
+            Pengisian dijalankan secara <strong style={{ color: '#FDE047' }}>jarak jauh</strong> — anda langsung tidak perlu pos atau menghantar barang anda ke mana-mana.
+            Cukup sekadar nyatakan jenis barang dan nama pemilik semasa mengisi borang tempahan.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
           {ITEMS.map((item, i) => (
             <div key={i} style={{
-              background: '#031E17', border: '1px solid rgba(74,222,128,0.2)',
-              borderRadius: '16px', padding: '1.5rem',
+              background: '#031E17', border: '1px solid rgba(74,222,128,0.25)',
+              borderRadius: '18px', padding: '1.6rem 1.4rem',
               position: 'relative', overflow: 'hidden',
               boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
+              display: 'flex', flexDirection: 'column',
             }}>
               {item.badge && (
                 <div style={{
@@ -57,23 +89,29 @@ export default function PengisianItemsSection() {
                   {item.badge}
                 </div>
               )}
-              <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{item.icon}</div>
-              <div style={{ fontWeight: 800, color: '#FDE047', marginBottom: '0.5rem', fontSize: '1.05rem' }}>{item.title}</div>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: '#A7F3D0', lineHeight: 1.65 }}>{item.desc}</p>
+              <div style={{ fontSize: '2.3rem', marginBottom: '0.75rem' }}>{item.icon}</div>
+              <div style={{ fontWeight: 800, color: '#FDE047', marginBottom: '0.5rem', fontSize: '1.05rem', lineHeight: 1.35 }}>
+                {item.title}
+              </div>
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#A7F3D0', lineHeight: 1.65, flex: 1 }}>
+                {item.desc}
+              </p>
             </div>
           ))}
         </div>
 
         {/* Note */}
         <div style={{
-          background: 'rgba(253,224,71,0.07)', border: '1px solid rgba(253,224,71,0.25)',
-          borderRadius: '12px', padding: '1rem 1.5rem', textAlign: 'center',
+          background: 'rgba(253,224,71,0.08)',
+          border: '1px solid rgba(253,224,71,0.3)',
+          borderRadius: '14px', padding: '1.1rem 1.6rem', textAlign: 'center',
+          maxWidth: '740px', margin: '0 auto',
         }}>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#FEF3C7', lineHeight: 1.6 }}>
-            📋 Nyatakan nama &amp; jenis barang anda semasa mengisi borang tempahan.
-            Perawat akan buat pengisian berdasarkan maklumat yang anda berikan.
+          <p style={{ margin: 0, fontSize: '0.92rem', color: '#FEF3C7', lineHeight: 1.65 }}>
+            📋 <strong>Tak perlu pening kepala:</strong> Anda boleh buat pengisian untuk diri sendiri atau hadiahkan kepada pasangan dan anak-anak. Semasa tempahan di bawah, anda cuma perlu taipkan nama item tersebut.
           </p>
         </div>
+
       </div>
     </section>
   );
