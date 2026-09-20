@@ -73,7 +73,7 @@ function getMonthlyRanges(count = 6) {
 }
 
 // ─── Compute per-marketer stats from raw data ─────────────────────────────────
-function computeStats(marketers, submissions, adsSpend, avgCost) {
+function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, garamCost) {
   // Build per-marketer submission map
   const subMap = {};
   const adsMap = {};
@@ -89,16 +89,41 @@ function computeStats(marketers, submissions, adsSpend, avgCost) {
     adsMap[mid] += parseFloat(a.amount || 0);
   }
 
+  const isPhysical = sub => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p => (sub.source || '').includes(p));
+
+  const calcCOGS = (subs_arr) => {
+    // Sabun
+    const sabunUnits = subs_arr
+      .filter(sub => (sub.source || '').includes('sabun'))
+      .reduce((s, sub) => s + (parseInt(sub.qty) || 0), 0);
+    const sabunCogs = sabunUnits * avgCost;
+    // Kasturi add-on
+    const kasturiCount = subs_arr.filter(sub =>
+      /\[ADD-ON: Kasturi Kijang/i.test(sub.notes || '') ||
+      /Add-On:\s*Kasturi Kijang/i.test(sub.problem || '')
+    ).length;
+    const kasturiCogs = kasturiCount * kasturiCost;
+    // Garam standalone + add-on
+    const garamUnits = subs_arr.filter(sub => sub.source === 'garam-pengasihan').reduce((s, sub) => s + (parseInt(sub.qty) || 1), 0);
+    const garamAddonCount = subs_arr.filter(sub =>
+      /\[ADD-ON: Garam Pengasihan/i.test(sub.notes || '') ||
+      /Add-On:\s*Garam Pengasihan/i.test(sub.problem || '')
+    ).length;
+    const garamCogs = (garamUnits + garamAddonCount) * garamCost;
+    // Postage
+    const fpxPhysical = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'fpx_payment').length;
+    const codPhysical = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'cod').length;
+    const postage = fpxPhysical * 4 + codPhysical * 6;
+    return parseFloat((sabunCogs + kasturiCogs + garamCogs + postage).toFixed(2));
+  };
+
   const rows = [];
 
   for (const m of marketers) {
     const subs = subMap[m.id] || [];
     const orders  = subs.length;
-    const revenue = subs.reduce((s, sub) => s + parseAmount(sub), 0);  // parseAmount handles notes fallback
-    const sabunUnits = subs
-      .filter(sub => (sub.source || '').includes('sabun'))
-      .reduce((s, sub) => s + (parseInt(sub.qty) || 0), 0);
-    const cogs    = parseFloat((sabunUnits * avgCost).toFixed(2));
+    const revenue = subs.reduce((s, sub) => s + parseAmount(sub), 0);
+    const cogs    = calcCOGS(subs);
     const ads     = parseFloat((adsMap[m.id] || 0).toFixed(2));
     const profit  = parseFloat((revenue - ads - cogs).toFixed(2));
     const commPct = parseFloat(m.marketer_commission_pct || 0);
@@ -125,13 +150,10 @@ function computeStats(marketers, submissions, adsSpend, avgCost) {
   // HQ row (marketer_id IS NULL)
   const hqSubs = subMap['__hq__'] || [];
   const hqOrders  = hqSubs.length;
-  const hqRevenue = hqSubs.reduce((s, sub) => s + parseAmount(sub), 0);  // parseAmount handles notes fallback
-  const hqSabunUnits = hqSubs
-    .filter(sub => (sub.source || '').includes('sabun'))
-    .reduce((s, sub) => s + (parseInt(sub.qty) || 0), 0);
-  const hqCogs = parseFloat((hqSabunUnits * avgCost).toFixed(2));
-  const hqAds  = parseFloat((adsMap['__hq__'] || 0).toFixed(2));
-  const hqProfit = parseFloat((hqRevenue - hqAds - hqCogs).toFixed(2));
+  const hqRevenue = hqSubs.reduce((s, sub) => s + parseAmount(sub), 0);
+  const hqCogs    = calcCOGS(hqSubs);
+  const hqAds     = parseFloat((adsMap['__hq__'] || 0).toFixed(2));
+  const hqProfit  = parseFloat((hqRevenue - hqAds - hqCogs).toFixed(2));
 
   rows.push({
     id: '__hq__', name: 'HQ', code: null, is_active: true,
@@ -163,7 +185,7 @@ function computeStats(marketers, submissions, adsSpend, avgCost) {
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 async function fetchSubs(admin, from, to) {
   let q = admin.from('submissions')
-    .select('marketer_id, amount_paid, notes, source, qty')  // notes diperlukan untuk parseAmount
+    .select('marketer_id, amount_paid, notes, problem, source, qty, payment_type')  // payment_type for postage calc
     .eq('payment_status', 'completed')
     .in('payment_type', ['cod', 'fpx_payment']);
   if (from) q = q.gte('created_at', from);
@@ -188,17 +210,21 @@ export async function GET(req) {
     const mode   = searchParams.get('mode')   || 'period';
     const period = searchParams.get('period') || 'month';
 
-    // Fetch marketers + avg cost in parallel
+    // Fetch marketers + product costs in parallel
     const [mktRes, stockRes] = await Promise.all([
       admin.from('profiles')
         .select('id, full_name, marketer_code, is_active, marketer_basic_salary, marketer_commission_pct')
         .eq('role', 'marketer')
         .order('full_name'),
-      admin.from('stock_summary').select('avg_cost_per_unit').eq('sku', 'SGH-200G').maybeSingle(),
+      admin.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']),
     ]);
 
-    const marketers = mktRes.data || [];
-    const avgCost   = parseFloat(stockRes.data?.avg_cost_per_unit || 0);
+    const marketers    = mktRes.data || [];
+    const stockMap2    = {};
+    (stockRes.data || []).forEach(s => { stockMap2[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
+    const avgCost      = stockMap2['SGH-200G'] || 0;  // backward compat
+    const kasturiCost  = stockMap2['KKE-01']   || 0;
+    const garamCost    = stockMap2['GPM-500G']  || 0;
 
     // ── Monthly mode ─────────────────────────────────────────────────────────
     if (mode === 'monthly') {
@@ -208,7 +234,7 @@ export async function GET(req) {
           fetchSubs(admin, r.from, r.to),
           fetchAds(admin, r.spendFrom, r.spendTo),
         ]);
-        const { rows, totals } = computeStats(marketers, subs, ads, avgCost);
+    const { rows, totals } = computeStats(marketers, subs, ads, avgCost, kasturiCost, garamCost);
         return { key: r.key, label: r.label, marketers: rows, totals };
       }));
       return NextResponse.json({ success: true, mode: 'monthly', avg_cost: avgCost, months });
@@ -220,7 +246,7 @@ export async function GET(req) {
       fetchSubs(admin, from, to),
       fetchAds(admin, spendFrom, spendTo),
     ]);
-    const { rows, totals } = computeStats(marketers, subs, ads, avgCost);
+    const { rows, totals } = computeStats(marketers, subs, ads, avgCost, kasturiCost, garamCost);
 
     return NextResponse.json({
       success: true, mode: 'period', period, avg_cost: avgCost,

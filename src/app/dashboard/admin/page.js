@@ -361,10 +361,31 @@ export default function AdminDashboardPage() {
                 <div>
                   <div style={{ fontSize: '0.65rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>📦 COGS</div>
                   <div style={{ fontSize: '1.1rem', fontWeight: 800, color: textSecondary }}>
-                    {noCost ? '—' : formatRM(pnl.cogs)}
+                    {noCost ? '—' : formatRM(pnl.total_cogs ?? pnl.cogs)}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: '0.15rem' }}>
-                    {pnl.units_sold ?? 0} unit × {noCost ? 'kos ?' : `RM ${pnl.avg_cost?.toFixed(2)}`}
+                  {!noCost && (
+                    <div style={{ fontSize: '0.68rem', color: textMuted, marginTop: '0.15rem', lineHeight: 1.5 }}>
+                      {pnl.sabun_cogs > 0 && <div>Sabun: {formatRM(pnl.sabun_cogs)} ({pnl.units_sold}u)</div>}
+                      {pnl.kasturi_cogs > 0 && <div>Kasturi: {formatRM(pnl.kasturi_cogs)} ({pnl.kasturi_count} add-on)</div>}
+                      {pnl.garam_cogs > 0 && <div>Garam: {formatRM(pnl.garam_cogs)}</div>}
+                    </div>
+                  )}
+                  {noCost && (
+                    <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: '0.15rem' }}>
+                      {pnl.units_sold ?? 0} unit — kos belum diisi
+                    </div>
+                  )}
+                </div>
+                <div style={{ height: '40px', width: '1px', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)' }} />
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.25rem' }}>🚚 Postage</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: textSecondary }}>
+                    {formatRM(pnl.postage_total ?? 0)}
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: textMuted, marginTop: '0.15rem', lineHeight: 1.5 }}>
+                    {(pnl.fpx_physical ?? 0) > 0 && <div>FPX: {pnl.fpx_physical}×RM4</div>}
+                    {(pnl.cod_physical ?? 0) > 0 && <div>COD: {pnl.cod_physical}×RM6</div>}
+                    {!(pnl.fpx_physical ?? 0) && !(pnl.cod_physical ?? 0) && <div>—</div>}
                   </div>
                 </div>
                 <div style={{ height: '40px', width: '1px', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)' }} />

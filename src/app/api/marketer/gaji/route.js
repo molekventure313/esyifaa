@@ -35,7 +35,7 @@ export async function GET(req) {
     // Fetch total sales
     const { data: submissions } = await adminClient
       .from('submissions')
-      .select('id, amount_paid, source, qty, created_at')
+      .select('id, amount_paid, notes, problem, source, qty, payment_type, created_at')
       .eq('marketer_id', user.id)
       .eq('payment_status', 'completed')
       .gte('created_at', startDate)
@@ -55,26 +55,33 @@ export async function GET(req) {
     const ads = adsSpend || [];
     const totalAds = ads.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
 
-    // Fetch COGS
-    let avgCost = 0;
+    // Fetch COGS — all 3 physical products
+    const stockCosts = {};
     try {
-      const { data: stock } = await adminClient
+      const { data: stocks } = await adminClient
         .from('stock_summary')
-        .select('avg_cost_per_unit')
-        .eq('sku', 'SGH-200G')   // fix: was 'product_code' (column tak wujud)
-        .maybeSingle();
-      if (stock) {
-        avgCost = parseFloat(stock.avg_cost_per_unit) || 0;
-      }
-    } catch (e) {
-      // Ignore stock error
-    }
+        .select('sku, avg_cost_per_unit')
+        .in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']);
+      (stocks || []).forEach(s => { stockCosts[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
+    } catch (e) { /* ignore */ }
+    const sabunCost   = stockCosts['SGH-200G'] || 0;
+    const kasturiCost = stockCosts['KKE-01']   || 0;
+    const garamCost   = stockCosts['GPM-500G'] || 0;
+    const avgCost     = sabunCost; // backward compat
 
-    // COGS kira berdasarkan unit (qty), bukan order count
-    const sabunUnits = subs
-      .filter(s => s.source && s.source.toLowerCase().includes('sabun'))
-      .reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
-    const totalCOGS = sabunUnits * avgCost;
+    const calcCOGS = (arr) => {
+      const sabunUnits = arr.filter(s => (s.source||'').includes('sabun')).reduce((t,s)=>t+(parseInt(s.qty)||0),0);
+      const kasturiN   = arr.filter(s => /\[ADD-ON: Kasturi Kijang/i.test(s.notes||'')||/Add-On:\s*Kasturi Kijang/i.test(s.problem||'')).length;
+      const garamUnits = arr.filter(s => s.source==='garam-pengasihan').reduce((t,s)=>t+(parseInt(s.qty)||1),0);
+      const garamAddon = arr.filter(s => /\[ADD-ON: Garam Pengasihan/i.test(s.notes||'')||/Add-On:\s*Garam Pengasihan/i.test(s.problem||'')).length;
+      const isPhysical = s => ['sabun','garam-pengasihan','kasturi-kijang'].some(p=>(s.source||'').includes(p));
+      const fpxPhys    = arr.filter(s => isPhysical(s) && s.payment_type==='fpx_payment').length;
+      const codPhys    = arr.filter(s => isPhysical(s) && s.payment_type==='cod').length;
+      return sabunUnits*sabunCost + kasturiN*kasturiCost + (garamUnits+garamAddon)*garamCost + fpxPhys*4 + codPhys*6;
+    };
+
+    // COGS total (unit × kos + postage)
+    const totalCOGS = calcCOGS(subs);
 
     const profit = totalSales - totalAds - totalCOGS;
     const komisen = Math.max(0, profit * (commission_pct / 100));
@@ -86,38 +93,21 @@ export async function GET(req) {
     
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
-      
-      
-      // Date check with UTC+8 conversion
       const daySalesArr = subs.filter(s => {
-          const sDate = new Date(s.created_at);
-          // convert to UTC+8
-          const mytDate = new Date(sDate.getTime() + 8 * 3600 * 1000);
-          return mytDate.toISOString().split('T')[0] === dateStr;
+        const sDate = new Date(s.created_at);
+        const mytDate = new Date(sDate.getTime() + 8 * 3600 * 1000);
+        return mytDate.toISOString().split('T')[0] === dateStr;
       });
 
       const daySales = daySalesArr.reduce((sum, s) => sum + (parseFloat(s.amount_paid) || 0), 0);
-      // COGS harian: kira unit (qty), bukan bilangan order
-      const daySabunUnits = daySalesArr
-        .filter(s => s.source && s.source.toLowerCase().includes('sabun'))
-        .reduce((sum, s) => sum + (parseInt(s.qty) || 1), 0);
-      
       const dayAdsArr = ads.filter(a => a.spend_date === dateStr);
       const dayAds = dayAdsArr.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
-
-      const dayCOGS = daySabunUnits * avgCost;
+      const dayCOGS = calcCOGS(daySalesArr);
       const dayProfit = daySales - dayAds - dayCOGS;
       const dayKomisen = Math.max(0, dayProfit * (commission_pct / 100));
 
       if (daySales > 0 || dayAds > 0 || dayCOGS > 0) {
-        dailyBreakdown.push({
-          date: dateStr,
-          sales: daySales,
-          ads: dayAds,
-          cogs: dayCOGS,
-          profit: dayProfit,
-          komisen: dayKomisen
-        });
+        dailyBreakdown.push({ date: dateStr, sales: daySales, ads: dayAds, cogs: dayCOGS, profit: dayProfit, komisen: dayKomisen });
       }
     }
 

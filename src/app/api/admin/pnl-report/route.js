@@ -229,9 +229,13 @@ export async function GET(req) {
     const period = searchParams.get('period') || 'today';
     const marketer_id = searchParams.get('marketer_id');
 
-    // Avg cost for COGS
-    const stockRes = await adminClient.from('stock_summary').select('avg_cost_per_unit').eq('sku', 'SGH-200G').maybeSingle();
-    const avgCost  = parseFloat(stockRes.data?.avg_cost_per_unit || 0);
+    // Avg cost for COGS — fetch all physical products
+    const stockRes = await adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']);
+    const stockMap = {};
+    (stockRes.data || []).forEach(s => { stockMap[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
+    const avgCost      = stockMap['SGH-200G'] || 0;  // sabun — backward compat
+    const kasturiCost  = stockMap['KKE-01']   || 0;
+    const garamCost    = stockMap['GPM-500G']  || 0;
 
     // ── Monthly calendar mode ─────────────────────────────────────────────────
     if (mode === 'monthly') {
@@ -341,7 +345,9 @@ export async function GET(req) {
     const totalUnits    = daily.reduce((s, d) => s + d.units_sold, 0);
     const totalOrders   = daily.reduce((s, d) => s + d.orders, 0);
     const totalAds      = daily.reduce((s, d) => s + (d.ads_cost || 0), 0);
-    const totalCogs     = parseFloat((totalUnits * avgCost).toFixed(2));
+    const sabunCogs     = parseFloat((totalUnits * avgCost).toFixed(2));
+    const kasturiCogs   = parseFloat((kasturiOrders * kasturiCost).toFixed(2));
+    const totalCogs     = parseFloat((sabunCogs + kasturiCogs).toFixed(2));
     const grossPnl      = parseFloat((totalRevenue - totalCogs).toFixed(2));
     const netPnl        = parseFloat((grossPnl - totalAds).toFixed(2));
     const roas          = totalAds > 0 ? parseFloat((totalRevenue / totalAds).toFixed(2)) : null;
