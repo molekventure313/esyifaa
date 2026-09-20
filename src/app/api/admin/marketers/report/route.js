@@ -91,74 +91,74 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
 
   const isPhysical = sub => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p => (sub.source || '').includes(p));
 
-  const calcCOGS = (subs_arr) => {
-    // Sabun
+  // Product COGS only (sabun + kasturi + garam) — tanpa postage
+  const calcProductCOGS = (subs_arr) => {
     const sabunUnits = subs_arr
       .filter(sub => (sub.source || '').includes('sabun'))
       .reduce((s, sub) => s + (parseInt(sub.qty) || 0), 0);
     const sabunCogs = sabunUnits * avgCost;
-    // Kasturi add-on
     const kasturiCount = subs_arr.filter(sub =>
       /\[ADD-ON: Kasturi Kijang/i.test(sub.notes || '') ||
       /Add-On:\s*Kasturi Kijang/i.test(sub.problem || '')
     ).length;
     const kasturiCogs = kasturiCount * kasturiCost;
-    // Garam standalone + add-on
     const garamUnits = subs_arr.filter(sub => sub.source === 'garam-pengasihan').reduce((s, sub) => s + (parseInt(sub.qty) || 1), 0);
     const garamAddonCount = subs_arr.filter(sub =>
       /\[ADD-ON: Garam Pengasihan/i.test(sub.notes || '') ||
       /Add-On:\s*Garam Pengasihan/i.test(sub.problem || '')
     ).length;
     const garamCogs = (garamUnits + garamAddonCount) * garamCost;
-    // Postage
-    const fpxPhysical = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'fpx_payment').length;
-    const codPhysical = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'cod').length;
-    const postage = fpxPhysical * 4 + codPhysical * 6;
-    return parseFloat((sabunCogs + kasturiCogs + garamCogs + postage).toFixed(2));
+    return parseFloat((sabunCogs + kasturiCogs + garamCogs).toFixed(2));
+  };
+
+  // Postage sahaja — FPX×RM4, COD×RM6 untuk physical orders
+  const calcPostage = (subs_arr) => {
+    const fpx = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'fpx_payment').length;
+    const cod = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'cod').length;
+    return parseFloat((fpx * 4 + cod * 6).toFixed(2));
   };
 
   const rows = [];
 
   for (const m of marketers) {
-    const subs = subMap[m.id] || [];
-    const orders  = subs.length;
-    const revenue = subs.reduce((s, sub) => s + parseAmount(sub), 0);
-    const cogs    = calcCOGS(subs);
-    const ads     = parseFloat((adsMap[m.id] || 0).toFixed(2));
-    const profit  = parseFloat((revenue - ads - cogs).toFixed(2));
-    const commPct = parseFloat(m.marketer_commission_pct || 0);
-    const komisen = parseFloat((Math.max(0, profit) * commPct / 100).toFixed(2));
-    const basicSalary = parseFloat(m.marketer_basic_salary || 0);
+    const subs         = subMap[m.id] || [];
+    const orders       = subs.length;
+    const revenue      = subs.reduce((s, sub) => s + parseAmount(sub), 0);
+    const product_cogs = calcProductCOGS(subs);
+    const postage      = calcPostage(subs);
+    const cogs         = parseFloat((product_cogs + postage).toFixed(2));
+    const gross_profit = parseFloat((revenue - cogs).toFixed(2));
+    const ads          = parseFloat((adsMap[m.id] || 0).toFixed(2));
+    const profit       = parseFloat((gross_profit - ads).toFixed(2));
+    const commPct      = parseFloat(m.marketer_commission_pct || 0);
+    const komisen      = parseFloat((Math.max(0, profit) * commPct / 100).toFixed(2));
+    const basicSalary  = parseFloat(m.marketer_basic_salary || 0);
 
     rows.push({
-      id: m.id,
-      name: m.full_name || 'Marketer',
-      code: m.marketer_code || null,
-      is_active: m.is_active,
-      orders,
-      revenue: parseFloat(revenue.toFixed(2)),
-      ads,
-      cogs,
-      profit,
-      commission_pct: commPct,
-      komisen,
-      basic_salary: basicSalary,
+      id: m.id, name: m.full_name || 'Marketer', code: m.marketer_code || null, is_active: m.is_active,
+      orders, revenue: parseFloat(revenue.toFixed(2)),
+      product_cogs, postage, cogs, gross_profit, ads, profit,
+      commission_pct: commPct, komisen, basic_salary: basicSalary,
       est_gaji: parseFloat((basicSalary + komisen).toFixed(2)),
     });
   }
 
   // HQ row (marketer_id IS NULL)
-  const hqSubs = subMap['__hq__'] || [];
-  const hqOrders  = hqSubs.length;
-  const hqRevenue = hqSubs.reduce((s, sub) => s + parseAmount(sub), 0);
-  const hqCogs    = calcCOGS(hqSubs);
-  const hqAds     = parseFloat((adsMap['__hq__'] || 0).toFixed(2));
-  const hqProfit  = parseFloat((hqRevenue - hqAds - hqCogs).toFixed(2));
+  const hqSubs         = subMap['__hq__'] || [];
+  const hqOrders       = hqSubs.length;
+  const hqRevenue      = hqSubs.reduce((s, sub) => s + parseAmount(sub), 0);
+  const hqProductCogs  = calcProductCOGS(hqSubs);
+  const hqPostage      = calcPostage(hqSubs);
+  const hqCogs         = parseFloat((hqProductCogs + hqPostage).toFixed(2));
+  const hqGrossProfit  = parseFloat((hqRevenue - hqCogs).toFixed(2));
+  const hqAds          = parseFloat((adsMap['__hq__'] || 0).toFixed(2));
+  const hqProfit       = parseFloat((hqGrossProfit - hqAds).toFixed(2));
 
   rows.push({
     id: '__hq__', name: 'HQ', code: null, is_active: true,
     orders: hqOrders, revenue: parseFloat(hqRevenue.toFixed(2)),
-    ads: hqAds, cogs: hqCogs, profit: hqProfit,
+    product_cogs: hqProductCogs, postage: hqPostage, cogs: hqCogs,
+    gross_profit: hqGrossProfit, ads: hqAds, profit: hqProfit,
     commission_pct: null, komisen: null, basic_salary: null, est_gaji: null,
   });
 
@@ -171,12 +171,15 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
 
   // Grand totals
   const totals = {
-    orders:  rows.reduce((s, r) => s + r.orders, 0),
-    revenue: parseFloat(rows.reduce((s, r) => s + r.revenue, 0).toFixed(2)),
-    ads:     parseFloat(rows.reduce((s, r) => s + r.ads, 0).toFixed(2)),
-    cogs:    parseFloat(rows.reduce((s, r) => s + r.cogs, 0).toFixed(2)),
-    profit:  parseFloat(rows.reduce((s, r) => s + r.profit, 0).toFixed(2)),
-    komisen: parseFloat(rows.filter(r => r.komisen !== null).reduce((s, r) => s + (r.komisen || 0), 0).toFixed(2)),
+    orders:       rows.reduce((s, r) => s + r.orders, 0),
+    revenue:      parseFloat(rows.reduce((s, r) => s + r.revenue, 0).toFixed(2)),
+    product_cogs: parseFloat(rows.reduce((s, r) => s + r.product_cogs, 0).toFixed(2)),
+    postage:      parseFloat(rows.reduce((s, r) => s + r.postage, 0).toFixed(2)),
+    cogs:         parseFloat(rows.reduce((s, r) => s + r.cogs, 0).toFixed(2)),
+    gross_profit: parseFloat(rows.reduce((s, r) => s + r.gross_profit, 0).toFixed(2)),
+    ads:          parseFloat(rows.reduce((s, r) => s + r.ads, 0).toFixed(2)),
+    profit:       parseFloat(rows.reduce((s, r) => s + r.profit, 0).toFixed(2)),
+    komisen:      parseFloat(rows.filter(r => r.komisen !== null).reduce((s, r) => s + (r.komisen || 0), 0).toFixed(2)),
   };
 
   return { rows, totals };
