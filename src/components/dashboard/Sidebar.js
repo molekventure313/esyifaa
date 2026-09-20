@@ -115,6 +115,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Salespage', href: '/dashboard/admin/salespage' },
     { label: 'Conversion Rate', href: '/dashboard/admin/salespage/conversion-rate' },
     { label: 'Tracking & Pixel', href: '/dashboard/admin/tracking' },
+    { label: '📊 UTM Analytics', href: '/dashboard/admin/utm-analytics' },
     { label: '💬 WA Perawat', href: '/dashboard/admin/wasap' },
     { label: 'Log Aktiviti', href: '/dashboard/admin/log' }
   ];
