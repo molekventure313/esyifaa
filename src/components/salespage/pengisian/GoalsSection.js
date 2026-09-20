@@ -33,55 +33,58 @@ export default function PengisianGoalsSection() {
 
   return (
     <section style={{
-      background: '#042E23',
-      color: '#FFFFFF',
+      background: '#FFFFFF',
+      color: '#0F172A',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(254, 243, 199, 0.15)',
+      borderBottom: '1px solid #E2E8F0',
     }}>
       <div style={{ maxWidth: '860px', margin: '0 auto', textAlign: 'center' }}>
         
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          background: 'rgba(253,224,71,0.12)', border: '1px solid #FDE047',
-          padding: '0.4rem 1.1rem', borderRadius: '50px', marginBottom: '1.25rem',
-          fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
+          background: '#ECFDF5', border: '1.5px solid #86EFAC',
+          padding: '0.4rem 1.15rem', borderRadius: '50px', marginBottom: '1.25rem',
+          fontSize: '0.8rem', fontWeight: 800, color: '#065F46',
+          letterSpacing: '0.04em', textTransform: 'uppercase',
+          boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
         }}>
           🎯 Kehidupan Selepas Ikhtiar
         </div>
 
         <h2 style={{
-          fontSize: 'clamp(1.5rem, 3.5vw, 2.3rem)',
-          fontWeight: 800, color: '#FDE047',
-          marginTop: '0.4rem', marginBottom: '0.75rem',
+          fontSize: 'clamp(1.55rem, 3.5vw, 2.35rem)',
+          fontWeight: 900, color: '#0F172A',
+          marginTop: '0.3rem', marginBottom: '0.75rem',
           letterSpacing: '-0.02em', lineHeight: 1.25,
         }}>
           5 Perubahan Positif Yang Bakal Anda Rasai
         </h2>
 
-        <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '680px', margin: '0 auto 2.75rem auto' }}>
+        <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '680px', margin: '0 auto 2.75rem auto' }}>
           Bayangkan nikmat hidup tanpa ketakutan gangguan ghaib. Inilah transformasi yang dilalui oleh para pesakit yang telah berikhtiar dengan Pengisian E-Syifa&apos;.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem', textAlign: 'left' }}>
           {GOALS.map((g, i) => (
             <div key={i} style={{
-              background: '#FFFFFF', border: '2px solid #FDE047',
-              borderRadius: '16px', padding: '1.35rem 1.6rem',
-              display: 'flex', alignItems: 'flex-start', gap: '1.1rem',
-              boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
+              background: '#F8FAFC', border: '1.5px solid #E2E8F0',
+              borderRadius: '18px', padding: '1.5rem 1.6rem',
+              display: 'flex', alignItems: 'flex-start', gap: '1.25rem',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
+              transition: 'transform 0.15s ease',
             }}>
               <div style={{
-                width: '50px', height: '50px', borderRadius: '14px',
-                background: '#ECFDF5', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: '1.6rem', flexShrink: 0,
+                width: '54px', height: '54px', borderRadius: '14px',
+                background: '#ECFDF5', border: '1px solid #A7F3D0',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: '1.7rem', flexShrink: 0,
               }}>{g.icon}</div>
               <div>
-                <p style={{ margin: '0 0 0.35rem 0', fontWeight: 800, fontSize: '1.02rem', color: '#042E23' }}>
+                <p style={{ margin: '0 0 0.35rem 0', fontWeight: 800, fontSize: '1.05rem', color: '#064E3B' }}>
                   {g.title}
                 </p>
-                <p style={{ margin: 0, fontSize: '0.88rem', color: '#374151', lineHeight: 1.65 }}>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', lineHeight: 1.65 }}>
                   {g.desc}
                 </p>
               </div>

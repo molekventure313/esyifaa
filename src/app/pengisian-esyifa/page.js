@@ -28,7 +28,7 @@ export const metadata = {
 
 export default function PengisianEsyifaPage() {
   return (
-    <main style={{ minHeight: '100vh', background: '#042E23' }}>
+    <main style={{ minHeight: '100vh', background: '#FFFFFF', color: '#0F172A' }}>
       <MarketerPixelProvider />
 
       {/* #01 — Announcement Bar */}
@@ -91,18 +91,18 @@ export default function PengisianEsyifaPage() {
       {/* Floating WhatsApp Help Button */}
       <FloatingWAButton group="pengisian" />
 
-      {/* Footer */}
+      {/* Footer Tema Cerah & Kemas */}
       <footer style={{
-        background: '#021812', color: '#FFFFFF',
-        padding: '2.5rem 1rem', textAlign: 'center',
-        fontSize: '0.85rem', borderTop: '1px solid rgba(254,243,199,0.15)',
+        background: '#F8FAFC', color: '#475569',
+        padding: '3rem 1rem', textAlign: 'center',
+        fontSize: '0.85rem', borderTop: '1px solid #E2E8F0',
         fontFamily: 'var(--font-inter), -apple-system, sans-serif',
       }}>
         <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.05rem', color: '#FEF3C7' }}>
+          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.05rem', color: '#042E23' }}>
             ESyifaa · Pengisian Ayat Ruqyah Syar&apos;iyyah Jarak Jauh
           </p>
-          <p style={{ margin: 0, opacity: 0.85, fontSize: '0.8rem', color: '#D1D5DB' }}>
+          <p style={{ margin: 0, opacity: 0.85, fontSize: '0.82rem', color: '#64748B' }}>
             © {new Date().getFullYear()} ESyifaa. Hak cipta terpelihara. Rawatan berasaskan bacaan Al-Quran dan doa berlandaskan syarak. Tiada unsur khurafat atau jin.
           </p>
         </div>

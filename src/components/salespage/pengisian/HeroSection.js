@@ -11,22 +11,23 @@ export default function PengisianHeroSection() {
 
   return (
     <section style={{
-      background: 'linear-gradient(180deg, #021812 0%, #042E23 100%)',
-      color: '#FFFFFF',
+      background: 'linear-gradient(180deg, #ECFDF5 0%, #F0FDF4 40%, #FFFFFF 100%)',
+      color: '#0F172A',
       padding: '4.5rem 1.25rem 3.5rem',
       fontFamily: ff,
       textAlign: 'center',
-      borderBottom: '1px solid rgba(254, 243, 199, 0.12)',
+      borderBottom: '1px solid #A7F3D0',
     }}>
       <div style={{ maxWidth: '880px', margin: '0 auto' }}>
 
-        {/* Badge */}
+        {/* Pill Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          background: 'rgba(253,224,71,0.12)', border: '1px solid #FDE047',
-          padding: '0.4rem 1.2rem', borderRadius: '50px', marginBottom: '1.25rem',
-          fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
+          background: '#FFFFFF', border: '1.5px solid #6EE7B7',
+          padding: '0.45rem 1.25rem', borderRadius: '50px', marginBottom: '1.25rem',
+          fontSize: '0.8rem', fontWeight: 800, color: '#065F46',
+          letterSpacing: '0.04em', textTransform: 'uppercase',
+          boxShadow: '0 2px 10px rgba(5, 150, 105, 0.08)',
         }}>
           🌿 ESyifaa · Pengisian Ayat Ruqyah Jarak Jauh
         </div>
@@ -34,65 +35,64 @@ export default function PengisianHeroSection() {
         {/* Social Proof Stars Badge */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: '0.4rem', marginBottom: '1.5rem',
+          gap: '0.45rem', marginBottom: '1.5rem',
         }}>
-          <span style={{ color: '#FDE047', fontSize: '1.05rem', letterSpacing: '2px' }}>⭐⭐⭐⭐⭐</span>
-          <span style={{ fontSize: '0.85rem', color: '#FEF3C7', fontWeight: 700 }}>
-            Dinilai 4.9/5 oleh 850+ Pesakit Yang Telah Berikhtiar
+          <span style={{ color: '#D97706', fontSize: '1.1rem', letterSpacing: '2px' }}>⭐⭐⭐⭐⭐</span>
+          <span style={{ fontSize: '0.88rem', color: '#334155', fontWeight: 700 }}>
+            Dinilai <strong style={{ color: '#0F172A' }}>4.9/5</strong> oleh 850+ Pesakit Yang Telah Berikhtiar
           </span>
         </div>
 
-        {/* H1 — Headline Arahan Pengguna */}
+        {/* H1 — Headline Arahan Pengguna (High Contrast & Clear) */}
         <h1 style={{
-          fontSize: 'clamp(1.7rem, 4.2vw, 2.75rem)',
-          fontWeight: 900, color: '#FEF3C7',
+          fontSize: 'clamp(1.75rem, 4.3vw, 2.85rem)',
+          fontWeight: 900, color: '#0F172A',
           lineHeight: 1.25, letterSpacing: '-0.025em',
           marginBottom: '1.25rem',
         }}>
           Alhamdulillah Gangguan Jin &amp; Sihir Yang Dihantar Berulang kali pulih...{' '}
-          <span style={{ color: '#FDE047' }}>Selepas Guna Item Pengisian E-Syifa</span>
+          <span style={{ color: '#047857' }}>Selepas Guna Item Pengisian E-Syifa</span>
         </h1>
 
         {/* H4 — Subheadline Cadangan Disahkan */}
         <h4 style={{
           fontSize: 'clamp(1.05rem, 2.2vw, 1.25rem)',
-          fontWeight: 600, color: '#A7F3D0',
+          fontWeight: 600, color: '#1E293B',
           lineHeight: 1.65, maxWidth: '720px',
-          margin: '0 auto 1.75rem auto',
+          margin: '0 auto 1.5rem auto',
         }}>
           Rawat diri sendiri 24 jam di rumah tanpa perlu ulang-alik ke pusat rawatan dan membakar ribuan ringgit.
         </h4>
 
         {/* Problem framing */}
         <p style={{
-          fontSize: '0.98rem', color: '#D1FAE5',
+          fontSize: '1rem', color: '#475569',
           lineHeight: 1.75, maxWidth: '680px',
           margin: '0 auto 1.75rem auto',
-          opacity: 0.9,
         }}>
           Perawat boleh bantu buang jin — tapi bila balik ke rumah, sihir dihantar semula dan gangguan datang balik.{' '}
-          <strong style={{ color: '#FEF3C7' }}>Satu sesi rawatan tidak pernah cukup untuk kes sihir dendam &amp; saka kronik.</strong>
+          <strong style={{ color: '#0F172A' }}>Satu sesi rawatan tidak pernah cukup untuk kes sihir dendam &amp; saka kronik.</strong>
         </p>
 
-        {/* Solution callout box */}
+        {/* Solution callout box (Light, High Contrast) */}
         <div style={{
-          background: 'rgba(253,224,71,0.08)',
-          border: '2px solid rgba(253,224,71,0.35)',
+          background: '#FFFFFF',
+          border: '2px solid #10B981',
           borderRadius: '16px',
           padding: '1.25rem 1.75rem',
           maxWidth: '680px',
           margin: '0 auto 2.25rem auto',
           textAlign: 'left',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+          boxShadow: '0 8px 24px rgba(16, 185, 129, 0.12)',
         }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#FDE047', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+          <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#059669', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
             ✨ Penyelesaian Sebenar
           </div>
-          <p style={{ margin: 0, fontSize: '0.96rem', color: '#FEF3C7', lineHeight: 1.65, fontWeight: 600 }}>
-            <strong style={{ color: '#FDE047' }}>Pengisian E-Syifa&apos; Pada Item Peribadi Anda</strong> —
-            dipasakkan bacaan ayat ruqyah syar&apos;iyyah selama 3 hari.
+          <p style={{ margin: 0, fontSize: '0.98rem', color: '#0F172A', lineHeight: 1.65, fontWeight: 600 }}>
+            <strong style={{ color: '#047857' }}>Pengisian E-Syifa&apos; Pada Item Peribadi Anda</strong> —
+            dipasakkan bacaan ayat ruqyah syar&apos;iyyah selama 3 hari berturut-turut.
             Ibarat ada perawat peribadi di sisi anda.
-            <span style={{ color: '#4ADE80' }}> Rawat sendiri, tanpa had, selamat seumur hidup.</span>
+            <span style={{ color: '#059669' }}> Rawat sendiri, tanpa had, selamat seumur hidup.</span>
           </p>
         </div>
 
@@ -108,27 +108,28 @@ export default function PengisianHeroSection() {
             '⏱️ Siap Dalam 3 Hari Berturut',
           ].map((item, i) => (
             <span key={i} style={{
-              background: 'rgba(167,243,208,0.1)',
-              border: '1px solid rgba(167,243,208,0.25)',
-              color: '#A7F3D0', fontSize: '0.82rem',
-              fontWeight: 600, padding: '0.35rem 0.95rem',
+              background: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              color: '#065F46', fontSize: '0.84rem',
+              fontWeight: 700, padding: '0.4rem 1rem',
               borderRadius: '999px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
             }}>{item}</span>
           ))}
         </div>
 
-        {/* Visual Focus */}
+        {/* Visual Focus (Light Card) */}
         <div style={{
-          width: '140px', height: '140px', borderRadius: '50%',
-          background: 'radial-gradient(circle at 35% 35%, #065F46, #021812)',
-          border: '3px solid #FDE047',
+          width: '130px', height: '130px', borderRadius: '50%',
+          background: 'radial-gradient(circle at 35% 35%, #FFFFFF, #ECFDF5)',
+          border: '3px solid #10B981',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 2.5rem auto',
-          boxShadow: '0 0 50px rgba(253,224,71,0.2), 0 20px 40px rgba(0,0,0,0.5)',
+          boxShadow: '0 10px 30px rgba(16, 185, 129, 0.2)',
         }}>
-          <span style={{ fontSize: '3rem' }}>💎</span>
-          <span style={{ fontSize: '0.65rem', color: '#FDE047', fontWeight: 800, letterSpacing: '0.05em', marginTop: '0.2rem' }}>
+          <span style={{ fontSize: '2.8rem' }}>💎</span>
+          <span style={{ fontSize: '0.65rem', color: '#065F46', fontWeight: 900, letterSpacing: '0.05em', marginTop: '0.2rem' }}>
             ITEM PENGISIAN
           </span>
         </div>
@@ -143,7 +144,7 @@ export default function PengisianHeroSection() {
               fontSize: '1.12rem', fontWeight: 800, color: '#042E23',
               background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
               borderRadius: '50px', textDecoration: 'none',
-              boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
+              boxShadow: '0 8px 25px rgba(234, 179, 8, 0.4)',
               border: '2px solid #FEF08A', letterSpacing: '-0.01em',
               transition: 'transform 0.15s ease',
             }}
@@ -152,7 +153,7 @@ export default function PengisianHeroSection() {
           >
             👉🏻 Tempah Pengisian Item Anda Sekarang
           </a>
-          <p style={{ marginTop: '0.85rem', fontSize: '0.82rem', color: '#6EE7B7' }}>
+          <p style={{ marginTop: '0.85rem', fontSize: '0.84rem', color: '#64748B', fontWeight: 500 }}>
             🔒 Bayaran Selamat Melalui FPX Online Banking · Pelarasan Mingguan Percuma
           </p>
         </div>

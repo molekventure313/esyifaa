@@ -38,54 +38,54 @@ export default function PengisianProblemSection() {
 
   return (
     <section style={{
-      background: '#0B382D',
-      color: '#FFFFFF',
+      background: '#F8FAFC',
+      color: '#0F172A',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
       textAlign: 'center',
-      borderBottom: '1px solid rgba(254, 243, 199, 0.15)',
+      borderBottom: '1px solid #E2E8F0',
     }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          background: 'rgba(253,224,71,0.12)', border: '1px solid #FDE047',
+          background: '#FEF2F2', border: '1px solid #FECACA',
           padding: '0.4rem 1.1rem', borderRadius: '50px', marginBottom: '1.25rem',
-          fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
+          fontSize: '0.8rem', fontWeight: 800, color: '#DC2626',
+          letterSpacing: '0.04em', textTransform: 'uppercase',
         }}>
           ⚠️ 6 Realiti Pahit Yang Kerap Berulang
         </div>
 
         <h2 style={{
-          fontSize: 'clamp(1.5rem, 3.5vw, 2.3rem)',
-          fontWeight: 800, color: '#FDE047',
-          marginTop: '0.4rem', marginBottom: '0.75rem',
+          fontSize: 'clamp(1.55rem, 3.5vw, 2.3rem)',
+          fontWeight: 900, color: '#0F172A',
+          marginTop: '0.3rem', marginBottom: '0.75rem',
           letterSpacing: '-0.02em', lineHeight: 1.25,
         }}>
           Kenapa Rawatan Luar Sahaja Tak Pernah Selesai Untuk Kes Berat &amp; Berulang?
         </h2>
 
-        <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '720px', margin: '0 auto 2.75rem auto' }}>
+        <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '720px', margin: '0 auto 2.75rem auto' }}>
           Ramai pesakit rasa lega seketika — tapi selang beberapa hari, gangguan datang balik. Ini bukan salah perawat.
           Ini hakikat sihir dendam &amp; saka yang memerlukan{' '}
-          <strong style={{ color: '#FDE047' }}>benteng perlindungan harian yang sentiasa bersama jasad anda.</strong>
+          <strong style={{ color: '#DC2626' }}>benteng perlindungan harian yang sentiasa bersama jasad anda.</strong>
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', textAlign: 'left' }}>
           {PROBLEMS.map((p, i) => (
             <div key={i} style={{
-              background: '#064E3B',
-              border: '1px solid rgba(253,224,71,0.25)',
+              background: '#FFFFFF',
+              border: '1.5px solid #E2E8F0',
               borderRadius: '16px', padding: '1.6rem 1.4rem',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
               transition: 'transform 0.15s ease',
             }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{p.icon}</div>
-              <div style={{ fontWeight: 800, color: '#FDE047', marginBottom: '0.5rem', fontSize: '0.98rem', lineHeight: 1.35 }}>
+              <div style={{ fontWeight: 800, color: '#0F172A', marginBottom: '0.5rem', fontSize: '1.02rem', lineHeight: 1.35 }}>
                 {p.title}
               </div>
-              <p style={{ margin: 0, fontSize: '0.86rem', color: '#D1FAE5', lineHeight: 1.65 }}>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', lineHeight: 1.65 }}>
                 {p.desc}
               </p>
             </div>

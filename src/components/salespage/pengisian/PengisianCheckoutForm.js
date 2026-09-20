@@ -200,44 +200,44 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
     <section
       id="borang"
       style={{
-        background: 'linear-gradient(180deg, #031E17 0%, #042E23 50%, #021812 100%)',
-        color: '#FFFFFF',
+        background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
+        color: '#0F172A',
         padding: '2rem 1.25rem 5rem',
         fontFamily: ff,
       }}
     >
       <div style={{ maxWidth: '780px', margin: '0 auto' }}>
 
-        {/* Form Container */}
+        {/* Form Container (Clean White & High Contrast) */}
         <div style={{
-          background: '#042E23',
-          border: '2px solid rgba(253,224,71,0.4)',
+          background: '#FFFFFF',
+          border: '2px solid #CBD5E1',
           borderRadius: '24px',
-          padding: '2rem 1.5rem',
-          boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+          padding: '2.5rem 1.75rem',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.06)',
         }}>
 
           {/* Form Header */}
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.25rem' }}>
             <span style={{
               display: 'inline-block',
-              background: 'rgba(253,224,71,0.12)', border: '1px solid #FDE047',
-              color: '#FDE047', padding: '0.35rem 1rem', borderRadius: '50px',
-              fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase',
-              letterSpacing: '0.08em', marginBottom: '0.75rem',
+              background: '#ECFDF5', border: '1.5px solid #86EFAC',
+              color: '#065F46', padding: '0.4rem 1.2rem', borderRadius: '50px',
+              fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase',
+              letterSpacing: '0.04em', marginBottom: '0.75rem',
             }}>
               Langkah 1: Pilih Pakej Pengisian
             </span>
-            <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.45rem', fontWeight: 900, color: '#FEF3C7' }}>
+            <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.55rem', fontWeight: 900, color: '#0F172A' }}>
               Borang Tempahan Pengisian Jarak Jauh
             </h3>
-            <p style={{ margin: 0, fontSize: '0.88rem', color: '#A7F3D0' }}>
+            <p style={{ margin: 0, fontSize: '0.92rem', color: '#64748B' }}>
               Diisi selama 3 hari berturut-turut · Pelarasan mingguan percuma selamanya
             </p>
           </div>
 
           {/* ── 3 Volume Packages Grid ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginBottom: '2.25rem' }}>
             {PACKAGES.map((p, idx) => {
               const isSelected = selectedPkg === idx;
               return (
@@ -245,52 +245,52 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                   key={idx}
                   onClick={() => setSelectedPkg(idx)}
                   style={{
-                    border: isSelected ? '2px solid #FDE047' : '1.5px solid rgba(74,222,128,0.25)',
-                    background: isSelected ? 'linear-gradient(135deg, rgba(253,224,71,0.12), rgba(6,95,70,0.4))' : 'rgba(2,24,18,0.6)',
+                    border: isSelected ? '2.5px solid #059669' : '1.5px solid #E2E8F0',
+                    background: isSelected ? '#F0FDF4' : '#FFFFFF',
                     borderRadius: '16px',
-                    padding: '1.25rem 1.4rem',
+                    padding: '1.35rem 1.5rem',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     position: 'relative',
-                    boxShadow: isSelected ? '0 0 25px rgba(253,224,71,0.15)' : 'none',
+                    boxShadow: isSelected ? '0 4px 20px rgba(5, 150, 105, 0.12)' : 'none',
                   }}
                 >
                   {p.badge && (
                     <div style={{
-                      position: 'absolute', top: '-10px', right: '16px',
+                      position: 'absolute', top: '-11px', right: '18px',
                       background: 'linear-gradient(90deg, #FDE047, #EAB308)',
-                      color: '#042E23', fontSize: '0.68rem', fontWeight: 900,
-                      padding: '0.2rem 0.65rem', borderRadius: '999px',
-                      textTransform: 'uppercase', letterSpacing: '0.05em',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                      color: '#042E23', fontSize: '0.7rem', fontWeight: 900,
+                      padding: '0.25rem 0.75rem', borderRadius: '999px',
+                      textTransform: 'uppercase', letterSpacing: '0.04em',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
                     }}>
                       {p.badge}
                     </div>
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.9rem' }}>
                       <input
                         type="radio"
                         checked={isSelected}
                         onChange={() => setSelectedPkg(idx)}
-                        style={{ accentColor: '#FDE047', width: '20px', height: '20px', marginTop: '3px', cursor: 'pointer' }}
+                        style={{ accentColor: '#059669', width: '22px', height: '22px', marginTop: '3px', cursor: 'pointer' }}
                       />
                       <div>
-                        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FEF3C7', marginBottom: '0.25rem' }}>
+                        <div style={{ fontSize: '1.08rem', fontWeight: 900, color: '#0F172A', marginBottom: '0.25rem' }}>
                           {p.label}
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#A7F3D0', lineHeight: 1.4 }}>
+                        <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.45 }}>
                           {p.sublabel}
                         </div>
                       </div>
                     </div>
 
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#FDE047', lineHeight: 1 }}>
+                      <div style={{ fontSize: '1.55rem', fontWeight: 900, color: '#059669', lineHeight: 1 }}>
                         RM{p.price}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#F87171', textDecoration: 'line-through', marginTop: '0.2rem' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#94A3B8', textDecoration: 'line-through', marginTop: '0.25rem' }}>
                         RM{p.originalPrice}
                       </div>
                     </div>
@@ -301,7 +301,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
           </div>
 
           {/* ── Form Inputs ── */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.35rem' }}>
             {/* Honeypot */}
             <input
               type="text"
@@ -313,11 +313,11 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
               autoComplete="off"
             />
 
-            <div style={{ borderTop: '1px dashed rgba(74,222,128,0.3)', paddingTop: '1.5rem' }}>
+            <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
               <span style={{
                 display: 'inline-block',
-                fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
-                textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1rem',
+                fontSize: '0.82rem', fontWeight: 900, color: '#065F46',
+                textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem',
               }}>
                 Langkah 2: Maklumat Pelanggan &amp; Item
               </span>
@@ -325,8 +325,8 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
 
             {/* Nama Penuh */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#FEF3C7', marginBottom: '0.4rem' }}>
-                Nama Penuh Anda <span style={{ color: '#F87171' }}>*</span>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.4rem' }}>
+                Nama Penuh Anda <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <input
                 type="text"
@@ -336,17 +336,17 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 placeholder="Cth: Ahmad bin Sulaiman"
                 required
                 style={{
-                  width: '100%', padding: '0.85rem 1rem', borderRadius: '10px',
-                  background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
-                  color: '#FFFFFF', fontSize: '0.94rem', outline: 'none', boxSizing: 'border-box',
+                  width: '100%', padding: '0.9rem 1rem', borderRadius: '12px',
+                  background: '#FFFFFF', border: '1.5px solid #CBD5E1',
+                  color: '#0F172A', fontSize: '0.96rem', outline: 'none', boxSizing: 'border-box',
                 }}
               />
             </div>
 
             {/* Nombor WhatsApp */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#FEF3C7', marginBottom: '0.4rem' }}>
-                Nombor WhatsApp <span style={{ color: '#F87171' }}>*</span>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.4rem' }}>
+                Nombor WhatsApp <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <select
@@ -354,13 +354,13 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                   value={formData.dialCode}
                   onChange={handleChange}
                   style={{
-                    padding: '0.85rem 0.6rem', borderRadius: '10px',
-                    background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
-                    color: '#FFFFFF', fontSize: '0.94rem', outline: 'none', cursor: 'pointer',
+                    padding: '0.9rem 0.75rem', borderRadius: '12px',
+                    background: '#F8FAFC', border: '1.5px solid #CBD5E1',
+                    color: '#0F172A', fontSize: '0.96rem', outline: 'none', cursor: 'pointer', fontWeight: 600,
                   }}
                 >
                   {DIAL_CODES.map(d => (
-                    <option key={d.code} value={d.code} style={{ background: '#021812', color: '#fff' }}>
+                    <option key={d.code} value={d.code}>
                       {d.flag} {d.code}
                     </option>
                   ))}
@@ -373,21 +373,21 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                   placeholder="123456789"
                   required
                   style={{
-                    flex: 1, padding: '0.85rem 1rem', borderRadius: '10px',
-                    background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
-                    color: '#FFFFFF', fontSize: '0.94rem', outline: 'none', boxSizing: 'border-box',
+                    flex: 1, padding: '0.9rem 1rem', borderRadius: '12px',
+                    background: '#FFFFFF', border: '1.5px solid #CBD5E1',
+                    color: '#0F172A', fontSize: '0.96rem', outline: 'none', boxSizing: 'border-box',
                   }}
                 />
               </div>
-              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.74rem', color: '#6EE7B7' }}>
+              <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.78rem', color: '#64748B' }}>
                 Perawat akan menghubungi nombor ini dalam masa 24 jam untuk pengesahan pengisian.
               </p>
             </div>
 
             {/* Jenis / Nama Barang Yang Ingin Diisi */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#FEF3C7', marginBottom: '0.4rem' }}>
-                Jenis &amp; Nama Barang Yang Ingin Diisikan <span style={{ color: '#F87171' }}>*</span>
+              <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.4rem' }}>
+                Jenis &amp; Nama Barang Yang Ingin Diisikan <span style={{ color: '#DC2626' }}>*</span>
               </label>
               <textarea
                 name="item_description"
@@ -397,28 +397,28 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 rows={3}
                 required
                 style={{
-                  width: '100%', padding: '0.85rem 1rem', borderRadius: '10px',
-                  background: '#021812', border: '1.5px solid rgba(74,222,128,0.35)',
-                  color: '#FFFFFF', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box',
+                  width: '100%', padding: '0.9rem 1rem', borderRadius: '12px',
+                  background: '#FFFFFF', border: '1.5px solid #CBD5E1',
+                  color: '#0F172A', fontSize: '0.94rem', outline: 'none', boxSizing: 'border-box',
                   fontFamily: ff, lineHeight: 1.5,
                 }}
               />
-              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.74rem', color: '#6EE7B7' }}>
+              <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.78rem', color: '#64748B' }}>
                 Nyatakan mengikut bilangan item dalam pakej yang anda pilih di atas (1, 2 atau 3 barang).
               </p>
             </div>
 
-            {/* ── Dual Bump Offers (Add-ons) ── */}
-            <div style={{ borderTop: '1px dashed rgba(74,222,128,0.3)', paddingTop: '1.5rem' }}>
+            {/* ── Dual Bump Offers (Add-ons) (Clean Light Theme) ── */}
+            <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
               <div style={{
-                background: 'rgba(253,224,71,0.08)',
-                border: '1.5px solid rgba(253,224,71,0.3)',
+                background: '#FFFBEB',
+                border: '1.5px solid #FCD34D',
                 borderRadius: '16px',
-                padding: '1.25rem',
+                padding: '1.35rem',
               }}>
                 <div style={{
-                  fontSize: '0.88rem', fontWeight: 800, color: '#FDE047',
-                  marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  fontSize: '0.92rem', fontWeight: 900, color: '#92400E',
+                  marginBottom: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
                 }}>
                   <span>⚡</span> Nak Benteng Fizikal Tambahan Di Rumah? (Pilihan Tambahan)
                 </div>
@@ -427,9 +427,9 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 <label
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: '0.75rem', padding: '0.85rem 1rem',
-                    background: addKasturi ? 'rgba(253,224,71,0.15)' : 'rgba(2,24,18,0.6)',
-                    border: addKasturi ? '1.5px solid #FDE047' : '1px solid rgba(74,222,128,0.2)',
+                    gap: '0.75rem', padding: '0.9rem 1rem',
+                    background: addKasturi ? '#FEF3C7' : '#FFFFFF',
+                    border: addKasturi ? '2px solid #D97706' : '1px solid #E2E8F0',
                     borderRadius: '12px', cursor: 'pointer', marginBottom: '0.75rem',
                     transition: 'all 0.15s ease',
                   }}
@@ -439,18 +439,18 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                       type="checkbox"
                       checked={addKasturi}
                       onChange={e => setAddKasturi(e.target.checked)}
-                      style={{ accentColor: '#FDE047', width: '18px', height: '18px', cursor: 'pointer' }}
+                      style={{ accentColor: '#D97706', width: '20px', height: '20px', cursor: 'pointer' }}
                     />
                     <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FEF3C7' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>
                         + Minyak Kasturi Kijang Ruqyah Asli (Pati)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: '#A7F3D0' }}>
+                      <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
                         Bauan sunnah yang dibenci jin, benteng lebam &amp; ditindih malam
                       </div>
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FDE047', flexShrink: 0 }}>
+                  <span style={{ fontSize: '1rem', fontWeight: 900, color: '#B45309', flexShrink: 0 }}>
                     +RM20
                   </span>
                 </label>
@@ -459,9 +459,9 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 <label
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: '0.75rem', padding: '0.85rem 1rem',
-                    background: addSabun ? 'rgba(253,224,71,0.15)' : 'rgba(2,24,18,0.6)',
-                    border: addSabun ? '1.5px solid #FDE047' : '1px solid rgba(74,222,128,0.2)',
+                    gap: '0.75rem', padding: '0.9rem 1rem',
+                    background: addSabun ? '#FEF3C7' : '#FFFFFF',
+                    border: addSabun ? '2px solid #D97706' : '1px solid #E2E8F0',
                     borderRadius: '12px', cursor: 'pointer',
                     transition: 'all 0.15s ease',
                   }}
@@ -471,18 +471,18 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                       type="checkbox"
                       checked={addSabun}
                       onChange={e => setAddSabun(e.target.checked)}
-                      style={{ accentColor: '#FDE047', width: '18px', height: '18px', cursor: 'pointer' }}
+                      style={{ accentColor: '#D97706', width: '20px', height: '20px', cursor: 'pointer' }}
                     />
                     <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FEF3C7' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A' }}>
                         + Sabun Bidara Garam Bukit Pengisian (200g)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: '#A7F3D0' }}>
+                      <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
                         Mandian buang angin bisa saka &amp; sihir pada liang roma
                       </div>
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FDE047', flexShrink: 0 }}>
+                  <span style={{ fontSize: '1rem', fontWeight: 900, color: '#B45309', flexShrink: 0 }}>
                     +RM25
                   </span>
                 </label>
@@ -492,42 +492,42 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
             {/* Error Message */}
             {errorMessage && (
               <div style={{
-                background: 'rgba(239,68,68,0.15)', border: '1.5px solid #EF4444',
-                color: '#FCA5A5', padding: '0.85rem 1rem', borderRadius: '10px',
-                fontSize: '0.85rem', textAlign: 'center', fontWeight: 600,
+                background: '#FEF2F2', border: '1.5px solid #EF4444',
+                color: '#DC2626', padding: '0.85rem 1rem', borderRadius: '12px',
+                fontSize: '0.88rem', textAlign: 'center', fontWeight: 700,
               }}>
                 ⚠️ {errorMessage}
               </div>
             )}
 
-            {/* ── Ringkasan & Submit ── */}
+            {/* ── Ringkasan & Submit (Clean Light Box) ── */}
             <div style={{
-              background: '#021812',
-              border: '1.5px solid rgba(253,224,71,0.3)',
-              borderRadius: '16px', padding: '1.25rem 1.4rem', marginTop: '0.5rem',
+              background: '#F8FAFC',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: '18px', padding: '1.35rem 1.5rem', marginTop: '0.5rem',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#A7F3D0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.92rem', color: '#475569' }}>
                 <span>{pkg.label}:</span>
-                <span style={{ fontWeight: 700, color: '#FEF3C7' }}>RM{pkg.price}</span>
+                <span style={{ fontWeight: 800, color: '#0F172A' }}>RM{pkg.price}</span>
               </div>
               {addKasturi && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#A7F3D0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.88rem', color: '#475569' }}>
                   <span>+ Kasturi Kijang Ruqyah:</span>
-                  <span style={{ fontWeight: 700, color: '#FDE047' }}>+RM{KASTURI_PRICE}</span>
+                  <span style={{ fontWeight: 800, color: '#B45309' }}>+RM{KASTURI_PRICE}</span>
                 </div>
               )}
               {addSabun && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#A7F3D0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.88rem', color: '#475569' }}>
                   <span>+ Sabun Bidara Garam:</span>
-                  <span style={{ fontWeight: 700, color: '#FDE047' }}>+RM{SABUN_PRICE}</span>
+                  <span style={{ fontWeight: 800, color: '#B45309' }}>+RM{SABUN_PRICE}</span>
                 </div>
               )}
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                borderTop: '1px solid rgba(74,222,128,0.2)', paddingTop: '0.75rem', marginTop: '0.5rem',
+                borderTop: '1.5px solid #E2E8F0', paddingTop: '0.85rem', marginTop: '0.6rem',
               }}>
-                <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF' }}>Jumlah Bayaran:</span>
-                <span style={{ fontSize: '1.6rem', fontWeight: 900, color: '#FDE047' }}>RM{grandTotal}</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>Jumlah Bayaran:</span>
+                <span style={{ fontSize: '1.75rem', fontWeight: 900, color: '#059669' }}>RM{grandTotal}</span>
               </div>
             </div>
 
@@ -536,12 +536,12 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
               type="submit"
               disabled={loading}
               style={{
-                width: '100%', padding: '1.2rem',
+                width: '100%', padding: '1.25rem',
                 borderRadius: '50px', border: '2px solid #FEF08A',
                 background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
-                color: '#042E23', fontSize: '1.15rem', fontWeight: 900,
+                color: '#042E23', fontSize: '1.18rem', fontWeight: 900,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
+                boxShadow: '0 8px 25px rgba(234, 179, 8, 0.4)',
                 opacity: loading ? 0.7 : 1,
                 letterSpacing: '-0.01em',
                 transition: 'transform 0.15s ease',
@@ -552,13 +552,13 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
               {loading ? '⏳ Memproses Bayaran FPX...' : `💳 Bayar RM${grandTotal} Melalui FPX Online Banking`}
             </button>
 
-            <p style={{ margin: 0, textAlign: 'center', fontSize: '0.78rem', color: '#6EE7B7' }}>
+            <p style={{ margin: 0, textAlign: 'center', fontSize: '0.8rem', color: '#64748B' }}>
               🔒 Transaksi Selamat 256-bit SSL via Chip In (Maybank, CIMB, Bank Islam, RHB, BSN &amp; semua bank utama)
             </p>
 
             {/* WhatsApp Alternative */}
-            <div style={{ textAlign: 'center', marginTop: '1rem', borderTop: '1px solid rgba(74,222,128,0.2)', paddingTop: '1.25rem' }}>
-              <p style={{ margin: '0 0 0.6rem 0', fontSize: '0.85rem', color: '#A7F3D0' }}>
+            <div style={{ textAlign: 'center', marginTop: '1rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem' }}>
+              <p style={{ margin: '0 0 0.6rem 0', fontSize: '0.88rem', color: '#475569' }}>
                 Ada kesulitan membuat bayaran online banking?
               </p>
               <a
@@ -567,8 +567,8 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 rel="noopener noreferrer"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                  color: '#4ADE80', fontSize: '0.86rem', fontWeight: 700,
-                  textDecoration: 'none', borderBottom: '1px dashed #4ADE80',
+                  color: '#059669', fontSize: '0.9rem', fontWeight: 800,
+                  textDecoration: 'none', borderBottom: '1px dashed #059669',
                   paddingBottom: '2px',
                 }}
               >
@@ -587,7 +587,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
 
 export default function PengisianCheckoutForm({ source = 'pengisian-esyifa' }) {
   return (
-    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#A7F3D0' }}>Memuatkan borang tempahan...</div>}>
+    <Suspense fallback={<div style={{ padding: '3rem', textAlign: 'center', color: '#065F46' }}>Memuatkan borang tempahan...</div>}>
       <PengisianCheckoutFormInner source={source} />
     </Suspense>
   );

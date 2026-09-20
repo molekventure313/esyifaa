@@ -38,54 +38,56 @@ export default function PengisianFearsSection() {
 
   return (
     <section style={{
-      background: 'linear-gradient(180deg, #0B382D 0%, #170707 100%)',
-      color: '#FFFFFF',
+      background: '#FFF5F5',
+      color: '#0F172A',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(248, 113, 113, 0.25)',
+      borderBottom: '1px solid #FECACA',
     }}>
       <div style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center' }}>
         
         <span style={{
           display: 'inline-block',
-          fontSize: '0.78rem', fontWeight: 800, color: '#F87171',
-          textTransform: 'uppercase', letterSpacing: '0.12em',
-          background: 'rgba(239, 68, 68, 0.12)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          padding: '0.35rem 1rem', borderRadius: '999px',
+          fontSize: '0.8rem', fontWeight: 800, color: '#DC2626',
+          textTransform: 'uppercase', letterSpacing: '0.05em',
+          background: '#FFFFFF',
+          border: '1.5px solid #FCA5A5',
+          padding: '0.4rem 1.15rem', borderRadius: '999px',
           marginBottom: '1rem',
+          boxShadow: '0 2px 8px rgba(220, 38, 38, 0.08)',
         }}>
           ⚠️ Sila Beri Perhatian: Perkara Ini Boleh Melarat!
         </span>
 
         <h2 style={{
-          fontSize: 'clamp(1.5rem, 3.5vw, 2.3rem)',
-          fontWeight: 800, color: '#FEF3C7',
+          fontSize: 'clamp(1.55rem, 3.5vw, 2.3rem)',
+          fontWeight: 900, color: '#991B1B',
           marginTop: '0.25rem', marginBottom: '0.75rem',
           letterSpacing: '-0.02em', lineHeight: 1.25,
         }}>
           Apa Yang Bakal Terjadi Jika Sihir &amp; Gangguan Berulang Dibiarkan?
         </h2>
 
-        <p style={{ fontSize: '1rem', color: '#FCA5A5', lineHeight: 1.7, maxWidth: '720px', margin: '0 auto 2.5rem auto' }}>
+        <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '720px', margin: '0 auto 2.5rem auto' }}>
           Jangan ambil mudah dan anggap gangguan akan hilang sendiri. Pengalaman kami merawat ratusan pesakit membuktikan —{' '}
-          <strong style={{ color: '#FDE047' }}>semakin lama ditangguhkan, semakin parah kerosakannya pada jasad dan rumahtangga.</strong>
+          <strong style={{ color: '#DC2626' }}>semakin lama ditangguhkan, semakin parah kerosakannya pada jasad dan rumahtangga.</strong>
         </p>
 
-        {/* Hadith Callout Box */}
+        {/* Hadith Callout Box (Clean Light) */}
         <div style={{
-          background: 'rgba(239, 68, 68, 0.08)',
-          border: '1px solid rgba(239, 68, 68, 0.35)',
+          background: '#FFFFFF',
+          border: '2px solid #F87171',
           borderRadius: '16px',
-          padding: '1.25rem 1.75rem',
+          padding: '1.35rem 1.75rem',
           maxWidth: '780px',
           margin: '0 auto 2.5rem auto',
           textAlign: 'center',
+          boxShadow: '0 4px 15px rgba(239, 68, 68, 0.08)',
         }}>
-          <p style={{ margin: '0 0 0.4rem 0', fontSize: '1.05rem', color: '#FEF3C7', fontStyle: 'italic', lineHeight: 1.7 }}>
+          <p style={{ margin: '0 0 0.4rem 0', fontSize: '1.05rem', color: '#7F1D1D', fontStyle: 'italic', lineHeight: 1.7, fontWeight: 600 }}>
             &ldquo;Sesungguhnya syaitan itu berjalan di dalam tubuh anak Adam mengikut aliran darah.&rdquo;
           </p>
-          <span style={{ fontSize: '0.8rem', color: '#FCA5A5', fontWeight: 700 }}>
+          <span style={{ fontSize: '0.82rem', color: '#DC2626', fontWeight: 800 }}>
             — Hadith Sahih al-Bukhari (No. 3281) &amp; Muslim (No. 2175)
           </span>
         </div>
@@ -94,44 +96,46 @@ export default function PengisianFearsSection() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', textAlign: 'left', marginBottom: '2.5rem' }}>
           {FEARS.map((f, i) => (
             <div key={i} style={{
-              background: 'rgba(248,113,113,0.06)',
-              border: '1.5px solid rgba(248,113,113,0.25)',
-              borderRadius: '16px', padding: '1.5rem 1.3rem',
+              background: '#FFFFFF',
+              border: '1.5px solid #FED7D7',
+              borderRadius: '16px', padding: '1.5rem 1.35rem',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
                 <span style={{
                   fontSize: '1.6rem', lineHeight: 1, flexShrink: 0,
-                  background: 'rgba(248,113,113,0.12)', borderRadius: '10px',
-                  padding: '0.35rem', display: 'inline-flex',
+                  background: '#FEF2F2', borderRadius: '10px',
+                  padding: '0.4rem', display: 'inline-flex',
                 }}>{f.icon}</span>
-                <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#FCA5A5', lineHeight: 1.35 }}>
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#991B1B', lineHeight: 1.35 }}>
                   {f.title}
                 </h3>
               </div>
-              <p style={{ margin: 0, fontSize: '0.86rem', color: '#FEF3C7', lineHeight: 1.65 }}>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', lineHeight: 1.65 }}>
                 {f.desc}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Penyelesaian callout */}
+        {/* Penyelesaian callout (Light Green Contrast) */}
         <div style={{
-          background: 'rgba(253,224,71,0.07)',
-          border: '1px solid rgba(253,224,71,0.35)',
-          borderLeft: '4px solid #FDE047',
+          background: '#F0FDF4',
+          border: '1.5px solid #86EFAC',
+          borderLeft: '5px solid #059669',
           borderRadius: '14px',
           padding: '1.4rem 1.6rem',
           display: 'flex', gap: '1.1rem',
           alignItems: 'flex-start', textAlign: 'left',
           maxWidth: '820px', margin: '0 auto',
+          boxShadow: '0 4px 15px rgba(5, 150, 105, 0.06)',
         }}>
-          <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>🛡️</span>
+          <span style={{ fontSize: '2rem', flexShrink: 0 }}>🛡️</span>
           <div>
-            <p style={{ margin: '0 0 0.35rem 0', fontSize: '1rem', color: '#FEF3C7', fontWeight: 800 }}>
+            <p style={{ margin: '0 0 0.35rem 0', fontSize: '1.02rem', color: '#064E3B', fontWeight: 800 }}>
               Putuskan Kitaran Ini: Miliki Benteng Yang Sentiasa Bersama Jasad Anda
             </p>
-            <p style={{ margin: 0, fontSize: '0.88rem', color: '#A7F3D0', lineHeight: 1.75 }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#166534', lineHeight: 1.75 }}>
               Dengan memasakkan ayat-ayat ruqyah pemutus sihir dan pembakar jin ke dalam barang peribadi anda,
               anda kini ada alat ikhtiar 24 jam untuk membatalkan serangan serta-merta tanpa perlu menunggu perawat luar.
             </p>

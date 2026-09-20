@@ -11,12 +11,12 @@ export default function PengisianClosingSection() {
 
   return (
     <section style={{
-      background: 'linear-gradient(180deg, #031E17 0%, #021812 100%)',
-      color: '#FFFFFF',
+      background: 'linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 100%)',
+      color: '#0F172A',
       padding: '5rem 1.25rem',
       fontFamily: ff,
       textAlign: 'center',
-      borderTop: '1px solid rgba(254, 243, 199, 0.15)',
+      borderTop: '1px solid #BBF7D0',
     }}>
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
         
@@ -26,17 +26,18 @@ export default function PengisianClosingSection() {
 
         <span style={{
           display: 'inline-block',
-          background: 'rgba(253,224,71,0.1)', border: '1px solid rgba(253,224,71,0.4)',
-          color: '#FDE047', padding: '0.4rem 1.1rem', borderRadius: '50px',
-          fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em',
+          background: '#FFFFFF', border: '1.5px solid #86EFAC',
+          color: '#065F46', padding: '0.4rem 1.15rem', borderRadius: '50px',
+          fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.04em',
           textTransform: 'uppercase', marginBottom: '1.25rem',
+          boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
         }}>
           💎 Jangan Biarkan Diri Terus Ditindas
         </span>
 
         <h2 style={{
-          fontSize: 'clamp(1.6rem, 4vw, 2.5rem)',
-          fontWeight: 900, color: '#FEF3C7',
+          fontSize: 'clamp(1.65rem, 4vw, 2.5rem)',
+          fontWeight: 900, color: '#0F172A',
           marginTop: '0.25rem', marginBottom: '1rem',
           letterSpacing: '-0.02em', lineHeight: 1.25,
         }}>
@@ -44,7 +45,7 @@ export default function PengisianClosingSection() {
         </h2>
 
         <p style={{
-          fontSize: '1.05rem', color: '#D1FAE5',
+          fontSize: '1.05rem', color: '#475569',
           lineHeight: 1.8, marginBottom: '2.5rem',
           maxWidth: '620px', margin: '0 auto 2.5rem auto',
         }}>
@@ -62,7 +63,7 @@ export default function PengisianClosingSection() {
               fontSize: '1.12rem', fontWeight: 800, color: '#042E23',
               background: 'linear-gradient(180deg, #FDE047 0%, #EAB308 100%)',
               borderRadius: '50px', textDecoration: 'none',
-              boxShadow: '0 10px 30px rgba(234,179,8,0.45)',
+              boxShadow: '0 8px 25px rgba(234, 179, 8, 0.4)',
               border: '2px solid #FEF08A',
               transition: 'transform 0.15s ease',
             }}
@@ -74,9 +75,9 @@ export default function PengisianClosingSection() {
 
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', maxWidth: '340px', margin: '0.5rem 0' }}>
-            <div style={{ flex: 1, borderTop: '1px solid rgba(167,243,208,0.2)' }} />
-            <span style={{ fontSize: '0.78rem', color: '#6EE7B7', fontWeight: 600 }}>atau</span>
-            <div style={{ flex: 1, borderTop: '1px solid rgba(167,243,208,0.2)' }} />
+            <div style={{ flex: 1, borderTop: '1px solid #CBD5E1' }} />
+            <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>atau</span>
+            <div style={{ flex: 1, borderTop: '1px solid #CBD5E1' }} />
           </div>
 
           {/* WA Payment Button */}
@@ -90,14 +91,14 @@ export default function PengisianClosingSection() {
               fontSize: '0.98rem', fontWeight: 800, color: '#FFFFFF',
               background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
               borderRadius: '50px', textDecoration: 'none',
-              boxShadow: '0 8px 25px rgba(37,211,102,0.4)',
+              boxShadow: '0 8px 25px rgba(37,211,102,0.3)',
               border: '2px solid rgba(37,211,102,0.5)',
             }}
           >
             💬 Nak Tanya Perawat / Daftar Di WhatsApp?
           </a>
 
-          <p style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: '#6EE7B7' }}>
+          <p style={{ marginTop: '0.5rem', fontSize: '0.84rem', color: '#64748B' }}>
             🔒 Jaminan Wang Dikembalikan 100% · Pelarasan Mingguan Percuma
           </p>
         </div>

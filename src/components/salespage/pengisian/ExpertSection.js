@@ -5,35 +5,36 @@ export default function PengisianExpertSection() {
 
   return (
     <section style={{
-      background: '#042E23',
-      color: '#FFFFFF',
+      background: '#F0FDF4',
+      color: '#0F172A',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
       textAlign: 'center',
-      borderBottom: '1px solid rgba(254, 243, 199, 0.15)',
+      borderBottom: '1px solid #BBF7D0',
     }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          background: 'rgba(253,224,71,0.12)', border: '1px solid #FDE047',
-          padding: '0.4rem 1.1rem', borderRadius: '50px', marginBottom: '1.25rem',
-          fontSize: '0.78rem', fontWeight: 800, color: '#FDE047',
-          letterSpacing: '0.08em', textTransform: 'uppercase',
+          background: '#FFFFFF', border: '1.5px solid #86EFAC',
+          padding: '0.4rem 1.15rem', borderRadius: '50px', marginBottom: '1.25rem',
+          fontSize: '0.8rem', fontWeight: 800, color: '#065F46',
+          letterSpacing: '0.04em', textTransform: 'uppercase',
+          boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
         }}>
           📖 Sandaran Syarak &amp; Kredibiliti Perawat
         </div>
 
         <h2 style={{
-          fontSize: 'clamp(1.5rem, 3.5vw, 2.3rem)',
-          fontWeight: 800, color: '#FDE047',
-          marginTop: '0.4rem', marginBottom: '0.75rem',
+          fontSize: 'clamp(1.55rem, 3.5vw, 2.35rem)',
+          fontWeight: 900, color: '#064E3B',
+          marginTop: '0.3rem', marginBottom: '0.75rem',
           letterSpacing: '-0.02em', lineHeight: 1.25,
         }}>
           Konsep Membaca Pada Objek — Amalan Sah Dituntun Al-Quran &amp; Sunnah
         </h2>
 
-        <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '740px', margin: '0 auto 2.75rem auto' }}>
+        <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '740px', margin: '0 auto 2.75rem auto' }}>
           Kaedah &ldquo;pengisian&rdquo; atau meniupkan doa ruqyah pada sesuatu medium fizikal adalah amalan masyhur ulama mu&apos;tabar.
           Ia diqiaskan kepada amalan meniup dan membaca pada air minuman, minyak zaitun, pakaian dan debu tanah yang sabit dalam hadis-hadis sahih.
         </p>
@@ -53,21 +54,23 @@ export default function PengisianExpertSection() {
             },
           ].map((d, i) => (
             <div key={i} style={{
-              background: 'rgba(253,224,71,0.06)',
-              border: '1.5px solid rgba(253,224,71,0.3)',
-              borderRadius: '16px', padding: '1.8rem 1.6rem', textAlign: 'right',
+              background: '#FFFFFF',
+              border: '2px solid #86EFAC',
+              borderRadius: '18px', padding: '1.8rem 1.6rem', textAlign: 'right',
+              boxShadow: '0 4px 15px rgba(5, 150, 105, 0.06)',
             }}>
               <div style={{
-                fontSize: '1.15rem', fontFamily: 'serif',
-                color: '#FDE047', lineHeight: 2.2, marginBottom: '1rem', direction: 'rtl',
+                fontSize: '1.3rem', fontFamily: 'serif',
+                color: '#065F46', lineHeight: 2.3, marginBottom: '1rem', direction: 'rtl',
+                fontWeight: 700,
               }}>
                 {d.arabic}
               </div>
-              <div style={{ borderTop: '1px solid rgba(253,224,71,0.2)', paddingTop: '1rem', textAlign: 'left' }}>
-                <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.9rem', color: '#FEF3C7', lineHeight: 1.7, fontStyle: 'italic' }}>
+              <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '1rem', textAlign: 'left' }}>
+                <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.92rem', color: '#1E293B', lineHeight: 1.7, fontStyle: 'italic' }}>
                   {d.terjemah}
                 </p>
-                <span style={{ fontSize: '0.78rem', color: '#6EE7B7', fontWeight: 700 }}>
+                <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 800 }}>
                   {d.sumber}
                 </span>
               </div>
@@ -77,32 +80,35 @@ export default function PengisianExpertSection() {
 
         {/* Hadith Keharusan Ruqyah */}
         <div style={{
-          background: 'rgba(74,222,128,0.07)',
-          border: '1.5px solid rgba(74,222,128,0.28)',
-          borderRadius: '16px', padding: '1.5rem 1.8rem', marginBottom: '2rem',
+          background: '#FFFFFF',
+          border: '1.5px solid #6EE7B7',
+          borderRadius: '16px', padding: '1.6rem 2rem', marginBottom: '2rem',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
         }}>
-          <span style={{ fontSize: '1.75rem' }}>🕌</span>
-          <p style={{ margin: '0.6rem 0 0.4rem 0', fontSize: '1.02rem', color: '#FEF3C7', fontStyle: 'italic', lineHeight: 1.75 }}>
+          <span style={{ fontSize: '1.8rem' }}>🕌</span>
+          <p style={{ margin: '0.6rem 0 0.4rem 0', fontSize: '1.05rem', color: '#0F172A', fontStyle: 'italic', lineHeight: 1.75, fontWeight: 600 }}>
             &ldquo;Tunjukkan ruqyah-ruqyah kalian kepadaku. Tiada mengapa dengan ruqyah selama tidak mengandungi syirik di dalamnya.&rdquo;
           </p>
-          <span style={{ fontSize: '0.82rem', color: '#6EE7B7', fontWeight: 700 }}>
+          <span style={{ fontSize: '0.84rem', color: '#047857', fontWeight: 800 }}>
             — Hadith Riwayat Sahih Muslim (No. 2200)
           </span>
         </div>
 
         {/* Penegasan Bebas Syirik & Tangkal */}
         <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(253,224,71,0.25)',
-          borderRadius: '16px', padding: '1.5rem 1.8rem', textAlign: 'left',
+          background: '#FFFFFF',
+          border: '1.5px solid #CBD5E1',
+          borderLeft: '5px solid #065F46',
+          borderRadius: '16px', padding: '1.6rem 1.8rem', textAlign: 'left',
           display: 'flex', gap: '1.25rem', alignItems: 'flex-start',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
         }}>
-          <span style={{ fontSize: '2rem', flexShrink: 0 }}>🛡️</span>
+          <span style={{ fontSize: '2.2rem', flexShrink: 0 }}>🛡️</span>
           <div>
-            <h4 style={{ margin: '0 0 0.4rem 0', color: '#FDE047', fontSize: '1.05rem', fontWeight: 800 }}>
+            <h4 style={{ margin: '0 0 0.4rem 0', color: '#064E3B', fontSize: '1.08rem', fontWeight: 900 }}>
               Jaminan Syarak: 100% Bersih Dari Khodam, Jin &amp; Tangkal Wafaq
             </h4>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#D1FAE5', lineHeight: 1.75 }}>
+            <p style={{ margin: 0, fontSize: '0.92rem', color: '#334155', lineHeight: 1.75 }}>
               Pusat Rawatan ESyifaa berpegang teguh pada manhaj Ahli Sunnah Wal Jamaah.
               Proses pengisian dijalankan melalui solat hajat, zikir khusus dan bacaan ayat-ayat suci Al-Quran semata-mata.
               Tiada jampi serapah pemujaan, tiada wafak tulisan ghaib, tiada khodam penjaga. Barang tersebut hanyalah medium fizikal yang menyimpan keberkatan ayat Al-Quran, dan hakikat kesembuhan kekal mutlak milik Allah SWT.

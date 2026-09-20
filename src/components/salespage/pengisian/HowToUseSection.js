@@ -32,74 +32,76 @@ export default function PengisianHowToUseSection() {
 
   return (
     <section style={{
-      background: '#031E17',
-      color: '#FFFFFF',
+      background: '#F0FDF4',
+      color: '#0F172A',
       padding: '4.5rem 1.25rem',
       fontFamily: ff,
-      borderBottom: '1px solid rgba(254, 243, 199, 0.15)',
+      borderBottom: '1px solid #BBF7D0',
     }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
           <span style={{
             display: 'inline-block',
-            background: 'rgba(253,224,71,0.1)', border: '1px solid rgba(253,224,71,0.4)',
-            color: '#FDE047', padding: '0.4rem 1.1rem', borderRadius: '50px',
-            fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em',
+            background: '#FFFFFF', border: '1.5px solid #86EFAC',
+            color: '#065F46', padding: '0.4rem 1.15rem', borderRadius: '50px',
+            fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.04em',
             textTransform: 'uppercase', marginBottom: '1rem',
+            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
           }}>
             📋 Panduan Praktikal
           </span>
           <h2 style={{
-            fontSize: 'clamp(1.5rem, 3.5vw, 2.3rem)',
-            fontWeight: 800, color: '#FDE047',
-            marginTop: '0.4rem', marginBottom: '0.75rem',
+            fontSize: 'clamp(1.55rem, 3.5vw, 2.35rem)',
+            fontWeight: 900, color: '#064E3B',
+            marginTop: '0.3rem', marginBottom: '0.75rem',
             letterSpacing: '-0.02em', lineHeight: 1.25,
           }}>
             Cara Guna Item Pengisian Bila Diserang Gangguan
           </h2>
-          <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, maxWidth: '680px', margin: '0 auto' }}>
+          <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '680px', margin: '0 auto' }}>
             Sangat mudah dan tidak memerlukan sebarang kemahiran ilmu batin. Sesiapa sahaja termasuk suri rumah dan warga emas boleh mengamalkannya dengan selamat.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
           {STEPS.map((s, i) => (
             <div key={i} style={{
-              background: '#042E23', border: '1px solid rgba(74,222,128,0.25)',
-              borderRadius: '18px', padding: '1.6rem 1.3rem',
+              background: '#FFFFFF', border: '1.5px solid #A7F3D0',
+              borderRadius: '18px', padding: '1.75rem 1.35rem',
               display: 'flex', flexDirection: 'column',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '2.2rem' }}>{s.icon}</span>
+                <span style={{ fontSize: '2.4rem' }}>{s.icon}</span>
                 <span style={{
-                  fontSize: '0.75rem', fontWeight: 900, color: '#4ADE80',
-                  background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)',
-                  padding: '0.2rem 0.6rem', borderRadius: '999px',
+                  fontSize: '0.75rem', fontWeight: 900, color: '#065F46',
+                  background: '#ECFDF5', border: '1px solid #A7F3D0',
+                  padding: '0.25rem 0.65rem', borderRadius: '999px',
                 }}>
                   Langkah {s.step}
                 </span>
               </div>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#FDE047', fontSize: '1.02rem', fontWeight: 800, lineHeight: 1.35 }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.05rem', fontWeight: 800, lineHeight: 1.35 }}>
                 {s.title}
               </h4>
-              <p style={{ margin: 0, fontSize: '0.86rem', color: '#D1FAE5', lineHeight: 1.65, flex: 1 }}>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', lineHeight: 1.65, flex: 1 }}>
                 {s.desc}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Panduan PDF Note */}
+        {/* Panduan PDF Note (Light High Contrast Card) */}
         <div style={{
-          background: 'rgba(74,222,128,0.08)',
-          border: '1px solid rgba(74,222,128,0.3)',
-          borderRadius: '14px', padding: '1.1rem 1.6rem', textAlign: 'center',
-          maxWidth: '740px', margin: '0 auto',
+          background: '#FFFFFF',
+          border: '1.5px solid #10B981',
+          borderRadius: '16px', padding: '1.35rem 1.8rem', textAlign: 'center',
+          maxWidth: '780px', margin: '0 auto',
+          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.08)',
         }}>
-          <p style={{ margin: 0, fontSize: '0.92rem', color: '#FEF3C7', lineHeight: 1.65 }}>
-            📖 <strong>Nota Tambahan:</strong> Perawat kami akan menghantar panduan audio &amp; teks bertulis secara terperinci melalui WhatsApp selepas proses pengisian selesai. Anda akan dibimbing sepenuhnya!
+          <p style={{ margin: 0, fontSize: '0.94rem', color: '#064E3B', lineHeight: 1.65, fontWeight: 600 }}>
+            📖 <strong>Bimbingan Percuma:</strong> Perawat kami akan menghantar panduan audio &amp; teks bertulis secara terperinci melalui WhatsApp selepas proses pengisian selesai. Anda akan dibimbing sepenuhnya dari A hingga Z!
           </p>
         </div>
 
