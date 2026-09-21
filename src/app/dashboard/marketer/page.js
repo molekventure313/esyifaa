@@ -142,8 +142,12 @@ export default function MarketerDashboardPage() {
               <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#60A5FA', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>💸 Total Ads Spend (RM)</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#60A5FA', letterSpacing: '-0.03em', lineHeight: 1 }}>{formatRM(totals.totalAdsSpend)}</div>
             </div>
+            <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1.25rem 1.4rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: lm ? '#92400E' : '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>📦 COGS + Postage (RM)</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: lm ? '#92400E' : '#FCD34D', letterSpacing: '-0.03em', lineHeight: 1 }}>{formatRM(totals.totalCOGS ?? 0)}</div>
+            </div>
             <div style={{ background: profitPositive ? (lm ? 'rgba(16,185,129,0.06)' : 'rgba(16,185,129,0.08)') : (lm ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.08)'), border: profitPositive ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(239,68,68,0.25)', borderRadius: '10px', padding: '1.25rem 1.4rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
-              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: profitPositive ? '#10B981' : '#EF4444', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>🎯 Profit (RM)</div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: profitPositive ? '#10B981' : '#EF4444', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>🎯 Net Profit (RM)</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: profitPositive ? '#10B981' : '#EF4444', letterSpacing: '-0.03em', lineHeight: 1 }}>{formatRM(totals.profit)}</div>
             </div>
           </div>
@@ -199,7 +203,7 @@ export default function MarketerDashboardPage() {
                         <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.4rem', borderRadius: '5px', background: o.payment_status === 'completed' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', color: o.payment_status === 'completed' ? '#10B981' : '#F59E0B' }}>
                           {o.payment_status}
                         </span>
-                        <span style={{ fontSize: '0.88rem', fontWeight: 800, color: lm ? '#047857' : '#34D399' }}>{formatRM(o.amount_paid)}</span>
+                        <span style={{ fontSize: '0.88rem', fontWeight: 800, color: lm ? '#047857' : '#34D399' }}>{formatRM(o.amount ?? o.amount_paid)}</span>
                       </div>
                     </div>
                   ))}
