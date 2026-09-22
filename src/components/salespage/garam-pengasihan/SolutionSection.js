@@ -43,7 +43,7 @@ export default function GaramSolutionSection() {
           }}>
             Perkenalkan:{' '}
             <span style={{ color: '#EA580C' }}>
-              Garam Masakan Pengasihan ESyifaa (500g)
+              Garam Masakan Pengasihan ESyifaa (100g)
             </span>
           </h2>
           <p style={{

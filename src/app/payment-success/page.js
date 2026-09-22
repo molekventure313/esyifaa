@@ -18,6 +18,7 @@ function PaymentSuccessContent() {
   const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(!isMock && !isCod);
   const [fpxPixelId, setFpxPixelId] = useState(null);
+  const [marketerPixelId, setMarketerPixelId] = useState(null); // set dari status API kalau order marketer
 
   // Amount & product — read from URL params first (most accurate)
   const [amount, setAmount]           = useState(parseFloat(amountParam) || 50.00);
@@ -72,6 +73,9 @@ function PaymentSuccessContent() {
           setData(json);
           setStatus(json.payment_status);
 
+          // Set marketer pixel kalau ada (marketer order)
+          if (json.marketer_pixel_id) setMarketerPixelId(json.marketer_pixel_id);
+
           // Update amount from API if not already set from URL
           if (json.amount_paid && !amountParam) {
             setAmount(parseFloat(json.amount_paid));
@@ -105,18 +109,28 @@ function PaymentSuccessContent() {
   // COD is already handled in SabunCheckoutForm.js (before redirect) with matching eventID
   // FPX: eventID must match webhook CAPI → `purchase_${submissionId}` for dedup
   useEffect(() => {
-    if (status !== 'completed' || !fpxPixelId) return;
+    if (status !== 'completed') return;
     if (isCod) return; // COD: server CAPI + checkout browser already deduplicated — skip here
+
+    // Determine target pixel:
+    // - Marketer order → marketerPixelId (from status API)
+    // - HQ order → fpxPixelId (from /api/tracking/fpx-pixel-id)
+    const targetPixelId = marketerPixelId || fpxPixelId;
+    if (!targetPixelId) return;
+
     try {
       if (typeof window !== 'undefined' && window.fbq) {
-        window.fbq('trackSingle', fpxPixelId, 'Purchase', {
+        // Init target pixel if it's the marketer's pixel (may not be initialized yet)
+        if (marketerPixelId) window.fbq('init', marketerPixelId);
+
+        window.fbq('trackSingle', targetPixelId, 'Purchase', {
           value: amount,
           currency: 'MYR',
           content_name: productName,
         }, { eventID: `purchase_${submissionId}` }); // matches webhook eventId
       }
     } catch (_) {}
-  }, [status, fpxPixelId, amount, productName, submissionId, isCod]);
+  }, [status, fpxPixelId, marketerPixelId, amount, productName, submissionId, isCod]);
 
   // ─── Display content — same message for both COD and FPX ───
   const displayTitle    = `Pesanan Diterima — RM${amount.toFixed(2)}`;

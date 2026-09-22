@@ -8,76 +8,66 @@ import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 // ─── Packages (FSP PRO: Terbesar di Kiri/Atas -> Terkecil di Kanan/Bawah) ──────────
 const BASE_PACKAGES = [
   {
-    units: 5,
-    label: '5 Bekas (500g x 5)',
-    sublabel: 'Rawatan Lengkap Seisi Keluarga & Perlindungan Berpanjangan',
-    pillLabel: '5 BEKAS — PALING JIMAT',
-    price: 135,
-    originalPrice: 250,
-    savings: 115,
-    badge: 'PALING JIMAT',
+    units: 6,
+    label: '6 Pek (100g x 6) — Beli 4 Free 2 Pek',
+    sublabel: 'Dapat 6 Pek Garam (100g) + Percuma 1 Botol Minyak Kasturi Kijang + Free Pos',
+    pillLabel: 'BELI 4 FREE 2 + FREE KASTURI',
+    price: 90,
+    originalPrice: 180,
+    savings: 90,
+    badge: 'PALING JIMAT + FREE GIFT',
+    recommended: true,
+    freePostage: true,
+    includesKasturi: true,
     features: [
-      'JIMAT RM115',
-      'FREE POS & COD',
-      'RAWATAN LENGKAP SEISI RUMAH',
-      'BEKALAN TAHAN 6-8 BULAN',
+      'BELI 4 PERCUMA 2 PEK (DAPAT 6 PEK)',
+      'PERCUMA MINYAK KASTURI KIJANG (RM20)',
+      'PERCUMA POSTAGE & COD (SEMENANJUNG)',
+      'RAWATAN LENGKAP SEISI RUMAH (6 BULAN)',
     ],
-    itemsCount: 5,
+    itemsCount: 6,
     hasCod: true,
   },
   {
-    units: 3,
-    label: '3 Bekas (500g x 3)',
-    sublabel: 'Rawatan Penuh 40 Hari — Seisi Rumah & Pemulihan Hati',
-    pillLabel: '3 BEKAS — PILIHAN RAMAI',
-    price: 90,
-    originalPrice: 150,
-    savings: 60,
+    units: 4,
+    label: '4 Pek (100g x 4) — Beli 2 Free 2 Pek',
+    sublabel: 'Dapat 4 Pek Garam (100g) — Ikhtiar berterusan sekeluarga + Free Pos',
+    pillLabel: 'BELI 2 FREE 2',
+    price: 70,
+    originalPrice: 120,
+    savings: 50,
     badge: 'PILIHAN RAMAI',
-    recommended: true,
+    recommended: false,
+    freePostage: true,
+    includesKasturi: false,
     features: [
-      'JIMAT RM60',
-      'FREE POS & COD',
-      'IKHTIAR BERTERUSAN 3 BULAN',
-      'PILIHAN PALING POPULAR',
+      'BELI 2 PERCUMA 2 PEK (DAPAT 4 PEK)',
+      'PERCUMA POSTAGE & COD (SEMENANJUNG)',
+      'BEKALAN TAHAN 2-3 BULAN',
+      'KHAS IKHTIAR SUAMI ISTERI',
     ],
-    itemsCount: 3,
+    itemsCount: 4,
     hasCod: true,
   },
   {
     units: 2,
-    label: '2 Bekas (500g x 2)',
-    sublabel: 'Rawatan Intensif Suami Isteri & Makanan Harian',
-    pillLabel: '2 BEKAS — BERDUA',
-    price: 70,
-    originalPrice: 100,
-    savings: 30,
-    badge: 'JIMAT RM30',
+    label: '2 Pek (100g x 2) — Beli 1 Free 1 Pek',
+    sublabel: 'Dapat 2 Pek Garam (100g) — Pek pengenalan masakan berkat',
+    pillLabel: 'BELI 1 FREE 1',
+    price: 39,
+    originalPrice: 60,
+    savings: 21,
+    badge: null,
+    recommended: false,
+    freePostage: false,
+    includesKasturi: false,
     features: [
-      'JIMAT RM30',
-      'FREE POS & COD',
-      'PENGGUNAAN 2 BULAN',
-      'KHAS SUAMI ISTERI',
+      'BELI 1 PERCUMA 1 PEK (DAPAT 2 PEK)',
+      'KOS POSTAGE HANYA RM5',
+      'PEK PERCUBAAN HARIAN',
+      'PENGGUNAAN 1 BULAN',
     ],
     itemsCount: 2,
-    hasCod: true,
-  },
-  {
-    units: 1,
-    label: '1 Bekas (500g)',
-    sublabel: 'Pek Percubaan & Pengenalan Masakan Berkat',
-    pillLabel: '1 BEKAS — PERCUBAAN',
-    price: 45,
-    originalPrice: 60,
-    savings: 15,
-    badge: null,
-    features: [
-      'JIMAT RM15',
-      'FREE POS & COD',
-      '1 BEKAS (500G) SAHAJA',
-      'PEK PERCUBAAN',
-    ],
-    itemsCount: 1,
     hasCod: true,
   },
 ];
@@ -142,7 +132,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
 
-  const [selectedPkg, setSelectedPkg] = useState(0); // index 0 = 3 Bekas (recommended)
+  const [selectedPkg, setSelectedPkg] = useState(0); // index 0 = 6 Pek (Beli 4 Free 2 + Free Kasturi)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
   const [formData, setFormData] = useState({
     full_name: '', dialCode: '+60', phone: '',
@@ -155,9 +145,12 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
 
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
-  // Derived: Sabah/Sarawak logic
+  // Derived: Sabah/Sarawak logic & Dynamic Package Postage
   const isEastMalaysia = EAST_MALAYSIA.includes(formData.negeri);
-  const postage = isEastMalaysia ? POSTAGE_EAST : POSTAGE_NORMAL;
+  const pkg = BASE_PACKAGES[selectedPkg] || BASE_PACKAGES[0];
+  const effectivePostage = isEastMalaysia
+    ? POSTAGE_EAST
+    : (pkg.freePostage ? 0 : POSTAGE_NORMAL);
 
   // ─── 2 Add-ons State ───
   // Add-on 1: Minyak Kasturi Kijang E-Syifa' (+RM20)
@@ -168,8 +161,6 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
   const [addSabun, setAddSabun] = useState(false);
   const SABUN_PRICE = 25;
 
-  const pkg = BASE_PACKAGES[selectedPkg];
-  const effectivePostage = postage;
   const grandTotal = pkg.price + effectivePostage + (addKasturi ? KASTURI_PRICE : 0) + (addSabun ? SABUN_PRICE : 0);
 
   // If East Malaysia, COD is disabled
@@ -238,9 +229,10 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
       const utms     = getUTMParams();
       const address  = buildAddress();
 
+      const freeKasturiNote = pkg.includesKasturi ? ' | Free Gift: Minyak Kasturi Kijang' : '';
       const kasturiNote = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa' +RM${KASTURI_PRICE}` : '';
       const sabunNote   = addSabun   ? ` | Add-On: Sabun Garam Pengisian +RM${SABUN_PRICE}` : '';
-      const orderNotes  = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${effectivePostage}${kasturiNote}${sabunNote}`;
+      const orderNotes  = `Alamat: ${address} | Pakej: ${pkg.label}${freeKasturiNote} | Postage: RM${effectivePostage}${kasturiNote}${sabunNote}`;
 
       try {
         if (window.fbq) {
@@ -318,7 +310,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
           address,
           quantity: pkg.units,
           units_label: pkg.label,
-          product: 'Garam Pengasihan Masakan ESyifaa (500g)',
+          product: 'Garam Pengasihan Masakan ESyifaa (100g)',
           amount_base: pkg.price,
           amount_total: grandTotal,
           addon_kasturi: addKasturi,
@@ -371,19 +363,14 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
 
         {/* CSS for Responsive Vertical Pricing Cards Grid */}
         <style dangerouslySetInnerHTML={{ __html: `
-          .fsp-pricing-grid-4 {
+          .fsp-pricing-grid-3 {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.15rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
             margin-bottom: 3.5rem;
           }
-          @media (max-width: 960px) {
-            .fsp-pricing-grid-4 {
-              grid-template-columns: repeat(2, 1fr);
-            }
-          }
-          @media (max-width: 600px) {
-            .fsp-pricing-grid-4 {
+          @media (max-width: 860px) {
+            .fsp-pricing-grid-3 {
               grid-template-columns: 1fr;
             }
           }
@@ -446,8 +433,8 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
           </div>
         )}
 
-        {/* ── Vertical Pricing Cards Grid (Mengikut Gambar Rujukan FSP PRO) ── */}
-        <div id="pilih-pakej" className="fsp-pricing-grid-4">
+        {/* ── Vertical Pricing Cards Grid (Mengikut Gambar Rujukan FSP PRO: 3 Pakej) ── */}
+        <div id="pilih-pakej" className="fsp-pricing-grid-3">
           {BASE_PACKAGES.map((p, idx) => {
             const isSelected = selectedPkg === idx;
             return (
@@ -472,9 +459,29 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                   cursor: 'pointer',
                 }}
               >
+                {/* Floating Top Badge */}
+                {p.badge && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-12px',
+                    background: p.recommended ? 'linear-gradient(135deg, #EA580C, #C2410C)' : '#1E293B',
+                    color: '#FFFFFF',
+                    fontSize: '0.68rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    padding: '0.28rem 0.85rem',
+                    borderRadius: '9999px',
+                    boxShadow: '0 3px 10px rgba(0,0,0,0.18)',
+                    zIndex: 2,
+                  }}>
+                    ⭐ {p.badge}
+                  </div>
+                )}
+
                 {/* 1. Visual Stack of Items */}
                 <div style={{
-                  height: '95px',
+                  minHeight: '95px',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -486,18 +493,18 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '4px',
+                    gap: '5px',
                     flexWrap: 'wrap',
-                    maxWidth: '150px',
+                    maxWidth: '180px',
                   }}>
                     {Array.from({ length: p.itemsCount }).map((_, i) => (
                       <div
                         key={i}
                         style={{
-                          width: p.itemsCount > 3 ? '32px' : '38px',
-                          height: p.itemsCount > 3 ? '42px' : '50px',
+                          width: p.itemsCount > 4 ? '26px' : '34px',
+                          height: p.itemsCount > 4 ? '38px' : '46px',
                           background: 'linear-gradient(180deg, #FDBA74 0%, #EA580C 100%)',
-                          borderRadius: '8px 8px 10px 10px',
+                          borderRadius: '6px 6px 8px 8px',
                           border: '1.5px solid #C2410C',
                           display: 'flex',
                           flexDirection: 'column',
@@ -505,25 +512,49 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                           justifyContent: 'center',
                           color: '#FFFFFF',
                           fontWeight: 900,
-                          fontSize: '0.62rem',
+                          fontSize: '0.55rem',
                           boxShadow: '0 2px 6px rgba(234, 88, 12, 0.2)',
                           position: 'relative',
                         }}
                       >
                         <div style={{
                           width: '65%',
-                          height: '4px',
+                          height: '3px',
                           background: '#9A3412',
                           borderRadius: '2px 2px 0 0',
                           position: 'absolute',
-                          top: '-4px',
+                          top: '-3px',
                         }} />
-                        <span>500g</span>
+                        <span>100g</span>
                       </div>
                     ))}
+                    {p.includesKasturi && (
+                      <div
+                        style={{
+                          width: '28px',
+                          height: '42px',
+                          background: 'linear-gradient(180deg, #34D399 0%, #059669 100%)',
+                          borderRadius: '4px 4px 6px 6px',
+                          border: '1.5px solid #047857',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#FFFFFF',
+                          fontWeight: 900,
+                          fontSize: '0.52rem',
+                          boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                          position: 'relative',
+                        }}
+                        title="Free Kasturi Kijang E-Syifa'"
+                      >
+                        <span>🎁</span>
+                        <span style={{ fontSize: '0.45rem' }}>FREE</span>
+                      </div>
+                    )}
                   </div>
                   <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#EA580C' }}>
-                    {p.itemsCount}x Bekas (500g)
+                    {p.itemsCount}x Pek (100g) {p.includesKasturi ? '+ Free Kasturi 🎁' : ''}
                   </div>
                 </div>
 
@@ -1122,6 +1153,13 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               <strong style={{ color: '#0F172A' }}>RM{pkg.price}</strong>
             </div>
 
+            {pkg.includesKasturi && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#059669' }}>
+                <span>🎁 Free Gift: Minyak Kasturi Kijang E-Syifa':</span>
+                <strong>PERCUMA</strong>
+              </div>
+            )}
+
             {addKasturi && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#EA580C' }}>
                 <span>Add-on: Kasturi Kijang E-Syifa’:</span>
@@ -1138,7 +1176,9 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#475569' }}>
               <span>Postage ({isEastMalaysia ? 'Sabah / Sarawak' : 'Semenanjung'}):</span>
-              <strong style={{ color: '#0F172A' }}>RM{effectivePostage}</strong>
+              <strong style={{ color: effectivePostage === 0 ? '#059669' : '#0F172A' }}>
+                {effectivePostage === 0 ? 'PERCUMA' : `RM${effectivePostage}`}
+              </strong>
             </div>
 
             <div style={{ borderTop: '1px dashed #CBD5E1', margin: '0.6rem 0' }} />

@@ -15,6 +15,7 @@ import GaramTestimonialPart2Section from '@/components/salespage/garam-pengasiha
 import GaramComparisonSection from '@/components/salespage/garam-pengasihan/ComparisonSection';
 import GaramGuaranteeSection from '@/components/salespage/garam-pengasihan/GuaranteeSection';
 import GaramCheckoutForm from '@/components/salespage/garam-pengasihan/GaramCheckoutForm';
+import GaramWhatsAppOrderSection from '@/components/salespage/garam-pengasihan/WhatsAppOrderSection';
 import GaramFAQSection from '@/components/salespage/garam-pengasihan/FAQSection';
 import GaramClosingSection from '@/components/salespage/garam-pengasihan/ClosingSection';
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
@@ -69,6 +70,9 @@ export default function GaramPengasihanPageContent({ source = 'garam-pengasihan'
 
       {/* #15 — Borang Tempahan FPX & COD */}
       <GaramCheckoutForm source={source} />
+
+      {/* Kad Tempahan Melalui WhatsApp (Selepas Form, Sebelum FAQ) */}
+      <GaramWhatsAppOrderSection />
 
       {/* #16 — FAQ 7 Soalan Lazim */}
       <GaramFAQSection />

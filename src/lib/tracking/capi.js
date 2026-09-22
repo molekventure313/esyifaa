@@ -131,6 +131,30 @@ export async function sendFpxCAPIEvent({
   return _sendToMeta({ config, eventName, eventId, eventTime, sourceUrl, userData, customData, clientIpAddress, clientUserAgent, fbp, fbc, actionSource });
 }
 
+// ─── Send CAPI Event to a specific pixel (marketer pixel) ───
+export async function sendCAPIEventToPixel({
+  pixelId,
+  accessToken,
+  testEventCode = null,
+  eventName,
+  eventId,
+  eventTime = Math.floor(Date.now() / 1000),
+  sourceUrl,
+  userData = {},
+  customData = {},
+  clientIpAddress,
+  clientUserAgent,
+  fbp,
+  fbc,
+  actionSource = 'website'
+}) {
+  if (!pixelId || !accessToken) {
+    console.warn('sendCAPIEventToPixel: pixelId or accessToken missing, skipping.');
+    return null;
+  }
+  return _sendToMeta({ config: { pixelId, accessToken, testEventCode }, eventName, eventId, eventTime, sourceUrl, userData, customData, clientIpAddress, clientUserAgent, fbp, fbc, actionSource });
+}
+
 // ─── Shared Meta Graph API sender ───
 async function _sendToMeta({ config, eventName, eventId, eventTime, sourceUrl, userData, customData, clientIpAddress, clientUserAgent, fbp, fbc, actionSource }) {
   const { pixelId, accessToken, testEventCode } = config;

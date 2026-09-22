@@ -14,7 +14,7 @@ export async function GET(req) {
 
     const { data: submission, error } = await supabase
       .from('submissions')
-      .select('id, full_name, phone, notes, created_at')
+      .select('id, full_name, phone, notes, payment_status, marketer_id, amount_paid')
       .eq('id', submissionId)
       .single();
 
@@ -22,16 +22,37 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
     }
 
-    const notes = submission.notes || '';
-    const isPaid = notes.includes('[STATUS: paid]') || searchParams.get('mock') === 'true';
-    const isFailed = notes.includes('[STATUS: failed]');
+    // Determine payment status — guna kolum terus, fallback ke notes check
+    const paid =
+      submission.payment_status === 'completed' ||
+      (submission.notes || '').includes('[STATUS: paid]') ||
+      searchParams.get('mock') === 'true';
+    const failed =
+      submission.payment_status === 'failed' ||
+      (submission.notes || '').includes('[STATUS: failed]');
+
+    // Fetch marketer pixel ID if this is a marketer order
+    let marketerPixelId = null;
+    if (submission.marketer_id) {
+      try {
+        const { data: mProfile } = await supabase
+          .from('profiles')
+          .select('meta_pixel_id')
+          .eq('id', submission.marketer_id)
+          .maybeSingle();
+        if (mProfile?.meta_pixel_id) {
+          marketerPixelId = mProfile.meta_pixel_id;
+        }
+      } catch (_) {}
+    }
 
     return NextResponse.json({
-      success: true,
-      submission_id: submission.id,
-      full_name: submission.full_name,
-      phone: submission.phone,
-      payment_status: isPaid ? 'completed' : isFailed ? 'failed' : 'pending',
+      success:          true,
+      submission_id:    submission.id,
+      full_name:        submission.full_name,
+      phone:            submission.phone,
+      payment_status:   paid ? 'completed' : failed ? 'failed' : 'pending',
+      marketer_pixel_id: marketerPixelId, // null for HQ orders
     });
 
   } catch (error) {
@@ -39,3 +60,4 @@ export async function GET(req) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
+
