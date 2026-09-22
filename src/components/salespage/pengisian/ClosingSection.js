@@ -50,7 +50,7 @@ export default function PengisianClosingSection() {
           maxWidth: '620px', margin: '0 auto 2.5rem auto',
         }}>
           Setiap malam yang berlalu dengan mimpi ngeri dan ketakutan adalah kerugian besar.
-          Kini anda ada ikhtiar untuk memegang sendiri benteng ruqyah di tangan anda — siap dalam 3 hari, rawat diri bila-bila masa, dengan jaminan pulangan wang 30 hari penuh.
+          Kini anda ada ikhtiar untuk memegang sendiri benteng ruqyah di tangan anda — rawat diri bila-bila masa, dengan jaminan pulangan wang 30 hari penuh.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
@@ -99,7 +99,7 @@ export default function PengisianClosingSection() {
           </a>
 
           <p style={{ marginTop: '0.5rem', fontSize: '0.84rem', color: '#64748B' }}>
-            🔒 Jaminan Wang Dikembalikan 100% · Pelarasan Mingguan Percuma
+            🔒 Jaminan Wang Dikembalikan 100% · Pelarasan Percuma Sehingga Perawat Mati
           </p>
         </div>
 

@@ -118,6 +118,20 @@ export async function POST(req) {
 
       if (!subErr && submission) submissionId = submission.id;
 
+      // ─── Auto-cancel pending FPX duplicates dari customer sama (by phone) ───
+      if (formattedPhone) {
+        try {
+          await supabase
+            .from('submissions')
+            .update({ payment_status: 'cancelled' })
+            .eq('phone', formattedPhone)
+            .eq('payment_status', 'pending')
+            .neq('id', submissionId);
+        } catch (e) {
+          console.warn('Auto-cancel pending duplicates skipped:', e.message);
+        }
+      }
+
       // Auto-deduct main product stock (non-blocking)
       await deductStock({
         adminClient: supabase,

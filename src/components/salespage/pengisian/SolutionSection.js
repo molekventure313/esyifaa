@@ -76,7 +76,7 @@ export default function PengisianSolutionSection() {
           <p style={{ fontSize: '1.02rem', color: '#042E23', lineHeight: 1.8, marginBottom: '1.25rem', fontWeight: 600 }}>
             Pengisian E-Syifa&apos; adalah kaedah di mana{' '}
             <span style={{ color: '#047857' }}>getaran bacaan ayat-ayat ruqyah pemusnah jin, pembatal sihir dan benteng ghaib dipasakkan ke dalam barang peribadi anda</span>{' '}
-            secara jarak jauh selama 3 hari berturut-turut.
+            secara jarak jauh.
           </p>
 
           <p style={{ fontSize: '0.94rem', color: '#374151', lineHeight: 1.7, marginBottom: '1.25rem' }}>
@@ -86,10 +86,10 @@ export default function PengisianSolutionSection() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {[
-              { text: 'Diisi melalui solat hajat dan wirid ruqyah khusus selama 3 hari berturut-turut.' },
+              { text: 'Diisi melalui wirid ruqyah khusus dan ayat-ayat suci Al-Quran semata-mata.' },
               { text: 'Didoakan spesifik mengikut nama dan masalah gangguan berulang yang anda hadapi.' },
               { text: 'Dipasakkan 4 lapisan ayat: Pembakar Jin, Pembatal Sihir, Benteng Dinding, & Kesembuhan.' },
-              { text: 'Pelarasan mingguan secara automatik — PERCUMA seumur hidup supaya aura kekuatan syifa sentiasa segar.' },
+              { text: 'Pelarasan mingguan secara automatik — PERCUMA sehingga perawat mati supaya aura kekuatan syifa sentiasa segar.' },
             ].map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{

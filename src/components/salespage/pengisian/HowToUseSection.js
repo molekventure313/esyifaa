@@ -3,27 +3,27 @@
 const STEPS = [
   {
     step: '01',
-    icon: '💍',
-    title: 'Sentuhkan Pada Kawasan Sakit / Nadi',
-    desc: 'Bila terasa seram sejuk, dada sesak atau bahu berat, pegang item anda atau sentuhkan terus pada kulit (kawasan dada, dahi atau tengkuk).',
+    icon: '🤲',
+    title: 'Baca Kunci Amalan & Doa Tujuan',
+    desc: 'Pegang item pengisian anda. Cukup baca kunci amalan ringkas yang dibekalkan oleh perawat dan berdoa mengikut apa tujuan atau hajat yang anda inginkan.',
   },
   {
     step: '02',
-    icon: '🤲',
-    title: 'Niatkan Kesembuhan & Zikir Asas',
-    desc: 'Niatkan memohon perlindungan Allah SWT. Baca Bismillah 3 kali, surah Al-Fatihah, dan hembuskan pada item tersebut mengikut panduan ringkas perawat.',
+    icon: '⚡',
+    title: 'Niat Alirkan Tenaga Sambil Berzikir',
+    desc: 'Contohnya jika ingin memusnahkan jin dalam badan: baca kunci amalan & doa untuk musnahkan jin dalam badan, kemudian niatkan mengalirkan tenaga pemusnah dari item ke seluruh badan sambil berzikir.',
   },
   {
     step: '03',
-    icon: '💧',
-    title: 'Gunakan Terus / Celup Buat Penawar',
-    desc: 'Untuk rawatan segera: Sapukan ke seluruh anggota tubuh. Untuk rawatan dalaman: Celupkan ke dalam bekas air minuman bersih selama beberapa minit untuk dijadikan air penawar syifa\'.',
+    icon: '✨',
+    title: 'Badan Auto Bereaksi (Pembersihan)',
+    desc: 'Jika terdapat gangguan dalam badan, tubuh akan bertindak balas secara automatik seperti muntah, loya, sendawa atau rasa bisa keluar menandakan gangguan sedang dihancurkan.',
   },
   {
     step: '04',
-    icon: '✨',
-    title: 'Kekuatan Aktif Membakar Gangguan',
-    desc: 'Molekul ruqyah yang terpasak akan bertindak balas serta-merta — biasanya pesakit akan sendawa, menguap atau berpeluh sejuk menandakan bisa gangguan sedang keluar.',
+    icon: '🛡️',
+    title: 'Item Multifungsi Untuk Pelbagai Hajat',
+    desc: 'Item ini bersifat multifungsi — kaedah yang sama boleh digunakan untuk pelbagai ikhtiar: cukup niat alirkan tenaga kepada air untuk buat air tawar, pagar keliling rumah, benteng diri dan lain-lain.',
   },
 ];
 
@@ -57,10 +57,10 @@ export default function PengisianHowToUseSection() {
             marginTop: '0.3rem', marginBottom: '0.75rem',
             letterSpacing: '-0.02em', lineHeight: 1.25,
           }}>
-            Cara Guna Item Pengisian Bila Diserang Gangguan
+            Cara Guna Item Pengisian E-Syifa&apos;
           </h2>
           <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '680px', margin: '0 auto' }}>
-            Sangat mudah dan tidak memerlukan sebarang kemahiran ilmu batin. Sesiapa sahaja termasuk suri rumah dan warga emas boleh mengamalkannya dengan selamat.
+            Sangat mudah dan selamat diamalkan oleh sesiapa sahaja. Cukup baca kunci amalan, berdoa mengikut hajat tujuan, dan niatkan pengaliran tenaga ruqyah.
           </p>
         </div>
 

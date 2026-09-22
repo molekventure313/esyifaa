@@ -18,16 +18,16 @@ const STEPS = [
   {
     no: '03',
     icon: '⭐',
-    label: 'SOLAT HAJAT & WIRID',
+    label: 'WIRID RUQYAH KHUSUS',
     title: 'Pengisian Khusus Selama 3 Hari',
-    desc: 'Perawat menjalankan solat hajat dan wirid ruqyah 4 lapisan secara jarak jauh selama 3 hari berturut-turut. Anda cuma perlu simpan barang tersebut bersama anda.',
+    desc: 'Perawat menjalankan wirid ruqyah 4 lapisan secara jarak jauh selama 3 hari pengisian. Anda cuma perlu simpan barang tersebut bersama anda.',
   },
   {
     no: '04',
     icon: '🎉',
     label: 'SIAP & TERIMA PANDUAN',
     title: 'Selesai & Terus Amalkan',
-    desc: 'Selepas 3 hari, barang anda telah siap terisi. Anda akan menerima panduan lengkap cara guna dan automatik dimasukkan dalam senarai pelarasan mingguan percuma.',
+    desc: 'Selepas 3 hari pengisian, barang anda telah siap terisi. Anda akan menerima panduan lengkap cara guna dan automatik dimasukkan dalam senarai pelarasan mingguan percuma sehingga perawat mati.',
   },
 ];
 

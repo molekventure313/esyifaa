@@ -110,7 +110,7 @@ export default function PengisianExpertSection() {
             </h4>
             <p style={{ margin: 0, fontSize: '0.92rem', color: '#334155', lineHeight: 1.75 }}>
               Pusat Rawatan ESyifaa berpegang teguh pada manhaj Ahli Sunnah Wal Jamaah.
-              Proses pengisian dijalankan melalui solat hajat, zikir khusus dan bacaan ayat-ayat suci Al-Quran semata-mata.
+              Proses pengisian dijalankan melalui zikir khusus dan bacaan ayat-ayat suci Al-Quran semata-mata.
               Tiada jampi serapah pemujaan, tiada wafak tulisan ghaib, tiada khodam penjaga. Barang tersebut hanyalah medium fizikal yang menyimpan keberkatan ayat Al-Quran, dan hakikat kesembuhan kekal mutlak milik Allah SWT.
             </p>
           </div>

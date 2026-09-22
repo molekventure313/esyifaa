@@ -5,7 +5,7 @@ import { useState } from 'react';
 const FAQS = [
   {
     q: '1. Adakah pengisian boleh dilakukan dari jarak jauh — tanpa pos barang?',
-    a: 'Ya, 100% jarak jauh. Kaedah pengisian adalah sama seperti rawatan doa jarak jauh (solat hajat & wirid ruqyah berasaskan nama pemilik dan maklumat barang). Anda tidak perlu memposkan barang berharga anda ke mana-mana. Cukup simpan barang tersebut bersama anda sepanjang 3 hari proses dijalankan.',
+    a: 'Ya, 100% jarak jauh. Kaedah pengisian adalah sama seperti rawatan doa jarak jauh melalui wirid ruqyah khusus berasaskan nama pemilik dan maklumat barang. Anda tidak perlu memposkan barang berharga anda ke mana-mana. Cukup simpan barang tersebut bersama anda sepanjang proses pengisian dijalankan.',
   },
   {
     q: '2. Saya orang biasa dan kurang arif ilmu agama, adakah ia tetap berkesan bila saya yang guna?',
@@ -13,7 +13,7 @@ const FAQS = [
   },
   {
     q: '3. Kenapa ada bayaran RM90 sedangkan Al-Quran itu percuma?',
-    a: 'Bayaran bukan untuk "menjual ayat Al-Quran", sebaliknya adalah upah (ujrah) komitmen masa dan tenaga perawat yang menjalankan solat hajat khusus, wirid ruqyah intensif selama 3 hari berturut-turut, pemantauan kes, serta perkhidmatan pelarasan mingguan percuma seumur hidup.',
+    a: 'Bayaran bukan untuk "menjual ayat Al-Quran", sebaliknya adalah upah (ujrah) komitmen masa dan tenaga perawat yang menjalankan wirid ruqyah khusus, pemantauan kes, serta perkhidmatan pelarasan mingguan percuma sehingga perawat mati.',
   },
   {
     q: '4. Apakah barang yang paling sesuai dan bolehkah guna barangan emas/perak?',
@@ -21,7 +21,7 @@ const FAQS = [
   },
   {
     q: '5. Adakah kekuatan bacaan pengisian akan berkurang mengikut peredaran masa?',
-    a: 'Tidak. Inilah kelebihan utama Pengisian E-Syifa\'. Perawat kami menjalankan pelarasan dan pengisian semula setiap minggu secara automatik dari jauh. Tenaga ruqyah pada barang anda sentiasa dicas pada tahap maksimum.',
+    a: 'Tidak. Inilah kelebihan utama Pengisian E-Syifa\'. Perawat kami menjalankan pelarasan dan pengisian semula setiap minggu secara automatik dari jauh sehingga perawat mati. Tenaga ruqyah pada barang anda sentiasa dicas pada tahap maksimum tanpa bayaran tambahan.',
   },
   {
     q: '6. Bolehkah satu barang yang diisi digunakan untuk merawat ahli keluarga lain?',

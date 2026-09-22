@@ -109,6 +109,18 @@ export async function POST(req) {
           console.warn('Submission update skipped:', e.message);
         }
 
+        // ─── Auto-cancel pending duplicates dari customer sama (by phone) ───
+        try {
+          await supabase
+            .from('submissions')
+            .update({ payment_status: 'cancelled' })
+            .eq('phone', submission.phone)
+            .eq('payment_status', 'pending')
+            .neq('id', submission.id);
+        } catch (e) {
+          console.warn('Auto-cancel pending duplicates skipped:', e.message);
+        }
+
         // 2. Round-Robin Auto-assign Perawat
         let assignedPractitioner = null;
         try {

@@ -64,7 +64,7 @@ export default function PengisianHowItWorksSection() {
             4 Lapisan Ayat Ruqyah — Perlindungan Lengkap 360 Darjah
           </h2>
           <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '720px', margin: '0 auto' }}>
-            Bukan sekadar bacaan sepintas lalu — ini adalah gabungan 4 lapisan ayat ruqyah syar&apos;iyyah yang diwiridkan selama 3 hari berturut-turut untuk membakar, membatalkan, membentengi dan menyembuhkan secara serentak.
+            Bukan sekadar bacaan sepintas lalu — ini adalah gabungan 4 lapisan ayat ruqyah syar&apos;iyyah yang diwiridkan untuk membakar, membatalkan, membentengi dan menyembuhkan secara serentak.
           </p>
         </div>
 
@@ -103,11 +103,11 @@ export default function PengisianHowItWorksSection() {
           <span style={{ fontSize: '2.5rem', lineHeight: 1, flexShrink: 0 }}>🔄</span>
           <div>
             <div style={{ fontWeight: 900, color: '#064E3B', fontSize: '1.15rem', marginBottom: '0.45rem' }}>
-              Keistimewaan Utama: Pelarasan &amp; Pengisian Semula Setiap Minggu (Percuma)
+              Keistimewaan Utama: Pelarasan &amp; Pengisian Semula Setiap Minggu (Percuma Sehingga Perawat Mati)
             </div>
             <p style={{ margin: 0, color: '#334155', fontSize: '0.94rem', lineHeight: 1.75 }}>
               Kebanyakan air ruqyah atau mandian akan kehabisan khasiat apabila airnya habis.
-              Namun dengan Pengisian E-Syifa&apos;, perawat kami akan menjalankan <strong style={{ color: '#047857' }}>pelarasan zikir secara automatik pada setiap minggu</strong> dari jauh. Tenaga ruqyah pada item anda sentiasa dicas pada tahap maksimum tanpa sebarang caj tambahan selamanya.
+              Namun dengan Pengisian E-Syifa&apos;, perawat kami akan menjalankan <strong style={{ color: '#047857' }}>pelarasan zikir secara automatik pada setiap minggu</strong> dari jauh. Tenaga ruqyah pada item anda sentiasa dicas pada tahap maksimum tanpa sebarang caj tambahan sehingga perawat mati.
             </p>
           </div>
         </div>

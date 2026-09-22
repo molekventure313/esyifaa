@@ -14,14 +14,15 @@ import PengisianTestimonialPart2Section from '@/components/salespage/pengisian/T
 import PengisianComparisonSection from '@/components/salespage/pengisian/ComparisonSection';
 import PengisianGuaranteeSection from '@/components/salespage/pengisian/GuaranteeSection';
 import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianCheckoutForm';
+import PengisianWhatsAppOrderSection from '@/components/salespage/pengisian/WhatsAppOrderSection';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export const metadata = {
-  title: "Pengisian E-Syifa' — Ikhtiar Gangguan Jin & Sihir Berulang | Siap 3 Hari Tanpa Pos",
-  description: "Pasakkan 4 lapisan ayat Ruqyah Syar'iyyah pada cincin, tasbih atau barang peribadi anda secara jarak jauh. Rawat diri sendiri 24 jam di rumah. Pelarasan mingguan percuma selamanya.",
+  title: "Pengisian E-Syifa' — Ikhtiar Gangguan Jin & Sihir Berulang | Rawatan Jarak Jauh Tanpa Pos",
+  description: "Pasakkan 4 lapisan ayat Ruqyah Syar'iyyah pada cincin, tasbih atau barang peribadi anda secara jarak jauh. Rawat diri sendiri 24 jam di rumah. Pelarasan mingguan percuma sehingga perawat mati.",
   keywords: "pengisian esyifa, rawatan ruqyah jarak jauh, cincin ruqyah, tasbih ruqyah, sihir berulang, gangguan jin, rawat sendiri",
 };
 
@@ -77,6 +78,9 @@ export default function PengisianEsyifaPage() {
 
       {/* #16 — Section CTA, Pakej FSP PRO & Borang Tempahan */}
       <PengisianCheckoutForm source="pengisian-esyifa" />
+
+      {/* Kad Tempahan Melalui WhatsApp (Selepas Form, Sebelum FAQ) */}
+      <PengisianWhatsAppOrderSection />
 
       {/* FAQ 8 Soalan Lazim */}
       <PengisianFAQSection />

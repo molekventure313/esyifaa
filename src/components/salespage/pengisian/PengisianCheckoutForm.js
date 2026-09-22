@@ -18,8 +18,8 @@ const PACKAGES = [
     recommended: true,
     features: [
       'JIMAT RM71',
-      'DIISI 3 HARI BERTURUT',
-      'PELARASAN MINGGUAN PERCUMA',
+      'BENTENG RUQYAH 4 LAPISAN',
+      'PELARASAN SEHINGGA PERAWAT MATI',
       'UNTUK SEISI KELUARGA',
     ],
     itemsCount: 3,
@@ -35,8 +35,8 @@ const PACKAGES = [
     badge: 'PILIHAN BERDUA',
     features: [
       'JIMAT RM30',
-      'DIISI 3 HARI BERTURUT',
-      'PELARASAN MINGGUAN PERCUMA',
+      'BENTENG RUQYAH 4 LAPISAN',
+      'PELARASAN SEHINGGA PERAWAT MATI',
       'KHAS SUAMI ISTERI',
     ],
     itemsCount: 2,
@@ -52,7 +52,7 @@ const PACKAGES = [
     badge: null,
     features: [
       'JIMAT RM30',
-      'DIISI 3 HARI BERTURUT',
+      'BENTENG RUQYAH 4 LAPISAN',
       '1 BARANG SAHAJA',
       'PEK PERCUBAAN DIRI SENDIRI',
     ],
