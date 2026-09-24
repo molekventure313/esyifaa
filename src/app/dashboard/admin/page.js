@@ -150,6 +150,9 @@ export default function AdminDashboardPage() {
   const pnl      = data?.pnl || {};
   const maxRev   = bySP[0]?.revenue || 1;
 
+  // Items dengan stok < 20 unit
+  const lowStockItems = (stockSummary?.products || []).filter(p => (p.current_stock || 0) < 20);
+
   const currentDate = new Date().toLocaleDateString('ms-MY', {
     weekday: 'long', year: 'numeric', month: 'short', day: 'numeric',
   });
@@ -238,11 +241,55 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* ─── Low Stock Alert ─── */}
+      {lowStockItems.length > 0 && (
+        <div style={{
+          background: lm ? '#FEF2F2' : 'rgba(239,68,68,0.08)',
+          border: '1.5px solid #EF4444',
+          borderRadius: '10px',
+          padding: '0.9rem 1.25rem',
+          marginBottom: '1.25rem',
+          display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+          fontFamily: ff,
+        }}>
+          <span style={{ fontSize: '1.25rem', lineHeight: 1, flexShrink: 0 }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, color: '#EF4444', fontSize: '0.88rem', marginBottom: '0.4rem' }}>
+              Stok Rendah — Perlu Tambah Segera
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {lowStockItems.map(p => (
+                <span key={p.sku} style={{
+                  background: lm ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.15)',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  borderRadius: '6px', padding: '0.2rem 0.6rem',
+                  fontSize: '0.78rem', fontWeight: 700,
+                  color: lm ? '#DC2626' : '#FCA5A5',
+                }}>
+                  {p.name} — {p.current_stock ?? 0} unit
+                </span>
+              ))}
+            </div>
+          </div>
+          <a href="/dashboard/admin/stok" style={{
+            fontSize: '0.78rem', fontWeight: 700,
+            color: lm ? '#DC2626' : '#FCA5A5',
+            textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+            border: '1px solid rgba(239,68,68,0.4)',
+            borderRadius: '6px', padding: '0.3rem 0.75rem',
+            background: lm ? 'rgba(239,68,68,0.08)' : 'transparent',
+          }}>
+            Urus Stok →
+          </a>
+        </div>
+      )}
+
       {/* ─── View Tab Switcher ─── */}
       <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: lm ? '#F1F5F9' : '#090A0F', padding: '3px', borderRadius: '8px', width: 'fit-content', border: cardBorder }}>
         <button onClick={() => setActiveView('overview')} style={{ padding: '0.4rem 1.1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: activeView === 'overview' ? 700 : 500, fontSize: '0.82rem', fontFamily: ff, background: activeView === 'overview' ? (lm ? '#FFFFFF' : '#064E3B') : 'transparent', color: activeView === 'overview' ? (lm ? '#047857' : '#34D399') : textSecondary }}>📊 Overview</button>
         <button onClick={() => setActiveView('pnl')} style={{ padding: '0.4rem 1.1rem', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: activeView === 'pnl' ? 700 : 500, fontSize: '0.82rem', fontFamily: ff, background: activeView === 'pnl' ? (lm ? '#FFFFFF' : '#1E1B4B') : 'transparent', color: activeView === 'pnl' ? (lm ? '#4F46E5' : '#A5B4FC') : textSecondary }}>💰 Laporan PNL</button>
       </div>
+
 
       {activeView === 'overview' && (loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px', gap: '0.75rem', flexDirection: 'column' }}>
