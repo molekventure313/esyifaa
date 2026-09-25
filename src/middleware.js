@@ -104,8 +104,12 @@ export async function middleware(request) {
   return supabaseResponse;
 }
 
+// Hanya route yang perlukan auth — sales page public tak lalu middleware langsung
+// (tiada edge function invocation untuk setiap klik iklan)
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/dashboard/:path*',
+    '/pengisian-item/:path*',
+    '/api/:path*',
   ],
 };

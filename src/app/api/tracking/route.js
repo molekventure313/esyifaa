@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendCAPIEvent, sendFpxCAPIEvent } from '@/lib/tracking/capi';
@@ -109,6 +110,9 @@ export async function PATCH(req) {
       entityId: existing?.id || 'tracking_config',
       description: 'Tetapan Meta Pixel & CAPI (Utama + FPX) dikemaskini'
     });
+
+    // Refresh cached HQ pixel dalam root layout
+    try { revalidateTag('pixels'); } catch (_) {}
 
     // Reset both caches so next request fetches fresh from DB
     try {

@@ -43,7 +43,8 @@ export async function GET() {
     'https://connect.facebook.net/en_US/fbevents.js');
   }
   fbq('init', '${fpxPixelId}');
-  fbq('track', 'PageView');
+  // trackSingle — 'track' akan fire PageView ke SEMUA pixel (HQ dapat PageView berganda)
+  fbq('trackSingle', '${fpxPixelId}', 'PageView');
   // Store fpxPixelId for trackSingle usage
   window.__fpxPixelId = '${fpxPixelId}';
 })();
@@ -52,10 +53,9 @@ export async function GET() {
   return new Response(pixelScript, {
     headers: {
       'Content-Type': 'application/javascript',
-      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-      'Surrogate-Control': 'no-store',
-      'CDN-Cache-Control': 'no-store',
-      'Netlify-CDN-Cache-Control': 'no-store',
+      // Browser tak cache; CDN cache 5 minit (dipanggil setiap page load produk)
+      'Cache-Control': 'public, max-age=0, must-revalidate',
+      'Netlify-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
     },
   });
 }

@@ -292,7 +292,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
 
         // Redirect to TQ page
         const productLabel = encodeURIComponent(`Sabun Garam ${pkg.label}`);
-        window.location.href = `/payment-success?type=cod&amount=${grandTotal}&product=${productLabel}&order_id=${json.order_id || ''}`;
+        window.location.href = `/payment-success?type=cod&amount=${grandTotal}&product=${productLabel}&order_id=${json.order_id || ''}${marketerCode ? `&m=${encodeURIComponent(marketerCode)}` : ''}`;
       } else {
         throw new Error(json.error || 'Ralat berlaku. Sila cuba lagi.');
       }

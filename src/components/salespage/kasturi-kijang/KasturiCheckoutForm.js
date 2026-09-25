@@ -322,7 +322,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
 
       const json = await res.json();
       if (res.ok && json.success) {
-        window.location.href = `/payment-success?order_id=${json.order_id}&amount=${grandTotal}&product=${encodeURIComponent(`Minyak Kasturi Kijang — ${pkg.label}`)}&type=cod`;
+        window.location.href = `/payment-success?order_id=${json.order_id}&amount=${grandTotal}&product=${encodeURIComponent(`Minyak Kasturi Kijang — ${pkg.label}`)}&type=cod${marketerCode ? `&m=${encodeURIComponent(marketerCode)}` : ''}`;
       } else {
         throw new Error(json.error || 'Gagal menghantar pesanan COD. Sila cuba lagi.');
       }

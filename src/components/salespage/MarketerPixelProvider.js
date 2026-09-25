@@ -10,6 +10,9 @@ function PixelLogic() {
   useEffect(() => {
     const code = searchParams.get('m');
     if (!code) return;
+    // Dah fire dari inline bootstrap dalam <head> (root layout) — skip
+    if (window.__mkPixelCode === code.toLowerCase().trim()) return;
+    // Fallback: marketer baru yang belum ada dalam cached map → resolve via API
 
     fetch(`/api/pixel-resolve?m=${code}`)
       .then(res => res.json())

@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+/* Fonts dimuat via next/font dalam layout.js (self-hosted, tiada @import render-blocking) */
 
 /* ==========================================================================
    CSS Variables
@@ -72,8 +72,8 @@
   --radius-full: 9999px;
 
   /* Typography */
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-heading: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-body: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-outfit), 'Outfit', system-ui, -apple-system, sans-serif;
 
   /* Transitions */
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);

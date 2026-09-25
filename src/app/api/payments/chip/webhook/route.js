@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
-import { sendFpxCAPIEvent, sendCAPIEventToPixel } from '@/lib/tracking/capi';
+import { sendAttributedCAPIEvent } from '@/lib/tracking/attributed';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 import { deductStock } from '@/lib/stock';
 
@@ -182,50 +182,20 @@ export async function POST(req) {
           console.warn('Case creation skipped (RLS/customer_id missing):', e.message);
         }
 
-        // 4. Meta CAPI Purchase — guna marketer pixel kalau ada, else HQ FPX pixel
+        // 4. Meta CAPI Purchase — marketer order → pixel marketer SAHAJA (tiada fallback ke HQ);
+        //    HQ order → HQ FPX pixel
         try {
-          let capiSent = false;
-
-          // Semak sama ada order dari marketer yang ada pixel config
-          if (submission.marketer_id) {
-            const { data: mProfile } = await supabase
-              .from('profiles')
-              .select('meta_pixel_id, meta_access_token')
-              .eq('id', submission.marketer_id)
-              .maybeSingle();
-
-            if (mProfile?.meta_pixel_id && mProfile?.meta_access_token) {
-              await sendCAPIEventToPixel({
-                pixelId:     mProfile.meta_pixel_id,
-                accessToken: mProfile.meta_access_token,
-                eventName:   'Purchase',
-                eventId:     `purchase_${submission.id}`,
-                sourceUrl:   submission.landing_page_url || null,
-                userData:    { phone: submission.phone, client_ip_address: submission.ip_address, client_user_agent: submission.user_agent },
-                customData:  { currency: 'MYR', value: amountValue, content_name: `ESyifaa FPX — RM${amountValue}` },
-                clientIpAddress: submission.ip_address,
-                clientUserAgent: submission.user_agent,
-                fbp: submission.fbp || null,
-                fbc: submission.fbc || null,
-              });
-              capiSent = true;
-            }
-          }
-
-          // Kalau bukan marketer order atau marketer tiada pixel — guna HQ FPX pixel
-          if (!capiSent) {
-            await sendFpxCAPIEvent({
-              eventName:  'Purchase',
-              eventId:    `purchase_${submission.id}`,
-              sourceUrl:  submission.landing_page_url || null,
-              userData:   { phone: submission.phone, client_ip_address: submission.ip_address, client_user_agent: submission.user_agent },
-              customData: { currency: 'MYR', value: amountValue, content_name: `ESyifaa FPX — RM${amountValue}` },
-              clientIpAddress: submission.ip_address,
-              clientUserAgent: submission.user_agent,
-              fbp: submission.fbp || null,
-              fbc: submission.fbc || null,
-            });
-          }
+          await sendAttributedCAPIEvent({ supabase, marketerId: submission.marketer_id, hqPixel: 'fpx', event: {
+            eventName:  'Purchase',
+            eventId:    `purchase_${submission.id}`,
+            sourceUrl:  submission.landing_page_url || null,
+            userData:   { phone: submission.phone, client_ip_address: submission.ip_address, client_user_agent: submission.user_agent },
+            customData: { currency: 'MYR', value: amountValue, content_name: `ESyifaa FPX — RM${amountValue}` },
+            clientIpAddress: submission.ip_address,
+            clientUserAgent: submission.user_agent,
+            fbp: submission.fbp || null,
+            fbc: submission.fbc || null,
+          } });
         } catch (e) {
           console.error('CAPI FPX Purchase Error (non-blocking):', e.message);
         }

@@ -118,6 +118,8 @@ export async function POST(req) {
     const CHIP_API_KEY = process.env.CHIP_API_KEY;
     const CHIP_BRAND_ID = process.env.CHIP_BRAND_ID;
     const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Order marketer → TQ page tahu awal & tak load pixel HQ
+    const tqMarketerParam = marketerId ? `&m=${encodeURIComponent(marketer_code.toLowerCase().trim())}` : '';
 
     let checkout_url = '';
     let bill_id = '';
@@ -143,10 +145,10 @@ export async function POST(req) {
         purchase: {
           currency: 'MYR',
           products: [{ name: "Pakej Rawatan Jarak Jauh ESyifaa'", price: amountInSen, quantity: 1 }],
-          return_url: `${APP_URL}/payment-success?submission_id=${submissionId}&amount=${amount_in_myr}`,
+          return_url: `${APP_URL}/payment-success?submission_id=${submissionId}&amount=${amount_in_myr}${tqMarketerParam}`,
         },
         success_callback: callbackUrl,
-        success_redirect: `${APP_URL}/payment-success?submission_id=${submissionId}&amount=${amount_in_myr}`,
+        success_redirect: `${APP_URL}/payment-success?submission_id=${submissionId}&amount=${amount_in_myr}${tqMarketerParam}`,
         failure_redirect: `${APP_URL}${failurePage}?status=failed`,
       };
 

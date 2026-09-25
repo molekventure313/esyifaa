@@ -19,6 +19,9 @@ function PaymentSuccessContent() {
   const [loading, setLoading] = useState(!isMock && !isCod);
   const [fpxPixelId, setFpxPixelId] = useState(null);
   const [marketerPixelId, setMarketerPixelId] = useState(null); // set dari status API kalau order marketer
+  // Order marketer — dari ?m= (redirect checkout/CHIP) atau status API. Pixel HQ TAK BOLEH fire.
+  const marketerParam = searchParams.get('m') || '';
+  const [isMarketerOrder, setIsMarketerOrder] = useState(!!marketerParam);
 
   // Amount & product — read from URL params first (most accurate)
   const [amount, setAmount]           = useState(parseFloat(amountParam) || 50.00);
@@ -26,8 +29,10 @@ function PaymentSuccessContent() {
     productParam ? decodeURIComponent(productParam) : (isCod ? 'Sabun Garam Himalaya' : 'ESyifaa Payment')
   );
 
-  // Inject FPX pixel script + fetch pixel ID for client-side Purchase backup
+  // Inject FPX pixel script + fetch pixel ID for client-side Purchase backup — HQ order sahaja
   useEffect(() => {
+    if (marketerParam) return; // order marketer — jangan init pixel HQ
+
     const script = document.createElement('script');
     script.src = '/api/pixel-fpx-init';
     script.async = true;
@@ -39,7 +44,7 @@ function PaymentSuccessContent() {
       .catch(() => {});
 
     return () => { try { document.head.removeChild(script); } catch (_) {} };
-  }, []);
+  }, [marketerParam]);
 
   // Poll payment status from Chip (FPX only — COD skips this)
   useEffect(() => {
@@ -75,6 +80,7 @@ function PaymentSuccessContent() {
 
           // Set marketer pixel kalau ada (marketer order)
           if (json.marketer_pixel_id) setMarketerPixelId(json.marketer_pixel_id);
+          if (json.is_marketer_order) setIsMarketerOrder(true);
 
           // Update amount from API if not already set from URL
           if (json.amount_paid && !amountParam) {
@@ -113,9 +119,9 @@ function PaymentSuccessContent() {
     if (isCod) return; // COD: server CAPI + checkout browser already deduplicated — skip here
 
     // Determine target pixel:
-    // - Marketer order → marketerPixelId (from status API)
+    // - Marketer order → marketerPixelId SAHAJA (tiada pixel → skip, JANGAN fallback ke HQ)
     // - HQ order → fpxPixelId (from /api/tracking/fpx-pixel-id)
-    const targetPixelId = marketerPixelId || fpxPixelId;
+    const targetPixelId = isMarketerOrder ? marketerPixelId : fpxPixelId;
     if (!targetPixelId) return;
 
     try {
@@ -130,7 +136,7 @@ function PaymentSuccessContent() {
         }, { eventID: `purchase_${submissionId}` }); // matches webhook eventId
       }
     } catch (_) {}
-  }, [status, fpxPixelId, marketerPixelId, amount, productName, submissionId, isCod]);
+  }, [status, fpxPixelId, marketerPixelId, isMarketerOrder, amount, productName, submissionId, isCod]);
 
   // ─── Display content — same message for both COD and FPX ───
   const displayTitle    = `Pesanan Diterima — RM${amount.toFixed(2)}`;

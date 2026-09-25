@@ -53,6 +53,7 @@ export async function GET(req) {
       phone:            submission.phone,
       payment_status:   paid ? 'completed' : failed ? 'failed' : 'pending',
       marketer_pixel_id: marketerPixelId, // null for HQ orders
+      is_marketer_order: !!submission.marketer_id, // TQ: jangan fallback ke pixel HQ untuk order marketer
     });
 
   } catch (error) {

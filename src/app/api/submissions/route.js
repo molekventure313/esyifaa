@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
-import { sendCAPIEvent } from '@/lib/tracking/capi';
+import { sendAttributedCAPIEvent } from '@/lib/tracking/attributed';
 import { sendGroupNotification, buildLeadMessage } from '@/lib/notifications/wasapbot';
 
 export async function POST(req) {
@@ -280,9 +280,9 @@ export async function POST(req) {
       ipAddress: ip,
     });
 
-    // ─── Send Meta CAPI "Lead" event ───
+    // ─── Send Meta CAPI "Lead" event — marketer lead → pixel marketer sahaja ───
     try {
-      await sendCAPIEvent({
+      await sendAttributedCAPIEvent({ supabase, marketerId, hqPixel: 'main', event: {
         eventName: 'Lead',
         eventId: event_id || submission.id,
         sourceUrl: landing_page_url || null,
@@ -295,7 +295,7 @@ export async function POST(req) {
         clientUserAgent: user_agent,
         fbp: fbp || null,
         fbc: fbc || null,
-      });
+      } });
     } catch (capiError) {
       console.error('CAPI Error (non-blocking):', capiError);
     }

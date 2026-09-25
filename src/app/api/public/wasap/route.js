@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+// CDN cache 5 minit — dipanggil setiap page load (FloatingWAButton). Rotation guna localStorage, tak terjejas.
+const CDN_CACHE = { 'Cache-Control': 'public, max-age=0, must-revalidate', 'Netlify-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' };
+
 /**
  * GET /api/public/wasap?group=sabun|pengisian|all
  * Public — returns ACTIVE WA numbers for the given SP group.
@@ -41,7 +44,7 @@ export async function GET(req) {
     }
 
     // If no numbers found for the specific group, return empty (don't bleed other groups)
-    return NextResponse.json({ success: true, data: data || [] });
+    return NextResponse.json({ success: true, data: data || [] }, { headers: CDN_CACHE });
   } catch (error) {
     console.error('[GET /api/public/wasap]', error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

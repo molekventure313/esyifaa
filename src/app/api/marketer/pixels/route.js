@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -69,6 +70,9 @@ export async function PATCH(request) {
       .eq('id', user.id);
 
     if (error) throw error;
+
+    // Refresh cached marketer pixel map dalam root layout
+    try { revalidateTag('pixels'); } catch (_) {}
 
     return NextResponse.json({ success: true });
   } catch (error) {

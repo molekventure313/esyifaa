@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
-import { sendFpxCAPIEvent } from '@/lib/tracking/capi';
+import { sendAttributedCAPIEvent } from '@/lib/tracking/attributed';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 import { deductStock } from '@/lib/stock';
 
@@ -177,9 +177,9 @@ export async function POST(req) {
       console.warn('COD submission DB error:', e.message);
     }
 
-    // Server-side CAPI Purchase event (FPX pixel — covers COD as well)
+    // Server-side CAPI Purchase — marketer order → pixel marketer sahaja; HQ order → HQ FPX pixel
     try {
-      await sendFpxCAPIEvent({
+      await sendAttributedCAPIEvent({ supabase, marketerId, hqPixel: 'fpx', event: {
         eventName: 'Purchase',
         eventId: `cod_${submissionId}`,
         sourceUrl: landing_page_url || null,
@@ -197,7 +197,7 @@ export async function POST(req) {
         clientUserAgent: user_agent,
         fbp: fbp || null,
         fbc: fbc || null,
-      });
+      } });
     } catch (e) {
       console.error('CAPI COD Purchase Error (non-blocking):', e.message);
     }
