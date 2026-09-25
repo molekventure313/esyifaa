@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { summarizeByProduct } from '@/lib/products';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 async function requireAdmin() {
@@ -185,6 +186,31 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
   return { rows, totals };
 }
 
+// ─── Sales & ads ikut produk (+ pecahan setiap marketer / HQ) ─────────────────
+function computeProductStats(marketers, submissions, adsSpend) {
+  const owners = [...marketers.map(m => ({ id: m.id, name: m.full_name || 'Marketer' })), { id: '__hq__', name: 'HQ' }];
+  const ownerOf = x => x.marketer_id || '__hq__';
+
+  const byOwner = owners.map(o => ({
+    ...o,
+    stats: summarizeByProduct(submissions.filter(s => ownerOf(s) === o.id), adsSpend.filter(a => ownerOf(a) === o.id)),
+  }));
+
+  const products = summarizeByProduct(submissions, adsSpend).map(p => ({
+    ...p,
+    breakdown: byOwner
+      .map(o => ({ id: o.id, name: o.name, ...o.stats.find(x => x.key === p.key) }))
+      .filter(r => r.orders > 0 || r.ads > 0)
+      .map(({ id, name, orders, sales, ads, roas }) => ({ id, name, orders, sales, ads, roas }))
+      .sort((a, b) => b.sales - a.sales),
+  }));
+
+  const sum = k => parseFloat(products.reduce((t, p) => t + p[k], 0).toFixed(2));
+  const totals = { orders: products.reduce((t, p) => t + p.orders, 0), sales: sum('sales'), ads: sum('ads') };
+  totals.roas = totals.ads > 0 ? parseFloat((totals.sales / totals.ads).toFixed(2)) : null;
+  return { products, totals };
+}
+
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 async function fetchSubs(admin, from, to) {
   let q = admin.from('submissions')
@@ -198,7 +224,7 @@ async function fetchSubs(admin, from, to) {
 }
 
 async function fetchAds(admin, spendFrom, spendTo) {
-  let q = admin.from('ads_spend').select('marketer_id, amount');
+  let q = admin.from('ads_spend').select('marketer_id, amount, product');
   if (spendFrom) q = q.gte('spend_date', spendFrom);
   if (spendTo)   q = q.lte('spend_date', spendTo);
   const { data } = await q;
@@ -254,6 +280,7 @@ export async function GET(req) {
     return NextResponse.json({
       success: true, mode: 'period', period, avg_cost: avgCost,
       marketers: rows, totals,
+      byProduct: computeProductStats(marketers, subs, ads),
     });
 
   } catch (err) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount, calcCOGS as calcCOGSShared } from '@/lib/marketer-calc';
+import { PRODUCT_KEYS, summarizeByProduct } from '@/lib/products';
 
 export async function GET(req) {
   try {
@@ -48,7 +49,7 @@ export async function GET(req) {
     // Fetch ads spend
     const { data: adsSpend } = await adminClient
       .from('ads_spend')
-      .select('amount, spend_date')
+      .select('amount, spend_date, product')
       .eq('marketer_id', user.id)
       .gte('spend_date', `${year}-${month}-01`)
       .lte('spend_date', lastDayStr);
@@ -92,13 +93,19 @@ export async function GET(req) {
       const daySales = daySalesArr.reduce((sum, s) => sum + parseAmount(s), 0);
       const dayAdsArr = ads.filter(a => a.spend_date === dateStr);
       const dayAds = dayAdsArr.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+      // Ads ikut produk — { 'sabun-garam': 50, ... }
+      const adsByProduct = Object.fromEntries(PRODUCT_KEYS.map(k => [k, 0]));
+      dayAdsArr.forEach(a => {
+        const k = PRODUCT_KEYS.includes(a.product) ? a.product : 'sabun-garam';
+        adsByProduct[k] += parseFloat(a.amount) || 0;
+      });
       const dayCOGS = calcCOGS(daySalesArr);
       const dayProfit = daySales - dayAds - dayCOGS;
       const dayKomisen = Math.max(0, dayProfit * (commission_pct / 100));
 
       dailyBreakdown.push({
         date: dateStr, orders: daySalesArr.length,
-        sales: daySales, ads: dayAds, cogs: dayCOGS, profit: dayProfit, komisen: dayKomisen,
+        sales: daySales, ads: dayAds, adsByProduct, cogs: dayCOGS, profit: dayProfit, komisen: dayKomisen,
         isFuture: dateStr > todayMY, isToday: dateStr === todayMY,
       });
     }
@@ -115,6 +122,7 @@ export async function GET(req) {
         komisen,
         totalGaji,
         month: monthParam,
+        productSummary: summarizeByProduct(subs, ads),
         dailyBreakdown
       }
     });

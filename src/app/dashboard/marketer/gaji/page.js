@@ -1,68 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import AdsInput from '@/components/dashboard/AdsInput';
+import { PRODUCTS } from '@/lib/products';
 
 function formatRM(val) {
   if (!val && val !== 0) return 'RM 0.00';
   return `RM ${parseFloat(val).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// ─── Input Ads harian — simpan bila Enter / blur ────────────────────────────────
-function AdsInput({ date, value, disabled, onSaved, lm, textPrimary }) {
-  const fmt = (v) => (v ? String(parseFloat(v)) : '');
-  const [val, setVal]       = useState(fmt(value));
-  const [status, setStatus] = useState(null); // 'saving' | 'saved' | 'error'
-  const [errMsg, setErrMsg] = useState('');
-  const [focused, setFocused] = useState(false);
-
-  // Sync dengan nilai server bila tak sedang ditaip (cth: lepas refresh / tukar bulan)
-  useEffect(() => { if (!focused) setVal(fmt(value)); }, [value, focused]);
-
-  const save = async () => {
-    const next = val.trim() === '' ? 0 : parseFloat(val);
-    if (!Number.isFinite(next) || next < 0) { setStatus('error'); setErrMsg('Jumlah tidak sah'); return; }
-    if (Math.abs(next - (parseFloat(value) || 0)) < 0.005) return; // tiada perubahan
-    setStatus('saving');
-    try {
-      const res  = await fetch('/api/marketer/ads-spend', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spend_date: date, amount: next }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Gagal simpan');
-      setStatus('saved');
-      onSaved();
-      setTimeout(() => setStatus(s => (s === 'saved' ? null : s)), 2000);
-    } catch (e) {
-      setStatus('error'); setErrMsg(e.message);
-    }
-  };
-
-  if (disabled) return <span style={{ opacity: 0.4 }}>—</span>;
-
-  return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end' }}>
-      <span style={{ fontSize: '0.72rem', width: '0.9rem', textAlign: 'center' }} title={status === 'error' ? errMsg : ''}>
-        {status === 'saving' ? '⏳' : status === 'saved' ? '✅' : status === 'error' ? '⚠️' : ''}
-      </span>
-      <span style={{ fontSize: '0.72rem', color: '#F59E0B', fontWeight: 600 }}>RM</span>
-      <input
-        type="number" inputMode="decimal" step="0.01" min="0" placeholder="0"
-        value={val}
-        onChange={e => { setVal(e.target.value); if (status === 'error') setStatus(null); }}
-        onFocus={() => setFocused(true)}
-        onBlur={() => { setFocused(false); save(); }}
-        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-        style={{
-          width: '84px', padding: '0.35rem 0.5rem', borderRadius: '6px', textAlign: 'right',
-          fontSize: '0.85rem', fontWeight: 600, color: textPrimary, outline: 'none',
-          background: lm ? '#FFFBEB' : 'rgba(245,158,11,0.06)',
-          border: status === 'error' ? '1px solid #EF4444' : (lm ? '1px solid #FCD34D' : '1px solid rgba(245,158,11,0.3)'),
-        }}
-      />
-    </div>
-  );
 }
 
 export default function MarketerGajiPage() {
@@ -210,12 +154,42 @@ export default function MarketerGajiPage() {
               </div>
             </div>
 
+            {/* Prestasi Ikut Produk */}
+            <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', overflow: 'hidden', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+              <div style={{ padding: '1.25rem', borderBottom: cardBorder }}>
+                <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: textPrimary }}>📦 Prestasi Ikut Produk</h2>
+                <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: textMuted }}>Add-on (cth: Kasturi dalam order Sabun) dikira dalam produk utama order.</p>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: subCardBg, borderBottom: cardBorder }}>
+                      {[['Produk', 'left'], ['Order', 'right'], ['Sales', 'right'], ['Ads', 'right'], ['ROAS', 'right']].map(([h, align]) => (
+                        <th key={h} style={{ padding: '0.75rem 1rem', textAlign: align, color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(totals.productSummary || []).map(p => (
+                      <tr key={p.key} style={{ borderBottom: cardBorder }}>
+                        <td style={{ padding: '0.7rem 1rem', fontWeight: 600, color: textPrimary }}>{p.label}</td>
+                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: textSecondary }}>{p.orders}</td>
+                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: '#10B981', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatRM(p.sales)}</td>
+                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: '#F59E0B', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatRM(p.ads)}</td>
+                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', fontWeight: 700, color: p.roas === null ? textMuted : p.roas >= 1 ? '#10B981' : '#EF4444' }}>{p.roas === null ? '—' : `${p.roas.toFixed(2)}x`}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             {/* Daily Breakdown Table — semua hari; column Ads boleh diisi terus */}
             <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', overflow: 'hidden', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
               <div style={{ padding: '1.25rem', borderBottom: cardBorder }}>
                 <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: textPrimary }}>📅 Pecahan Harian</h2>
                 <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: textMuted }}>
-                  Isi kos ads harian terus dalam column <strong style={{ color: '#F59E0B' }}>Ads</strong> — tekan Enter atau klik luar untuk simpan. Kosongkan / 0 untuk padam.
+                  Isi kos ads harian <strong style={{ color: '#F59E0B' }}>ikut produk</strong> terus dalam jadual — tekan Enter atau klik luar untuk simpan. Kosongkan / 0 untuk padam.
                 </p>
               </div>
 
@@ -223,8 +197,8 @@ export default function MarketerGajiPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ background: subCardBg, borderBottom: cardBorder }}>
-                      {[['Tarikh', 'left'], ['Order', 'right'], ['Sales', 'right'], ['Ads', 'right'], ['COGS', 'right'], ['Profit', 'right'], [`Komisen ${totals.commission_pct ?? ''}%`, 'right']].map(([h, align]) => (
-                        <th key={h} style={{ padding: '0.75rem 1rem', textAlign: align, color: h === 'Ads' ? '#F59E0B' : textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                      {[['Tarikh', 'left'], ['Order', 'right'], ['Sales', 'right'], ...PRODUCTS.map(p => [`Ads ${p.short}`, 'right', true]), ['Total Ads', 'right'], ['COGS', 'right'], ['Profit', 'right'], [`Komisen ${totals.commission_pct ?? ''}%`, 'right']].map(([h, align, isAds]) => (
+                        <th key={h} style={{ padding: '0.75rem 1rem', textAlign: align, color: isAds || h === 'Total Ads' ? '#F59E0B' : textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -244,16 +218,20 @@ export default function MarketerGajiPage() {
                           </td>
                           <td style={{ ...cell, color: textSecondary }}>{d.orders || empty}</td>
                           <td style={{ ...cell, color: '#10B981', fontWeight: 500 }}>{d.sales ? formatRM(d.sales) : empty}</td>
-                          <td style={{ ...cell, padding: '0.4rem 0.75rem' }}>
-                            <AdsInput
-                              date={d.date}
-                              value={d.ads}
-                              disabled={d.isFuture}
-                              onSaved={() => fetchData(true)}
-                              lm={lm}
-                              textPrimary={textPrimary}
-                            />
-                          </td>
+                          {PRODUCTS.map(p => (
+                            <td key={p.key} style={{ ...cell, padding: '0.4rem 0.5rem' }}>
+                              <AdsInput
+                                date={d.date}
+                                product={p.key}
+                                value={d.adsByProduct?.[p.key]}
+                                disabled={d.isFuture}
+                                onSaved={() => fetchData(true)}
+                                lm={lm}
+                                textPrimary={textPrimary}
+                              />
+                            </td>
+                          ))}
+                          <td style={{ ...cell, color: '#F59E0B', fontWeight: 600 }}>{d.ads ? formatRM(d.ads) : empty}</td>
                           <td style={{ ...cell, color: '#8B5CF6', fontWeight: 500 }}>{d.cogs ? formatRM(d.cogs) : empty}</td>
                           <td style={{ ...cell, color: d.profit >= 0 ? '#10B981' : '#EF4444', fontWeight: 600 }}>{d.sales || d.ads ? formatRM(d.profit) : empty}</td>
                           <td style={{ ...cell, color: '#10B981', fontWeight: 700 }}>{d.komisen ? formatRM(d.komisen) : empty}</td>
@@ -264,7 +242,12 @@ export default function MarketerGajiPage() {
                       <td style={{ padding: '1rem', color: textPrimary }}>JUMLAH</td>
                       <td style={{ padding: '1rem', textAlign: 'right', color: textSecondary }}>{daily.reduce((n, d) => n + (d.orders || 0), 0)}</td>
                       <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.totalSales)}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#F59E0B' }}>{formatRM(totals.totalAds)}</td>
+                      {PRODUCTS.map(p => (
+                        <td key={p.key} style={{ padding: '1rem', textAlign: 'right', color: '#F59E0B', whiteSpace: 'nowrap' }}>
+                          {formatRM((totals.productSummary || []).find(x => x.key === p.key)?.ads || 0)}
+                        </td>
+                      ))}
+                      <td style={{ padding: '1rem', textAlign: 'right', color: '#F59E0B', whiteSpace: 'nowrap' }}>{formatRM(totals.totalAds)}</td>
                       <td style={{ padding: '1rem', textAlign: 'right', color: '#8B5CF6' }}>{formatRM(totals.totalCOGS)}</td>
                       <td style={{ padding: '1rem', textAlign: 'right', color: profitPositive ? '#10B981' : '#EF4444' }}>{formatRM(totals.profit)}</td>
                       <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.komisen)}</td>

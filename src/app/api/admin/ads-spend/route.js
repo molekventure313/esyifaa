@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { upsertDailyAds } from '@/lib/products';
 
 // Helper: get date range based on period
 function getDateRange(period) {
@@ -246,6 +247,33 @@ export async function PATCH(req) {
 
   } catch (error) {
     console.error('PATCH ads-spend error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// PUT — ads HQ SATU hari untuk SATU produk (jadual harian di page Laporan Marketer)
+// Body: { spend_date, product, amount }. amount kosong/0 → padam.
+export async function PUT(req) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
+    if (!['admin', 'super_admin'].includes(profile?.role)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { spend_date, product, amount } = await req.json();
+    try {
+      const data = await upsertDailyAds(adminClient, { marketerId: null, spendDate: spend_date, product, amount, userId: user.id });
+      return NextResponse.json({ success: true, data });
+    } catch (e) {
+      return NextResponse.json({ success: false, error: e.message }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('PUT ads-spend error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

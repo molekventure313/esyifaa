@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import AdsInput from '@/components/dashboard/AdsInput';
+import { PRODUCTS } from '@/lib/products';
 
 const PERIODS = [
   { id: 'today',     label: 'Hari Ini' },
@@ -30,6 +32,186 @@ function ProfitCell({ val, lm }) {
     }}>
       {pos ? '+' : ''}{fmtNum(val)}
     </span>
+  );
+}
+
+// ── Sales & Ads Ikut Produk ────────────────────────────────────────────────────
+function RoasCell({ roas, textMuted }) {
+  if (roas === null || roas === undefined) return <span style={{ color: textMuted }}>—</span>;
+  return <span style={{ fontWeight: 700, color: roas >= 1 ? '#10B981' : '#EF4444' }}>{roas.toFixed(2)}x</span>;
+}
+
+function ProductSection({ byProduct, lm, cardBg, cardBorder, textPrimary, textSecondary, textMuted, ff }) {
+  const [openKey, setOpenKey] = useState(null);
+  if (!byProduct) return null;
+  const { products, totals } = byProduct;
+  const th = (h, align = 'right') => (
+    <th key={h} style={{ padding: '0.7rem 1rem', textAlign: align, fontSize: '0.7rem', fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+  );
+  const td = { padding: '0.8rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' };
+  const rowBorder = lm ? '1px solid #F1F5F9' : '1px solid rgba(255,255,255,0.04)';
+
+  return (
+    <div style={{ marginTop: '1.75rem', background: cardBg, border: cardBorder, borderRadius: '10px', overflow: 'hidden', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+      <div style={{ padding: '1.1rem 1.25rem', borderBottom: cardBorder }}>
+        <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: textPrimary }}>📦 Sales & Ads Ikut Produk</h2>
+        <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: textMuted }}>
+          Semua marketer + HQ. Add-on (cth: Kasturi dalam order Sabun) dikira dalam produk utama order. Klik produk untuk pecahan setiap marketer.
+        </p>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff, fontSize: '0.83rem' }}>
+          <thead>
+            <tr style={{ background: lm ? '#F8FAFC' : '#090A0F', borderBottom: cardBorder }}>
+              {th('Produk', 'left')}{th('Orders')}{th('Sales (RM)')}{th('Ads (RM)')}{th('ROAS')}
+            </tr>
+          </thead>
+          <tbody>
+            {products.map(p => {
+              const open = openKey === p.key;
+              return [
+                <tr key={p.key} onClick={() => setOpenKey(open ? null : p.key)} style={{ borderBottom: rowBorder, cursor: 'pointer', background: open ? (lm ? '#F8FAFC' : 'rgba(255,255,255,0.02)') : 'transparent' }}>
+                  <td style={{ ...td, textAlign: 'left', fontWeight: 700, color: textPrimary }}>
+                    <span style={{ display: 'inline-block', width: '1rem', color: textMuted }}>{open ? '▾' : '▸'}</span>{p.label}
+                  </td>
+                  <td style={{ ...td, color: textPrimary }}>{p.orders}</td>
+                  <td style={{ ...td, color: lm ? '#047857' : '#34D399', fontWeight: 600 }}>{fmtNum(p.sales)}</td>
+                  <td style={{ ...td, color: '#60A5FA', fontWeight: 600 }}>{fmtNum(p.ads)}</td>
+                  <td style={td}><RoasCell roas={p.roas} textMuted={textMuted} /></td>
+                </tr>,
+                open && (p.breakdown.length === 0 ? (
+                  <tr key={`${p.key}-empty`} style={{ borderBottom: rowBorder }}>
+                    <td colSpan={5} style={{ padding: '0.7rem 1rem 0.7rem 2.25rem', fontSize: '0.78rem', color: textMuted }}>Tiada sales / ads untuk produk ini dalam tempoh ini.</td>
+                  </tr>
+                ) : p.breakdown.map(b => (
+                  <tr key={`${p.key}-${b.id}`} style={{ borderBottom: rowBorder, background: lm ? '#FAFBFC' : 'rgba(255,255,255,0.015)', fontSize: '0.8rem' }}>
+                    <td style={{ ...td, textAlign: 'left', paddingLeft: '2.25rem', color: textSecondary }}>
+                      {b.name}{b.id === '__hq__' && <span style={{ fontSize: '0.62rem', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)', padding: '0.1rem 0.35rem', borderRadius: '4px', marginLeft: '0.4rem' }}>HQ</span>}
+                    </td>
+                    <td style={{ ...td, color: textSecondary }}>{b.orders}</td>
+                    <td style={{ ...td, color: lm ? '#047857' : '#34D399' }}>{fmtNum(b.sales)}</td>
+                    <td style={{ ...td, color: '#60A5FA' }}>{fmtNum(b.ads)}</td>
+                    <td style={td}><RoasCell roas={b.roas} textMuted={textMuted} /></td>
+                  </tr>
+                ))),
+              ];
+            })}
+            <tr style={{ background: lm ? '#EFF6FF' : 'rgba(99,102,241,0.08)', borderTop: lm ? '2px solid #BFDBFE' : '1px solid rgba(99,102,241,0.25)', fontWeight: 800 }}>
+              <td style={{ ...td, textAlign: 'left', color: lm ? '#1E40AF' : '#A5B4FC', textTransform: 'uppercase', fontSize: '0.8rem' }}>⚡ Jumlah Fizikal</td>
+              <td style={{ ...td, color: lm ? '#1E40AF' : '#A5B4FC' }}>{totals.orders}</td>
+              <td style={{ ...td, color: lm ? '#047857' : '#34D399' }}>{fmtNum(totals.sales)}</td>
+              <td style={{ ...td, color: '#60A5FA' }}>{fmtNum(totals.ads)}</td>
+              <td style={td}><RoasCell roas={totals.roas} textMuted={textMuted} /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Ads HQ Harian (isi ads HQ ikut produk, 1hb → hujung bulan) ────────────────
+function HqAdsDaily({ lm, cardBg, subCardBg, cardBorder, textPrimary, textSecondary, textMuted, ff, onSaved }) {
+  const todayMonth = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 7);
+  const [month, setMonth] = useState(todayMonth);
+  const [data, setData]   = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res  = await fetch(`/api/admin/ads-spend/hq-daily?month=${month}`);
+      const json = await res.json();
+      if (json.success) setData(json);
+    } catch (_) {}
+    finally { if (!silent) setLoading(false); }
+  }, [month]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const shiftMonth = (n) => {
+    const [y, m] = month.split('-').map(Number);
+    const d = new Date(Date.UTC(y, m - 1 + n, 1));
+    setMonth(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+  };
+  const monthLabel = new Date(`${month}-01T12:00:00Z`).toLocaleString('ms-MY', { month: 'long', year: 'numeric' });
+
+  const products = data?.products || PRODUCTS;
+  const days = data?.days || [];
+  const sumAds = k => days.reduce((t, d) => t + (d.adsByProduct?.[k] || 0), 0);
+  const cell = { padding: '0.55rem 0.9rem', textAlign: 'right', whiteSpace: 'nowrap' };
+  const empty = <span style={{ opacity: 0.35 }}>—</span>;
+
+  return (
+    <div style={{ marginTop: '1.75rem', background: cardBg, border: cardBorder, borderRadius: '10px', overflow: 'hidden', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+      <div style={{ padding: '1.1rem 1.25rem', borderBottom: cardBorder, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: textPrimary }}>🏢 Ads HQ Harian</h2>
+          <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: textMuted }}>
+            Isi kos ads HQ <strong style={{ color: '#F59E0B' }}>ikut produk</strong> — tekan Enter atau klik luar untuk simpan. Kosongkan / 0 untuk padam.
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: subCardBg, padding: '0.3rem', borderRadius: '8px', border: cardBorder }}>
+          <button onClick={() => shiftMonth(-1)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: textSecondary, fontSize: '1rem' }}>◀</button>
+          <span style={{ fontWeight: 700, minWidth: '120px', textAlign: 'center', fontSize: '0.85rem' }}>{monthLabel}</span>
+          <button onClick={() => shiftMonth(1)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: textSecondary, fontSize: '1rem' }}>▶</button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ padding: '2rem', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>Memuatkan...</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff, fontSize: '0.83rem' }}>
+            <thead>
+              <tr style={{ background: lm ? '#F8FAFC' : '#090A0F', borderBottom: cardBorder }}>
+                {[['Tarikh', 'left'], ['Order HQ', 'right'], ['Sales HQ', 'right'], ...products.map(p => [`Ads ${p.short}`, 'right', true]), ['Total Ads', 'right', true]].map(([h, align, isAds]) => (
+                  <th key={h} style={{ padding: '0.7rem 0.9rem', textAlign: align, fontSize: '0.7rem', fontWeight: 700, color: isAds ? '#F59E0B' : textSecondary, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {days.map((d, i) => (
+                <tr key={d.date} style={{
+                  borderBottom: lm ? '1px solid #F1F5F9' : '1px solid rgba(255,255,255,0.04)',
+                  background: d.isToday ? (lm ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.1)') : (i % 2 ? (lm ? '#FAFBFC' : 'rgba(255,255,255,0.015)') : 'transparent'),
+                  opacity: d.isFuture ? 0.45 : 1,
+                }}>
+                  <td style={{ ...cell, textAlign: 'left', fontWeight: 600, color: textPrimary }}>
+                    {new Date(d.date + 'T00:00:00').toLocaleDateString('ms-MY', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {d.isToday && <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', fontWeight: 700, color: '#10B981' }}>HARI INI</span>}
+                  </td>
+                  <td style={{ ...cell, color: textSecondary }}>{d.orders || empty}</td>
+                  <td style={{ ...cell, color: lm ? '#047857' : '#34D399', fontWeight: 600 }}>{d.sales ? fmtNum(d.sales) : empty}</td>
+                  {products.map(p => (
+                    <td key={p.key} style={{ ...cell, padding: '0.35rem 0.5rem' }}>
+                      <AdsInput
+                        date={d.date}
+                        product={p.key}
+                        value={d.adsByProduct?.[p.key]}
+                        disabled={d.isFuture}
+                        endpoint="/api/admin/ads-spend"
+                        onSaved={() => { load(true); onSaved?.(); }}
+                        lm={lm}
+                        textPrimary={textPrimary}
+                      />
+                    </td>
+                  ))}
+                  <td style={{ ...cell, color: '#F59E0B', fontWeight: 600 }}>{d.ads ? fmtNum(d.ads) : empty}</td>
+                </tr>
+              ))}
+              <tr style={{ background: lm ? '#EFF6FF' : 'rgba(99,102,241,0.08)', borderTop: lm ? '2px solid #BFDBFE' : '1px solid rgba(99,102,241,0.25)', fontWeight: 800 }}>
+                <td style={{ ...cell, textAlign: 'left', color: lm ? '#1E40AF' : '#A5B4FC', textTransform: 'uppercase', fontSize: '0.8rem' }}>⚡ Jumlah</td>
+                <td style={{ ...cell, color: lm ? '#1E40AF' : '#A5B4FC' }}>{days.reduce((t, d) => t + d.orders, 0)}</td>
+                <td style={{ ...cell, color: lm ? '#047857' : '#34D399' }}>{fmtNum(days.reduce((t, d) => t + d.sales, 0))}</td>
+                {products.map(p => <td key={p.key} style={{ ...cell, color: '#F59E0B' }}>{fmtNum(sumAds(p.key))}</td>)}
+                <td style={{ ...cell, color: '#F59E0B' }}>{fmtNum(days.reduce((t, d) => t + d.ads, 0))}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -150,8 +332,9 @@ export default function MarketerReportPage() {
   const textMuted     = lm ? '#64748B' : '#6B7280';
   const ff            = 'var(--font-inter), -apple-system, sans-serif';
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  // silent === true → refresh tanpa spinner (cth: lepas simpan ads HQ). Butang Refresh hantar event → bukan silent.
+  const fetchData = useCallback(async (silent) => {
+    if (silent !== true) setLoading(true);
     try {
       const url = mode === 'monthly'
         ? '/api/admin/marketers/report?mode=monthly'
@@ -160,7 +343,7 @@ export default function MarketerReportPage() {
       const json = await res.json();
       if (json.success) setData(json);
     } catch (_) {}
-    finally { setLoading(false); }
+    finally { if (silent !== true) setLoading(false); }
   }, [mode, period]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -380,8 +563,16 @@ export default function MarketerReportPage() {
               </tbody>
             </table>
           </div>
+
+          <ProductSection byProduct={data.byProduct} lm={lm} cardBg={cardBg} cardBorder={cardBorder}
+            textPrimary={textPrimary} textSecondary={textSecondary} textMuted={textMuted} ff={ff} />
         </>
       )}
+
+      {/* Ads HQ — sentiasa papar (bebas dari mode / period) */}
+      <HqAdsDaily lm={lm} cardBg={cardBg} subCardBg={lm ? '#F1F5F9' : '#090A0F'} cardBorder={cardBorder}
+        textPrimary={textPrimary} textSecondary={textSecondary} textMuted={textMuted} ff={ff}
+        onSaved={() => fetchData(true)} />
     </div>
   );
 }
