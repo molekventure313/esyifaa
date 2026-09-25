@@ -16,6 +16,7 @@ export default function MarketerOrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [lastUpdated, setLastUpdated] = useState('');
   const [isLightMode, setIsLightMode] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     const checkTheme = () => {
@@ -57,6 +58,29 @@ export default function MarketerOrdersPage() {
     const interval = setInterval(fetchOrders, 15000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
+
+  const handleDelete = async (order) => {
+    const ok = window.confirm(
+      `Padam order ${order.full_name} (${order.phone})?
+
+` +
+      `Order ini akan dipadam SEPENUHNYA — tidak akan dihantar, dan tidak boleh dikembalikan.
+` +
+      `Guna untuk order test / order salah sahaja.`
+    );
+    if (!ok) return;
+    setDeletingId(order.id);
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Gagal memadam order');
+      setOrders(prev => prev.filter(o => o.id !== order.id));
+    } catch (e) {
+      window.alert(e.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredOrders = orders.filter(o => {
     if (!searchTerm) return true;
@@ -153,7 +177,7 @@ export default function MarketerOrdersPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: isLightMode ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.08)' }}>
-                {['Pelanggan', 'Telefon', 'Source / SP', 'Kuantiti', 'Jumlah', 'Status', 'Tarikh'].map(h => (
+                {['Pelanggan', 'Telefon', 'Source / SP', 'Kuantiti', 'Jumlah', 'Status', 'Tarikh', ''].map(h => (
                   <th key={h} style={{ padding: '0.7rem 0.5rem', color: textSecondary, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -191,12 +215,29 @@ export default function MarketerOrdersPage() {
                       <div style={{ fontWeight: 600, color: textSecondary }}>{formatDate(order.created_at)}</div>
                       <div style={{ fontSize: '0.675rem' }}>{formatTime(order.created_at)}</div>
                     </td>
+                    <td style={{ padding: '0.85rem 0.5rem', textAlign: 'right' }}>
+                      {['cod', 'fpx_payment'].includes(order.payment_type) && (
+                        <button
+                          onClick={() => handleDelete(order)}
+                          disabled={deletingId === order.id}
+                          title="Padam order (test / salah)"
+                          style={{
+                            padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600,
+                            border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.08)', color: '#EF4444',
+                            cursor: deletingId === order.id ? 'wait' : 'pointer', whiteSpace: 'nowrap',
+                            opacity: deletingId === order.id ? 0.6 : 1,
+                          }}
+                        >
+                          {deletingId === order.id ? '...' : '🗑 Padam'}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: '3rem 0', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>Tiada rekod order.</td>
+                  <td colSpan={8} style={{ padding: '3rem 0', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>Tiada rekod order.</td>
                 </tr>
               )}
             </tbody>

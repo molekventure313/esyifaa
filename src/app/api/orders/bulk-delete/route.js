@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { deleteOrders } from '@/lib/orders';
 
 // POST /api/orders/bulk-delete — delete multiple orders
 // Body: { ids: ['id1', 'id2', ...] }
@@ -39,20 +40,8 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: 'Tiada order sah untuk dipadam.' }, { status: 404 });
     }
 
-    // Delete associated cases first
-    await adminClient.from('cases').delete().in('submission_id', validIds);
-
-    // Reverse stock: delete auto-deducted out movements for these orders
-    // This restores stock qty when an order is deleted (both sabun + kasturi add-on)
-    await adminClient
-      .from('stock_movements')
-      .delete()
-      .in('reference_id', validIds)
-      .eq('movement_type', 'out');
-
-    // Bulk delete submissions
-    const { error } = await adminClient.from('submissions').delete().in('id', validIds);
-    if (error) throw error;
+    // Cases + stock movements (out & return) + submissions
+    await deleteOrders(adminClient, validIds);
 
     return NextResponse.json({
       success: true,
