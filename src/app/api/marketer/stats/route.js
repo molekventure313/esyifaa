@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-
-// COD orders kadang simpan amount dalam notes: [AMOUNT: MYR 95.00]
-function parseAmount(s) {
-  if (s.amount_paid && parseFloat(s.amount_paid) > 0) return parseFloat(s.amount_paid);
-  const m = (s.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9.]+)\]/i);
-  return m ? parseFloat(m[1]) : 0;
-}
+import { parseAmount, calcCOGS as calcCOGSShared } from '@/lib/marketer-calc';
 
 export async function GET(req) {
   try {
@@ -86,21 +80,7 @@ export async function GET(req) {
     const garamCost   = stockMap['GPM-500G'] || 0;
 
     // COGS calculator — sabun + kasturi + garam + postage
-    const isPhysical = s => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p => (s.source || '').includes(p));
-    const calcCOGS = (arr) => {
-      const sabunUnits = arr.filter(s => (s.source || '').includes('sabun')).reduce((t, s) => t + (parseInt(s.qty) || 0), 0);
-      const kasturiN   = arr.filter(s => /\[ADD-ON: Kasturi Kijang/i.test(s.notes || '') || /Add-On:\s*Kasturi Kijang/i.test(s.problem || '')).length;
-      const garamUnits = arr.filter(s => s.source === 'garam-pengasihan').reduce((t, s) => t + (parseInt(s.qty) || 1), 0);
-      const garamAddon = arr.filter(s => /\[ADD-ON: Garam Pengasihan/i.test(s.notes || '') || /Add-On:\s*Garam Pengasihan/i.test(s.problem || '')).length;
-      const fpxPhys    = arr.filter(s => isPhysical(s) && s.payment_type === 'fpx_payment').length;
-      const codPhys    = arr.filter(s => isPhysical(s) && s.payment_type === 'cod').length;
-      return parseFloat((
-        sabunUnits * sabunCost +
-        kasturiN   * kasturiCost +
-        (garamUnits + garamAddon) * garamCost +
-        fpxPhys * 4 + codPhys * 6
-      ).toFixed(2));
-    };
+    const calcCOGS = (arr) => calcCOGSShared(arr, { sabunCost, kasturiCost, garamCost });
 
     // Completed orders only untuk calculations
     const completedSubs = subs.filter(s => s.payment_status === 'completed');

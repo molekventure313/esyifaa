@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { parseAmount, calcCOGS as calcCOGSShared } from '@/lib/marketer-calc';
 
 export async function GET(req) {
   try {
@@ -22,27 +23,27 @@ export async function GET(req) {
     // Parse month param (YYYY-MM)
     const [year, month] = monthParam.split('-');
     const startDate = `${year}-${month}-01T00:00:00+08:00`;
-    
-    // Get last day of the month
-    const nextMonth = new Date(year, parseInt(month), 1);
-    nextMonth.setHours(nextMonth.getHours() + 8); // shift timezone just in case
-    const lastDay = new Date(nextMonth.getTime() - 1);
-    const endDate = `${lastDay.toISOString().split('T')[0]}T23:59:59+08:00`;
+
+    // Hari terakhir bulan (tanpa bergantung pada timezone server)
+    const lastDayNum = new Date(Date.UTC(parseInt(year), parseInt(month), 0)).getUTCDate();
+    const lastDayStr = `${year}-${month}-${String(lastDayNum).padStart(2, '0')}`;
+    const endDate = `${lastDayStr}T23:59:59+08:00`;
 
     const basic_salary = parseFloat(profile.marketer_basic_salary) || 0;
     const commission_pct = parseFloat(profile.marketer_commission_pct) || 0;
 
-    // Fetch total sales
+    // Fetch total sales — sama filter dgn dashboard stats
     const { data: submissions } = await adminClient
       .from('submissions')
       .select('id, amount_paid, notes, problem, source, qty, payment_type, created_at')
       .eq('marketer_id', user.id)
       .eq('payment_status', 'completed')
+      .in('payment_type', ['fpx_payment', 'cod'])
       .gte('created_at', startDate)
       .lte('created_at', endDate);
 
     const subs = submissions || [];
-    const totalSales = subs.reduce((sum, s) => sum + (parseFloat(s.amount_paid) || 0), 0);
+    const totalSales = subs.reduce((sum, s) => sum + parseAmount(s), 0);
 
     // Fetch ads spend
     const { data: adsSpend } = await adminClient
@@ -50,7 +51,7 @@ export async function GET(req) {
       .select('amount, spend_date')
       .eq('marketer_id', user.id)
       .gte('spend_date', `${year}-${month}-01`)
-      .lte('spend_date', lastDay.toISOString().split('T')[0]);
+      .lte('spend_date', lastDayStr);
 
     const ads = adsSpend || [];
     const totalAds = ads.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
@@ -67,18 +68,8 @@ export async function GET(req) {
     const sabunCost   = stockCosts['SGH-200G'] || 0;
     const kasturiCost = stockCosts['KKE-01']   || 0;
     const garamCost   = stockCosts['GPM-500G'] || 0;
-    const avgCost     = sabunCost; // backward compat
 
-    const calcCOGS = (arr) => {
-      const sabunUnits = arr.filter(s => (s.source||'').includes('sabun')).reduce((t,s)=>t+(parseInt(s.qty)||0),0);
-      const kasturiN   = arr.filter(s => /\[ADD-ON: Kasturi Kijang/i.test(s.notes||'')||/Add-On:\s*Kasturi Kijang/i.test(s.problem||'')).length;
-      const garamUnits = arr.filter(s => s.source==='garam-pengasihan').reduce((t,s)=>t+(parseInt(s.qty)||1),0);
-      const garamAddon = arr.filter(s => /\[ADD-ON: Garam Pengasihan/i.test(s.notes||'')||/Add-On:\s*Garam Pengasihan/i.test(s.problem||'')).length;
-      const isPhysical = s => ['sabun','garam-pengasihan','kasturi-kijang'].some(p=>(s.source||'').includes(p));
-      const fpxPhys    = arr.filter(s => isPhysical(s) && s.payment_type==='fpx_payment').length;
-      const codPhys    = arr.filter(s => isPhysical(s) && s.payment_type==='cod').length;
-      return sabunUnits*sabunCost + kasturiN*kasturiCost + (garamUnits+garamAddon)*garamCost + fpxPhys*4 + codPhys*6;
-    };
+    const calcCOGS = (arr) => calcCOGSShared(arr, { sabunCost, kasturiCost, garamCost });
 
     // COGS total (unit × kos + postage)
     const totalCOGS = calcCOGS(subs);
@@ -89,9 +80,7 @@ export async function GET(req) {
 
     // Daily breakdown
     const dailyBreakdown = [];
-    const daysInMonth = lastDay.getDate();
-    
-    for (let i = 1; i <= daysInMonth; i++) {
+    for (let i = 1; i <= lastDayNum; i++) {
       const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
       const daySalesArr = subs.filter(s => {
         const sDate = new Date(s.created_at);
@@ -99,7 +88,7 @@ export async function GET(req) {
         return mytDate.toISOString().split('T')[0] === dateStr;
       });
 
-      const daySales = daySalesArr.reduce((sum, s) => sum + (parseFloat(s.amount_paid) || 0), 0);
+      const daySales = daySalesArr.reduce((sum, s) => sum + parseAmount(s), 0);
       const dayAdsArr = ads.filter(a => a.spend_date === dateStr);
       const dayAds = dayAdsArr.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
       const dayCOGS = calcCOGS(daySalesArr);

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { parseAmount } from '@/lib/marketer-calc';
 
 export async function GET(req) {
   try {
@@ -26,6 +27,7 @@ export async function GET(req) {
     let dateTo = null;
     if (period === 'today') {
       dateFrom = `${todayStr}T00:00:00+08:00`;
+      dateTo = `${todayStr}T23:59:59+08:00`;
     } else if (period === 'yesterday') {
       const yest = new Date(myNow);
       yest.setUTCDate(myNow.getUTCDate() - 1);
@@ -33,10 +35,10 @@ export async function GET(req) {
       dateFrom = `${yStr}T00:00:00+08:00`;
       dateTo = `${yStr}T23:59:59+08:00`;
     } else if (period === 'week') {
-      const dow = myNow.getUTCDay();
-      const startOfWeek = new Date(myNow);
-      startOfWeek.setUTCDate(myNow.getUTCDate() - dow);
-      dateFrom = `${startOfWeek.toISOString().split('T')[0]}T00:00:00+08:00`;
+      // Last 7 days — konsisten dgn dashboard stats
+      const wStr = new Date(myNow.getTime() - 6 * 86400000).toISOString().split('T')[0];
+      dateFrom = `${wStr}T00:00:00+08:00`;
+      dateTo = `${todayStr}T23:59:59+08:00`;
     } else if (period === 'month') {
       dateFrom = `${myNow.getUTCFullYear()}-${String(myNow.getUTCMonth() + 1).padStart(2, '0')}-01T00:00:00+08:00`;
     }
@@ -50,7 +52,10 @@ export async function GET(req) {
     const { data: orders, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ success: true, data: orders });
+    // amount = amount_paid, atau dari notes [AMOUNT: MYR xx] untuk COD
+    const data = (orders || []).map(o => ({ ...o, amount: parseAmount(o) }));
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

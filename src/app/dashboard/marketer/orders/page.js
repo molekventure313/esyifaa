@@ -173,11 +173,11 @@ export default function MarketerOrdersPage() {
                       <div style={{ fontWeight: 600, color: textPrimary }}>{order.source || '—'}</div>
                     </td>
                     <td style={{ padding: '0.85rem 0.5rem', whiteSpace: 'nowrap' }}>
-                      <div style={{ fontWeight: 600, color: textPrimary }}>{order.quantity || 1}</div>
+                      <div style={{ fontWeight: 600, color: textPrimary }}>{order.qty || 1}</div>
                     </td>
                     <td style={{ padding: '0.85rem 0.5rem', whiteSpace: 'nowrap' }}>
-                      {order.amount_paid ? (
-                        <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#10B981' }}>{formatRM(order.amount_paid)}</span>
+                      {(order.amount || order.amount_paid) ? (
+                        <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#10B981' }}>{formatRM(order.amount || order.amount_paid)}</span>
                       ) : (
                         <span style={{ fontSize: '0.72rem', color: textMuted, fontStyle: 'italic' }}>—</span>
                       )}
