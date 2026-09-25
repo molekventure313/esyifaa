@@ -8,6 +8,8 @@ export default function MarketerPixelsPage() {
   const [accessToken, setAccessToken] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Nilai yang dah disimpan dalam DB — amaran ikut ini, bukan apa yang sedang ditaip
+  const [saved, setSaved] = useState({ pixelId: '', token: '' });
   const { showToast } = useToast();
 
   const bg = '#0B1120';
@@ -29,6 +31,7 @@ export default function MarketerPixelsPage() {
         const json = await res.json();
         setPixelId(json.data?.meta_pixel_id || '');
         setAccessToken(json.data?.meta_access_token || '');
+        setSaved({ pixelId: json.data?.meta_pixel_id || '', token: json.data?.meta_access_token || '' });
       }
     } catch (e) {
       showToast('Gagal memuatkan data pixel', 'error');
@@ -46,6 +49,7 @@ export default function MarketerPixelsPage() {
         body: JSON.stringify({ meta_pixel_id: pixelId.trim(), meta_access_token: accessToken.trim() })
       });
       if (!res.ok) throw new Error('Gagal menyimpan');
+      setSaved({ pixelId: pixelId.trim(), token: accessToken.trim() });
       showToast('Pixel berjaya dikemas kini!', 'success');
     } catch (e) {
       showToast(e.message, 'error');
@@ -62,6 +66,8 @@ export default function MarketerPixelsPage() {
     );
   }
 
+  const missingToken = !!saved.pixelId && !saved.token;
+
   return (
     <div style={{ padding: '1.5rem', maxWidth: '600px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: textPrimary, marginBottom: '0.5rem' }}>
@@ -70,6 +76,26 @@ export default function MarketerPixelsPage() {
       <p style={{ fontSize: '0.85rem', color: textMuted, marginBottom: '1.5rem' }}>
         Masukkan Meta Pixel ID anda. Pixel ini akan digunakan untuk <strong>semua salespage</strong> yang anda promosikan.
       </p>
+
+      {/* Amaran — pixel ada tapi CAPI token belum diisi */}
+      {missingToken && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '1rem', borderRadius: '10px',
+          background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)',
+        }}>
+          <p style={{ fontSize: '0.85rem', color: '#F59E0B', fontWeight: 700, marginBottom: '0.4rem' }}>
+            ⚠️ Access Token belum diisi
+          </p>
+          <p style={{ fontSize: '0.78rem', color: textPrimary, lineHeight: 1.55, margin: 0 }}>
+            Tanpa Access Token, event <strong>Purchase dan Lead dari server (CAPI) TIDAK akan dihantar</strong> ke pixel anda.
+            Kebanyakan order COD hanya direkod melalui CAPI — jadi Ads Manager anda akan tunjuk purchase jauh lebih rendah dari order sebenar
+            dan algoritma Meta sukar optimize.
+          </p>
+          <p style={{ fontSize: '0.72rem', color: textMuted, lineHeight: 1.5, margin: '0.5rem 0 0' }}>
+            Cara dapatkan: Meta Events Manager → pilih pixel anda → <strong>Settings</strong> → Conversions API → <strong>Generate access token</strong>.
+          </p>
+        </div>
+      )}
 
       <div style={{
         background: cardBg, border, borderRadius: '12px', padding: '1.5rem',
@@ -99,7 +125,7 @@ export default function MarketerPixelsPage() {
         {/* Access Token */}
         <div>
           <label style={{ fontSize: '0.8rem', fontWeight: 600, color: textPrimary, marginBottom: '0.4rem', display: 'block' }}>
-            Conversions API Access Token <span style={{ fontSize: '0.7rem', color: textMuted }}>(Optional)</span>
+            Conversions API Access Token <span style={{ fontSize: '0.7rem', color: '#F59E0B' }}>(Sangat digalakkan)</span>
           </label>
           <input
             type="text"
@@ -113,7 +139,7 @@ export default function MarketerPixelsPage() {
             }}
           />
           <p style={{ fontSize: '0.7rem', color: textMuted, marginTop: '0.3rem' }}>
-            Untuk server-side event tracking (CAPI). Boleh kosongkan jika belum ada.
+            Untuk server-side event tracking (CAPI) — Purchase & Lead dihantar dari server. Tanpa token, event ini tidak sampai ke pixel anda.
           </p>
         </div>
 
@@ -142,9 +168,9 @@ export default function MarketerPixelsPage() {
           ℹ️ Bagaimana ia berfungsi?
         </p>
         <p style={{ fontSize: '0.75rem', color: textMuted, lineHeight: 1.5 }}>
-          Apabila pelanggan melawat salespage melalui link anda (cth: e-syifa.com/sihir?m=kod_anda), 
-          pixel anda akan <strong>automatik fire</strong> bersama pixel HQ. Event PageView, Lead, dan Purchase 
-          akan direkodkan ke akaun Meta Ads anda.
+          Apabila pelanggan melawat salespage melalui link anda (cth: e-syifa.com/m/sihir?m=kod_anda),
+          <strong> hanya pixel anda</strong> yang fire (pixel HQ tidak fire). Event PageView, Lead dan Purchase
+          akan direkodkan ke akaun Meta Ads anda — Purchase/Lead server-side (CAPI) memerlukan Access Token.
         </p>
       </div>
     </div>
