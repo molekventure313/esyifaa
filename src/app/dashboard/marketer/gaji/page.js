@@ -7,6 +7,64 @@ function formatRM(val) {
   return `RM ${parseFloat(val).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// ─── Input Ads harian — simpan bila Enter / blur ────────────────────────────────
+function AdsInput({ date, value, disabled, onSaved, lm, textPrimary }) {
+  const fmt = (v) => (v ? String(parseFloat(v)) : '');
+  const [val, setVal]       = useState(fmt(value));
+  const [status, setStatus] = useState(null); // 'saving' | 'saved' | 'error'
+  const [errMsg, setErrMsg] = useState('');
+  const [focused, setFocused] = useState(false);
+
+  // Sync dengan nilai server bila tak sedang ditaip (cth: lepas refresh / tukar bulan)
+  useEffect(() => { if (!focused) setVal(fmt(value)); }, [value, focused]);
+
+  const save = async () => {
+    const next = val.trim() === '' ? 0 : parseFloat(val);
+    if (!Number.isFinite(next) || next < 0) { setStatus('error'); setErrMsg('Jumlah tidak sah'); return; }
+    if (Math.abs(next - (parseFloat(value) || 0)) < 0.005) return; // tiada perubahan
+    setStatus('saving');
+    try {
+      const res  = await fetch('/api/marketer/ads-spend', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spend_date: date, amount: next }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Gagal simpan');
+      setStatus('saved');
+      onSaved();
+      setTimeout(() => setStatus(s => (s === 'saved' ? null : s)), 2000);
+    } catch (e) {
+      setStatus('error'); setErrMsg(e.message);
+    }
+  };
+
+  if (disabled) return <span style={{ opacity: 0.4 }}>—</span>;
+
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end' }}>
+      <span style={{ fontSize: '0.72rem', width: '0.9rem', textAlign: 'center' }} title={status === 'error' ? errMsg : ''}>
+        {status === 'saving' ? '⏳' : status === 'saved' ? '✅' : status === 'error' ? '⚠️' : ''}
+      </span>
+      <span style={{ fontSize: '0.72rem', color: '#F59E0B', fontWeight: 600 }}>RM</span>
+      <input
+        type="number" inputMode="decimal" step="0.01" min="0" placeholder="0"
+        value={val}
+        onChange={e => { setVal(e.target.value); if (status === 'error') setStatus(null); }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => { setFocused(false); save(); }}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        style={{
+          width: '84px', padding: '0.35rem 0.5rem', borderRadius: '6px', textAlign: 'right',
+          fontSize: '0.85rem', fontWeight: 600, color: textPrimary, outline: 'none',
+          background: lm ? '#FFFBEB' : 'rgba(245,158,11,0.06)',
+          border: status === 'error' ? '1px solid #EF4444' : (lm ? '1px solid #FCD34D' : '1px solid rgba(245,158,11,0.3)'),
+        }}
+      />
+    </div>
+  );
+}
+
 export default function MarketerGajiPage() {
   const now = new Date();
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -30,8 +88,8 @@ export default function MarketerGajiPage() {
     return () => obs.disconnect();
   }, []);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch(`/api/marketer/gaji?month=${currentMonth}`);
       const json = await res.json();
@@ -39,7 +97,7 @@ export default function MarketerGajiPage() {
         setData(json.data);
       }
     } catch (_) {}
-    finally { setLoading(false); }
+    finally { if (!silent) setLoading(false); }
   }, [currentMonth]);
 
   useEffect(() => {
@@ -152,52 +210,68 @@ export default function MarketerGajiPage() {
               </div>
             </div>
 
-            {/* Daily Breakdown Table */}
+            {/* Daily Breakdown Table — semua hari; column Ads boleh diisi terus */}
             <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', overflow: 'hidden', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
               <div style={{ padding: '1.25rem', borderBottom: cardBorder }}>
                 <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: textPrimary }}>📅 Pecahan Harian</h2>
+                <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: textMuted }}>
+                  Isi kos ads harian terus dalam column <strong style={{ color: '#F59E0B' }}>Ads</strong> — tekan Enter atau klik luar untuk simpan. Kosongkan / 0 untuk padam.
+                </p>
               </div>
-              
-              {daily.length === 0 ? (
-                 <div style={{ padding: '2rem', textAlign: 'center', color: textMuted, fontSize: '0.9rem' }}>Tiada data untuk bulan ini.</div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                    <thead>
-                      <tr style={{ background: subCardBg, borderBottom: cardBorder }}>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Tarikh</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Sales</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Ads</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>COGS</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Profit</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Komisen {totals.commission_pct}%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {daily.map((d, i) => (
-                        <tr key={d.date} style={{ background: i % 2 === 0 ? 'transparent' : subCardBg, borderBottom: cardBorder }}>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: textPrimary }}>
-                            {new Date(d.date + 'T00:00:00').toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#10B981', fontWeight: 500 }}>{formatRM(d.sales)}</td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#F59E0B', fontWeight: 500 }}>{formatRM(d.ads)}</td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#8B5CF6', fontWeight: 500 }}>{formatRM(d.cogs)}</td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: d.profit >= 0 ? '#10B981' : '#EF4444', fontWeight: 600 }}>{formatRM(d.profit)}</td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#10B981', fontWeight: 700 }}>{formatRM(d.komisen)}</td>
-                        </tr>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: subCardBg, borderBottom: cardBorder }}>
+                      {[['Tarikh', 'left'], ['Order', 'right'], ['Sales', 'right'], ['Ads', 'right'], ['COGS', 'right'], ['Profit', 'right'], [`Komisen ${totals.commission_pct ?? ''}%`, 'right']].map(([h, align]) => (
+                        <th key={h} style={{ padding: '0.75rem 1rem', textAlign: align, color: h === 'Ads' ? '#F59E0B' : textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
-                      <tr style={{ background: lm ? '#F1F5F9' : '#040508', fontWeight: 800, borderTop: `2px solid ${lm ? '#E2E8F0' : '#1E293B'}` }}>
-                        <td style={{ padding: '1rem', color: textPrimary }}>JUMLAH</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.totalSales)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: '#F59E0B' }}>{formatRM(totals.totalAds)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: '#8B5CF6' }}>{formatRM(totals.totalCOGS)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: profitPositive ? '#10B981' : '#EF4444' }}>{formatRM(totals.profit)}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.komisen)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {daily.map((d, i) => {
+                      const muted = d.isFuture;
+                      const rowBg = d.isToday
+                        ? (lm ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.1)')
+                        : (i % 2 === 0 ? 'transparent' : subCardBg);
+                      const cell  = { padding: '0.6rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' };
+                      const empty = <span style={{ opacity: 0.35 }}>—</span>;
+                      return (
+                        <tr key={d.date} style={{ background: rowBg, borderBottom: cardBorder, opacity: muted ? 0.45 : 1 }}>
+                          <td style={{ ...cell, textAlign: 'left', fontWeight: 600, color: textPrimary }}>
+                            {new Date(d.date + 'T00:00:00').toLocaleDateString('ms-MY', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            {d.isToday && <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', fontWeight: 700, color: '#10B981' }}>HARI INI</span>}
+                          </td>
+                          <td style={{ ...cell, color: textSecondary }}>{d.orders || empty}</td>
+                          <td style={{ ...cell, color: '#10B981', fontWeight: 500 }}>{d.sales ? formatRM(d.sales) : empty}</td>
+                          <td style={{ ...cell, padding: '0.4rem 0.75rem' }}>
+                            <AdsInput
+                              date={d.date}
+                              value={d.ads}
+                              disabled={d.isFuture}
+                              onSaved={() => fetchData(true)}
+                              lm={lm}
+                              textPrimary={textPrimary}
+                            />
+                          </td>
+                          <td style={{ ...cell, color: '#8B5CF6', fontWeight: 500 }}>{d.cogs ? formatRM(d.cogs) : empty}</td>
+                          <td style={{ ...cell, color: d.profit >= 0 ? '#10B981' : '#EF4444', fontWeight: 600 }}>{d.sales || d.ads ? formatRM(d.profit) : empty}</td>
+                          <td style={{ ...cell, color: '#10B981', fontWeight: 700 }}>{d.komisen ? formatRM(d.komisen) : empty}</td>
+                        </tr>
+                      );
+                    })}
+                    <tr style={{ background: lm ? '#F1F5F9' : '#040508', fontWeight: 800, borderTop: `2px solid ${lm ? '#E2E8F0' : '#1E293B'}` }}>
+                      <td style={{ padding: '1rem', color: textPrimary }}>JUMLAH</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', color: textSecondary }}>{daily.reduce((n, d) => n + (d.orders || 0), 0)}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.totalSales)}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', color: '#F59E0B' }}>{formatRM(totals.totalAds)}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', color: '#8B5CF6' }}>{formatRM(totals.totalCOGS)}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', color: profitPositive ? '#10B981' : '#EF4444' }}>{formatRM(totals.profit)}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.komisen)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </>

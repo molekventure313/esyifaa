@@ -78,7 +78,8 @@ export async function GET(req) {
     const komisen = Math.max(0, profit * (commission_pct / 100));
     const totalGaji = basic_salary + komisen;
 
-    // Daily breakdown
+    // Daily breakdown — SEMUA hari dalam bulan (1hb → hari terakhir) supaya marketer boleh isi ads terus
+    const todayMY = new Date(Date.now() + 8 * 3600 * 1000).toISOString().split('T')[0];
     const dailyBreakdown = [];
     for (let i = 1; i <= lastDayNum; i++) {
       const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
@@ -95,12 +96,12 @@ export async function GET(req) {
       const dayProfit = daySales - dayAds - dayCOGS;
       const dayKomisen = Math.max(0, dayProfit * (commission_pct / 100));
 
-      if (daySales > 0 || dayAds > 0 || dayCOGS > 0) {
-        dailyBreakdown.push({ date: dateStr, sales: daySales, ads: dayAds, cogs: dayCOGS, profit: dayProfit, komisen: dayKomisen });
-      }
+      dailyBreakdown.push({
+        date: dateStr, orders: daySalesArr.length,
+        sales: daySales, ads: dayAds, cogs: dayCOGS, profit: dayProfit, komisen: dayKomisen,
+        isFuture: dateStr > todayMY, isToday: dateStr === todayMY,
+      });
     }
-
-    dailyBreakdown.sort((a, b) => b.date.localeCompare(a.date));
 
     return NextResponse.json({
       success: true,

@@ -33,6 +33,12 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        // Page Kos Ads digabung ke page Gaji (isi ads terus dalam Pecahan Harian)
+        source: '/dashboard/marketer/ads',
+        destination: '/dashboard/marketer/gaji',
+        permanent: false,
+      },
+      {
         source: '/tasbih-esyifa',
         destination: '/pengisian-esyifa',
         permanent: true,

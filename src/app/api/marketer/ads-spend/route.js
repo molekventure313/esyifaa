@@ -117,3 +117,61 @@ export async function PATCH(req) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+// PUT — simpan ads spend untuk SATU hari (inline edit dari jadual Pecahan Harian page Gaji)
+// Body: { spend_date: 'YYYY-MM-DD', amount }. amount kosong/0 → padam rekod hari tu.
+export async function PUT(req) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
+    if (!profile || profile.role !== 'marketer') {
+       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const { spend_date, amount } = await req.json();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(spend_date || '')) {
+      return NextResponse.json({ success: false, error: 'Tarikh tidak sah.' }, { status: 400 });
+    }
+    const todayMY = new Date(Date.now() + 8 * 3600 * 1000).toISOString().split('T')[0];
+    if (spend_date > todayMY) {
+      return NextResponse.json({ success: false, error: 'Tidak boleh isi ads untuk tarikh akan datang.' }, { status: 400 });
+    }
+
+    const value = amount === '' || amount === null || amount === undefined ? 0 : parseFloat(amount);
+    if (!Number.isFinite(value) || value < 0) {
+      return NextResponse.json({ success: false, error: 'Jumlah tidak sah.' }, { status: 400 });
+    }
+
+    const { data: existing } = await adminClient
+      .from('ads_spend')
+      .select('id')
+      .eq('marketer_id', user.id)
+      .eq('spend_date', spend_date)
+      .maybeSingle();
+
+    // 0 / kosong → padam rekod (tiada baris RM0)
+    if (value === 0) {
+      if (existing) {
+        const { error } = await adminClient.from('ads_spend').delete().eq('id', existing.id);
+        if (error) throw error;
+      }
+      return NextResponse.json({ success: true, data: null });
+    }
+
+    const amt = parseFloat(value.toFixed(2));
+    // Update jumlah sahaja — notes sedia ada tak diusik
+    const { data, error } = existing
+      ? await adminClient.from('ads_spend').update({ amount: amt }).eq('id', existing.id).select().single()
+      : await adminClient.from('ads_spend').insert({ marketer_id: user.id, spend_date, amount: amt }).select().single();
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

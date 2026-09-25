@@ -93,8 +93,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Dashboard', href: '/dashboard/marketer' },
     { label: '📦 Orders Saya', href: '/dashboard/marketer/orders' },
     { section: 'LAPORAN' },
-    { label: '💰 Gaji Marketer', href: '/dashboard/marketer/gaji' },
-    { label: '📊 Kos Ads', href: '/dashboard/marketer/ads' },
+    { label: '💰 Gaji & Kos Ads', href: '/dashboard/marketer/gaji' },
     { label: '📊 UTM Analytics', href: '/dashboard/marketer/utm-analytics' },
     { section: 'TETAPAN' },
     { label: '📱 Pixel & Tracking', href: '/dashboard/marketer/pixels' },
@@ -104,6 +103,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const adminNav = [
     { section: 'UTAMA' },
     { label: 'Dashboard', href: '/dashboard/admin' },
+    { label: '📊 Laporan Marketer', href: '/dashboard/admin/marketers/report' },
     { section: 'ORDER & STOK' },
     { label: '📦 Pengurusan Order', href: '/dashboard/admin/pesakit-berbayar' },
     { label: '🏪 Stok Produk',      href: '/dashboard/admin/stok' },
