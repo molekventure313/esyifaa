@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { summarizeByProduct } from '@/lib/products';
+import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared } from '@/lib/marketer-calc';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 async function requireAdmin() {
@@ -90,34 +91,9 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     adsMap[mid] += parseFloat(a.amount || 0);
   }
 
-  const isPhysical = sub => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p => (sub.source || '').includes(p));
-
-  // Product COGS only (sabun + kasturi + garam) — tanpa postage
-  const calcProductCOGS = (subs_arr) => {
-    const sabunUnits = subs_arr
-      .filter(sub => (sub.source || '').includes('sabun'))
-      .reduce((s, sub) => s + (parseInt(sub.qty) || 0), 0);
-    const sabunCogs = sabunUnits * avgCost;
-    const kasturiCount = subs_arr.filter(sub =>
-      /\[ADD-ON: Kasturi Kijang/i.test(sub.notes || '') ||
-      /Add-On:\s*Kasturi Kijang/i.test(sub.problem || '')
-    ).length;
-    const kasturiCogs = kasturiCount * kasturiCost;
-    const garamUnits = subs_arr.filter(sub => sub.source === 'garam-pengasihan').reduce((s, sub) => s + (parseInt(sub.qty) || 1), 0);
-    const garamAddonCount = subs_arr.filter(sub =>
-      /\[ADD-ON: Garam Pengasihan/i.test(sub.notes || '') ||
-      /Add-On:\s*Garam Pengasihan/i.test(sub.problem || '')
-    ).length;
-    const garamCogs = (garamUnits + garamAddonCount) * garamCost;
-    return parseFloat((sabunCogs + kasturiCogs + garamCogs).toFixed(2));
-  };
-
-  // Postage sahaja — FPX×RM4, COD×RM6 untuk physical orders
-  const calcPostage = (subs_arr) => {
-    const fpx = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'fpx_payment').length;
-    const cod = subs_arr.filter(sub => isPhysical(sub) && sub.payment_type === 'cod').length;
-    return parseFloat((fpx * 4 + cod * 6).toFixed(2));
-  };
+  const costs = { sabunCost: avgCost, kasturiCost, garamCost };
+  const calcProductCOGS = (arr) => calcProductCOGSShared(arr, costs);   // sabun + kasturi + garam (termasuk add-on)
+  const calcPostage     = (arr) => parseFloat(calcPostageShared(arr).toFixed(2));
 
   const rows = [];
 
