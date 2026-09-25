@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Marketers', href: '/dashboard/admin/marketers' },
     { label: 'Pelanggan', href: '/dashboard/admin/pelanggan' },
     { section: 'TETAPAN' },
-    { label: 'Kos Ads & Komisen', href: '/dashboard/admin/ads' },
+    { label: '📊 Kos Ads HQ', href: '/dashboard/admin/ads' },
     { label: 'Salespage', href: '/dashboard/admin/salespage' },
     { label: 'Conversion Rate', href: '/dashboard/admin/salespage/conversion-rate' },
     { label: 'Tracking & Pixel', href: '/dashboard/admin/tracking' },

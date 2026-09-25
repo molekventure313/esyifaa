@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import AdsInput from '@/components/dashboard/AdsInput';
-import { PRODUCTS } from '@/lib/products';
+import DailyProductTable, { ProductSummaryTable } from '@/components/dashboard/DailyProductTable';
 
 function formatRM(val) {
   if (!val && val !== 0) return 'RM 0.00';
@@ -71,6 +70,7 @@ export default function MarketerGajiPage() {
 
   const totals = data || {};
   const daily = totals.dailyBreakdown || [];
+  const theme = { lm, cardBg, subCardBg, cardBorder, textPrimary, textSecondary, textMuted };
   const profitPositive = totals.profit >= 0;
 
   return (
@@ -154,108 +154,18 @@ export default function MarketerGajiPage() {
               </div>
             </div>
 
-            {/* Prestasi Ikut Produk */}
-            <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', overflow: 'hidden', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
-              <div style={{ padding: '1.25rem', borderBottom: cardBorder }}>
-                <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: textPrimary }}>📦 Prestasi Ikut Produk</h2>
-                <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: textMuted }}>Add-on (cth: Kasturi dalam order Sabun) dikira dalam produk utama order.</p>
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ background: subCardBg, borderBottom: cardBorder }}>
-                      {[['Produk', 'left'], ['Order', 'right'], ['Sales', 'right'], ['Ads', 'right'], ['ROAS', 'right']].map(([h, align]) => (
-                        <th key={h} style={{ padding: '0.75rem 1rem', textAlign: align, color: textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(totals.productSummary || []).map(p => (
-                      <tr key={p.key} style={{ borderBottom: cardBorder }}>
-                        <td style={{ padding: '0.7rem 1rem', fontWeight: 600, color: textPrimary }}>{p.label}</td>
-                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: textSecondary }}>{p.orders}</td>
-                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: '#10B981', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatRM(p.sales)}</td>
-                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: '#F59E0B', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatRM(p.ads)}</td>
-                        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', fontWeight: 700, color: p.roas === null ? textMuted : p.roas >= 1 ? '#10B981' : '#EF4444' }}>{p.roas === null ? '—' : `${p.roas.toFixed(2)}x`}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {/* Prestasi Ikut Produk (bulanan) */}
+            <ProductSummaryTable rows={totals.productSummary || []} theme={theme} />
 
-            {/* Daily Breakdown Table — semua hari; column Ads boleh diisi terus */}
-            <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', overflow: 'hidden', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
-              <div style={{ padding: '1.25rem', borderBottom: cardBorder }}>
-                <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: textPrimary }}>📅 Pecahan Harian</h2>
-                <p style={{ margin: '0.3rem 0 0', fontSize: '0.78rem', color: textMuted }}>
-                  Isi kos ads harian <strong style={{ color: '#F59E0B' }}>ikut produk</strong> terus dalam jadual — tekan Enter atau klik luar untuk simpan. Kosongkan / 0 untuk padam.
-                </p>
-              </div>
-
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ background: subCardBg, borderBottom: cardBorder }}>
-                      {[['Tarikh', 'left'], ['Order', 'right'], ['Sales', 'right'], ...PRODUCTS.map(p => [`Ads ${p.short}`, 'right', true]), ['Total Ads', 'right'], ['COGS', 'right'], ['Profit', 'right'], [`Komisen ${totals.commission_pct ?? ''}%`, 'right']].map(([h, align, isAds]) => (
-                        <th key={h} style={{ padding: '0.75rem 1rem', textAlign: align, color: isAds || h === 'Total Ads' ? '#F59E0B' : textSecondary, fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {daily.map((d, i) => {
-                      const muted = d.isFuture;
-                      const rowBg = d.isToday
-                        ? (lm ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.1)')
-                        : (i % 2 === 0 ? 'transparent' : subCardBg);
-                      const cell  = { padding: '0.6rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' };
-                      const empty = <span style={{ opacity: 0.35 }}>—</span>;
-                      return (
-                        <tr key={d.date} style={{ background: rowBg, borderBottom: cardBorder, opacity: muted ? 0.45 : 1 }}>
-                          <td style={{ ...cell, textAlign: 'left', fontWeight: 600, color: textPrimary }}>
-                            {new Date(d.date + 'T00:00:00').toLocaleDateString('ms-MY', { weekday: 'short', day: 'numeric', month: 'short' })}
-                            {d.isToday && <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', fontWeight: 700, color: '#10B981' }}>HARI INI</span>}
-                          </td>
-                          <td style={{ ...cell, color: textSecondary }}>{d.orders || empty}</td>
-                          <td style={{ ...cell, color: '#10B981', fontWeight: 500 }}>{d.sales ? formatRM(d.sales) : empty}</td>
-                          {PRODUCTS.map(p => (
-                            <td key={p.key} style={{ ...cell, padding: '0.4rem 0.5rem' }}>
-                              <AdsInput
-                                date={d.date}
-                                product={p.key}
-                                value={d.adsByProduct?.[p.key]}
-                                disabled={d.isFuture}
-                                onSaved={() => fetchData(true)}
-                                lm={lm}
-                                textPrimary={textPrimary}
-                              />
-                            </td>
-                          ))}
-                          <td style={{ ...cell, color: '#F59E0B', fontWeight: 600 }}>{d.ads ? formatRM(d.ads) : empty}</td>
-                          <td style={{ ...cell, color: '#8B5CF6', fontWeight: 500 }}>{d.cogs ? formatRM(d.cogs) : empty}</td>
-                          <td style={{ ...cell, color: d.profit >= 0 ? '#10B981' : '#EF4444', fontWeight: 600 }}>{d.sales || d.ads ? formatRM(d.profit) : empty}</td>
-                          <td style={{ ...cell, color: '#10B981', fontWeight: 700 }}>{d.komisen ? formatRM(d.komisen) : empty}</td>
-                        </tr>
-                      );
-                    })}
-                    <tr style={{ background: lm ? '#F1F5F9' : '#040508', fontWeight: 800, borderTop: `2px solid ${lm ? '#E2E8F0' : '#1E293B'}` }}>
-                      <td style={{ padding: '1rem', color: textPrimary }}>JUMLAH</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: textSecondary }}>{daily.reduce((n, d) => n + (d.orders || 0), 0)}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.totalSales)}</td>
-                      {PRODUCTS.map(p => (
-                        <td key={p.key} style={{ padding: '1rem', textAlign: 'right', color: '#F59E0B', whiteSpace: 'nowrap' }}>
-                          {formatRM((totals.productSummary || []).find(x => x.key === p.key)?.ads || 0)}
-                        </td>
-                      ))}
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#F59E0B', whiteSpace: 'nowrap' }}>{formatRM(totals.totalAds)}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#8B5CF6' }}>{formatRM(totals.totalCOGS)}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: profitPositive ? '#10B981' : '#EF4444' }}>{formatRM(totals.profit)}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right', color: '#10B981' }}>{formatRM(totals.komisen)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {/* Pecahan Harian — collapsible; klik tarikh → pecahan produk + isi ads */}
+            <DailyProductTable
+              days={daily}
+              totals={{ sales: totals.totalSales, ads: totals.totalAds, cogs: totals.totalCOGS, profit: totals.profit, komisen: totals.komisen }}
+              commissionPct={totals.commission_pct ?? 0}
+              endpoint="/api/marketer/ads-spend"
+              onSaved={() => fetchData(true)}
+              theme={theme}
+            />
           </div>
         </>
       )}

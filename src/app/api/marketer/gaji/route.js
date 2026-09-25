@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { parseAmount, calcCOGS as calcCOGSShared } from '@/lib/marketer-calc';
-import { PRODUCT_KEYS, summarizeByProduct } from '@/lib/products';
+import { parseAmount, calcCOGS } from '@/lib/marketer-calc';
+import { monthRange, fetchProductCosts, buildMonthlyBreakdown } from '@/lib/products';
 
 export async function GET(req) {
   try {
@@ -16,99 +16,43 @@ export async function GET(req) {
        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const monthParam = searchParams.get('month') || currentMonthStr;
-
-    // Parse month param (YYYY-MM)
-    const [year, month] = monthParam.split('-');
-    const startDate = `${year}-${month}-01T00:00:00+08:00`;
-
-    // Hari terakhir bulan (tanpa bergantung pada timezone server)
-    const lastDayNum = new Date(Date.UTC(parseInt(year), parseInt(month), 0)).getUTCDate();
-    const lastDayStr = `${year}-${month}-${String(lastDayNum).padStart(2, '0')}`;
-    const endDate = `${lastDayStr}T23:59:59+08:00`;
+    const range = monthRange(new URL(req.url).searchParams.get('month'));
 
     const basic_salary = parseFloat(profile.marketer_basic_salary) || 0;
     const commission_pct = parseFloat(profile.marketer_commission_pct) || 0;
 
-    // Fetch total sales — sama filter dgn dashboard stats
-    const { data: submissions } = await adminClient
-      .from('submissions')
-      .select('id, amount_paid, notes, problem, source, qty, payment_type, created_at')
-      .eq('marketer_id', user.id)
-      .eq('payment_status', 'completed')
-      .in('payment_type', ['fpx_payment', 'cod'])
-      .gte('created_at', startDate)
-      .lte('created_at', endDate);
+    // Sales (sama filter dgn dashboard stats) + ads + kos produk
+    const [{ data: submissions }, { data: adsSpend }, costs] = await Promise.all([
+      adminClient
+        .from('submissions')
+        .select('id, amount_paid, notes, problem, source, qty, payment_type, created_at')
+        .eq('marketer_id', user.id)
+        .eq('payment_status', 'completed')
+        .in('payment_type', ['fpx_payment', 'cod'])
+        .gte('created_at', range.from)
+        .lte('created_at', range.to),
+      adminClient
+        .from('ads_spend')
+        .select('amount, spend_date, product')
+        .eq('marketer_id', user.id)
+        .gte('spend_date', range.firstDay)
+        .lte('spend_date', range.lastDay),
+      fetchProductCosts(adminClient),
+    ]);
 
     const subs = submissions || [];
+    const ads  = adsSpend || [];
+
     const totalSales = subs.reduce((sum, s) => sum + parseAmount(s), 0);
+    const totalAds   = ads.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+    const totalCOGS  = calcCOGS(subs, costs); // unit × kos + postage
 
-    // Fetch ads spend
-    const { data: adsSpend } = await adminClient
-      .from('ads_spend')
-      .select('amount, spend_date, product')
-      .eq('marketer_id', user.id)
-      .gte('spend_date', `${year}-${month}-01`)
-      .lte('spend_date', lastDayStr);
-
-    const ads = adsSpend || [];
-    const totalAds = ads.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
-
-    // Fetch COGS — all 3 physical products
-    const stockCosts = {};
-    try {
-      const { data: stocks } = await adminClient
-        .from('stock_summary')
-        .select('sku, avg_cost_per_unit')
-        .in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']);
-      (stocks || []).forEach(s => { stockCosts[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
-    } catch (e) { /* ignore */ }
-    const sabunCost   = stockCosts['SGH-200G'] || 0;
-    const kasturiCost = stockCosts['KKE-01']   || 0;
-    const garamCost   = stockCosts['GPM-500G'] || 0;
-
-    const calcCOGS = (arr) => calcCOGSShared(arr, { sabunCost, kasturiCost, garamCost });
-
-    // COGS total (unit × kos + postage)
-    const totalCOGS = calcCOGS(subs);
-
-    const profit = totalSales - totalAds - totalCOGS;
-    const komisen = Math.max(0, profit * (commission_pct / 100));
+    const profit    = totalSales - totalAds - totalCOGS;
+    const komisen   = Math.max(0, profit * (commission_pct / 100));
     const totalGaji = basic_salary + komisen;
 
-    // Daily breakdown — SEMUA hari dalam bulan (1hb → hari terakhir) supaya marketer boleh isi ads terus
-    const todayMY = new Date(Date.now() + 8 * 3600 * 1000).toISOString().split('T')[0];
-    const dailyBreakdown = [];
-    for (let i = 1; i <= lastDayNum; i++) {
-      const dateStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
-      const daySalesArr = subs.filter(s => {
-        const sDate = new Date(s.created_at);
-        const mytDate = new Date(sDate.getTime() + 8 * 3600 * 1000);
-        return mytDate.toISOString().split('T')[0] === dateStr;
-      });
-
-      const daySales = daySalesArr.reduce((sum, s) => sum + parseAmount(s), 0);
-      const dayAdsArr = ads.filter(a => a.spend_date === dateStr);
-      const dayAds = dayAdsArr.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
-      // Ads ikut produk — { 'sabun-garam': 50, ... }
-      const adsByProduct = Object.fromEntries(PRODUCT_KEYS.map(k => [k, 0]));
-      dayAdsArr.forEach(a => {
-        const k = PRODUCT_KEYS.includes(a.product) ? a.product : 'sabun-garam';
-        adsByProduct[k] += parseFloat(a.amount) || 0;
-      });
-      const dayCOGS = calcCOGS(daySalesArr);
-      const dayProfit = daySales - dayAds - dayCOGS;
-      const dayKomisen = Math.max(0, dayProfit * (commission_pct / 100));
-
-      dailyBreakdown.push({
-        date: dateStr, orders: daySalesArr.length,
-        sales: daySales, ads: dayAds, adsByProduct, cogs: dayCOGS, profit: dayProfit, komisen: dayKomisen,
-        isFuture: dateStr > todayMY, isToday: dateStr === todayMY,
-      });
-    }
+    // Jadual harian 1hb → hujung bulan, setiap hari ada pecahan ikut produk
+    const { days, productSummary } = buildMonthlyBreakdown({ subs, ads, range, costs, commissionPct: commission_pct });
 
     return NextResponse.json({
       success: true,
@@ -121,9 +65,9 @@ export async function GET(req) {
         profit,
         komisen,
         totalGaji,
-        month: monthParam,
-        productSummary: summarizeByProduct(subs, ads),
-        dailyBreakdown
+        month: range.month,
+        productSummary,
+        dailyBreakdown: days,
       }
     });
   } catch (error) {
