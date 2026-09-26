@@ -14,7 +14,7 @@ import PengisianTestimonialPart2Section from '@/components/salespage/pengisian/T
 import PengisianComparisonSection from '@/components/salespage/pengisian/ComparisonSection';
 import PengisianGuaranteeSection from '@/components/salespage/pengisian/GuaranteeSection';
 import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianCheckoutForm';
-import PengisianWhatsAppOrderSection from '@/components/salespage/pengisian/WhatsAppOrderSection';
+import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
@@ -80,7 +80,7 @@ export default function PengisianEsyifaPage() {
       <PengisianCheckoutForm source="pengisian-esyifa" />
 
       {/* Kad Tempahan Melalui WhatsApp (Selepas Form, Sebelum FAQ) */}
-      <PengisianWhatsAppOrderSection />
+      <WhatsAppOrderSection product="Pengisian E-Syifa" background="#F0FDF4" />
 
       {/* FAQ 8 Soalan Lazim */}
       <PengisianFAQSection />
@@ -89,7 +89,7 @@ export default function PengisianEsyifaPage() {
       <PengisianClosingSection />
 
       {/* Floating WhatsApp Help Button */}
-      <FloatingWAButton group="pengisian" />
+      <FloatingWAButton />
 
       {/* Footer Tema Cerah & Kemas */}
       <footer style={{

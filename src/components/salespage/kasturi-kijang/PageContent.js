@@ -18,6 +18,7 @@ import KasturiCheckoutForm from '@/components/salespage/kasturi-kijang/KasturiCh
 import KasturiFAQSection from '@/components/salespage/kasturi-kijang/FAQSection';
 import KasturiClosingSection from '@/components/salespage/kasturi-kijang/ClosingSection';
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
+import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export default function KasturiKijangPageContent({ source = 'kasturi-kijang' }) {
@@ -70,6 +71,9 @@ export default function KasturiKijangPageContent({ source = 'kasturi-kijang' }) 
       {/* #15 — Borang Tempahan FPX & COD */}
       <KasturiCheckoutForm source={source} />
 
+      {/* Order melalui WhatsApp (no. HQ / no. marketer; tersembunyi kalau marketer belum isi) */}
+      <WhatsAppOrderSection product="Minyak Kasturi Kijang" background="#FFFFFF" />
+
       {/* #16 — FAQ 7 Soalan Lazim */}
       <KasturiFAQSection />
 
@@ -79,7 +83,6 @@ export default function KasturiKijangPageContent({ source = 'kasturi-kijang' }) 
       {/* Floating WhatsApp Help Button */}
       <FloatingWAButton
         pretext="Assalamualaikum ustaz, saya nak tanya tentang Minyak Kasturi Kijang Ruqyah E-Syifa' untuk masalah gangguan & ketenangan tidur saya."
-        group="pengisian"
       />
 
       {/* Footer */}

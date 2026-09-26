@@ -1,51 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-const FALLBACK_NUMBER = '601135172611';
-const buildWaLink     = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+import useSalesContact, { buildWaLink } from '@/components/salespage/useSalesContact';
 
 const DEFAULT_PRETEXT = 'Saya nak dapatkan Pengisian Item E-Syifa';
 
 /**
- * FloatingWAButton
- * @param {string} pretext  — Pre-filled WA message text
- * @param {string} group    — WA rotater group: 'sabun' | 'pengisian' | 'all'
- *                            Each group rotates independently via its own localStorage key.
+ * FloatingWAButton — butang WhatsApp terapung (papar selepas scroll 200px).
+ * SP HQ → no. HQ tetap. SP marketer → no. marketer sendiri; kalau belum isi → butang TIDAK dipapar.
+ * @param {string} pretext — Pre-filled WA message text
  */
-export default function FloatingWAButton({ pretext = DEFAULT_PRETEXT, group = 'all' }) {
+export default function FloatingWAButton({ pretext = DEFAULT_PRETEXT }) {
+  const { ready, number } = useSalesContact();
   const [visible, setVisible]   = useState(false);
-  const [waLink, setWaLink]     = useState(buildWaLink(FALLBACK_NUMBER, pretext));
   const [expanded, setExpanded] = useState(false);
 
-  // Per-group localStorage key — setiap group rotate berasingan
-  const lsKey = `esyifaa_wa_idx_${group}`;
-
   useEffect(() => {
-    const initWa = async () => {
-      try {
-        // Fetch numbers filtered by group (+ universal 'all' numbers)
-        const res     = await fetch(`/api/public/wasap?group=${group}`);
-        const json    = await res.json();
-        const numbers = (json.success && json.data?.length > 0)
-          ? json.data.map(d => d.number)
-          : [FALLBACK_NUMBER];
-        const idx = parseInt(localStorage.getItem(lsKey) || '0', 10);
-        setWaLink(buildWaLink(numbers[idx % numbers.length], pretext));
-      } catch {
-        setWaLink(buildWaLink(FALLBACK_NUMBER, pretext));
-      }
-    };
-    initWa();
-
     // Show after 200px scroll
     const onScroll = () => setVisible(window.scrollY > 200);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [pretext, group, lsKey]);
+  }, []);
 
-  if (!visible) return null;
+  if (!visible || !ready || !number) return null;
+
+  const waLink = buildWaLink(number, pretext);
 
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 

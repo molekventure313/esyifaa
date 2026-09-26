@@ -96,6 +96,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '💰 Gaji & Kos Ads', href: '/dashboard/marketer/gaji' },
     { label: '📊 UTM Analytics', href: '/dashboard/marketer/utm-analytics' },
     { section: 'TETAPAN' },
+    { label: '👤 Profil & WhatsApp', href: '/dashboard/marketer/profil' },
     { label: '📱 Pixel & Tracking', href: '/dashboard/marketer/pixels' },
     { label: '🔗 Link Marketing', href: '/dashboard/marketer/links' }
   ];

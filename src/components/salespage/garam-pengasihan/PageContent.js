@@ -15,7 +15,7 @@ import GaramTestimonialPart2Section from '@/components/salespage/garam-pengasiha
 import GaramComparisonSection from '@/components/salespage/garam-pengasihan/ComparisonSection';
 import GaramGuaranteeSection from '@/components/salespage/garam-pengasihan/GuaranteeSection';
 import GaramCheckoutForm from '@/components/salespage/garam-pengasihan/GaramCheckoutForm';
-import GaramWhatsAppOrderSection from '@/components/salespage/garam-pengasihan/WhatsAppOrderSection';
+import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 import GaramFAQSection from '@/components/salespage/garam-pengasihan/FAQSection';
 import GaramClosingSection from '@/components/salespage/garam-pengasihan/ClosingSection';
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
@@ -72,7 +72,7 @@ export default function GaramPengasihanPageContent({ source = 'garam-pengasihan'
       <GaramCheckoutForm source={source} />
 
       {/* Kad Tempahan Melalui WhatsApp (Selepas Form, Sebelum FAQ) */}
-      <GaramWhatsAppOrderSection />
+      <WhatsAppOrderSection product="Garam Pengasihan Masakan" background="#FFF7ED" />
 
       {/* #16 — FAQ 7 Soalan Lazim */}
       <GaramFAQSection />
@@ -83,7 +83,6 @@ export default function GaramPengasihanPageContent({ source = 'garam-pengasihan'
       {/* Floating WhatsApp Help Button */}
       <FloatingWAButton
         pretext="Assalamualaikum ustaz, saya nak tanya tentang Garam Pengasihan Masakan ESyifaa untuk masalah rumahtangga saya."
-        group="pengisian"
       />
 
       {/* Footer */}

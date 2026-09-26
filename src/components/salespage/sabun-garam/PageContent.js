@@ -13,6 +13,7 @@ import SabunGuaranteeSection from '@/components/salespage/sabun-garam/GuaranteeS
 import SabunFAQSection from '@/components/salespage/sabun-garam/FAQSection';
 import SabunClosingSection from '@/components/salespage/sabun-garam/ClosingSection';
 import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
+import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 
 /**
  * Shared page content for all Sabun Garam Himalaya variants (Bright & Fresh Theme).
@@ -85,6 +86,9 @@ export default function SabunGaramPageContent({
       {/* #11 — Borang Tempahan (source varies per variant) */}
       <SabunCheckoutForm source={source} />
 
+      {/* #11b — Order melalui WhatsApp (no. HQ / no. marketer; tersembunyi kalau marketer belum isi) */}
+      <WhatsAppOrderSection product="Sabun Garam Himalaya" background="#F8FAF9" />
+
       {/* #12 — Jaminan */}
       <SabunGuaranteeSection />
 
@@ -95,7 +99,7 @@ export default function SabunGaramPageContent({
       <SabunClosingSection />
 
       {/* Floating WA help button */}
-      <FloatingWAButton pretext="Assalamualaikum, saya nak tanya pasal Sabun Garam Himalaya Pengisian ESyifaa" group="sabun" />
+      <FloatingWAButton pretext="Assalamualaikum, saya nak tanya pasal Sabun Garam Himalaya Pengisian ESyifaa" />
 
       <footer style={{
         background: '#F8FAFC',

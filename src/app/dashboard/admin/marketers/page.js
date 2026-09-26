@@ -228,6 +228,10 @@ export default function MarketersPage() {
                           <span style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontFamily: 'monospace' }}>
                             {m.marketer_code || '-'}
                           </span>
+                          {/* No. WhatsApp SP — kosong = section WA disembunyikan di SP marketer */}
+                          <div style={{ fontSize: '0.72rem', marginTop: '0.35rem', color: m.marketer_whatsapp ? '#25D366' : '#F59E0B' }}>
+                            {m.marketer_whatsapp ? `WA: ${m.marketer_whatsapp}` : '⚠️ WA belum isi'}
+                          </div>
                         </td>
                         <td style={{ padding: '1rem' }}>
                           {!m.is_active ? (

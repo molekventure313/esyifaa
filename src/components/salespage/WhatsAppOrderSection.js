@@ -1,11 +1,24 @@
-﻿'use client';
+'use client';
 
-export default function PengisianWhatsAppOrderSection() {
+import useSalesContact, { buildWaLink } from '@/components/salespage/useSalesContact';
+
+/**
+ * Section "Nak order melalui Whatsapp?" — diletak selepas borang order.
+ * SP HQ → no. HQ. SP marketer → no. marketer sendiri; kalau marketer belum isi → section TIDAK dipapar.
+ *
+ * @param product     nama produk dalam mesej WA (cth: 'Sabun Garam Himalaya')
+ * @param background  warna latar section (sambung dari borang order di atas)
+ */
+export default function WhatsAppOrderSection({ product, background = '#F0FDF4' }) {
+  const { ready, number, isMarketer } = useSalesContact();
+  if (!ready || !number) return null;
+
   const ff = 'var(--font-inter), -apple-system, sans-serif';
+  const message = `Assalamualaikum${isMarketer ? '' : ' ustaz'}, saya nak order ${product} melalui WhatsApp`;
 
   return (
     <section style={{
-      background: '#F0FDF4',
+      background,
       padding: '0 1.25rem 4.5rem',
       fontFamily: ff,
     }}>
@@ -62,7 +75,7 @@ export default function PengisianWhatsAppOrderSection() {
 
         {/* Green CTA Button */}
         <a
-          href="https://wa.me/601118939984?text=Assalamualaikum%20ustaz,%20saya%20nak%20order%20Pengisian%20E-Syifa%20melalui%20WhatsApp"
+          href={buildWaLink(number, message)}
           target="_blank"
           rel="noopener noreferrer"
           style={{

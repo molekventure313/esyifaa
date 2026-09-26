@@ -51,7 +51,7 @@ export default function PengisianWasapPage() {
       <WACtaSection />
       <PengisianFAQSection />
       <PengisianClosingSection />
-      <FloatingWAButton group="pengisian" />
+      <FloatingWAButton />
 
       <footer style={{
         background: '#021812', color: '#FFFFFF',

@@ -45,6 +45,7 @@ export async function GET(req) {
         full_name: m.full_name || m.name || 'Marketer',
         email: m.email,
         phone: m.phone,
+        marketer_whatsapp: m.marketer_whatsapp || null,
         marketer_code: m.marketer_code,
         is_active: m.is_active,
         marketer_basic_salary: m.marketer_basic_salary || 0,
