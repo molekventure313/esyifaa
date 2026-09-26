@@ -27,7 +27,7 @@ const STEPS = [
     icon: '🎉',
     label: 'SIAP & TERIMA PANDUAN',
     title: 'Selesai & Terus Amalkan',
-    desc: 'Selepas 3 hari pengisian, barang anda telah siap terisi. Anda akan menerima panduan lengkap cara guna dan automatik dimasukkan dalam senarai pelarasan mingguan percuma sehingga perawat mati.',
+    desc: 'Selepas 3 hari pengisian, barang anda telah siap terisi. Anda akan menerima panduan lengkap cara guna dan automatik dimasukkan dalam senarai pelarasan mingguan percuma selagi perawat masih hidup (*tertakluk pada terma & syarat).',
   },
 ];
 

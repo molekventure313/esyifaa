@@ -103,11 +103,14 @@ export default function PengisianHowItWorksSection() {
           <span style={{ fontSize: '2.5rem', lineHeight: 1, flexShrink: 0 }}>🔄</span>
           <div>
             <div style={{ fontWeight: 900, color: '#064E3B', fontSize: '1.15rem', marginBottom: '0.45rem' }}>
-              Keistimewaan Utama: Pelarasan &amp; Pengisian Semula Setiap Minggu (Percuma Sehingga Perawat Mati)
+              Keistimewaan Utama: Pelarasan &amp; Pengisian Semula Setiap Minggu (Percuma Selagi Perawat Masih Hidup)
             </div>
             <p style={{ margin: 0, color: '#334155', fontSize: '0.94rem', lineHeight: 1.75 }}>
               Kebanyakan air ruqyah atau mandian akan kehabisan khasiat apabila airnya habis.
-              Namun dengan Pengisian E-Syifa&apos;, perawat kami akan menjalankan <strong style={{ color: '#047857' }}>pelarasan zikir secara automatik pada setiap minggu</strong> dari jauh. Tenaga ruqyah pada item anda sentiasa dicas pada tahap maksimum tanpa sebarang caj tambahan sehingga perawat mati.
+              Namun dengan Pengisian E-Syifa&apos;, perawat kami akan menjalankan <strong style={{ color: '#047857' }}>pelarasan zikir secara automatik pada setiap minggu</strong> dari jauh. Tenaga ruqyah pada item anda sentiasa dicas pada tahap maksimum tanpa sebarang caj tambahan selagi perawat masih hidup.
+            </p>
+            <p style={{ margin: '0.65rem 0 0 0', fontSize: '0.76rem', color: '#64748B', fontStyle: 'italic' }}>
+              *Tertakluk pada Terma &amp; Syarat
             </p>
           </div>
         </div>

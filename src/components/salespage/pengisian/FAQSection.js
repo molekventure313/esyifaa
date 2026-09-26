@@ -13,7 +13,7 @@ const FAQS = [
   },
   {
     q: '3. Kenapa ada bayaran RM90 sedangkan Al-Quran itu percuma?',
-    a: 'Bayaran bukan untuk "menjual ayat Al-Quran", sebaliknya adalah upah (ujrah) komitmen masa dan tenaga perawat yang menjalankan wirid ruqyah khusus, pemantauan kes, serta perkhidmatan pelarasan mingguan percuma sehingga perawat mati.',
+    a: 'Bayaran bukan untuk "menjual ayat Al-Quran", sebaliknya adalah upah (ujrah) komitmen masa dan tenaga perawat yang menjalankan wirid ruqyah khusus, pemantauan kes, serta perkhidmatan pelarasan mingguan percuma selagi perawat masih hidup (*tertakluk pada terma & syarat).',
   },
   {
     q: '4. Apakah barang yang paling sesuai dan bolehkah guna barangan emas/perak?',
@@ -21,7 +21,7 @@ const FAQS = [
   },
   {
     q: '5. Adakah kekuatan bacaan pengisian akan berkurang mengikut peredaran masa?',
-    a: 'Tidak. Inilah kelebihan utama Pengisian E-Syifa\'. Perawat kami menjalankan pelarasan dan pengisian semula setiap minggu secara automatik dari jauh sehingga perawat mati. Tenaga ruqyah pada barang anda sentiasa dicas pada tahap maksimum tanpa bayaran tambahan.',
+    a: 'Tidak. Inilah kelebihan utama Pengisian E-Syifa\'. Perawat kami menjalankan pelarasan dan pengisian semula setiap minggu secara automatik dari jauh selagi perawat masih hidup (*tertakluk pada terma & syarat). Tenaga ruqyah pada barang anda sentiasa dicas pada tahap maksimum tanpa bayaran tambahan.',
   },
   {
     q: '6. Bolehkah satu barang yang diisi digunakan untuk merawat ahli keluarga lain?',

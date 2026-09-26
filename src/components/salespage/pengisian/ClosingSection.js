@@ -99,7 +99,10 @@ export default function PengisianClosingSection() {
           </a>
 
           <p style={{ marginTop: '0.5rem', fontSize: '0.84rem', color: '#64748B' }}>
-            🔒 Jaminan Wang Dikembalikan 100% · Pelarasan Percuma Sehingga Perawat Mati
+            🔒 Jaminan Wang Dikembalikan 100% · Pelarasan Percuma Selagi Perawat Masih Hidup*
+          </p>
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.72rem', color: '#94A3B8', fontStyle: 'italic' }}>
+            *Tertakluk pada Terma &amp; Syarat
           </p>
         </div>
 

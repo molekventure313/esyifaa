@@ -4,6 +4,16 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
+const PACKAGE_FEATURES = [
+  { icon: '🔥', text: 'Pengisian Ayat Ruqyah Pembakar & Pemusnah Jin' },
+  { icon: '✂️', text: 'Pengisian Ayat Pembatal Sihir' },
+  { icon: '🛡️', text: 'Pengisian Ayat Benteng Sihir & Gangguan Jin' },
+  { icon: '💚', text: 'Pengisian Ayat-ayat Kesembuhan' },
+  { icon: '🔄', text: 'Pelarasan & Pengisian Semula Setiap Minggu (PERCUMA Selamanya)*' },
+  { icon: '📋', text: 'Monitoring Hasil Pengisian (3 hari pertama)' },
+  { icon: '📞', text: 'Konsultasi Ringkas Via WhatsApp Sebelum Pengisian' },
+];
+
 // ─── 3 Volume Packages (FSP PRO: Terbesar di Kiri/Atas -> Terkecil di Kanan/Bawah) ──────────
 const PACKAGES = [
   {
@@ -16,12 +26,7 @@ const PACKAGES = [
     savings: 71,
     badge: 'PALING JIMAT',
     recommended: true,
-    features: [
-      'JIMAT RM71',
-      'BENTENG RUQYAH 4 LAPISAN',
-      'PELARASAN SEHINGGA PERAWAT MATI',
-      'UNTUK SEISI KELUARGA',
-    ],
+    features: PACKAGE_FEATURES,
     itemsCount: 3,
   },
   {
@@ -33,12 +38,7 @@ const PACKAGES = [
     originalPrice: 180,
     savings: 30,
     badge: 'PILIHAN BERDUA',
-    features: [
-      'JIMAT RM30',
-      'BENTENG RUQYAH 4 LAPISAN',
-      'PELARASAN SEHINGGA PERAWAT MATI',
-      'KHAS SUAMI ISTERI',
-    ],
+    features: PACKAGE_FEATURES,
     itemsCount: 2,
   },
   {
@@ -50,12 +50,7 @@ const PACKAGES = [
     originalPrice: 120,
     savings: 30,
     badge: null,
-    features: [
-      'JIMAT RM30',
-      'BENTENG RUQYAH 4 LAPISAN',
-      '1 BARANG SAHAJA',
-      'PEK PERCUBAAN DIRI SENDIRI',
-    ],
+    features: PACKAGE_FEATURES,
     itemsCount: 1,
   },
 ];
@@ -385,7 +380,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                     )}
                   </div>
                   <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#059669' }}>
-                    {p.itemsCount}x Barang Ruqyah Pasak
+                    {p.itemsCount}x Item Pengisian
                   </div>
                 </div>
 
@@ -429,27 +424,38 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                   RM{p.price}
                 </div>
 
-                {/* 5. Features Checkmarks */}
+                {/* 5. Features Points */}
                 <ul style={{
                   listStyle: 'none',
                   padding: 0,
-                  margin: '0 0 1.5rem 0',
+                  margin: '0 0 0.85rem 0',
                   textAlign: 'left',
                   width: '100%',
-                  fontSize: '0.86rem',
+                  fontSize: '0.84rem',
                   color: '#334155',
                   fontWeight: 600,
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.5rem',
+                  gap: '0.65rem',
                 }}>
                   {p.features.map((feat, fIdx) => (
-                    <li key={fIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ color: '#059669', fontWeight: 900, fontSize: '0.95rem' }}>✓</span>
-                      <span>{feat}</span>
+                    <li key={fIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem' }}>
+                      <span style={{ fontSize: '1.05rem', lineHeight: 1.25, flexShrink: 0 }}>{feat.icon}</span>
+                      <span style={{ fontSize: '0.82rem', color: '#1E293B', fontWeight: 600, lineHeight: 1.35 }}>{feat.text}</span>
                     </li>
                   ))}
                 </ul>
+
+                {/* Disclaimer Tertakluk pada Terma & Syarat */}
+                <div style={{
+                  fontSize: '0.72rem',
+                  color: '#64748B',
+                  fontStyle: 'italic',
+                  marginBottom: '1.25rem',
+                  textAlign: 'center',
+                }}>
+                  *Tertakluk pada Terma &amp; Syarat
+                </div>
 
                 {/* 6. Guide Text */}
                 <p style={{

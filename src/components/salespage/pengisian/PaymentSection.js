@@ -68,7 +68,7 @@ export default function PengisianPaymentSection() {
             Pilih Pakej Anda &amp; Buat Tempahan Jarak Jauh Di Bawah
           </h2>
           <p style={{ fontSize: '1.02rem', color: '#475569', lineHeight: 1.7, maxWidth: '640px', margin: '0 auto' }}>
-            Satu bayaran upah wirid ruqyah khusus. Nikmati pelarasan mingguan percuma sehingga perawat mati.
+            Satu bayaran upah wirid ruqyah khusus. Nikmati pelarasan mingguan percuma selagi perawat masih hidup (*tertakluk pada terma &amp; syarat).
           </p>
         </div>
 

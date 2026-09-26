@@ -89,7 +89,7 @@ export default function PengisianSolutionSection() {
               { text: 'Diisi melalui wirid ruqyah khusus dan ayat-ayat suci Al-Quran semata-mata.' },
               { text: 'Didoakan spesifik mengikut nama dan masalah gangguan berulang yang anda hadapi.' },
               { text: 'Dipasakkan 4 lapisan ayat: Pembakar Jin, Pembatal Sihir, Benteng Dinding, & Kesembuhan.' },
-              { text: 'Pelarasan mingguan secara automatik — PERCUMA sehingga perawat mati supaya aura kekuatan syifa sentiasa segar.' },
+              { text: 'Pelarasan mingguan secara automatik — PERCUMA selagi perawat masih hidup (*tertakluk pada terma & syarat) supaya aura kekuatan syifa sentiasa segar.' },
             ].map((p, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{
