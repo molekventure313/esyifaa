@@ -13,7 +13,9 @@ const isPhysical = s => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p =
 // Add-on disimpan sama ada dalam notes "[ADD-ON: X ...]" atau problem "Add-On: X ..."
 const addonText = s => `${s.notes || ''} ${s.problem || ''}`;
 const ADDON = {
-  kasturi: /(\[ADD-ON:|Add-On:|Free Gift:)\s*(Minyak )?Kasturi Kijang/i,   // add-on atau hadiah percuma (pakej Garam 6 pek)
+  kasturi: /(\[ADD-ON:|Add-On:)\s*Kasturi Kijang/i,
+  // Hadiah percuma pakej Garam 6 pek — berasingan dari add-on (pelanggan boleh dapat kedua-duanya)
+  kasturiGift: /(Free Gift:\s*(Minyak )?Kasturi Kijang|\[FREE GIFT:\s*Kasturi Kijang)/i,
   sabun:   /(\[ADD-ON:|Add-On:)\s*Sabun Garam/i,
   garam:   /(\[ADD-ON:|Add-On:)\s*Garam (Masakan )?Pengasihan/i,
 };
@@ -31,18 +33,19 @@ export function orderQty(s) {
 const sumQty = (arr, match) => arr.filter(match).reduce((t, s) => t + orderQty(s), 0);
 const countAddon = (arr, re) => arr.filter(s => re.test(addonText(s))).length;
 
-// Add-on dalam SATU order → { sabun, kasturi, garam } (boolean)
+// Add-on dalam SATU order → { sabun, kasturi, garam, kasturiGift } (boolean)
 export const addonsOf = s => ({
   sabun:   ADDON.sabun.test(addonText(s)),
   kasturi: ADDON.kasturi.test(addonText(s)),
   garam:   ADDON.garam.test(addonText(s)),
+  kasturiGift: ADDON.kasturiGift.test(addonText(s)),
 });
 
 // Unit produk (produk utama ikut qty + add-on 1 unit setiap order)
 export function productUnits(arr) {
   return {
     sabun:   sumQty(arr, s => (s.source || '').includes('sabun'))            + countAddon(arr, ADDON.sabun),
-    kasturi: sumQty(arr, s => (s.source || '').startsWith('kasturi-kijang')) + countAddon(arr, ADDON.kasturi),
+    kasturi: sumQty(arr, s => (s.source || '').startsWith('kasturi-kijang')) + countAddon(arr, ADDON.kasturi) + countAddon(arr, ADDON.kasturiGift),
     garam:   sumQty(arr, s => (s.source || '').startsWith('garam-pengasihan')) + countAddon(arr, ADDON.garam),
   };
 }

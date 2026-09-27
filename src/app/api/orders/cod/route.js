@@ -15,6 +15,7 @@ export async function POST(req) {
       utm_source, utm_medium, utm_campaign, utm_content, utm_term,
       landing_page_url, referrer_url, fbclid, fbp, fbc,
       addon_kasturi, addon_sabun, addon_garam_masakan, marketer_code,
+      free_gift_kasturi,   // hadiah percuma Kasturi (pakej Garam 6 pek)
     } = body;
 
     if (honeypot) {
@@ -41,7 +42,9 @@ export async function POST(req) {
     const kasturiTag     = addon_kasturi      ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
     const sabunTag       = addon_sabun        ? ' | Add-On: Sabun Garam Pengisian +RM25' : '';
     const garamMasakanTag = addon_garam_masakan ? ' | Add-On: Garam Masakan Pengasihan +RM25' : '';
-    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM5 = RM${amount_total}${kasturiTag}${sabunTag}${garamMasakanTag} | Alamat: ${address.trim()}`;
+    // Format sama dgn FPX → addonsOf() kesan untuk COGS & label NinjaVan
+    const freeGiftTag     = free_gift_kasturi   ? ' | Free Gift: Minyak Kasturi Kijang' : '';
+    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM5 = RM${amount_total}${kasturiTag}${sabunTag}${garamMasakanTag}${freeGiftTag} | Alamat: ${address.trim()}`;
 
     // Upsert customer
     let customerId = null;
@@ -89,12 +92,13 @@ export async function POST(req) {
     let submissionId = `cod_${Date.now()}`;
     const kasturiNote = addon_kasturi ? ' [ADD-ON: Kasturi Kijang +RM20]' : '';
     const sabunNote   = addon_sabun   ? ' [ADD-ON: Sabun Garam +RM25]' : '';
+    const giftNote    = free_gift_kasturi ? ' [FREE GIFT: Kasturi Kijang]' : '';
     const submissionData = {
       full_name: cleanName,
       phone: formattedPhone,
       address: address?.trim() || null,
       problem: problemNotes,
-      notes: `[COD ORDER] [STATUS: completed] [AMOUNT: RM${amount_total}] [QTY: ${quantity} unit] [PRODUK: ${product || 'Sabun Garam'}]${kasturiNote}${sabunNote}`,
+      notes: `[COD ORDER] [STATUS: completed] [AMOUNT: RM${amount_total}] [QTY: ${quantity} unit] [PRODUK: ${product || 'Sabun Garam'}]${kasturiNote}${sabunNote}${giftNote}`,
       source: source || 'sabun-garam',
       payment_type: 'cod',
       payment_status: 'completed',
@@ -140,6 +144,17 @@ export async function POST(req) {
         referenceId: submissionId,
         notes: `COD Order — ${units_label}`,
       });
+
+      // Auto-deduct hadiah percuma Kasturi (pakej Garam 6 pek)
+      if (free_gift_kasturi) {
+        await deductStock({
+          adminClient: supabase,
+          source: 'addon-kasturi',
+          qty: 1,
+          referenceId: submissionId,
+          notes: `COD Free Gift — Kasturi Kijang`,
+        });
+      }
 
       // Auto-deduct kasturi stock if add-on selected (non-blocking)
       if (addon_kasturi) {

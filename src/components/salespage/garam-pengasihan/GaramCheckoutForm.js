@@ -315,6 +315,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
           amount_total: grandTotal,
           addon_kasturi: addKasturi,
           addon_sabun: addSabun,
+          free_gift_kasturi: !!pkg.includesKasturi,   // pakej 6 pek: percuma 1 botol Kasturi
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,

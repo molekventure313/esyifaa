@@ -213,7 +213,7 @@ export async function POST(req) {
           if (isPhysicalProduct) {
             // Kuantiti: "3 Unit" (sabun) / "6 Pek" (garam) / "5 Botol" (kasturi) — lihat orderQty
             const qty = orderQty(submission);
-            const addons = addonsOf(submission);   // add-on + hadiah percuma (Kasturi dlm pakej Garam 6 pek)
+            const addons = addonsOf(submission);   // add-on + kasturiGift (hadiah pakej Garam 6 pek)
             await deductStock({
               adminClient: supabase,
               source: submission.source,
@@ -221,6 +221,17 @@ export async function POST(req) {
               referenceId: submission.id,
               notes: `FPX Order — RM${amountValue}`,
             });
+
+            // Deduct hadiah percuma Kasturi (pakej Garam 6 pek)
+            if (addons.kasturiGift) {
+              await deductStock({
+                adminClient: supabase,
+                source: 'addon-kasturi',
+                qty: 1,
+                referenceId: submission.id,
+                notes: `FPX Free Gift — Kasturi Kijang`,
+              });
+            }
 
             // Deduct kasturi add-on stock if selected
             const hasKasturi = addons.kasturi;

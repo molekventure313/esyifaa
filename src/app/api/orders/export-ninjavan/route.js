@@ -57,6 +57,7 @@ const ADDON_LINES = {
   sabun:   ['sabun-garam',      '+ Sabun Garam Himalaya (200g)'],
   kasturi: ['kasturi-kijang',   "+ Kasturi Kijang E-Syifa'"],
   garam:   ['garam-pengasihan', '+ Garam Pengasihan Masakan'],
+  kasturiGift: [null,          "+ Kasturi Kijang E-Syifa' (FREE GIFT)"],
 };
 
 /** Column UNIT: produk utama + qty + add-on (ikut produk sebenar order, bukan sentiasa sabun) */
