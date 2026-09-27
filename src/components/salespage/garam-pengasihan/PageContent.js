@@ -18,7 +18,6 @@ import GaramCheckoutForm from '@/components/salespage/garam-pengasihan/GaramChec
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 import GaramFAQSection from '@/components/salespage/garam-pengasihan/FAQSection';
 import GaramClosingSection from '@/components/salespage/garam-pengasihan/ClosingSection';
-import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export default function GaramPengasihanPageContent({ source = 'garam-pengasihan' }) {
@@ -80,10 +79,6 @@ export default function GaramPengasihanPageContent({ source = 'garam-pengasihan'
       {/* #17 — Closing Emosional */}
       <GaramClosingSection />
 
-      {/* Floating WhatsApp Help Button */}
-      <FloatingWAButton
-        pretext="Assalamualaikum ustaz, saya nak tanya tentang Garam Pengasihan Masakan ESyifaa untuk masalah rumahtangga saya."
-      />
 
       {/* Footer */}
       <footer style={{

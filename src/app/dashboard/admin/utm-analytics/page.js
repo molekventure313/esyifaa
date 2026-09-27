@@ -50,6 +50,7 @@ function CampaignRow({ c, depth = 0, lm, textPrimary, textSecondary, textMuted, 
         <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: textPrimary, fontWeight: 600, fontSize: '0.83rem' }}>{c.orders}</td>
         <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 700, fontSize: '0.83rem' }}>{fmt(c.revenue)}</td>
         <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: textSecondary, fontSize: '0.82rem' }}>{fmt(c.avg_order)}</td>
+        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: c.wa_clicks ? '#25D366' : textMuted, fontWeight: 600, fontSize: '0.83rem' }}>{c.wa_clicks || '—'}</td>
       </tr>
       {open && (children || []).map((child, i) => (
         <CampaignRow key={i} c={child} depth={depth + 1} lm={lm}
@@ -174,6 +175,7 @@ export default function UTMAnalyticsPage() {
                 { label: '🎯 UTM Orders', val: `${s.utm_orders} (${s.utm_pct}%)`, valColor: lm ? '#4F46E5' : '#A78BFA', bg: lm ? 'rgba(99,102,241,0.05)' : 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' },
                 { label: '💰 Total Revenue', val: fmt(s.total_revenue), valColor: lm ? '#047857' : '#34D399', bg: lm ? 'rgba(16,185,129,0.05)' : 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.25)' },
                 { label: '🎯 UTM Revenue', val: fmt(s.utm_revenue), valColor: lm ? '#4F46E5' : '#A78BFA', bg: lm ? 'rgba(99,102,241,0.05)' : 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' },
+                { label: '💬 Klik WhatsApp', val: `${s.wa_clicks ?? 0} (${s.utm_wa_clicks ?? 0} dari ads)`, valColor: '#25D366', bg: cardBg, border: cardBorder },
               ].map(c => (
                 <div key={c.label} style={{ background: c.bg, border: c.border, borderRadius: '10px', padding: '1.1rem 1.25rem' }}>
                   <div style={{ fontSize: '0.63rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>{c.label}</div>
@@ -203,6 +205,7 @@ export default function UTMAnalyticsPage() {
                       <th style={{ padding: '0.65rem 1rem', textAlign: 'right', fontSize: '0.68rem', fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Orders</th>
                       <th style={{ padding: '0.65rem 1rem', textAlign: 'right', fontSize: '0.68rem', fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue</th>
                       <th style={{ padding: '0.65rem 1rem', textAlign: 'right', fontSize: '0.68rem', fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avg/Order</th>
+                      <th style={{ padding: '0.65rem 1rem', textAlign: 'right', fontSize: '0.68rem', fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Klik WA</th>
                     </tr>
                   </thead>
                   <tbody>

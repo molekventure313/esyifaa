@@ -12,7 +12,6 @@ import SabunCheckoutForm from '@/components/salespage/sabun-garam/SabunCheckoutF
 import SabunGuaranteeSection from '@/components/salespage/sabun-garam/GuaranteeSection';
 import SabunFAQSection from '@/components/salespage/sabun-garam/FAQSection';
 import SabunClosingSection from '@/components/salespage/sabun-garam/ClosingSection';
-import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 
 /**
@@ -98,8 +97,6 @@ export default function SabunGaramPageContent({
       {/* #14 — Closing */}
       <SabunClosingSection />
 
-      {/* Floating WA help button */}
-      <FloatingWAButton pretext="Assalamualaikum, saya nak tanya pasal Sabun Garam Himalaya Pengisian ESyifaa" />
 
       <footer style={{
         background: '#F8FAFC',

@@ -1,10 +1,11 @@
 'use client';
 
-import useSalesContact, { buildWaLink } from '@/components/salespage/useSalesContact';
+import useSalesContact, { buildWaLink, trackWaClick } from '@/components/salespage/useSalesContact';
 
 /**
  * Section "Nak order melalui Whatsapp?" — diletak selepas borang order.
  * SP HQ → no. HQ. SP marketer → no. marketer sendiri; kalau marketer belum isi → section TIDAK dipapar.
+ * Klik butang → rekod klik + UTM (wa_clicks) & Meta Pixel `Lead`.
  *
  * @param product     nama produk dalam mesej WA (cth: 'Sabun Garam Himalaya')
  * @param background  warna latar section (sambung dari borang order di atas)
@@ -76,6 +77,7 @@ export default function WhatsAppOrderSection({ product, background = '#F0FDF4' }
         {/* Green CTA Button */}
         <a
           href={buildWaLink(number, message)}
+          onClick={() => trackWaClick({ product })}
           target="_blank"
           rel="noopener noreferrer"
           style={{

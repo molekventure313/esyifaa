@@ -45,6 +45,7 @@ function CampaignRow({ c, depth = 0, lm, textPrimary, textSecondary, textMuted }
         <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: textPrimary, fontWeight: 600, fontSize: '0.83rem' }}>{c.orders}</td>
         <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 700, fontSize: '0.83rem' }}>{fmt(c.revenue)}</td>
         <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: textSecondary, fontSize: '0.82rem' }}>{fmt(c.avg_order)}</td>
+        <td style={{ padding: '0.7rem 1rem', textAlign: 'right', color: c.wa_clicks ? '#25D366' : textMuted, fontWeight: 600, fontSize: '0.83rem' }}>{c.wa_clicks || '—'}</td>
       </tr>
       {open && (children || []).map((child, i) => (
         <CampaignRow key={i} c={child} depth={depth + 1} lm={lm}
@@ -167,6 +168,7 @@ export default function MarketerUTMAnalyticsPage() {
                 { label: '🎯 UTM Orders', val: `${s.utm_orders} (${s.utm_pct}%)`, valColor: lm ? '#047857' : '#34D399', bg: lm ? 'rgba(16,185,129,0.05)' : 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.25)' },
                 { label: '💰 Total Sales', val: fmt(s.total_revenue), valColor: lm ? '#047857' : '#34D399', bg: lm ? 'rgba(16,185,129,0.05)' : 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.25)' },
                 { label: '🎯 Sales via Ads', val: fmt(s.utm_revenue), valColor: lm ? '#047857' : '#34D399', bg: cardBg, border: cardBorder },
+                { label: '💬 Klik WhatsApp', val: `${s.wa_clicks ?? 0} (${s.utm_wa_clicks ?? 0} dari ads)`, valColor: '#25D366', bg: cardBg, border: cardBorder },
               ].map(c => (
                 <div key={c.label} style={{ background: c.bg, border: c.border, borderRadius: '10px', padding: '1.1rem 1.25rem' }}>
                   <div style={{ fontSize: '0.63rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>{c.label}</div>
@@ -191,7 +193,7 @@ export default function MarketerUTMAnalyticsPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff }}>
                   <thead>
                     <tr style={{ background: lm ? '#F8FAFC' : '#090A0F', borderBottom: lm ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.06)' }}>
-                      {['Kempen / Adset / Iklan', 'Orders', 'Revenue', 'Avg/Order'].map((h, i) => (
+                      {['Kempen / Adset / Iklan', 'Orders', 'Revenue', 'Avg/Order', 'Klik WA'].map((h, i) => (
                         <th key={h} style={{ padding: '0.65rem 1rem', textAlign: i === 0 ? 'left' : 'right', fontSize: '0.68rem', fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>

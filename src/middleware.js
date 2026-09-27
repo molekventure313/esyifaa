@@ -44,6 +44,7 @@ export async function middleware(request) {
     '/api/payments',
     '/api/tracking',
     '/api/track-visit',
+    '/api/track-wa-click',
     '/api/public',
     '/api/setup',
     '/api/register-perawat',

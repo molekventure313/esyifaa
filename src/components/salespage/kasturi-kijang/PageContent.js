@@ -17,7 +17,6 @@ import KasturiGuaranteeSection from '@/components/salespage/kasturi-kijang/Guara
 import KasturiCheckoutForm from '@/components/salespage/kasturi-kijang/KasturiCheckoutForm';
 import KasturiFAQSection from '@/components/salespage/kasturi-kijang/FAQSection';
 import KasturiClosingSection from '@/components/salespage/kasturi-kijang/ClosingSection';
-import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
@@ -80,10 +79,6 @@ export default function KasturiKijangPageContent({ source = 'kasturi-kijang' }) 
       {/* #17 — Closing Emosional */}
       <KasturiClosingSection />
 
-      {/* Floating WhatsApp Help Button */}
-      <FloatingWAButton
-        pretext="Assalamualaikum ustaz, saya nak tanya tentang Minyak Kasturi Kijang Ruqyah E-Syifa' untuk masalah gangguan & ketenangan tidur saya."
-      />
 
       {/* Footer */}
       <footer style={{

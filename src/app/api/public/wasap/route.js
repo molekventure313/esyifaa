@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-// CDN cache 5 minit — dipanggil setiap page load (FloatingWAButton). Rotation guna localStorage, tak terjejas.
+// CDN cache 5 minit — rotator WA (homepage, /wa, borang lead). Rotation guna localStorage, tak terjejas.
 const CDN_CACHE = { 'Cache-Control': 'public, max-age=0, must-revalidate', 'Netlify-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' };
 
 /**

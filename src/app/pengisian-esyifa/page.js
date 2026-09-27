@@ -17,7 +17,6 @@ import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianChe
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
-import FloatingWAButton from '@/components/salespage/pengisian/FloatingWAButton';
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
 export const metadata = {
@@ -88,8 +87,6 @@ export default function PengisianEsyifaPage() {
       {/* Penutup Emosional */}
       <PengisianClosingSection />
 
-      {/* Floating WhatsApp Help Button */}
-      <FloatingWAButton />
 
       {/* Footer Tema Cerah & Kemas */}
       <footer style={{

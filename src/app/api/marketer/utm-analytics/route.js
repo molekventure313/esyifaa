@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { buildCampaignTree, summarizeClicks } from '@/lib/utm';
 
 const MYT_MS = 8 * 3600 * 1000;
 
@@ -30,39 +31,6 @@ function getPeriodRange(period) {
     return { from: `${mStr}T00:00:00+08:00`, to: `${todayStr}T23:59:59+08:00` };
   }
   return { from: null, to: null };
-}
-
-function buildCampaignTree(orders) {
-  const tree = {};
-  for (const o of orders) {
-    if (!o.has_utm) continue;
-    const campaign = o.utm_campaign || '(kempen tidak diketahui)';
-    const adset    = o.utm_medium   || '(adset tidak diketahui)';
-    const ad       = o.utm_content  || '(iklan tidak diketahui)';
-    const amt      = o.amount;
-    if (!tree[campaign]) tree[campaign] = { campaign, orders: 0, revenue: 0, adsets: {} };
-    tree[campaign].orders++;
-    tree[campaign].revenue += amt;
-    const t = tree[campaign].adsets;
-    if (!t[adset]) t[adset] = { adset, orders: 0, revenue: 0, ads: {} };
-    t[adset].orders++;
-    t[adset].revenue += amt;
-    const a = t[adset].ads;
-    if (!a[ad]) a[ad] = { ad, orders: 0, revenue: 0 };
-    a[ad].orders++;
-    a[ad].revenue += amt;
-  }
-  const round = (n) => parseFloat(n.toFixed(2));
-  const avg   = (rev, ord) => ord > 0 ? round(rev / ord) : 0;
-  return Object.values(tree)
-    .map(c => ({
-      campaign: c.campaign, orders: c.orders, revenue: round(c.revenue), avg_order: avg(c.revenue, c.orders),
-      adsets: Object.values(c.adsets)
-        .map(s => ({
-          adset: s.adset, orders: s.orders, revenue: round(s.revenue), avg_order: avg(s.revenue, s.orders),
-          ads: Object.values(s.ads).map(a => ({ ad: a.ad, orders: a.orders, revenue: round(a.revenue), avg_order: avg(a.revenue, a.orders) })).sort((a,b)=>b.revenue-a.revenue),
-        })).sort((a,b)=>b.revenue-a.revenue),
-    })).sort((a,b)=>b.revenue-a.revenue);
 }
 
 export async function GET(req) {
@@ -100,6 +68,14 @@ export async function GET(req) {
     const { data: subs, error } = await q;
     if (error) throw error;
 
+    // Klik WhatsApp (section SP) — marketer sendiri, tempoh sama
+    let cq = admin.from('wa_clicks')
+      .select('id, created_at, ip_address, utm_source, utm_medium, utm_campaign, utm_content')
+      .eq('marketer_id', user.id);
+    if (from) cq = cq.gte('created_at', from);
+    if (to)   cq = cq.lte('created_at', to);
+    const { data: clicks } = await cq;
+
     const orders = (subs || []).map(s => ({
       id: s.id, created_at: s.created_at,
       full_name: s.full_name || '—',
@@ -125,8 +101,9 @@ export async function GET(req) {
         utm_orders: utm_orders.length, non_utm_orders: non_utm_orders.length,
         utm_revenue, non_utm_revenue,
         utm_pct: total_orders > 0 ? parseFloat(((utm_orders.length / total_orders) * 100).toFixed(1)) : 0,
+        ...summarizeClicks(clicks || []),
       },
-      campaigns: buildCampaignTree(orders),
+      campaigns: buildCampaignTree(orders, clicks || []),
       orders,
     });
 
