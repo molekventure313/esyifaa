@@ -96,7 +96,7 @@ export default function GaramHeroSection() {
             }}>
               <span style={{ fontSize: '3.5rem', lineHeight: 1 }}>🧂✨🍲</span>
               <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#9A3412' }}>
-                GARAM PENGASIHAN MASAKAN ESYIFAA (100g)
+                GARAM PENGASIHAN MASAKAN ESYIFAA (250g)
               </div>
               <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5, maxWidth: '400px' }}>
                 Garam Bukit Himalaya Tulen digabungkan dengan <strong>Pengisian Ayat Ruqyah Pemusnah Sihir Tafriq</strong> &amp; <strong>Ayat Mahabbah Pelunak Hati</strong> selama 3 hari oleh Perawat ESyifaa.

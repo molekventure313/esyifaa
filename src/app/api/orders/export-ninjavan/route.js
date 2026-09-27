@@ -49,14 +49,14 @@ const parseQuantity = orderQty;
 // Nama produk dalam column UNIT (label parcel untuk packing)
 const UNIT_NAMES = {
   'sabun-garam':      'Sabun Garam Himalaya ESyifaa (200g)',
-  'garam-pengasihan': 'Garam Pengasihan Masakan ESyifaa',
+  'garam-pengasihan': 'Garam Pengasihan Masakan ESyifaa (250g)',
   'kasturi-kijang':   "Minyak Kasturi Kijang E-Syifa'",
 };
 const UNIT_WORD = { 'sabun-garam': 'UNIT', 'garam-pengasihan': 'PEK', 'kasturi-kijang': 'BOTOL' };
 const ADDON_LINES = {
   sabun:   ['sabun-garam',      '+ Sabun Garam Himalaya (200g)'],
   kasturi: ['kasturi-kijang',   "+ Kasturi Kijang E-Syifa'"],
-  garam:   ['garam-pengasihan', '+ Garam Pengasihan Masakan'],
+  garam:   ['garam-pengasihan', '+ Garam Pengasihan Masakan (250g)'],
   kasturiGift: [null,          "+ Kasturi Kijang E-Syifa' (FREE GIFT)"],
 };
 

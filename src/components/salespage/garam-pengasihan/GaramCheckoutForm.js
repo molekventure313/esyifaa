@@ -9,8 +9,8 @@ import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 const BASE_PACKAGES = [
   {
     units: 6,
-    label: '6 Pek (100g x 6) — Beli 4 Free 2 Pek',
-    sublabel: 'Dapat 6 Pek Garam (100g) + Percuma 1 Botol Minyak Kasturi Kijang + Free Pos',
+    label: '6 Pek (250g x 6) — Beli 4 Free 2 Pek',
+    sublabel: 'Dapat 6 Pek Garam (250g) + Percuma 1 Botol Minyak Kasturi Kijang + Free Pos',
     pillLabel: 'BELI 4 FREE 2 + FREE KASTURI',
     price: 90,
     originalPrice: 180,
@@ -30,8 +30,8 @@ const BASE_PACKAGES = [
   },
   {
     units: 4,
-    label: '4 Pek (100g x 4) — Beli 2 Free 2 Pek',
-    sublabel: 'Dapat 4 Pek Garam (100g) — Ikhtiar berterusan sekeluarga + Free Pos',
+    label: '4 Pek (250g x 4) — Beli 2 Free 2 Pek',
+    sublabel: 'Dapat 4 Pek Garam (250g) — Ikhtiar berterusan sekeluarga + Free Pos',
     pillLabel: 'BELI 2 FREE 2',
     price: 70,
     originalPrice: 120,
@@ -51,8 +51,8 @@ const BASE_PACKAGES = [
   },
   {
     units: 2,
-    label: '2 Pek (100g x 2) — Beli 1 Free 1 Pek',
-    sublabel: 'Dapat 2 Pek Garam (100g) — Pek pengenalan masakan berkat',
+    label: '2 Pek (250g x 2) — Beli 1 Free 1 Pek',
+    sublabel: 'Dapat 2 Pek Garam (250g) — Pek pengenalan masakan berkat',
     pillLabel: 'BELI 1 FREE 1',
     price: 39,
     originalPrice: 60,
@@ -310,7 +310,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
           address,
           quantity: pkg.units,
           units_label: pkg.label,
-          product: 'Garam Pengasihan Masakan ESyifaa (100g)',
+          product: 'Garam Pengasihan Masakan ESyifaa (250g)',
           amount_base: pkg.price,
           amount_total: grandTotal,
           addon_kasturi: addKasturi,
@@ -526,7 +526,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                           position: 'absolute',
                           top: '-3px',
                         }} />
-                        <span>100g</span>
+                        <span>250g</span>
                       </div>
                     ))}
                     {p.includesKasturi && (
@@ -555,7 +555,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
                     )}
                   </div>
                   <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#EA580C' }}>
-                    {p.itemsCount}x Pek (100g) {p.includesKasturi ? '+ Free Kasturi 🎁' : ''}
+                    {p.itemsCount}x Pek (250g) {p.includesKasturi ? '+ Free Kasturi 🎁' : ''}
                   </div>
                 </div>
 

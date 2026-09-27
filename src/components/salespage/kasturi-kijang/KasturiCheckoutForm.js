@@ -145,7 +145,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
   const [addSabun, setAddSabun] = useState(false);
   const SABUN_PRICE = 25;
 
-  // ─── Add-on: Garam Masakan Pengasihan 500g (+RM25) ───
+  // ─── Add-on: Garam Masakan Pengasihan 250g (+RM25) ───
   const [addGaramMasakan, setAddGaramMasakan] = useState(false);
   const GARAM_MASAKAN_PRICE = 25;
 
@@ -907,7 +907,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
               </div>
             </div>
 
-            {/* ── BUMP OFFER 2: Garam Masakan Pengasihan 500g (+RM25) ── */}
+            {/* ── BUMP OFFER 2: Garam Masakan Pengasihan 250g (+RM25) ── */}
             <div
               onClick={() => setAddGaramMasakan(v => !v)}
               role="checkbox"
@@ -964,7 +964,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.97rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.3, marginBottom: '0.2rem' }}>
-                    Ya! Tambah Garam Masakan Pengasihan ESyifaa (500g) 🍲
+                    Ya! Tambah Garam Masakan Pengasihan ESyifaa (250g) 🍲
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.55rem' }}>
@@ -1070,7 +1070,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
 
             {addGaramMasakan && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#EA580C' }}>
-                <span>Add-on: Garam Masakan Pengasihan (500g):</span>
+                <span>Add-on: Garam Masakan Pengasihan (250g):</span>
                 <strong>+RM{GARAM_MASAKAN_PRICE}</strong>
               </div>
             )}
