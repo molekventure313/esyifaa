@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount } from '@/lib/marketer-calc';
+import { formatOrder } from '@/lib/orders';
 
 export async function GET(req) {
   try {
@@ -43,19 +44,36 @@ export async function GET(req) {
       dateFrom = `${myNow.getUTCFullYear()}-${String(myNow.getUTCMonth() + 1).padStart(2, '0')}-01T00:00:00+08:00`;
     }
 
-    let query = adminClient.from('submissions').select('*').eq('marketer_id', user.id).order('created_at', { ascending: false });
+    // Order FPX/COD marketer sendiri (sama skop dgn Pengurusan Order admin)
+    let query = adminClient
+      .from('submissions')
+      .select('id, full_name, phone, address, problem, notes, source, qty, payment_type, payment_status, chip_bill_id, amount_paid, ninjavan_exported_at, returned_at, marketer_id, created_at')
+      .eq('marketer_id', user.id)
+      .in('payment_type', ['fpx_payment', 'cod'])
+      .order('created_at', { ascending: false });
 
     if (dateFrom) query = query.gte('created_at', dateFrom);
     if (dateTo) query = query.lte('created_at', dateTo);
-    if (status !== 'all') query = query.eq('payment_status', status);
 
     const { data: orders, error } = await query;
     if (error) throw error;
 
-    // amount = amount_paid, atau dari notes [AMOUNT: MYR xx] untuk COD
-    const data = (orders || []).map(o => ({ ...o, amount: parseAmount(o) }));
+    // Format sama dgn admin: label produk (pakej + add-on), alamat, amaun
+    const all = (orders || []).map(o => ({ ...formatOrder(o), amount: parseAmount(o) }));
 
-    return NextResponse.json({ success: true, data });
+    // Ringkasan untuk tempoh dipilih (tanpa tapis status)
+    const completed = all.filter(o => o.payment_status === 'completed');
+    const stats = {
+      total_completed: completed.length,
+      total_pending:   all.filter(o => o.payment_status === 'pending').length,
+      total_failed:    all.filter(o => o.payment_status === 'failed').length,
+      total_cod:       all.filter(o => o.payment_type === 'cod').length,
+      total_fpx:       all.filter(o => o.payment_type === 'fpx_payment').length,
+      total_revenue_rm: parseFloat(completed.reduce((t, o) => t + o.amount, 0).toFixed(2)),
+    };
+
+    const data = status === 'all' ? all : all.filter(o => o.payment_status === status);
+    return NextResponse.json({ success: true, data, stats });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

@@ -13,6 +13,7 @@ const PAYMENT_STATUS_LABELS = {
   completed: { label: 'Selesai', color: '#10B981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', icon: '✅' },
   pending:   { label: 'Pending', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', icon: '⏳' },
   failed:    { label: 'Gagal',   color: '#EF4444', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)',  icon: '❌' },
+  cancelled: { label: 'Dibatal', color: '#94A3B8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.3)', icon: '🚫' },
 };
 
 const PAYMENT_TYPE_LABELS = {
@@ -205,6 +206,32 @@ export default function PengurusanOrderPage() {
   };
 
   // ─── Return COD ────────────────────────────────────────────────────────────
+  // ─── Mark as Paid (FPX pending/gagal — pelanggan bayar melalui WhatsApp/transfer) ───
+  const [payingId, setPayingId] = useState(null);
+  const handleMarkPaid = async (order) => {
+    const reference = window.prompt(
+      `Tanda PAID: ${order.full_name} (${order.phone}) — RM ${parseFloat(order.amount_paid || 0).toFixed(2)}
+
+` +
+      `Stok akan ditolak & sales dikira. No. rujukan / nota bayaran (pilihan):`, ''
+    );
+    if (reference === null) return; // batal
+    setPayingId(order.id);
+    try {
+      const res  = await fetch(`/api/orders/${order.id}/mark-paid`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reference }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Gagal menanda paid');
+      showToast(json.message || 'Order ditanda PAID', 'success');
+      await fetchOrders();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setPayingId(null);
+    }
+  };
+
   const handleReturn = async (orderId, orderName) => {
     if (!confirm(`Return order COD dari ${orderName}?\n\nStok akan ditambah semula ke dalam sistem.`)) return;
     setReturningId(orderId);
@@ -644,6 +671,21 @@ export default function PengurusanOrderPage() {
                     {/* Tindakan */}
                     <td style={{ padding: '0.85rem 0.5rem' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {order.payment_type === 'fpx_payment' && ['pending', 'failed'].includes(order.payment_status) && (
+                          <button
+                            onClick={() => handleMarkPaid(order)}
+                            disabled={payingId === order.id}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                              padding: '0.3rem 0.55rem', borderRadius: '6px',
+                              background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.35)',
+                              color: '#10B981', fontWeight: 700, fontSize: '0.68rem',
+                              cursor: payingId === order.id ? 'wait' : 'pointer', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {payingId === order.id ? '...' : '✅ Mark as Paid'}
+                          </button>
+                        )}
                         {order.phone && (
                           <a
                             href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '').replace(/^0/, '60')}`}

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { PRODUCTS, productOf, isPhysicalOrder } from '@/lib/products';
+import { isPhysicalOrder } from '@/lib/products';
+import { formatOrder } from '@/lib/orders';
 
 export async function GET(req) {
   try {
@@ -129,67 +130,7 @@ export async function GET(req) {
       }
     } catch (_) {}
 
-    const formatted = filteredSubmissions.map(s => {
-      const caseRecord = Array.isArray(s.cases) ? s.cases[0] : s.cases;
-
-      // Extract address: guna column address (COD), atau parse dari problem field
-      let displayAddress = s.address || null;
-      if (!displayAddress && s.problem) {
-        const m = s.problem.match(/Alamat:\s*(.+?)(?:\s*\||$)/i);
-        if (m) displayAddress = m[1].trim();
-      }
-
-      // Extract produk label dari notes/problem
-      let produkLabel = null;
-      if (s.payment_type === 'cod') {
-        const produkMatch = (s.notes || '').match(/\[PRODUK:\s*([^\]]+)\]/i);
-        const qtyMatch    = (s.notes || '').match(/\[QTY:\s*([^\]]+)\]/i);
-        const addonMatch  = (s.notes || '').match(/\[ADD-ON:\s*([^\]]+)\]/i);
-        produkLabel = produkMatch ? produkMatch[1].trim() : 'Sabun Garam';
-        if (qtyMatch)   produkLabel += ` — ${qtyMatch[1].trim()}`;
-        if (addonMatch) produkLabel += ` + ${addonMatch[1].trim()}`;
-      } else if (s.payment_type === 'fpx_payment') {
-        if (s.source?.includes('pengisian')) {
-          produkLabel = 'Pengisian ESyifaa';
-        } else {
-          // Parse dari problem field: "Pakej: 2 Unit | ... | Add-On: Kasturi Kijang E-Syifa' +RM20"
-          const pakejMatch  = (s.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
-          const hasKasturi  = /Add-On:\s*Kasturi Kijang/i.test(s.problem || '');
-          produkLabel = PRODUCTS.find(p => p.key === productOf(s.source))?.label || 'Sabun Garam';
-          if (pakejMatch) produkLabel += ` — ${pakejMatch[1]} Unit`;
-          if (hasKasturi) produkLabel += ' + Kasturi Kijang';
-        }
-      }
-
-      // Revenue for this record — parse dari notes (handle "RM95" COD & "MYR 95.00" FPX format)
-      let amountDisplay = s.amount_paid ? parseFloat(s.amount_paid) : null;
-      if (!amountDisplay && s.notes) {
-        const m = s.notes.match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9]+(?:\.[0-9]+)?)\]/i);
-        if (m) amountDisplay = parseFloat(m[1]);
-      }
-
-      return {
-        id: s.id,
-        full_name: s.full_name,
-        phone: s.phone,
-        address: displayAddress,
-        problem: s.problem,
-        source: s.source,
-        payment_type: s.payment_type,
-        payment_status: s.payment_status || 'pending',
-        chip_bill_id: s.chip_bill_id,
-        amount_paid: amountDisplay,
-        produk_label: produkLabel,
-        ninjavan_exported_at: s.ninjavan_exported_at || null,
-        created_at: s.created_at,
-        // Case info
-        case_id: caseRecord?.id || null,
-        case_status: caseRecord?.status || null,
-        assigned_to: caseRecord?.assigned_to || null,
-        practitioner_name: caseRecord?.practitioner?.full_name || null,
-        marketer_id: s.marketer_id || null,
-      };
-    });
+    const formatted = filteredSubmissions.map(formatOrder);
 
     return NextResponse.json({
       success: true,

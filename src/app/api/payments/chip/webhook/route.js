@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logActivity } from '@/lib/utils/logger';
 import { sendAttributedCAPIEvent } from '@/lib/tracking/attributed';
-import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
-import { deductStock } from '@/lib/stock';
-import { orderQty, addonsOf } from '@/lib/marketer-calc';
+import { parseAmount } from '@/lib/marketer-calc';
+import { completeFpxOrder, notifyFpxPaid } from '@/lib/payments';
 
 function verifySignature(rawBody, signatureHeader, publicKeyPem) {
   if (!signatureHeader || !publicKeyPem) return false;
@@ -90,100 +88,18 @@ export async function POST(req) {
     const alreadyCompleted = submission.payment_status === 'completed';
 
     if (isPaid) {
-      // Parse actual amount first — used in CAPI + WA + logs
-      // Notes format: "[AMOUNT: MYR 95.00]" (FPX) or "[AMOUNT: RM95]" (COD)
-      const amountMatch = (submission.notes || '').match(/\[AMOUNT:\s*(?:RM|MYR)\s*([0-9.]+)\]/i);
-      const amountValue = amountMatch ? parseFloat(amountMatch[1]) : 50.00;
+      const amountValue = parseAmount(submission);
 
       if (!alreadyCompleted) {
-        // 1. Update submission payment_status → completed
+        // Status completed, batal duplikat, tolak stok, log — lib/payments (sama dgn mark-paid manual).
+        // Kes perawat TIDAK dicipta — kes hanya untuk SP rawatan (borang lead).
         try {
-          await supabase
-            .from('submissions')
-            .update({
-              payment_status: 'completed',
-              chip_bill_id: billId,
-              notes: `${submission.notes || ''} [STATUS: paid] [CHIP_STATUS: ${chipStatus}] [PAID_AT: ${new Date().toISOString()}]`,
-            })
-            .eq('id', submission.id);
+          await completeFpxOrder({ supabase, submission, via: 'chip', billId, chipStatus });
         } catch (e) {
           console.warn('Submission update skipped:', e.message);
         }
 
-        // ─── Auto-cancel pending duplicates dari customer sama (by phone) ───
-        try {
-          await supabase
-            .from('submissions')
-            .update({ payment_status: 'cancelled' })
-            .eq('phone', submission.phone)
-            .eq('payment_status', 'pending')
-            .neq('id', submission.id);
-        } catch (e) {
-          console.warn('Auto-cancel pending duplicates skipped:', e.message);
-        }
-
-        // 2. Round-Robin Auto-assign Perawat
-        let assignedPractitioner = null;
-        try {
-          const { data: allProfiles } = await supabase
-            .from('profiles')
-            .select('id, full_name, role, is_active, is_receiving_cases, created_at')
-            .order('created_at', { ascending: true });
-
-          const activePractitioners = (allProfiles || []).filter(p =>
-            p.role !== 'super_admin' && p.is_active !== false && p.is_receiving_cases !== false
-          );
-
-          if (activePractitioners.length > 0) {
-            const { data: lastCase } = await supabase
-              .from('cases')
-              .select('assigned_to, created_at')
-              .not('assigned_to', 'is', null)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (lastCase?.assigned_to) {
-              const lastIdx = activePractitioners.findIndex(p => p.id === lastCase.assigned_to);
-              const nextIdx = lastIdx !== -1 ? (lastIdx + 1) % activePractitioners.length : 0;
-              assignedPractitioner = activePractitioners[nextIdx];
-            } else {
-              assignedPractitioner = activePractitioners[0];
-            }
-          }
-        } catch (e) {
-          console.warn('Round-robin skipped:', e.message);
-        }
-
-        // 3. Create Case for FPX paid patient
-        let newCase = null;
-        try {
-          const caseStatus = assignedPractitioner ? 'Sedang Diurus' : 'Baru';
-          const { data } = await supabase
-            .from('cases')
-            .insert({
-              customer_id: submission.customer_id,
-              submission_id: submission.id,
-              status: caseStatus,
-              assigned_to: assignedPractitioner ? assignedPractitioner.id : null,
-            })
-            .select()
-            .single();
-          newCase = data;
-
-          if (newCase) {
-            await supabase.from('case_status_history').insert({
-              case_id: newCase.id,
-              old_status: null,
-              new_status: caseStatus,
-              notes: `💳 Bayaran FPX RM${amountValue} BERJAYA via Chip. ${assignedPractitioner ? `Diagih kepada ${assignedPractitioner.full_name}` : 'Menunggu agihan perawat'}`,
-            });
-          }
-        } catch (e) {
-          console.warn('Case creation skipped (RLS/customer_id missing):', e.message);
-        }
-
-        // 4. Meta CAPI Purchase — marketer order → pixel marketer SAHAJA (tiada fallback ke HQ);
+        // Meta CAPI Purchase — marketer order → pixel marketer SAHAJA (tiada fallback ke HQ);
         //    HQ order → HQ FPX pixel
         try {
           await sendAttributedCAPIEvent({ supabase, marketerId: submission.marketer_id, hqPixel: 'fpx', event: {
@@ -200,108 +116,17 @@ export async function POST(req) {
         } catch (e) {
           console.error('CAPI FPX Purchase Error (non-blocking):', e.message);
         }
-
-        // 5. Auto-deduct stock (produk fizikal FPX orders — non-blocking)
-        try {
-          const PHYSICAL_SOURCES = [
-            'sabun-garam', 'sabun-garam-1', 'sabun-garam-2',
-            'sabun-garam-3', 'sabun-garam-4', 'sabun-garam-5',
-            'garam-pengasihan', 'kasturi-kijang',
-          ];
-          const isPhysicalProduct = PHYSICAL_SOURCES.includes(submission.source);
-
-          if (isPhysicalProduct) {
-            // Kuantiti: "3 Unit" (sabun) / "6 Pek" (garam) / "5 Botol" (kasturi) — lihat orderQty
-            const qty = orderQty(submission);
-            const addons = addonsOf(submission);   // add-on + kasturiGift (hadiah pakej Garam 6 pek)
-            await deductStock({
-              adminClient: supabase,
-              source: submission.source,
-              qty,
-              referenceId: submission.id,
-              notes: `FPX Order — RM${amountValue}`,
-            });
-
-            // Deduct hadiah percuma Kasturi (pakej Garam 6 pek)
-            if (addons.kasturiGift) {
-              await deductStock({
-                adminClient: supabase,
-                source: 'addon-kasturi',
-                qty: 1,
-                referenceId: submission.id,
-                notes: `FPX Free Gift — Kasturi Kijang`,
-              });
-            }
-
-            // Deduct kasturi add-on stock if selected
-            const hasKasturi = addons.kasturi;
-            if (hasKasturi) {
-              await deductStock({
-                adminClient: supabase,
-                source: 'addon-kasturi',
-                qty: 1,
-                referenceId: submission.id,
-                notes: `FPX Add-On — Kasturi Kijang`,
-              });
-            }
-
-            // Deduct sabun add-on stock if selected
-            const hasSabun = addons.sabun;
-            if (hasSabun) {
-              await deductStock({
-                adminClient: supabase,
-                source: 'sabun-garam',
-                qty: 1,
-                referenceId: submission.id,
-                notes: `FPX Add-On — Sabun Garam`,
-              });
-            }
-
-            // Deduct garam masakan add-on stock if selected
-            const hasGaramMasakan = addons.garam;
-            if (hasGaramMasakan) {
-              await deductStock({
-                adminClient: supabase,
-                source: 'addon-garam-masakan',
-                qty: 1,
-                referenceId: submission.id,
-                notes: `FPX Add-On — Garam Masakan Pengasihan`,
-              });
-            }
-          }
-        } catch (e) {
-          console.error('Stock deduct FPX error (non-blocking):', e.message);
-        }
-
-        // 6. Log activity
-        try {
-          await logActivity(supabase, {
-            userId: null, actionType: 'chip_payment_success',
-            entityType: 'submission', entityId: submission.id,
-            newValues: { bill_id: billId, payment_status: 'completed', case_id: newCase?.id || null },
-            description: `💳 Bayaran FPX RM${amountValue} disahkan — ${submission.full_name} (${submission.phone})`,
-            ipAddress: submission.ip_address || 'webhook',
-          });
-        } catch (_) {}
       } // end !alreadyCompleted
 
-      // 5. WasapBot Notification — hantar walaupun alreadyCompleted (idempotent safe)
-      try {
-        const msg = buildOrderMessage({
-          name: submission.full_name,
-          phone: submission.phone,
-          product: submission.source?.includes('sabun') ? 'Sabun Garam Himalaya (FPX)' : 'Pengisian ESyifaa (FPX)',
-          amount: `RM${amountValue} (FPX Online Banking)`,
-          address: '—',
-          source: submission.source || 'fsp-checkout',
-          paymentType: 'fpx',
-        });
-        await sendGroupNotification(`💳 [BAYARAN FPX BERJAYA]\n${msg}`);
-      } catch (e) {
-        console.error('WasapBot Error (non-blocking):', e.message);
-      }
+      // WasapBot Notification — hantar walaupun alreadyCompleted (idempotent safe)
+      await notifyFpxPaid(submission, amountValue, 'chip');
 
     } else if (isFailed) {
+      // Order yang dah selesai (cth: marketer mark-paid bila pelanggan bayar melalui WhatsApp)
+      // TAK BOLEH ditimpa jadi failed bila bil CHIP tamat tempoh kemudian.
+      if (alreadyCompleted) {
+        return NextResponse.json({ success: true, status: chipStatus, skipped: 'already_completed' });
+      }
       try {
         await supabase
           .from('submissions')
