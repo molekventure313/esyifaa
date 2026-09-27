@@ -63,6 +63,9 @@ function CampaignRow({ c, depth = 0, lm, textPrimary, textSecondary, textMuted, 
 // ── Main Page ───────────────────────────────────────────────────────────────
 export default function UTMAnalyticsPage() {
   const [period,     setPeriod]     = useState('today');
+  // 'hq' (default — ads admin sendiri) | 'all' | <marketer_id>
+  const [owner,      setOwner]      = useState('hq');
+  const [marketers,  setMarketers]  = useState([]);
   const [data,       setData]       = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [utmOnly,    setUtmOnly]    = useState(false);
@@ -92,12 +95,20 @@ export default function UTMAnalyticsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res  = await fetch(`/api/admin/utm-analytics?period=${period}`);
+      const res  = await fetch(`/api/admin/utm-analytics?period=${period}&owner=${encodeURIComponent(owner)}`);
       const json = await res.json();
-      if (json.success) setData(json);
+      if (json.success) {
+        setData(json);
+        setMarketers(json.marketers || []);
+      }
     } catch (_) {}
     finally { setLoading(false); }
-  }, [period]);
+  }, [period, owner]);
+
+  const showMarketerCol = owner === 'all';
+  const ownerLabel = owner === 'hq' ? 'HQ (Admin) sahaja'
+    : owner === 'all' ? 'Semua — HQ + semua marketer'
+    : `Marketer: ${marketers.find(m => m.id === owner)?.name || '—'}`;
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -139,6 +150,7 @@ export default function UTMAnalyticsPage() {
           <div style={{ fontSize: '0.68rem', fontWeight: 700, color: lm ? '#7C3AED' : '#A78BFA', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.15rem' }}>ESYIFAA · ADMIN</div>
           <h1 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>📊 UTM Analytics</h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: textSecondary }}>Attribution order dari iklan — kempen, adset & iklan mana yang convert</p>
+          <p style={{ margin: '0.35rem 0 0', fontSize: '0.74rem', fontWeight: 700, color: lm ? '#7C3AED' : '#A78BFA' }}>Menunjukkan: {ownerLabel}</p>
         </div>
         <button onClick={fetchData} style={{ padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, border: cardBorder, cursor: 'pointer', fontFamily: ff, background: cardBg, color: textSecondary }}>🔄 Refresh</button>
       </div>
@@ -155,6 +167,26 @@ export default function UTMAnalyticsPage() {
             }}>{p.label}</button>
           ))}
         </div>
+
+        {/* Owner filter — default HQ; boleh tengok marketer tertentu / semua */}
+        <select
+          value={owner}
+          onChange={e => setOwner(e.target.value)}
+          style={{
+            padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, fontFamily: ff,
+            background: lm ? '#FFFFFF' : '#090A0F', color: textPrimary, border: cardBorder, cursor: 'pointer', outline: 'none',
+          }}
+        >
+          <option value="hq">🏢 HQ (Admin)</option>
+          {marketers.length > 0 && (
+            <optgroup label="Marketer">
+              {marketers.map(m => (
+                <option key={m.id} value={m.id}>{m.name}{m.code ? ` (${m.code})` : ''}</option>
+              ))}
+            </optgroup>
+          )}
+          <option value="all">🌐 Semua (HQ + marketer)</option>
+        </select>
       </div>
 
       {loading ? (
@@ -269,7 +301,7 @@ export default function UTMAnalyticsPage() {
                     <SortTh col="utm_campaign" label="Kempen" align="left" />
                     <SortTh col="utm_medium"   label="Adset" align="left" />
                     <SortTh col="utm_content"  label="Iklan" align="left" />
-                    <SortTh col="marketer_name" label="Marketer" align="left" />
+                    {showMarketerCol && <SortTh col="marketer_name" label="Marketer" align="left" />}
                   </tr>
                 </thead>
                 <tbody>
@@ -286,15 +318,15 @@ export default function UTMAnalyticsPage() {
                       </td>
                       <td style={{ padding: '0.7rem 1rem', color: textSecondary, maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.utm_medium || '—'}</td>
                       <td style={{ padding: '0.7rem 1rem', color: textSecondary, maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.utm_content || '—'}</td>
-                      <td style={{ padding: '0.7rem 1rem', whiteSpace: 'nowrap' }}>
+                      {showMarketerCol && <td style={{ padding: '0.7rem 1rem', whiteSpace: 'nowrap' }}>
                         <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: o.marketer_name === 'HQ' ? (lm ? '#F1F5F9' : 'rgba(255,255,255,0.06)') : (lm ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.1)'), color: o.marketer_name === 'HQ' ? textMuted : (lm ? '#047857' : '#34D399'), fontWeight: 600 }}>
                           {o.marketer_name}
                         </span>
-                      </td>
+                      </td>}
                     </tr>
                   ))}
                   {displayOrders.length === 0 && (
-                    <tr><td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: textMuted }}>
+                    <tr><td colSpan={showMarketerCol ? 8 : 7} style={{ padding: '3rem', textAlign: 'center', color: textMuted }}>
                       {utmOnly ? '📵 Tiada order dengan UTM dalam tempoh ini.' : 'Tiada rekod order.'}
                     </td></tr>
                   )}

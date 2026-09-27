@@ -49,6 +49,13 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'today';
     const { from, to } = getPeriodRange(period);
+    // owner: 'hq' (default — ads admin sendiri) | 'all' | <marketer_id>
+    const ownerParam = searchParams.get('owner') || 'hq';
+    const owner = ownerParam === 'all' || /^[0-9a-f-]{36}$/i.test(ownerParam) ? ownerParam : 'hq';
+    const byOwner = (query) =>
+      owner === 'hq'  ? query.is('marketer_id', null) :
+      owner === 'all' ? query :
+                        query.eq('marketer_id', owner);
 
     // Fetch submissions
     let q = admin.from('submissions')
@@ -59,21 +66,23 @@ export async function GET(req) {
 
     if (from) q = q.gte('created_at', from);
     if (to)   q = q.lte('created_at', to);
+    q = byOwner(q);
 
     const { data: subs, error } = await q;
     if (error) throw error;
 
-    // Klik WhatsApp (section SP) — semua marketer + HQ, tempoh sama
+    // Klik WhatsApp (section SP) — tapis owner & tempoh sama
     let cq = admin.from('wa_clicks')
       .select('id, created_at, ip_address, utm_source, utm_medium, utm_campaign, utm_content');
     if (from) cq = cq.gte('created_at', from);
     if (to)   cq = cq.lte('created_at', to);
-    const { data: clicks } = await cq;
+    const { data: clicks } = await byOwner(cq);
 
     // Fetch marketer names
     const { data: mktProfiles } = await admin.from('profiles')
       .select('id, full_name, marketer_code')
-      .eq('role', 'marketer');
+      .eq('role', 'marketer')
+      .order('full_name');
 
     const mktMap = {};
     (mktProfiles || []).forEach(m => { mktMap[m.id] = m.full_name || m.marketer_code || 'Marketer'; });
@@ -133,6 +142,8 @@ export async function GET(req) {
       },
       campaigns,
       orders,
+      owner,
+      marketers: (mktProfiles || []).map(m => ({ id: m.id, name: m.full_name || m.marketer_code || 'Marketer', code: m.marketer_code || null })),
     });
 
   } catch (err) {
