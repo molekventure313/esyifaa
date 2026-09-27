@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { PRODUCTS, productOf, isPhysicalOrder } from '@/lib/products';
 
 export async function GET(req) {
   try {
@@ -16,10 +17,12 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const paymentStatus = searchParams.get('payment_status') || 'all'; // all | pending | completed | failed
     const paymentType   = searchParams.get('payment_type') || 'all';   // all | fpx_payment | cod | physical
-    const physical      = searchParams.get('physical') === 'true';     // COD + FPX sabun only
+    const physical      = searchParams.get('physical') === 'true';     // COD + FPX produk fizikal (sabun/garam/kasturi)
+    const notExported   = searchParams.get('not_exported') === 'true'; // belum export NinjaVan — tapis di SERVER
     const search = searchParams.get('search') || '';
     const page   = parseInt(searchParams.get('page'))  || 1;
-    const limit  = parseInt(searchParams.get('limit')) || 100;
+    // Belum export: had lebih besar supaya order lama yang belum dihantar tak tercicir
+    const limit  = parseInt(searchParams.get('limit')) || (notExported ? 500 : 100);
     const offset = (page - 1) * limit;
 
     // Query all paid orders (FPX + COD) — exclude appointment (lead form, legacy)
@@ -50,17 +53,18 @@ export async function GET(req) {
       query = query.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
+    if (notExported) {
+      query = query.is('ninjavan_exported_at', null);
+    }
+
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
     const { data: submissions, error, count } = await query;
     if (error) throw error;
 
-    // Apply physical filter in JS: COD (all) + FPX where source contains 'sabun'
+    // Physical filter: COD (semua) + FPX produk fizikal (sabun / garam / kasturi)
     const filteredSubmissions = physical
-      ? (submissions || []).filter(s =>
-          s.payment_type === 'cod' ||
-          (s.payment_type === 'fpx_payment' && (s.source || '').toLowerCase().includes('sabun'))
-        )
+      ? (submissions || []).filter(isPhysicalOrder)
       : (submissions || []);
 
     // Stats: kira semua order (FPX + COD)
@@ -96,6 +100,35 @@ export async function GET(req) {
       });
     } catch (_) {}
 
+    // ─── Export terakhir NinjaVan + bilangan order fizikal yang belum diexport ───
+    let lastExport = null;
+    let notExportedCount = 0;
+    try {
+      const [{ data: last }, { data: pendingExport }] = await Promise.all([
+        adminClient.from('submissions')
+          .select('ninjavan_exported_at')
+          .not('ninjavan_exported_at', 'is', null)
+          .order('ninjavan_exported_at', { ascending: false })
+          .limit(1),
+        adminClient.from('submissions')
+          .select('payment_type, source')
+          .in('payment_type', ['fpx_payment', 'cod'])
+          .eq('payment_status', 'completed')
+          .is('ninjavan_exported_at', null),
+      ]);
+      notExportedCount = (pendingExport || []).filter(isPhysicalOrder).length;
+
+      const at = last?.[0]?.ninjavan_exported_at;
+      if (at) {
+        // Satu export = satu timestamp yang sama untuk semua order dalam batch
+        const { data: batch } = await adminClient.from('submissions')
+          .select('created_at')
+          .eq('ninjavan_exported_at', at);
+        const times = (batch || []).map(b => b.created_at).sort();
+        lastExport = { at, count: times.length, latest_order_at: times[times.length - 1] || null };
+      }
+    } catch (_) {}
+
     const formatted = filteredSubmissions.map(s => {
       const caseRecord = Array.isArray(s.cases) ? s.cases[0] : s.cases;
 
@@ -122,7 +155,7 @@ export async function GET(req) {
           // Parse dari problem field: "Pakej: 2 Unit | ... | Add-On: Kasturi Kijang E-Syifa' +RM20"
           const pakejMatch  = (s.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
           const hasKasturi  = /Add-On:\s*Kasturi Kijang/i.test(s.problem || '');
-          produkLabel = 'Sabun Garam';
+          produkLabel = PRODUCTS.find(p => p.key === productOf(s.source))?.label || 'Sabun Garam';
           if (pakejMatch) produkLabel += ` — ${pakejMatch[1]} Unit`;
           if (hasKasturi) produkLabel += ' + Kasturi Kijang';
         }
@@ -168,7 +201,9 @@ export async function GET(req) {
         total_cod: statsCod,
         total_fpx: statsFpx,
         total_revenue_rm: parseFloat(totalRevenue.toFixed(2)),
+        not_exported_physical: notExportedCount,
       },
+      last_export: lastExport,
       meta: { total: count, page, limit, totalPages: Math.ceil((count || 0) / limit) },
     });
 

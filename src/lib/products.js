@@ -20,6 +20,9 @@ export function productOf(source) {
   return null;
 }
 
+// Order produk fizikal (perlu dihantar / export NinjaVan): semua COD + FPX produk fizikal
+export const isPhysicalOrder = o => o.payment_type === 'cod' || (o.payment_type === 'fpx_payment' && !!productOf(o.source));
+
 const round2 = n => parseFloat((n || 0).toFixed(2));
 
 /**

@@ -2,6 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/Toast';
+import { isPhysicalOrder } from '@/lib/products';
+
+// Tarikh + masa ringkas (MYT ikut browser), cth: "27 Sep, 3:45 PTG"
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('ms-MY', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—';
 
 const PAYMENT_STATUS_LABELS = {
   completed: { label: 'Selesai', color: '#10B981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', icon: '✅' },
@@ -44,6 +50,8 @@ export default function PengurusanOrderPage() {
   // Export
   const [exporting,       setExporting]       = useState(false);
   const [notExportedOnly, setNotExportedOnly] = useState(false);
+  const [lastExport,      setLastExport]      = useState(null);  // { at, count, latest_order_at }
+  const [notExportedCount, setNotExportedCount] = useState(0);   // order fizikal selesai yang belum export
 
   // Return COD
   const [returningId, setReturningId] = useState(null);
@@ -83,6 +91,8 @@ export default function PengurusanOrderPage() {
       }
 
       if (searchTerm.trim()) params.set('search', searchTerm.trim());
+      // Tapis di server — kalau tak, hanya 100 order terbaru disemak & order lama yang belum export tercicir
+      if (notExportedOnly) params.set('not_exported', 'true');
 
       const res  = await fetch(`/api/payments/list?${params.toString()}`);
       const json = await res.json();
@@ -90,6 +100,8 @@ export default function PengurusanOrderPage() {
         setOrders(json.data || []);
         setStats(json.stats || { total_completed: 0, total_pending: 0, total_failed: 0, total_cod: 0, total_fpx: 0, total_revenue_rm: 0 });
         setLastUpdated(new Date().toLocaleTimeString('ms-MY'));
+        setLastExport(json.last_export || null);
+        setNotExportedCount(json.stats?.not_exported_physical ?? 0);
         setSelectedIds(prev => {
           const newIds = new Set((json.data || []).map(o => o.id));
           return new Set([...prev].filter(id => newIds.has(id)));
@@ -100,7 +112,7 @@ export default function PengurusanOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [paymentStatusFilter, paymentTypeFilter, searchTerm]);
+  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly]);
 
   useEffect(() => {
     fetchOrders();
@@ -280,6 +292,11 @@ export default function PengurusanOrderPage() {
             }}
           >
             {notExportedOnly ? '✅' : '⬜'} Belum Diexport Sahaja
+            <span style={{
+              fontSize: '0.7rem', fontWeight: 800, padding: '0.05rem 0.45rem', borderRadius: '10px',
+              background: notExportedCount > 0 ? '#F59E0B' : (isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.1)'),
+              color: notExportedCount > 0 ? '#fff' : textMuted,
+            }} title="Order fizikal (selesai) yang belum diexport ke NinjaVan">{notExportedCount}</span>
           </button>
 
           {/* Export All Physical Completed Button */}
@@ -288,7 +305,7 @@ export default function PengurusanOrderPage() {
               // Quick export: physical + completed, honoring notExportedOnly filter
               const physicalCompleted = orders.filter(o =>
                 o.payment_status === 'completed' &&
-                (o.payment_type === 'cod' || (o.payment_type === 'fpx_payment' && (o.source || '').includes('sabun'))) &&
+                isPhysicalOrder(o) &&                            // COD + FPX sabun / garam / kasturi
                 (!notExportedOnly || !o.ninjavan_exported_at)   // ← filter belum diexport
               );
               handleExport(physicalCompleted.map(o => o.id));
@@ -305,6 +322,25 @@ export default function PengurusanOrderPage() {
           >
             {exporting ? '⏳ Exporting...' : '📦 Export NinjaVan'}
           </button>
+
+          {/* Export terakhir */}
+          <div
+            title={lastExport ? `Export terakhir: ${new Date(lastExport.at).toLocaleString('ms-MY')}` : ''}
+            style={{
+              fontSize: '0.74rem', color: textSecondary, background: subCardBg, border: cardBorder,
+              padding: '0.4rem 0.75rem', borderRadius: '8px', lineHeight: 1.45,
+            }}
+          >
+            {lastExport ? (
+              <>
+                🕒 Export terakhir: <strong style={{ color: textPrimary }}>{fmtDateTime(lastExport.at)}</strong> · {lastExport.count} order
+                <br />
+                <span style={{ color: textMuted }}>Order terbaru dalam export itu: <strong style={{ color: textSecondary }}>{fmtDateTime(lastExport.latest_order_at)}</strong></span>
+              </>
+            ) : (
+              <>🕒 Belum pernah export</>
+            )}
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <div style={{ fontSize: '0.75rem', color: textMuted, background: subCardBg, padding: '0.4rem 0.85rem', borderRadius: '6px', border: cardBorder }}>

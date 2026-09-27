@@ -5,6 +5,7 @@ import { logActivity } from '@/lib/utils/logger';
 import { sendAttributedCAPIEvent } from '@/lib/tracking/attributed';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 import { deductStock } from '@/lib/stock';
+import { orderQty, addonsOf } from '@/lib/marketer-calc';
 
 function verifySignature(rawBody, signatureHeader, publicKeyPem) {
   if (!signatureHeader || !publicKeyPem) return false;
@@ -210,8 +211,9 @@ export async function POST(req) {
           const isPhysicalProduct = PHYSICAL_SOURCES.includes(submission.source);
 
           if (isPhysicalProduct) {
-            const qtyMatch = (submission.problem || '').match(/Pakej:\s*(\d+)\s*Unit/i);
-            const qty = qtyMatch ? parseInt(qtyMatch[1]) : (parseInt(submission.qty) || 1);
+            // Kuantiti: "3 Unit" (sabun) / "6 Pek" (garam) / "5 Botol" (kasturi) — lihat orderQty
+            const qty = orderQty(submission);
+            const addons = addonsOf(submission);   // add-on + hadiah percuma (Kasturi dlm pakej Garam 6 pek)
             await deductStock({
               adminClient: supabase,
               source: submission.source,
@@ -221,7 +223,7 @@ export async function POST(req) {
             });
 
             // Deduct kasturi add-on stock if selected
-            const hasKasturi = /Add-On:\s*Kasturi Kijang/i.test(submission.problem || '');
+            const hasKasturi = addons.kasturi;
             if (hasKasturi) {
               await deductStock({
                 adminClient: supabase,
@@ -233,7 +235,7 @@ export async function POST(req) {
             }
 
             // Deduct sabun add-on stock if selected
-            const hasSabun = /Add-On:\s*Sabun Garam/i.test(submission.problem || '');
+            const hasSabun = addons.sabun;
             if (hasSabun) {
               await deductStock({
                 adminClient: supabase,
@@ -245,7 +247,7 @@ export async function POST(req) {
             }
 
             // Deduct garam masakan add-on stock if selected
-            const hasGaramMasakan = /Add-On:\s*Garam Masakan Pengasihan/i.test(submission.problem || '');
+            const hasGaramMasakan = addons.garam;
             if (hasGaramMasakan) {
               await deductStock({
                 adminClient: supabase,

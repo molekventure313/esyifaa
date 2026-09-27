@@ -13,19 +13,37 @@ const isPhysical = s => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p =
 // Add-on disimpan sama ada dalam notes "[ADD-ON: X ...]" atau problem "Add-On: X ..."
 const addonText = s => `${s.notes || ''} ${s.problem || ''}`;
 const ADDON = {
-  kasturi: /(\[ADD-ON:|Add-On:)\s*Kasturi Kijang/i,
+  kasturi: /(\[ADD-ON:|Add-On:|Free Gift:)\s*(Minyak )?Kasturi Kijang/i,   // add-on atau hadiah percuma (pakej Garam 6 pek)
   sabun:   /(\[ADD-ON:|Add-On:)\s*Sabun Garam/i,
   garam:   /(\[ADD-ON:|Add-On:)\s*Garam (Masakan )?Pengasihan/i,
 };
-const sumQty = (arr, match, fallback) => arr.filter(match).reduce((t, s) => t + (parseInt(s.qty) || fallback), 0);
+// Kuantiti produk utama satu order.
+// Teks dulu — column qty DEFAULT 1 dan order FPX tak isi column tu (FPX 3 unit tersimpan qty=1).
+//   COD notes: "[QTY: 3 unit]" · Pakej: "3 Unit" (sabun) / "6 Pek (...)" (garam) / "5 Botol (...)" (kasturi)
+export function orderQty(s) {
+  const qtyTag = (s.notes || '').match(/\[QTY:\s*(\d+)\s*unit\]/i);
+  if (qtyTag) return parseInt(qtyTag[1]);
+  const pakej = `${s.problem || ''} ${s.notes || ''}`.match(/Pakej:\s*(\d+)\s*(Unit|Pek|Botol)/i);
+  if (pakej) return parseInt(pakej[1]);
+  return parseInt(s.qty) || 1;
+}
+
+const sumQty = (arr, match) => arr.filter(match).reduce((t, s) => t + orderQty(s), 0);
 const countAddon = (arr, re) => arr.filter(s => re.test(addonText(s))).length;
+
+// Add-on dalam SATU order → { sabun, kasturi, garam } (boolean)
+export const addonsOf = s => ({
+  sabun:   ADDON.sabun.test(addonText(s)),
+  kasturi: ADDON.kasturi.test(addonText(s)),
+  garam:   ADDON.garam.test(addonText(s)),
+});
 
 // Unit produk (produk utama ikut qty + add-on 1 unit setiap order)
 export function productUnits(arr) {
   return {
-    sabun:   sumQty(arr, s => (s.source || '').includes('sabun'), 0)            + countAddon(arr, ADDON.sabun),
-    kasturi: sumQty(arr, s => (s.source || '').startsWith('kasturi-kijang'), 1) + countAddon(arr, ADDON.kasturi),
-    garam:   sumQty(arr, s => (s.source || '').startsWith('garam-pengasihan'), 1) + countAddon(arr, ADDON.garam),
+    sabun:   sumQty(arr, s => (s.source || '').includes('sabun'))            + countAddon(arr, ADDON.sabun),
+    kasturi: sumQty(arr, s => (s.source || '').startsWith('kasturi-kijang')) + countAddon(arr, ADDON.kasturi),
+    garam:   sumQty(arr, s => (s.source || '').startsWith('garam-pengasihan')) + countAddon(arr, ADDON.garam),
   };
 }
 

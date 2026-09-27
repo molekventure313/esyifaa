@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { productOf, isPhysicalOrder } from '@/lib/products';
+import { addonsOf, orderQty } from '@/lib/marketer-calc';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,30 +43,31 @@ function formatPhone(phone) {
   return digits;
 }
 
-/** Parse order quantity from notes/problem fields */
-function parseQuantity(s) {
-  // COD notes: "[QTY: 3 unit]"
-  const codQty = (s.notes || '').match(/\[QTY:\s*(\d+)\s*unit\]/i);
-  if (codQty) return parseInt(codQty[1]);
+/** Kuantiti — lihat orderQty (lib/marketer-calc): teks pakej dulu, column qty fallback */
+const parseQuantity = orderQty;
 
-  // FPX problem field: "Pakej: 3 Unit"
-  const fpxQty = (s.problem || '').match(/Pakej:\s*(\d+)\s*[Uu]nit/);
-  if (fpxQty) return parseInt(fpxQty[1]);
+// Nama produk dalam column UNIT (label parcel untuk packing)
+const UNIT_NAMES = {
+  'sabun-garam':      'Sabun Garam Himalaya ESyifaa (200g)',
+  'garam-pengasihan': 'Garam Pengasihan Masakan ESyifaa',
+  'kasturi-kijang':   "Minyak Kasturi Kijang E-Syifa'",
+};
+const UNIT_WORD = { 'sabun-garam': 'UNIT', 'garam-pengasihan': 'PEK', 'kasturi-kijang': 'BOTOL' };
+const ADDON_LINES = {
+  sabun:   ['sabun-garam',      '+ Sabun Garam Himalaya (200g)'],
+  kasturi: ['kasturi-kijang',   "+ Kasturi Kijang E-Syifa'"],
+  garam:   ['garam-pengasihan', '+ Garam Pengasihan Masakan'],
+};
 
-  // Try produk_label from notes: "3 Unit"
-  const unitMatch = (s.notes || s.problem || '').match(/\b(\d+)\s*[Uu]nit\b/);
-  if (unitMatch) return parseInt(unitMatch[1]);
-
-  return 1; // fallback
-}
-
-/** Check if order is a physical product (COD or FPX sabun) */
-function isPhysicalOrder(s) {
-  if (s.payment_type === 'cod') return true;
-  if (s.payment_type === 'fpx_payment') {
-    return (s.source || '').toLowerCase().includes('sabun');
+/** Column UNIT: produk utama + qty + add-on (ikut produk sebenar order, bukan sentiasa sabun) */
+function unitCellOf(s) {
+  const main = productOf(s.source) || 'sabun-garam';   // COD lama tanpa source → sabun
+  const addons = addonsOf(s);
+  const lines = [UNIT_NAMES[main], `${parseQuantity(s)} ${UNIT_WORD[main]}`];
+  for (const [flag, [key, line]] of Object.entries(ADDON_LINES)) {
+    if (addons[flag] && key !== main) lines.push(line);
   }
-  return false;
+  return lines.join('\n');
 }
 
 /** Generate NinjaVan CSV string from array of submission records */
@@ -96,13 +99,8 @@ function generateNinjaVanCSV(orders) {
     // C: Phone
     const phone = formatPhone(s.phone);
 
-    // K: UNIT cell — product name + qty + add-on jika ada
-    const qty = parseQuantity(s);
-    // Cari "kasturi kijang" (case-insensitive) dalam mana-mana field — lebih robust
-    const combinedText = `${s.notes || ''} ${s.problem || ''}`;
-    const hasKasturi = /kasturi\s*kijang/i.test(combinedText);
-    let unitCell = `Sabun Garam Himalaya ESyifaa (200g)\n${qty} UNIT`;
-    if (hasKasturi) unitCell += `\n+ Kasturi Kijang E-Syifa'`;
+    // K: UNIT cell — produk sebenar + qty + add-on jika ada
+    const unitCell = unitCellOf(s);
 
     // J: Payment method
     const paymentMethod = s.payment_type === 'cod'
@@ -182,7 +180,7 @@ export async function GET(req) {
     // ─── Query submissions ───
     let query = adminClient
       .from('submissions')
-      .select('id, full_name, phone, address, problem, source, notes, payment_type, payment_status, amount_paid, ninjavan_exported_at, created_at')
+      .select('id, full_name, phone, address, problem, source, notes, qty, payment_type, payment_status, amount_paid, ninjavan_exported_at, created_at')
       .in('payment_type', ['fpx_payment', 'cod']);
 
     // Filter by specific IDs if provided
@@ -201,7 +199,7 @@ export async function GET(req) {
     const { data: submissions, error } = await query;
     if (error) throw error;
 
-    // Filter to physical products only: COD (all) + FPX sabun only
+    // Filter to physical products only: COD (all) + FPX sabun / garam / kasturi
     const physicalOrders = (submissions || []).filter(isPhysicalOrder);
 
     if (physicalOrders.length === 0) {
