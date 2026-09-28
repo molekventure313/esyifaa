@@ -26,12 +26,12 @@ export const ORDER_PRODUCTS = {
     name: 'Sabun Garam Himalaya Pengisian ESyifaa (200g)',
     packages: [
       { units: 1, label: '1 Unit', price: 39 },
-      { units: 2, label: '2 Unit', price: 70 },
-      { units: 3, label: '3 Unit', price: 90 },
+      { units: 2, label: '2 Unit', price: 70, freePostage: true },
+      { units: 3, label: '3 Unit', price: 90, freePostage: true, includesKasturi: true, noAddons: ['kasturi'] },   // Kasturi dah percuma
     ],
     addons: ['kasturi'],
-    // Add-on Kasturi: diskaun postage RM5
-    postage: ({ east, addons }) => Math.max(0, (east ? POSTAGE_EAST : POSTAGE_NORMAL) - (addons.kasturi ? 5 : 0)),
+    // 2 & 3 Unit: postage percuma (semua negeri). 1 Unit: add-on Kasturi diskaun postage RM5.
+    postage: ({ east, pkg, addons }) => (pkg.freePostage ? 0 : Math.max(0, (east ? POSTAGE_EAST : POSTAGE_NORMAL) - (addons.kasturi ? 5 : 0))),
   },
   'garam-pengasihan': {
     name: 'Garam Pengasihan Masakan ESyifaa (250g)',
@@ -66,7 +66,7 @@ export function priceOrder({ product, packageIndex, addons = {}, state }) {
   if (!def) throw new Error('Produk tidak sah.');
   const pkg = def.packages[packageIndex];
   if (!pkg) throw new Error('Pakej tidak sah.');
-  const addonKeys = def.addons.filter(k => addons[k]);
+  const addonKeys = def.addons.filter(k => addons[k] && !(pkg.noAddons || []).includes(k));
   const addonTotal = addonKeys.reduce((t, k) => t + ADDONS[k].price, 0);
   const east = EAST_MALAYSIA.includes(state);
   const postage = def.postage({ east, pkg, addons: Object.fromEntries(addonKeys.map(k => [k, true])) });

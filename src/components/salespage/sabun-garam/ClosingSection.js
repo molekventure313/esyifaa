@@ -76,7 +76,7 @@ export default function SabunClosingSection() {
             🧼 Tempah Sabun Pengisian Sekarang
           </button>
           <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748B' }}>
-            Dari RM39 + postage RM5 · Pilihan Bayar Masa Terima (COD) atau FPX · 100% Ruqyah Syar&apos;iyyah
+            Dari RM39 · Free postage 2 unit ke atas · Pilihan Bayar Masa Terima (COD) atau FPX · 100% Ruqyah Syar&apos;iyyah
           </p>
         </div>
 

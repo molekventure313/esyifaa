@@ -26,9 +26,9 @@ const ELEMENTS = [
 ];
 
 const HOW_IT_WORKS = [
-  { step: '01', text: 'Sabun digosok pada tubuh — mineral garam himalaya membersihkan kulit secara fizikal' },
+  { step: '01', text: 'Sabun direndam & dilarutkan dalam baldi air — garam himalaya yang telah diruqyah larut ke dalam air mandian' },
   { step: '02', text: 'Tenaga ayat ruqyah terlepas — bertindak balas terhadap gangguan rohani dalam badan' },
-  { step: '03', text: 'Bilas dengan air bersih — membawa keluar sisa bisa dan gangguan yang dilemahkan' },
+  { step: '03', text: 'Mandi dengan air garam tersebut sambil berdoa — membawa keluar sisa bisa dan gangguan yang dilemahkan' },
 ];
 
 export default function SabunFungsiElemenSection() {

@@ -10,7 +10,7 @@ const DEFAULT_HEADLINE = (
   </>
 );
 
-const DEFAULT_SUB = 'Sabun garam himalaya 200g diisikan tenaga ayat ruqyah syar\'iyyah selama 3 hari berturut-turut — mandi seperti biasa, rasai badan lebih ringan, segar & dilindungi dengan izin Allah.';
+const DEFAULT_SUB = 'Sabun garam himalaya 200g diisikan tenaga ayat ruqyah syar\'iyyah selama 3 hari berturut-turut — larutkan dalam air & mandi, rasai badan lebih ringan, segar & dilindungi dengan izin Allah.';
 
 export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadline = DEFAULT_SUB, heroImage = null }) {
   const scrollToForm = () => {
@@ -154,7 +154,7 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
             🧼 Dapatkan Sabun Pengisian Sekarang
           </button>
           <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748B' }}>
-            Dari <strong style={{ color: '#047857' }}>RM39</strong> seunit · Postage RM5 · Bayar Masa Terima (COD) atau FPX
+            Dari <strong style={{ color: '#047857' }}>RM39</strong> seunit · <strong style={{ color: '#047857' }}>Free postage</strong> 2 unit ke atas · Bayar Masa Terima (COD) atau FPX
           </p>
         </div>
 

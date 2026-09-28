@@ -7,10 +7,28 @@ import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
 // ─── Packages ─────────────────────────────────────────────────────────────────
 const BASE_PACKAGES = [
-  { units: 1, label: '1 Unit', price: 39, savings: null, badge: null },
-  { units: 2, label: '2 Unit', price: 70, savings: 8,    badge: 'JIMAT RM8' },
-  { units: 3, label: '3 Unit', price: 90, savings: 27,   badge: 'Paling Jimat (Jimat RM27)', recommended: true },
+  {
+    units: 1, label: '1 Unit', price: 39, savings: null, badge: null,
+    pillLabel: 'PEK PERCUBAAN', originalPrice: null,
+    features: ['1 KETUL SABUN GARAM (200g)', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
+  },
+  {
+    units: 2, label: '2 Unit', price: 70, savings: 8, badge: 'JIMAT RM8 + FREE POS',
+    pillLabel: 'PAKEJ BERDUA', originalPrice: 78,
+    freePostage: true,
+    features: ['2 KETUL SABUN GARAM (200g)', 'JIMAT RM8', 'PERCUMA POSTAGE', 'COD TERSEDIA (SEMENANJUNG)'],
+  },
+  {
+    units: 3, label: '3 Unit', price: 90, savings: 27, badge: 'Paling Jimat + Free Gift', recommended: true,
+    pillLabel: 'PAKEJ PALING JIMAT', originalPrice: 117,
+    freePostage: true,
+    includesKasturi: true,   // hadiah percuma 1 botol Kasturi — stok ditolak (FPX: nota "Free Gift", COD: free_gift_kasturi)
+    features: ['3 KETUL SABUN GARAM (200g)', 'PERCUMA MINYAK KASTURI KIJANG (BERNILAI RM20)', 'PERCUMA POSTAGE', 'JIMAT RM27'],
+  },
 ];
+
+// Susunan kad: terbesar dahulu (kiri / atas) — sama gaya SP Garam
+const CARD_ORDER = [2, 1, 0];
 
 // Negeri Sabah/Sarawak — COD ditutup, postage RM10
 const EAST_MALAYSIA = ['Sabah', 'Sarawak'];
@@ -92,22 +110,26 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const isEastMalaysia = EAST_MALAYSIA.includes(formData.negeri);
   const postage        = isEastMalaysia ? POSTAGE_EAST : POSTAGE_NORMAL;
 
-  // Build packages with dynamic postage
+  // Build packages with dynamic postage — 2 & 3 Unit: postage percuma (semua negeri)
   const PACKAGES = BASE_PACKAGES.map(p => ({
     ...p,
-    postage,
-    total: p.price + postage,
+    postage: p.freePostage ? 0 : postage,
+    total: p.price + (p.freePostage ? 0 : postage),
   }));
 
   const pkg = PACKAGES[selectedPkg];
 
   // ─── Add-on: Kasturi Kijang E-Syifa' ──────────────────────────────────────
   const [addKasturi, setAddKasturi] = useState(false);
+  // Pakej 3 Unit dah termasuk Kasturi PERCUMA — add-on Kasturi dimatikan
+  useEffect(() => { if (PACKAGES[selectedPkg]?.includesKasturi) setAddKasturi(false); }, [selectedPkg]);   // eslint-disable-line react-hooks/exhaustive-deps
   const KASTURI_PRICE            = 20;
   const KASTURI_POSTAGE_DISCOUNT = 5;   // RM5 off postage; Semenanjung: FREE, Sabah/Sarawak: RM5→RM5
-  const effectivePostage         = addKasturi ? Math.max(0, postage - KASTURI_POSTAGE_DISCOUNT) : postage;
-  const postageIsFree            = addKasturi && effectivePostage === 0;          // selepas tick: untuk Ringkasan
-  const kasturiGivesFreePostage  = postage <= KASTURI_POSTAGE_DISCOUNT;           // sebelum tick: untuk badge/sub-text
+  const pkgPostage               = pkg.postage;                                   // 0 untuk pakej free postage
+  const effectivePostage         = addKasturi ? Math.max(0, pkgPostage - KASTURI_POSTAGE_DISCOUNT) : pkgPostage;
+  const postageIsFree            = addKasturi && effectivePostage === 0 && pkgPostage > 0;  // selepas tick: untuk Ringkasan
+  const addonPostagePerk         = pkgPostage > 0;                                // add-on Kasturi masih beri diskaun postage?
+  const kasturiGivesFreePostage  = pkgPostage > 0 && pkgPostage <= KASTURI_POSTAGE_DISCOUNT; // sebelum tick: untuk badge/sub-text
   const grandTotal               = pkg.price + effectivePostage + (addKasturi ? KASTURI_PRICE : 0);
 
   // If Sabah/Sarawak selected and COD was active, switch to FPX
@@ -171,7 +193,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
       const address  = buildAddress();
 
       const kasturiNote = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa' +RM${KASTURI_PRICE}` : '';
-      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label} | Postage: RM${effectivePostage}${kasturiNote}`;
+      const giftNote   = pkg.includesKasturi ? ' | Free Gift: Minyak Kasturi Kijang' : '';   // → stok Kasturi ditolak bila bayaran berjaya
+      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label}${giftNote} | Postage: RM${effectivePostage}${kasturiNote}`;
 
       // Fire InitiateCheckout pixel
       try {
@@ -253,6 +276,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
           amount_base: pkg.price,
           amount_total: grandTotal,
           addon_kasturi: addKasturi,
+          free_gift_kasturi: !!pkg.includesKasturi,   // pakej 3 Unit: percuma 1 botol Kasturi (stok ditolak di route COD)
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,
@@ -318,7 +342,13 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
       fontFamily: ff,
       borderBottom: '1px solid #E2E8F0',
     }}>
-      <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
+
+        {/* CSS grid kad harga — 3 lajur desktop, 1 lajur mobile */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          .sabun-pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 3rem; }
+          @media (max-width: 860px) { .sabun-pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; } }
+        `}} />
 
         {/* Section Header */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -348,66 +378,178 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
             Pilih Pakej &amp; Tempah
           </h2>
           <p style={{ color: '#64748B', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto' }}>
-            Postage RM5 Semenanjung · RM10 Sabah &amp; Sarawak
+            Postage <strong style={{ color: '#047857' }}>PERCUMA</strong> untuk 2 unit ke atas · 1 unit: RM5 Semenanjung / RM10 Sabah &amp; Sarawak
           </p>
         </div>
 
-        {/* ── 1. Package Selector ── */}
-        <div style={{ marginBottom: '1.75rem' }}>
-          <p style={{
-            fontSize: '0.8rem', fontWeight: 700, color: '#0F172A',
-            textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.75rem',
-          }}>
-            Langkah 1: Pilih Pakej
-          </p>
+        {/* ── 1. Kad Harga (gaya SP Garam) ── */}
+        <div id="pilih-pakej" className="sabun-pricing-grid">
+          {CARD_ORDER.map(idx => {
+            const p = PACKAGES[idx];
+            const isSelected = selectedPkg === idx;
+            return (
+              <div
+                key={idx}
+                onClick={() => setSelectedPkg(idx)}
+                style={{
+                  background: '#FFFFFF',
+                  border: isSelected ? '2.5px solid #10B981' : '1.5px solid #CBD5E1',
+                  borderRadius: '16px',
+                  padding: '1.75rem 1.15rem 1.5rem',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center',
+                  textAlign: 'center', position: 'relative', cursor: 'pointer', transition: 'all 0.2s ease',
+                  boxShadow: isSelected ? '0 12px 30px rgba(16, 185, 129, 0.16)' : '0 4px 14px rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                {/* Badge atas */}
+                {p.badge && (
+                  <div style={{
+                    position: 'absolute', top: '-12px',
+                    background: p.recommended ? 'linear-gradient(135deg, #10B981, #047857)' : '#1E293B',
+                    color: '#FFFFFF', fontSize: '0.68rem', fontWeight: 900, letterSpacing: '0.05em', textTransform: 'uppercase',
+                    padding: '0.28rem 0.85rem', borderRadius: '9999px', boxShadow: '0 3px 10px rgba(0,0,0,0.18)', zIndex: 2, whiteSpace: 'nowrap',
+                  }}>
+                    ⭐ {p.badge}
+                  </div>
+                )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-            {PACKAGES.map((p, i) => {
-              const isSelected = selectedPkg === i;
-              return (
+                {/* Visual ketul sabun */}
+                <div style={{ minHeight: '95px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {Array.from({ length: p.units }).map((_, i) => (
+                      <div key={i} style={{
+                        width: '46px', height: '34px',
+                        background: 'linear-gradient(180deg, #FFE8DC 0%, #FCCDB4 55%, #F2A98B 100%)',
+                        borderRadius: '10px', border: '1.5px solid #E08D6D',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#7C2D12', fontWeight: 900, fontSize: '0.55rem',
+                        boxShadow: '0 2px 6px rgba(224, 141, 109, 0.3)',
+                      }}>
+                        200g
+                      </div>
+                    ))}
+                    {p.includesKasturi && (
+                      <div title="Free Minyak Kasturi Kijang" style={{
+                        width: '28px', height: '42px',
+                        background: 'linear-gradient(180deg, #34D399 0%, #059669 100%)',
+                        borderRadius: '4px 4px 6px 6px', border: '1.5px solid #047857',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        color: '#FFFFFF', fontWeight: 900, fontSize: '0.52rem',
+                        boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                      }}>
+                        <span>🎁</span>
+                        <span style={{ fontSize: '0.45rem' }}>FREE</span>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#047857' }}>
+                    {p.units}x Sabun Garam (200g){p.includesKasturi ? ' + Free Kasturi 🎁' : ''}
+                  </div>
+                </div>
+
+                {/* Label pil */}
+                <div style={{
+                  background: isSelected ? '#047857' : '#1E293B', color: '#FFFFFF',
+                  padding: '0.42rem 1rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800,
+                  letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '1rem', width: '90%', textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}>
+                  {p.pillLabel}
+                </div>
+
+                {/* Harga asal */}
+                <div style={{ fontSize: '0.88rem', color: '#64748B', fontWeight: 600, marginBottom: '0.2rem', minHeight: '1.3em' }}>
+                  {p.originalPrice ? <>Harga Asal <span style={{ textDecoration: 'line-through' }}>RM{p.originalPrice}</span></> : 'Harga Seunit'}
+                </div>
+
+                {/* Harga promo */}
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1.25rem' }}>
+                  RM{p.price}
+                </div>
+
+                {/* Ciri */}
+                <ul style={{
+                  listStyle: 'none', padding: 0, margin: '0 0 1.5rem 0', textAlign: 'left', width: '100%',
+                  fontSize: '0.84rem', color: '#334155', fontWeight: 600, display: 'flex', flexDirection: 'column', gap: '0.5rem',
+                }}>
+                  {p.features.map((feat, fIdx) => {
+                    // Item PERCUMA (postage / Kasturi) ditonjolkan
+                    const perk = feat.startsWith('PERCUMA');
+                    const isGift = perk && feat.includes('KASTURI');
+                    return (
+                      <li key={fIdx} style={perk ? {
+                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        background: isGift ? 'linear-gradient(90deg, #FEF3C7, #FFFBEB)' : 'linear-gradient(90deg, #D1FAE5, #ECFDF5)',
+                        border: isGift ? '1.5px solid #F59E0B' : '1.5px solid #34D399',
+                        color: isGift ? '#92400E' : '#065F46',
+                        borderRadius: '8px', padding: '0.4rem 0.55rem', fontWeight: 800,
+                      } : { display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ color: perk ? 'inherit' : '#059669', fontWeight: 900, fontSize: '0.95rem', flexShrink: 0 }}>
+                          {isGift ? '🎁' : perk ? '🚚' : '✓'}
+                        </span>
+                        <span>{feat}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 0.5rem 0', fontWeight: 600 }}>
+                  Klik button di bawah untuk beli
+                  <span style={{ display: 'block', fontSize: '1.1rem', marginTop: '0.15rem' }}>👇🏻</span>
+                </p>
+
                 <button
-                  key={i}
                   type="button"
-                  onClick={() => setSelectedPkg(i)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPkg(idx);
+                    document.getElementById('maklumat-pesanan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                   style={{
-                    position: 'relative',
-                    padding: '1.2rem 0.65rem 1rem',
-                    borderRadius: '16px',
-                    cursor: 'pointer',
-                    border: isSelected ? '2px solid #10B981' : '1.5px solid #E2E8F0',
-                    background: isSelected ? '#ECFDF5' : '#FFFFFF',
-                    boxShadow: isSelected ? '0 4px 15px rgba(16,185,129,0.15)' : '0 2px 5px rgba(0,0,0,0.02)',
-                    transition: 'all 0.15s ease',
-                    fontFamily: ff,
-                    textAlign: 'center',
-                    outline: 'none',
+                    width: '100%', padding: '0.85rem 0.75rem', background: '#0F172A', color: '#FFFFFF',
+                    borderRadius: '10px', fontWeight: 800, fontSize: '0.95rem', border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
                   }}
                 >
-                  {p.badge && (
-                    <div style={{
-                      position: 'absolute', top: '-11px', left: '50%', transform: 'translateX(-50%)',
-                      background: p.recommended ? '#10B981' : '#059669',
-                      color: '#FFFFFF', fontSize: '0.64rem', fontWeight: 700,
-                      padding: '2px 8px', borderRadius: '9999px', whiteSpace: 'nowrap',
-                      letterSpacing: '0.02em', boxShadow: '0 2px 5px rgba(16,185,129,0.2)',
-                    }}>
-                      {p.badge}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: isSelected ? '#047857' : '#0F172A', marginBottom: '0.25rem' }}>
-                    {p.label}
-                  </div>
-                  <div style={{ fontSize: '1.45rem', fontWeight: 800, color: isSelected ? '#047857' : '#0F172A', lineHeight: 1.1 }}>
-                    RM{p.price}
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.25rem' }}>
-                    + pos RM{p.postage}
-                  </div>
+                  👉🏻 BELI SEKARANG
                 </button>
-              );
-            })}
-          </div>
+
+                <div style={{ marginTop: '0.85rem', fontSize: '0.72rem', color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                  <span>FPX</span> · <span>Mastercard</span> · <span>VISA</span> · <span>COD</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {/* ── Borang (680px) ── */}
+        <div id="maklumat-pesanan" style={{ maxWidth: '680px', margin: '0 auto', scrollMarginTop: '1rem' }}>
+
+          {/* Pakej dipilih */}
+          <div style={{
+            background: '#ECFDF5', border: '2px solid #A7F3D0', borderRadius: '14px', padding: '1rem 1.25rem', marginBottom: '1.5rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.6rem',
+          }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Pakej Dipilih Anda:
+              </span>
+              <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F172A' }}>
+                {pkg.label} Sabun Garam — <span style={{ color: '#059669' }}>RM{pkg.price}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => document.getElementById('pilih-pakej')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                background: '#FFFFFF', border: '1.5px solid #CBD5E1', padding: '0.4rem 0.85rem', borderRadius: '8px',
+                fontSize: '0.8rem', fontWeight: 700, color: '#334155', cursor: 'pointer',
+              }}
+            >
+              Tukar Pakej ↺
+            </button>
+          </div>
 
         {/* ── 2. Form Card (Langkah 2: Maklumat Penghantaran) ── */}
         <div style={{
@@ -535,11 +677,29 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                   background: '#FFF7ED', border: '1px solid #FED7AA',
                   borderRadius: '8px', fontSize: '0.8rem', color: '#9A3412', fontWeight: 600,
                 }}>
-                  📍 Sabah / Sarawak — Postage RM10. Pembayaran FPX sahaja (COD tidak tersedia).
+                  📍 Sabah / Sarawak — Postage {pkg.freePostage ? 'PERCUMA untuk pakej ini' : 'RM10'}. Pembayaran FPX sahaja (COD tidak tersedia).
                 </div>
               )}
             </div>
 
+            {pkg.includesKasturi ? (
+              /* Pakej 3 Unit — Kasturi dah termasuk percuma; tiada add-on */
+              <div style={{
+                marginBottom: '1.25rem', padding: '0.95rem 1.1rem', borderRadius: '14px',
+                background: 'linear-gradient(90deg, #FEF3C7, #FFFBEB)', border: '1.5px solid #F59E0B',
+                display: 'flex', alignItems: 'center', gap: '0.85rem',
+              }}>
+                <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #FDE68A' }}>
+                  <Image src="/images/kasturi-kijang-opt.jpg" alt="Kasturi Kijang E-Syifa'" width={56} height={56}
+                    style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }} loading="lazy" />
+                </div>
+                <div style={{ fontSize: '0.84rem', color: '#92400E', lineHeight: 1.5 }}>
+                  <strong style={{ display: 'block', fontSize: '0.92rem', color: '#78350F' }}>🎁 Minyak Kasturi Kijang PERCUMA</strong>
+                  Bernilai <strong>RM20</strong> — dah termasuk dalam Pakej 3 Unit anda. Tak perlu tambah lagi.
+                </div>
+              </div>
+            ) : (
+            <>
             {/* ── Bump Offer Header ── */}
             <div style={{ textAlign: 'center', marginBottom: '0.65rem' }}>
               <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0F172A' }}>
@@ -566,9 +726,10 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
               }}
             >
               {/* Badge row — two badges */}
-              <div style={{
-                position: 'absolute', top: '-11px', left: '1rem',
-                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
+              <div className="bump-badges" style={{
+                // Dalam aliran layout (bukan absolute) — badge boleh turun baris di skrin kecil
+                position: 'relative', margin: '-2.45rem 0 0.85rem 0', zIndex: 1,
+                display: 'flex', gap: '0.35rem', flexWrap: 'wrap',
               }}>
                 <div style={{
                   background: '#D97706', color: '#FFF',
@@ -576,12 +737,14 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                   borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
                   boxShadow: '0 2px 6px rgba(217,119,6,0.3)', whiteSpace: 'nowrap',
                 }}>{'⚡ Tambahan Khas — Tawaran Sekali Sahaja'}</div>
-                <div style={{
-                  background: '#059669', color: '#FFF',
-                  fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
-                  borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  boxShadow: '0 2px 6px rgba(5,150,105,0.3)', whiteSpace: 'nowrap',
-                }}>{kasturiGivesFreePostage ? '🎁 POSTAGE FREE' : '🎁 DISKAUN POSTAGE RM5'}</div>
+                {addonPostagePerk && (
+                  <div style={{
+                    background: '#059669', color: '#FFF',
+                    fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
+                    borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                    boxShadow: '0 2px 6px rgba(5,150,105,0.3)', whiteSpace: 'nowrap',
+                  }}>{kasturiGivesFreePostage ? '🎁 POSTAGE FREE' : '🎁 DISKAUN POSTAGE RM5'}</div>
+                )}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
@@ -613,11 +776,17 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                     <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#94A3B8', textDecoration: 'line-through' }}>RM50</span>
                     <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#10B981' }}>RM{KASTURI_PRICE} sahaja</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.65rem' }}>
-                    {kasturiGivesFreePostage
-                      ? '\uD83D\uDE9A Tambah Kasturi ni, Kami belanja Free Postage'
-                      : '\uD83D\uDE9A Diskaun postage RM5 untuk Sabah/Sarawak'}
-                  </div>
+                  {addonPostagePerk ? (
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.65rem' }}>
+                      {kasturiGivesFreePostage
+                        ? '\uD83D\uDE9A Tambah Kasturi ni, Kami belanja Free Postage'
+                        : '\uD83D\uDE9A Diskaun postage RM5 untuk Sabah/Sarawak'}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.65rem' }}>
+                      {pkg.includesKasturi ? '\u2795 Tambah sebotol lagi untuk ahli keluarga' : '\u2728 Lengkapkan benteng diri anda'}
+                    </div>
+                  )}
 
                   {/* Image + bullets */}
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -648,16 +817,20 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                   {/* CTA text */}
                   <div style={{ marginTop: '0.55rem', fontSize: '0.72rem', fontWeight: 700, color: addKasturi ? '#059669' : '#D97706', transition: 'color 0.2s' }}>
                     {addKasturi
-                      ? `\u2713 Kasturi ditambah — ${postageIsFree ? 'Postage percuma diaktifkan! \uD83C\uDF89' : 'Diskaun postage RM5 diaktifkan! \uD83C\uDF89'}`
+                      ? (addonPostagePerk
+                          ? `\u2713 Kasturi ditambah — ${postageIsFree ? 'Postage percuma diaktifkan! \uD83C\uDF89' : 'Diskaun postage RM5 diaktifkan! \uD83C\uDF89'}`
+                          : '\u2713 Kasturi ditambah ke order anda \uD83C\uDF89')
                       : '\u2610 Klik untuk tambahkan ke order anda \u2192'}
                   </div>
 
                 </div>
               </div>
             </div>
+            </>
+            )}
 
             {/* ── Banner: postage saving active ── */}
-            {addKasturi && (
+            {addKasturi && addonPostagePerk && (
               <div style={{
                 marginBottom: '0.75rem', padding: '0.6rem 0.85rem',
                 background: '#ECFDF5', border: '1px solid #6EE7B7',
@@ -680,10 +853,21 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                 <span style={{ color: '#475569' }}>Sabun Garam — {pkg.label}</span>
                 <span style={{ fontWeight: 600, color: '#0F172A' }}>RM{pkg.price}</span>
               </div>
+              {pkg.includesKasturi && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '0.4rem' }}>
+                  <span style={{ color: '#059669' }}>{'🎁 Free Gift: Minyak Kasturi Kijang'}</span>
+                  <span style={{ fontWeight: 700, color: '#059669' }}>PERCUMA</span>
+                </div>
+              )}
               {/* Postage row — dynamic */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', marginBottom: addKasturi ? '0.4rem' : '0' }}>
                 <span style={{ color: '#475569' }}>Postage</span>
-                {addKasturi ? (
+                {pkg.freePostage ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontWeight: 500, color: '#94A3B8', textDecoration: 'line-through', fontSize: '0.8rem' }}>RM{postage}</span>
+                    <span style={{ fontWeight: 700, color: '#059669' }}>PERCUMA 🎁</span>
+                  </span>
+                ) : addKasturi ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <span style={{ fontWeight: 500, color: '#94A3B8', textDecoration: 'line-through', fontSize: '0.8rem' }}>RM{postage}</span>
                     <span style={{ fontWeight: 700, color: postageIsFree ? '#059669' : '#0F172A' }}>
@@ -818,6 +1002,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
             </p>
           </form>
         </div>
+        </div>{/* /maklumat-pesanan */}
 
       </div>
     </section>
