@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ORDER_PRODUCTS, MY_STATES, EAST_MALAYSIA, priceOrder, addonInfo } from '@/lib/packages';
+import { parseCustomerText } from '@/lib/parse-customer';
 
 // Borang Order WhatsApp — dipakai /dashboard/marketer/order-wasap & /dashboard/admin/order-wasap.
 // Order terus diluluskan (Selesai) & masuk Pengurusan Order / export NinjaVan.
@@ -26,6 +27,9 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
   }, []);
 
   const [form, setForm]       = useState(EMPTY);
+  // Smart Entry — tampal maklumat pelanggan dari WhatsApp → autofill
+  const [pasteText, setPasteText] = useState('');
+  const [filled, setFilled]       = useState(null);   // { keys: [...], missing: [...] } selepas autofill
   const [product, setProduct] = useState('sabun-garam');
   const [pkgIdx, setPkgIdx]   = useState(0);
   const [addons, setAddons]   = useState({});
@@ -47,7 +51,20 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
   // Sabah/Sarawak → COD tak tersedia
   useEffect(() => { if (east && payment === 'cod') setPayment('paid'); }, [east, payment]);
 
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    setForm(f => ({ ...f, [k]: e.target.value }));
+    setFilled(fl => fl && { ...fl, keys: fl.keys.filter(x => x !== k) });   // disunting → buang sorotan
+  };
+
+  const FIELD_LABELS = { full_name: 'Nama', phone: 'Telefon', street: 'Alamat', poskod: 'Poskod', daerah: 'Daerah', negeri: 'Negeri' };
+  const autofill = () => {
+    const r = parseCustomerText(pasteText);
+    const keys = Object.keys(FIELD_LABELS).filter(k => r[k]);
+    // Isi medan yang dikesan sahaja; medan tak dikesan kekal (tak dipadam)
+    setForm(f => ({ ...f, ...Object.fromEntries(keys.map(k => [k, r[k]])) }));
+    setFilled({ keys, missing: Object.keys(FIELD_LABELS).filter(k => !r[k]).map(k => FIELD_LABELS[k]) });
+    setDone(null);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -67,7 +84,7 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Gagal simpan order');
       setDone({ name: form.full_name, phone: form.phone, product: def.name, pkg: priced.pkg.label, amount: json.amount, payment });
-      setForm(EMPTY); setAddons({}); setPkgIdx(0); setOrigin(''); setAdjust(false); setCustomTotal(''); setPayment('paid');
+      setForm(EMPTY); setPasteText(''); setFilled(null); setAddons({}); setPkgIdx(0); setOrigin(''); setAdjust(false); setCustomTotal(''); setPayment('paid');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(err.message);
@@ -86,6 +103,8 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
   const accent        = '#10B981';
   const input = { width: '100%', boxSizing: 'border-box', padding: '0.65rem 0.8rem', borderRadius: '8px', background: subCardBg, border: cardBorder, color: textPrimary, fontSize: '0.88rem', outline: 'none' };
   const label = { display: 'block', fontSize: '0.78rem', fontWeight: 600, color: textPrimary, marginBottom: '0.35rem' };
+  // Medan yang diisi oleh Smart Entry → sorotan kuning (sila semak)
+  const inp = (k) => (filled?.keys.includes(k) ? { ...input, border: '1.5px solid #F59E0B', background: lm ? '#FFFBEB' : 'rgba(245,158,11,0.08)' } : input);
   const card  = { background: cardBg, border: cardBorder, borderRadius: '12px', padding: '1.25rem', display: 'grid', gap: '0.9rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' };
   const h2    = { margin: 0, fontSize: '0.95rem', fontWeight: 800, color: textPrimary };
   const pill  = (on, color = accent) => ({
@@ -115,20 +134,58 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
       )}
 
       <form onSubmit={submit} style={{ display: 'grid', gap: '1.25rem' }}>
+        {/* 0. Smart Entry */}
+        <div style={{ ...card, border: lm ? '1.5px dashed #93C5FD' : '1.5px dashed rgba(96,165,250,0.45)' }}>
+          <div>
+            <h2 style={h2}>✨ Smart Entry <span style={{ fontSize: '0.75rem', fontWeight: 500, color: textMuted }}>(pilihan)</span></h2>
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.8rem', color: textSecondary, lineHeight: 1.5 }}>
+              Tampal maklumat pelanggan dari WhatsApp (nama, alamat, poskod, negeri, telefon) — tekan <strong>Autofill</strong> dan semak semula sebelum simpan.
+            </p>
+          </div>
+          <textarea
+            value={pasteText}
+            onChange={e => setPasteText(e.target.value)}
+            rows={6}
+            placeholder={'Cth:\nPn Mas Yusof\n20 Jln Pulai 36\nTaman Pulai Utama\n81300 Skudai\nJohor\n0137525609'}
+            style={{ ...input, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
+          />
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button type="button" onClick={autofill} disabled={!pasteText.trim()}
+              style={{ padding: '0.6rem 1.1rem', borderRadius: '8px', border: 'none', background: '#3B82F6', color: '#fff', fontWeight: 800, fontSize: '0.85rem', cursor: pasteText.trim() ? 'pointer' : 'not-allowed', opacity: pasteText.trim() ? 1 : 0.5 }}>
+              ✨ Autofill
+            </button>
+            {pasteText && (
+              <button type="button" onClick={() => { setPasteText(''); setFilled(null); }}
+                style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: cardBorder, background: 'transparent', color: textSecondary, fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>
+                Kosongkan
+              </button>
+            )}
+          </div>
+          {filled && (
+            <div style={{ padding: '0.7rem 0.9rem', borderRadius: '8px', fontSize: '0.8rem', lineHeight: 1.55,
+              background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.4)', color: textPrimary }}>
+              ⚠️ <strong>{filled.keys.length} medan diisi automatik</strong> (bersorot kuning) — <strong>sila semak semula</strong> ejaan &amp; alamat sebelum simpan.
+              {filled.missing.length > 0 && (
+                <div style={{ marginTop: '0.25rem', color: '#B45309' }}>Tak dapat dikesan — isi sendiri: <strong>{filled.missing.join(', ')}</strong></div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* 1. Pelanggan */}
         <div style={card}>
           <h2 style={h2}>1. Maklumat Pelanggan</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.9rem' }}>
-            <div><label style={label}>Nama penuh *</label><input style={input} value={form.full_name} onChange={set('full_name')} required /></div>
-            <div><label style={label}>No. telefon / WhatsApp *</label><input style={input} type="tel" inputMode="tel" placeholder="0123456789" value={form.phone} onChange={set('phone')} required /></div>
+            <div><label style={label}>Nama penuh *</label><input style={inp('full_name')} value={form.full_name} onChange={set('full_name')} required /></div>
+            <div><label style={label}>No. telefon / WhatsApp *</label><input style={inp('phone')} type="tel" inputMode="tel" placeholder="0123456789" value={form.phone} onChange={set('phone')} required /></div>
           </div>
-          <div><label style={label}>Alamat (No. rumah, jalan, taman) *</label><input style={input} value={form.street} onChange={set('street')} required /></div>
+          <div><label style={label}>Alamat (No. rumah, jalan, taman) *</label><input style={inp('street')} value={form.street} onChange={set('street')} required /></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.9rem' }}>
-            <div><label style={label}>Poskod *</label><input style={input} inputMode="numeric" value={form.poskod} onChange={set('poskod')} required /></div>
-            <div><label style={label}>Daerah / Bandar *</label><input style={input} value={form.daerah} onChange={set('daerah')} required /></div>
+            <div><label style={label}>Poskod *</label><input style={inp('poskod')} inputMode="numeric" value={form.poskod} onChange={set('poskod')} required /></div>
+            <div><label style={label}>Daerah / Bandar *</label><input style={inp('daerah')} value={form.daerah} onChange={set('daerah')} required /></div>
             <div>
               <label style={label}>Negeri *</label>
-              <select style={input} value={form.negeri} onChange={set('negeri')} required>
+              <select style={inp('negeri')} value={form.negeri} onChange={set('negeri')} required>
                 <option value="">— Pilih —</option>
                 {MY_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -152,10 +209,10 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
               </button>
             ))}
           </div>
-          {def.addons.length > 0 && (
+          {def.addons.filter(k => !(priced.pkg.noAddons || []).includes(k)).length > 0 && (
             <div style={{ display: 'grid', gap: '0.4rem' }}>
               <span style={{ ...label, marginBottom: 0 }}>Add-on</span>
-              {def.addons.map(k => (
+              {def.addons.filter(k => !(priced.pkg.noAddons || []).includes(k)).map(k => (
                 <label key={k} style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.84rem', color: textSecondary, cursor: 'pointer' }}>
                   <input type="checkbox" checked={!!addons[k]} onChange={e => setAddons(a => ({ ...a, [k]: e.target.checked }))} style={{ width: '16px', height: '16px', accentColor: accent }} />
                   {addonInfo(k).label} <span style={{ color: accent, fontWeight: 700 }}>+RM{addonInfo(k).price}</span>
