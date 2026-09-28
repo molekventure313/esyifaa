@@ -3180,5 +3180,10 @@ body.light-mode table tr:hover {
   background: #F8FAFC !important;
 }
 
-
-
+/* Badge bump offer (add-on) di borang SP — teks panjang boleh balut di skrin kecil,
+   supaya tak terkeluar dari panel & page tak boleh diskrol ke kanan */
+.bump-badges > div {
+  white-space: normal !important;
+  max-width: 100%;
+  line-height: 1.35;
+}

@@ -892,9 +892,10 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               }}
             >
               {/* Badges row */}
-              <div style={{
-                position: 'absolute', top: '-11px', left: '1rem',
-                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
+              <div className="bump-badges" style={{
+                // Dalam aliran layout (bukan absolute) — badge boleh turun baris di skrin kecil
+                position: 'relative', margin: '-2.45rem 0 0.85rem 0', zIndex: 1,
+                display: 'flex', gap: '0.35rem', flexWrap: 'wrap',
               }}>
                 <div style={{
                   background: '#D97706', color: '#FFF',
@@ -995,9 +996,10 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               }}
             >
               {/* Badges row */}
-              <div style={{
-                position: 'absolute', top: '-11px', left: '1rem',
-                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
+              <div className="bump-badges" style={{
+                // Dalam aliran layout (bukan absolute) — badge boleh turun baris di skrin kecil
+                position: 'relative', margin: '-2.45rem 0 0.85rem 0', zIndex: 1,
+                display: 'flex', gap: '0.35rem', flexWrap: 'wrap',
               }}>
                 <div style={{
                   background: '#0D9488', color: '#FFF',

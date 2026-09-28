@@ -825,9 +825,10 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <div style={{
-                position: 'absolute', top: '-11px', left: '1rem',
-                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
+              <div className="bump-badges" style={{
+                // Dalam aliran layout (bukan absolute) — badge boleh turun baris di skrin kecil
+                position: 'relative', margin: '-2.45rem 0 0.85rem 0', zIndex: 1,
+                display: 'flex', gap: '0.35rem', flexWrap: 'wrap',
               }}>
                 <div style={{
                   background: '#047857', color: '#FFF',
@@ -925,9 +926,10 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <div style={{
-                position: 'absolute', top: '-11px', left: '1rem',
-                display: 'flex', gap: '0.4rem', flexWrap: 'nowrap',
+              <div className="bump-badges" style={{
+                // Dalam aliran layout (bukan absolute) — badge boleh turun baris di skrin kecil
+                position: 'relative', margin: '-2.45rem 0 0.85rem 0', zIndex: 1,
+                display: 'flex', gap: '0.35rem', flexWrap: 'wrap',
               }}>
                 <div style={{
                   background: '#C2410C', color: '#FFF',
