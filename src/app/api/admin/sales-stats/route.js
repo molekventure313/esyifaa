@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { productUnits, calcPostage } from '@/lib/marketer-calc';
 
 // ─── Timezone helpers (MYT = UTC+8) ────────────────────────────────────────
 const MYT_OFFSET_MS = 8 * 3600 * 1000;
@@ -83,7 +84,7 @@ function spLabel(source) {
 async function queryOrders(adminClient, { from, to }, marketer_id) {
   let q = adminClient
     .from('submissions')
-    .select('id, full_name, phone, source, payment_type, payment_status, amount_paid, notes, problem, qty, created_at')
+    .select('id, full_name, phone, source, payment_type, payment_status, amount_paid, notes, problem, qty, order_channel, created_at')
     .in('payment_type', ['fpx_payment', 'cod'])
     .eq('payment_status', 'completed')
     .order('created_at', { ascending: false });
@@ -161,7 +162,7 @@ export async function GET(req) {
 
     let recentQ = adminClient
       .from('submissions')
-      .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at, marketer_id')
+      .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at, marketer_id, order_channel')
       .in('payment_type', ['fpx_payment', 'cod'])
       .eq('payment_status', 'completed')
       .order('created_at', { ascending: false })
@@ -188,36 +189,21 @@ export async function GET(req) {
     const kasturi_cost = stockMap['KKE-01']   || 0;
     const garam_cost   = stockMap['GPM-500G'] || 0;
 
-    // Sabun — unit dari qty field
-    const units_sold = currentOrders
-      .filter(o => (o.source || '').includes('sabun'))
-      .reduce((s, o) => s + (parseInt(o.qty) || 0), 0);
-    const sabun_cogs = parseFloat((units_sold * sabun_cost).toFixed(2));
-
-    // Kasturi add-on — embedded dalam sabun orders (notes=COD, problem=FPX)
-    const kasturi_count = currentOrders.filter(o =>
-      /\[ADD-ON: Kasturi Kijang/i.test(o.notes || '') ||
-      /Add-On:\s*Kasturi Kijang/i.test(o.problem || '')
-    ).length;
-    const kasturi_cogs = parseFloat((kasturi_count * kasturi_cost).toFixed(2));
-
-    // Garam Pengasihan — standalone orders + add-on embedded dalam sabun orders
-    const garam_units = currentOrders
-      .filter(o => o.source === 'garam-pengasihan')
-      .reduce((s, o) => s + (parseInt(o.qty) || 1), 0);
-    const garam_addon_count = currentOrders.filter(o =>
-      /\[ADD-ON: Garam Pengasihan/i.test(o.notes || '') ||
-      /Add-On:\s*Garam Pengasihan/i.test(o.problem || '')
-    ).length;
-    const garam_cogs = parseFloat(((garam_units + garam_addon_count) * garam_cost).toFixed(2));
-
-    const total_cogs = parseFloat((sabun_cogs + kasturi_cogs + garam_cogs).toFixed(2));
-
-    // Postage — physical orders sahaja (sabun, garam-pengasihan, kasturi-kijang)
-    const isPhysical = o => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p => (o.source || '').includes(p));
-    const fpx_physical = currentOrders.filter(o => isPhysical(o) && o.payment_type === 'fpx_payment').length;
-    const cod_physical = currentOrders.filter(o => isPhysical(o) && o.payment_type === 'cod').length;
-    const postage_total = parseFloat((fpx_physical * 4 + cod_physical * 6).toFixed(2));
+    // COGS — fungsi bersama (lib/marketer-calc): kuantiti ikut teks pakej (Unit/Pek/Botol),
+    // Kasturi produk utama, add-on & hadiah percuma. Postage: kos pos sebenar (FPX RM4 / COD RM6).
+    const units        = productUnits(currentOrders);
+    const units_sold   = units.sabun;
+    const sabun_cogs   = parseFloat((units.sabun * sabun_cost).toFixed(2));
+    const kasturi_count = units.kasturi;
+    const kasturi_cogs = parseFloat((units.kasturi * kasturi_cost).toFixed(2));
+    const garam_cogs   = parseFloat((units.garam * garam_cost).toFixed(2));
+    const total_cogs   = parseFloat((sabun_cogs + kasturi_cogs + garam_cogs).toFixed(2));
+    const postage_total = parseFloat(calcPostage(currentOrders).toFixed(2));
+    // Medan lama (bentuk response dikekalkan)
+    const garam_units       = units.garam;
+    const garam_addon_count = 0;   // dah termasuk dalam garam_units
+    const fpx_physical = currentOrders.filter(o => o.payment_type === 'fpx_payment' && calcPostage([o]) > 0).length;
+    const cod_physical = currentOrders.filter(o => o.payment_type === 'cod' && calcPostage([o]) > 0).length;
 
     const gross_pnl    = parseFloat((totals.revenue - total_cogs - postage_total).toFixed(2));
     const gross_margin = totals.revenue > 0
@@ -234,6 +220,12 @@ export async function GET(req) {
       ? ((totals.orders - prevAgg.orders) / prevAgg.orders * 100)
       : (totals.orders > 0 ? 100 : 0);
 
+    // Sales ikut saluran — Web (borang SP) vs WhatsApp (Order WhatsApp di dashboard)
+    const channels = ['web', 'whatsapp'].map(ch => {
+      const arr = currentOrders.filter(o => (o.order_channel === 'whatsapp' ? 'whatsapp' : 'web') === ch);
+      return { channel: ch, orders: arr.length, revenue: parseFloat(arr.reduce((t, o) => t + parseAmount(o), 0).toFixed(2)) };
+    });
+
     // Format recent orders
     const recent_orders = (allRecentRes.data || []).map(s => ({
       id: s.id,
@@ -245,6 +237,7 @@ export async function GET(req) {
       amount: parseAmount(s),
       created_at: s.created_at,
       marketer_id: s.marketer_id,
+      order_channel: s.order_channel || 'web',
     }));
 
     return NextResponse.json({
@@ -259,6 +252,7 @@ export async function GET(req) {
           prev_orders: prevAgg.orders,
         },
         by_salespage: totals.by_salespage,
+        channels,
         recent_orders,
         pnl: {
           // Sabun

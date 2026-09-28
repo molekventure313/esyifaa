@@ -49,7 +49,7 @@ export async function GET(req) {
     // Build queries — select all fields needed for COGS + parseAmount
     let subsQ = adminClient
       .from('submissions')
-      .select('id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, created_at')
+      .select('id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, order_channel, created_at')
       .eq('marketer_id', user.id)
       .in('payment_type', ['fpx_payment', 'cod'])
       .order('created_at', { ascending: false });
@@ -107,9 +107,16 @@ export async function GET(req) {
       .sort((a, b) => b.revenue - a.revenue)
       .map(sp => ({ ...sp, revenue: parseFloat(sp.revenue.toFixed(2)) }));
 
+    // Sales ikut saluran — Web (borang SP) vs WhatsApp (Order WhatsApp)
+    const channels = ['web', 'whatsapp'].map(ch => {
+      const arr = completedSubs.filter(s => (s.order_channel === 'whatsapp' ? 'whatsapp' : 'web') === ch);
+      return { channel: ch, orders: arr.length, revenue: parseFloat(arr.reduce((t, s) => t + parseAmount(s), 0).toFixed(2)) };
+    });
+
     return NextResponse.json({
       success: true,
       data: {
+        channels,
         profile,
         totalOrders,
         totalRevenue,

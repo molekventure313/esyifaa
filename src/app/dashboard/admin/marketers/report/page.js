@@ -144,7 +144,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff, fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ background: lm ? '#F8FAFC' : '#090A0F', borderBottom: lm ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.06)' }}>
-                {['Marketer','Orders','Sales (RM)','COGS (RM)','Postage (RM)','Gross Profit','Ads (RM)','Net Profit','Komisen (RM)','Est. Gaji'].map(h => (
+                {['Marketer','Orders','Sales (RM)','💬 WhatsApp (RM)','COGS (RM)','Postage (RM)','Gross Profit','Ads (RM)','Net Profit','Komisen (RM)','Est. Gaji'].map(h => (
                   <th key={h} style={{ padding: '0.6rem 1rem', textAlign: h === 'Marketer' ? 'left' : 'right', fontWeight: 700, fontSize: '0.7rem', color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -164,6 +164,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
                     </td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textPrimary }}>{m.orders}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 600 }}>{fmtNum(m.revenue)}</td>
+                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: m.wa_revenue ? '#25D366' : textMuted, whiteSpace: 'nowrap' }}>{m.wa_revenue ? <>{fmtNum(m.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.wa_orders})</span></> : '—'}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(m.product_cogs ?? m.cogs)}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(m.postage ?? 0)}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit ?? (m.revenue - (m.product_cogs ?? m.cogs) - (m.postage ?? 0))} lm={lm} /></td>
@@ -179,6 +180,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
                 <td style={{ padding: '0.75rem 1rem', color: lm ? '#1E40AF' : '#A5B4FC', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>JUMLAH</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: lm ? '#1E40AF' : '#A5B4FC' }}>{month.totals.orders}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399' }}>{fmtNum(month.totals.revenue)}</td>
+                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#25D366', whiteSpace: 'nowrap' }}>{fmtNum(month.totals.wa_revenue || 0)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({month.totals.wa_orders || 0})</span></td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(month.totals.product_cogs ?? month.totals.cogs)}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(month.totals.postage ?? 0)}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}><ProfitCell val={month.totals.gross_profit} lm={lm} /></td>

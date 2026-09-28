@@ -152,6 +152,28 @@ export default function MarketerDashboardPage() {
             </div>
           </div>
 
+          {/* Sales ikut saluran — Web (borang SP) vs WhatsApp (Order WhatsApp) */}
+          {(totals.channels || []).length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              {totals.channels.map(ch => {
+                const isWa = ch.channel === 'whatsapp';
+                const pct = totals.totalRevenue > 0 ? Math.round((ch.revenue / totals.totalRevenue) * 100) : 0;
+                return (
+                  <div key={ch.channel} style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1rem 1.25rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: isWa ? '#16A34A' : '#60A5FA', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
+                      {isWa ? '💬 Sales WhatsApp' : '🌐 Sales Web (SP)'}
+                    </div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.03em', lineHeight: 1 }}>{formatRM(ch.revenue)}</div>
+                    <div style={{ fontSize: '0.75rem', color: textMuted, marginTop: '0.4rem' }}>{ch.orders} order · {pct}% dari jumlah sales</div>
+                    <div style={{ height: '5px', borderRadius: '9999px', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)', marginTop: '0.55rem', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: isWa ? '#22C55E' : '#60A5FA' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
             {/* Sales By Source */}
             <div style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1.5rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
