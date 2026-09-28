@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 export default function PengisianHeroSection() {
   const scrollToForm = (e) => {
     e.preventDefault();
@@ -62,18 +64,21 @@ export default function PengisianHeroSection() {
 
         {/* 4. MEDIA VISUAL (Mockup Item Pengisian) */}
         <div style={{
-          width: '135px', height: '135px', borderRadius: '50%',
-          background: 'radial-gradient(circle at 35% 35%, #FFFFFF, #ECFDF5)',
-          border: '3px solid #10B981',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 2rem auto',
-          boxShadow: '0 10px 30px rgba(16, 185, 129, 0.18)',
+          maxWidth: '560px',
+          margin: '0 auto 2.5rem auto',
+          borderRadius: '24px',
+          overflow: 'hidden',
+          boxShadow: '0 15px 40px rgba(4, 46, 35, 0.14)',
+          border: '2px solid #A7F3D0',
         }}>
-          <span style={{ fontSize: '3rem' }}>💎</span>
-          <span style={{ fontSize: '0.65rem', color: '#065F46', fontWeight: 900, letterSpacing: '0.05em', marginTop: '0.2rem' }}>
-            ITEM PENGISIAN
-          </span>
+          <Image
+            src="/images/pengisian/hero-section.jpg"
+            alt="Pengisian E-Syifa' — Benteng Diri 24/7 Di Tangan Anda"
+            width={560}
+            height={560}
+            priority
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
         </div>
 
         {/* 5. BUTTON CTA */}

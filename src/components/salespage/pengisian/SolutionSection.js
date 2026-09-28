@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 const BENEFITS = [
   { icon: '♾️', title: 'Rawatan Mandiri Seumur Hidup Tanpa Had', desc: 'Tiada kuota atau had penggunaan. Guna setiap hari, bila-bila masa — kekuatan bacaan tidak pernah luput.' },
   { icon: '⚡', title: 'Tindak Balas Pantas Bila Diserang Malam', desc: 'Kena tindih atau sesak dada jam 3 pagi? Tak perlu tunggu siang, tak perlu cari perawat. Terus guna item di tangan anda.' },
@@ -52,6 +54,24 @@ export default function PengisianSolutionSection() {
           Tidak perlu tunggu temujanji, tidak perlu menempuh kesesakan —{' '}
           <strong style={{ color: '#047857' }}>setiap kali diserang, anda ada kuasa merawat diri sendiri serta-merta.</strong>
         </p>
+
+        {/* ── Visual Infographic: Bagaimana Pengisian Berfungsi ── */}
+        <div style={{
+          maxWidth: '680px',
+          margin: '0 auto 3rem auto',
+          borderRadius: '24px',
+          overflow: 'hidden',
+          boxShadow: '0 15px 40px rgba(4, 46, 35, 0.12)',
+          border: '2px solid #BBF7D0',
+        }}>
+          <Image
+            src="/images/pengisian/solution-section.jpg"
+            alt="Bagaimana Pengisian Berfungsi Lindungi Diri & Keluarga 24 Jam"
+            width={680}
+            height={680}
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
+        </div>
 
         {/* ── Apa Itu Pengisian E-Syifa'? ── */}
         <div style={{
