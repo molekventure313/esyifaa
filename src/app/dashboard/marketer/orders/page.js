@@ -32,6 +32,7 @@ export default function MarketerOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('all');
   const [status, setStatus] = useState('all');
+  const [channel, setChannel] = useState('all');   // all | web | whatsapp
   const [searchTerm, setSearchTerm] = useState('');
   const [lastUpdated, setLastUpdated] = useState('');
   const [isLightMode, setIsLightMode] = useState(false);
@@ -128,6 +129,7 @@ export default function MarketerOrdersPage() {
   };
 
   const filteredOrders = orders.filter(o => {
+    if (channel !== 'all' && (o.order_channel || 'web') !== channel) return false;
     if (!searchTerm) return true;
     const q = searchTerm.toLowerCase();
     return (o.full_name || '').toLowerCase().includes(q) || (o.phone || '').toLowerCase().includes(q);
@@ -228,6 +230,21 @@ export default function MarketerOrdersPage() {
             }}>{t.label}</button>
           ))}
         </div>
+        <div style={{ width: '1px', height: '28px', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.1)' }} />
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {[
+            { value: 'all', label: 'Semua Saluran' },
+            { value: 'web', label: '🌐 Web' },
+            { value: 'whatsapp', label: '💬 WhatsApp' },
+          ].map(t => (
+            <button key={t.value} onClick={() => setChannel(t.value)} style={{
+              padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
+              fontWeight: 600, cursor: 'pointer', border: 'none',
+              background: channel === t.value ? '#16A34A' : subCardBg,
+              color: channel === t.value ? '#fff' : textSecondary,
+            }}>{t.label}</button>
+          ))}
+        </div>
         <input
           type="text" placeholder="Cari nama / phone..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
           style={{
@@ -285,6 +302,12 @@ export default function MarketerOrdersPage() {
                   <td style={{ ...td, minWidth: '150px' }}>
                     <div style={{ marginBottom: '0.3rem' }}>
                       {TYPE_LABELS[order.payment_type] && <Badge cfg={TYPE_LABELS[order.payment_type]} />}
+                      {order.order_channel === 'whatsapp' && (
+                        <span title={order.order_origin === 'fb_ads' ? 'Order WhatsApp — pelanggan dari FB Ads' : order.order_origin === 'repeat' ? 'Order WhatsApp — pelanggan repeat' : 'Order WhatsApp'} style={{
+                          fontSize: '0.65rem', padding: '0.15rem 0.45rem', borderRadius: '8px', marginLeft: '0.35rem', whiteSpace: 'nowrap',
+                          background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.35)', color: '#16A34A', fontWeight: 700,
+                        }}>💬 WhatsApp{order.order_origin === 'fb_ads' ? ' · FB Ads' : order.order_origin === 'repeat' ? ' · Repeat' : ''}</span>
+                      )}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: textSecondary, fontWeight: 600 }}>{order.produk_label || '—'}</div>
                   </td>

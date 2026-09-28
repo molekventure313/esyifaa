@@ -73,6 +73,8 @@ export function formatOrder(s) {
     produk_label: produkLabel,
     ninjavan_exported_at: s.ninjavan_exported_at || null,
     returned_at: s.returned_at || null,
+    order_channel: s.order_channel || 'web',
+    order_origin: s.order_origin || null,
     qty: orderQty(s),
     created_at: s.created_at,
     // Case info

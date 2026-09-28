@@ -396,6 +396,7 @@ export default function MarketerReportPage() {
                   <ColHeader col="name" label="Marketer" align="left" />
                   <ColHeader col="orders" label="Orders" />
                   <ColHeader col="revenue" label="Sales (RM)" />
+                  <ColHeader col="wa_revenue" label="💬 WhatsApp (RM)" />
                   <ColHeader col="product_cogs" label="COGS (RM)" />
                   <ColHeader col="postage" label="Postage (RM)" />
                   <ColHeader col="gross_profit" label="Gross Profit" />
@@ -422,6 +423,7 @@ export default function MarketerReportPage() {
                       </td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textPrimary }}>{m.orders}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 600 }}>{fmtNum(m.revenue)}</td>
+                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: m.wa_revenue ? '#25D366' : textMuted, whiteSpace: 'nowrap' }}>{m.wa_revenue ? <>{fmtNum(m.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.wa_orders})</span></> : '—'}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(m.product_cogs ?? m.cogs)}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(m.postage ?? 0)}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit} lm={lm} /></td>
@@ -443,6 +445,7 @@ export default function MarketerReportPage() {
                     <td style={{ padding: '0.9rem 1rem', color: lm ? '#1E40AF' : '#A5B4FC', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>⚡ JUMLAH</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: lm ? '#1E40AF' : '#A5B4FC' }}>{t.orders}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399' }}>{fmtNum(t.revenue)}</td>
+                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: '#25D366', whiteSpace: 'nowrap' }}>{fmtNum(t.wa_revenue || 0)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({t.wa_orders || 0})</span></td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(t.product_cogs ?? t.cogs)}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(t.postage ?? 0)}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right' }}><ProfitCell val={t.gross_profit} lm={lm} /></td>

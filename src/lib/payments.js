@@ -18,7 +18,7 @@ export function productLabelOf(submission) {
 }
 
 // Tolak stok untuk order produk fizikal (produk utama + add-on + hadiah percuma)
-async function deductOrderStock(supabase, submission, label) {
+export async function deductOrderStock(supabase, submission, label) {
   if (!productOf(submission.source)) return;   // produk digital — tiada stok
   const ref = submission.id;
   await deductStock({ adminClient: supabase, source: submission.source, qty: orderQty(submission), referenceId: ref, notes: `${label} — RM${parseAmount(submission)}` });

@@ -51,6 +51,7 @@ export default function PengurusanOrderPage() {
   // Export
   const [exporting,       setExporting]       = useState(false);
   const [notExportedOnly, setNotExportedOnly] = useState(false);
+  const [channel,         setChannel]         = useState('all');   // all | web | whatsapp
   const [lastExport,      setLastExport]      = useState(null);  // { at, count, latest_order_at }
   const [notExportedCount, setNotExportedCount] = useState(0);   // order fizikal selesai yang belum export
 
@@ -123,9 +124,10 @@ export default function PengurusanOrderPage() {
 
   // ─── Display filter (client-side) ─────────────────────────────────────────
   // notExportedOnly toggle menapis display table, bukan sekadar export action
-  const displayOrders = notExportedOnly
-    ? orders.filter(o => !o.ninjavan_exported_at)
-    : orders;
+  const displayOrders = orders.filter(o =>
+    (!notExportedOnly || !o.ninjavan_exported_at) &&
+    (channel === 'all' || (o.order_channel || 'web') === channel)
+  );
 
   // ─── Selection ─────────────────────────────────────────────────────────────
   const toggleSelect    = (id) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -421,6 +423,22 @@ export default function PengurusanOrderPage() {
         </div>
 
         <div style={{ width: '1px', height: '28px', background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.1)' }} />
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          {[
+            { value: 'all', label: 'Semua Saluran' },
+            { value: 'web', label: '🌐 Web' },
+            { value: 'whatsapp', label: '💬 WhatsApp' },
+          ].map(t => (
+            <button key={t.value} onClick={() => setChannel(t.value)} style={{
+              padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
+              fontWeight: 600, cursor: 'pointer', border: 'none',
+              background: channel === t.value ? '#16A34A' : subCardBg,
+              color: channel === t.value ? '#fff' : textSecondary,
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        <div style={{ width: '1px', height: '28px', background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.1)' }} />
 
         {/* Status Filter */}
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -606,6 +624,12 @@ export default function PengurusanOrderPage() {
                     <td style={{ padding: '0.85rem 0.5rem', minWidth: '120px' }}>
                       <div style={{ marginBottom: '0.3rem' }}>
                         <TypeBadge type={order.payment_type} />
+                        {order.order_channel === 'whatsapp' && (
+                        <span title={order.order_origin === 'fb_ads' ? 'Order WhatsApp — pelanggan dari FB Ads' : order.order_origin === 'repeat' ? 'Order WhatsApp — pelanggan repeat' : 'Order WhatsApp'} style={{
+                          fontSize: '0.65rem', padding: '0.15rem 0.45rem', borderRadius: '8px', marginLeft: '0.35rem', whiteSpace: 'nowrap',
+                          background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.35)', color: '#16A34A', fontWeight: 700,
+                        }}>💬 WhatsApp{order.order_origin === 'fb_ads' ? ' · FB Ads' : order.order_origin === 'repeat' ? ' · Repeat' : ''}</span>
+                      )}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: textSecondary, fontWeight: 600 }}>
                         {order.produk_label || '—'}

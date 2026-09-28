@@ -25,7 +25,7 @@ export async function GET(req) {
     const [{ data: submissions }, { data: adsSpend }, costs] = await Promise.all([
       adminClient
         .from('submissions')
-        .select('id, amount_paid, notes, problem, source, qty, payment_type, created_at')
+        .select('id, amount_paid, notes, problem, source, qty, payment_type, order_channel, created_at')
         .eq('marketer_id', user.id)
         .eq('payment_status', 'completed')
         .in('payment_type', ['fpx_payment', 'cod'])
@@ -54,9 +54,17 @@ export async function GET(req) {
     // Jadual harian 1hb → hujung bulan, setiap hari ada pecahan ikut produk
     const { days, productSummary } = buildMonthlyBreakdown({ subs, ads, range, costs, commissionPct: commission_pct });
 
+    // Sales ikut saluran — order web (borang SP) vs order WhatsApp (dimasukkan di dashboard)
+    const channelOf = s => (s.order_channel === 'whatsapp' ? 'whatsapp' : 'web');
+    const channelSummary = ['web', 'whatsapp'].map(ch => {
+      const arr = subs.filter(s => channelOf(s) === ch);
+      return { channel: ch, orders: arr.length, sales: parseFloat(arr.reduce((t, s) => t + parseAmount(s), 0).toFixed(2)) };
+    });
+
     return NextResponse.json({
       success: true,
       data: {
+        channelSummary,
         basic_salary,
         commission_pct,
         totalSales,

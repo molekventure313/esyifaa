@@ -32,7 +32,7 @@ export async function GET(req) {
       .select(`
         id, full_name, phone, address, problem, source,
         payment_type, payment_status, chip_bill_id, amount_paid,
-        ninjavan_exported_at, returned_at, qty, marketer_id,
+        ninjavan_exported_at, returned_at, qty, marketer_id, order_channel, order_origin,
         created_at, notes, customer_id,
         cases:cases!cases_submission_id_fkey (
           id, status, assigned_to, created_at,

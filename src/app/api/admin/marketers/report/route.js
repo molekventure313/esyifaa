@@ -101,6 +101,7 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     const subs         = subMap[m.id] || [];
     const orders       = subs.length;
     const revenue      = subs.reduce((s, sub) => s + parseAmount(sub), 0);
+    const waSubs       = subs.filter(sub => sub.order_channel === 'whatsapp');
     const product_cogs = calcProductCOGS(subs);
     const postage      = calcPostage(subs);
     const cogs         = parseFloat((product_cogs + postage).toFixed(2));
@@ -114,6 +115,7 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     rows.push({
       id: m.id, name: m.full_name || 'Marketer', code: m.marketer_code || null, is_active: m.is_active,
       orders, revenue: parseFloat(revenue.toFixed(2)),
+      wa_orders: waSubs.length, wa_revenue: parseFloat(waSubs.reduce((s, sub) => s + parseAmount(sub), 0).toFixed(2)),
       product_cogs, postage, cogs, gross_profit, ads, profit,
       commission_pct: commPct, komisen, basic_salary: basicSalary,
       est_gaji: parseFloat((basicSalary + komisen).toFixed(2)),
@@ -134,6 +136,8 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
   rows.push({
     id: '__hq__', name: 'HQ', code: null, is_active: true,
     orders: hqOrders, revenue: parseFloat(hqRevenue.toFixed(2)),
+    wa_orders: hqSubs.filter(sub => sub.order_channel === 'whatsapp').length,
+    wa_revenue: parseFloat(hqSubs.filter(sub => sub.order_channel === 'whatsapp').reduce((s, sub) => s + parseAmount(sub), 0).toFixed(2)),
     product_cogs: hqProductCogs, postage: hqPostage, cogs: hqCogs,
     gross_profit: hqGrossProfit, ads: hqAds, profit: hqProfit,
     commission_pct: null, komisen: null, basic_salary: null, est_gaji: null,
@@ -150,6 +154,8 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
   const totals = {
     orders:       rows.reduce((s, r) => s + r.orders, 0),
     revenue:      parseFloat(rows.reduce((s, r) => s + r.revenue, 0).toFixed(2)),
+    wa_orders:    rows.reduce((s, r) => s + (r.wa_orders || 0), 0),
+    wa_revenue:   parseFloat(rows.reduce((s, r) => s + (r.wa_revenue || 0), 0).toFixed(2)),
     product_cogs: parseFloat(rows.reduce((s, r) => s + r.product_cogs, 0).toFixed(2)),
     postage:      parseFloat(rows.reduce((s, r) => s + r.postage, 0).toFixed(2)),
     cogs:         parseFloat(rows.reduce((s, r) => s + r.cogs, 0).toFixed(2)),
@@ -190,7 +196,7 @@ function computeProductStats(marketers, submissions, adsSpend) {
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 async function fetchSubs(admin, from, to) {
   let q = admin.from('submissions')
-    .select('marketer_id, amount_paid, notes, problem, source, qty, payment_type')  // payment_type for postage calc
+    .select('marketer_id, amount_paid, notes, problem, source, qty, payment_type, order_channel')  // payment_type for postage calc
     .eq('payment_status', 'completed')
     .in('payment_type', ['cod', 'fpx_payment']);
   if (from) q = q.gte('created_at', from);

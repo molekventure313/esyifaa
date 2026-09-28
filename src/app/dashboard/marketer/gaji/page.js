@@ -125,6 +125,25 @@ export default function MarketerGajiPage() {
             </div>
           </div>
 
+          {/* Sales ikut saluran — Web (borang SP) vs WhatsApp (Order WhatsApp di dashboard) */}
+          {(totals.channelSummary || []).length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              {totals.channelSummary.map(ch => {
+                const isWa = ch.channel === 'whatsapp';
+                const pct = totals.totalSales > 0 ? Math.round((ch.sales / totals.totalSales) * 100) : 0;
+                return (
+                  <div key={ch.channel} style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1rem 1.25rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: isWa ? '#25D366' : '#60A5FA', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
+                      {isWa ? '💬 Sales WhatsApp' : '🌐 Sales Web (SP)'}
+                    </div>
+                    <div style={{ fontSize: '1.3rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em', lineHeight: 1 }}>{formatRM(ch.sales)}</div>
+                    <div style={{ fontSize: '0.75rem', color: textMuted, marginTop: '0.35rem' }}>{ch.orders} order · {pct}% dari jumlah sales</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
             {/* Gaji Summary Box */}
             <div style={{ background: lm ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)' : 'linear-gradient(135deg, rgba(6,78,59,0.4), rgba(5,150,105,0.15))', border: '3px solid #10B981', borderRadius: '10px', padding: '1.5rem', boxShadow: lm ? '0 2px 8px rgba(16,185,129,0.1)' : 'none' }}>

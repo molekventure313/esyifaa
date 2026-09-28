@@ -47,7 +47,7 @@ export async function GET(req) {
     // Order FPX/COD marketer sendiri (sama skop dgn Pengurusan Order admin)
     let query = adminClient
       .from('submissions')
-      .select('id, full_name, phone, address, problem, notes, source, qty, payment_type, payment_status, chip_bill_id, amount_paid, ninjavan_exported_at, returned_at, marketer_id, created_at')
+      .select('id, full_name, phone, address, problem, notes, source, qty, payment_type, payment_status, chip_bill_id, amount_paid, ninjavan_exported_at, returned_at, marketer_id, order_channel, order_origin, created_at')
       .eq('marketer_id', user.id)
       .in('payment_type', ['fpx_payment', 'cod'])
       .order('created_at', { ascending: false });
