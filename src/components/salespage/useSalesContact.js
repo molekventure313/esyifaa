@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-// No. WhatsApp HQ — dipakai section "Nak order melalui WhatsApp?" di SP HQ
-export const HQ_WHATSAPP = '601118939984';
+// No. WhatsApp HQ — section "Nak order melalui WhatsApp?" & butang WA di SP HQ
+export const HQ_WHATSAPP = '60172827714';
+// SP Pengisian (Pengisian E-Syifa, /rawat-sendiri) kekal guna nombor asal
+export const HQ_WHATSAPP_PENGISIAN = '601118939984';
 
 export const buildWaLink = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
@@ -12,18 +14,18 @@ const pending = {};
 
 /**
  * Nombor WhatsApp untuk SP semasa.
- * - SP HQ (tiada ?m= dan bukan /m/) → HQ_WHATSAPP
+ * - SP HQ (tiada ?m= dan bukan /m/) → hqNumber (default HQ_WHATSAPP; Pengisian → HQ_WHATSAPP_PENGISIAN)
  * - SP marketer → no. WhatsApp marketer; null kalau belum isi → JANGAN papar section/butang WA
  * Sebelum `ready`, jangan render apa-apa (elak nombor HQ berkelip di SP marketer).
  */
-export default function useSalesContact() {
+export default function useSalesContact({ hqNumber = HQ_WHATSAPP } = {}) {
   const [state, setState] = useState({ ready: false, number: null, isMarketer: false });
 
   useEffect(() => {
     const code = (new URLSearchParams(window.location.search).get('m') || '').toLowerCase().trim();
     const isMarketer = !!code || window.location.pathname.startsWith('/m/');
 
-    if (!isMarketer) { setState({ ready: true, number: HQ_WHATSAPP, isMarketer: false }); return; }
+    if (!isMarketer) { setState({ ready: true, number: hqNumber, isMarketer: false }); return; }
     if (!code)       { setState({ ready: true, number: null, isMarketer: true }); return; }
 
     pending[code] ??= fetch(`/api/public/marketer-contact?m=${encodeURIComponent(code)}`)
@@ -34,7 +36,7 @@ export default function useSalesContact() {
     let alive = true;
     pending[code].then(number => { if (alive) setState({ ready: true, number, isMarketer: true }); });
     return () => { alive = false; };
-  }, []);
+  }, [hqNumber]);
 
   return state;
 }

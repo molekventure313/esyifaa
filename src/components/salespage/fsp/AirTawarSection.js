@@ -1,7 +1,7 @@
 'use client';
 
 export default function FspAirTawarSection() {
-  const waNumber = '601118939984';
+  const waNumber = '60172827714';
   const pretext = encodeURIComponent('Saya nak scan guna air tawar');
   const waUrl = `https://wa.me/${waNumber}?text=${pretext}`;
 

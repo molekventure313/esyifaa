@@ -737,7 +737,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 Ada kesulitan membuat bayaran online banking?
               </p>
               <a
-                href={`https://wa.me/601118939984?text=Assalamualaikum%20ustaz,%20saya%20nak%20buat%20pengisian%20item%20(${encodeURIComponent(pkg.label)})`}
+                href={`https://wa.me/601118939984?text=Assalamualaikum,%20saya%20nak%20buat%20pengisian%20item%20(${encodeURIComponent(pkg.label)})`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

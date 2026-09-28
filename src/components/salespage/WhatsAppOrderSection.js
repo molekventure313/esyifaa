@@ -9,13 +9,14 @@ import useSalesContact, { buildWaLink, trackWaClick } from '@/components/salespa
  *
  * @param product     nama produk dalam mesej WA (cth: 'Sabun Garam Himalaya')
  * @param background  warna latar section (sambung dari borang order di atas)
+ * @param hqNumber    no. HQ untuk SP ini (default HQ_WHATSAPP)
  */
-export default function WhatsAppOrderSection({ product, background = '#F0FDF4' }) {
-  const { ready, number, isMarketer } = useSalesContact();
+export default function WhatsAppOrderSection({ product, background = '#F0FDF4', hqNumber }) {
+  const { ready, number } = useSalesContact(hqNumber ? { hqNumber } : undefined);
   if (!ready || !number) return null;
 
   const ff = 'var(--font-inter), -apple-system, sans-serif';
-  const message = `Assalamualaikum${isMarketer ? '' : ' ustaz'}, saya nak order ${product} melalui WhatsApp`;
+  const message = `Assalamualaikum, saya nak order ${product} melalui WhatsApp`;
 
   return (
     <section style={{

@@ -82,7 +82,7 @@ export default function PengisianClosingSection() {
 
           {/* WA Payment Button */}
           <a
-            href="https://wa.me/601118939984?text=Assalamualaikum%20ustaz,%20saya%20nak%20buat%20pengisian%20item%20ESyifaa"
+            href="https://wa.me/601118939984?text=Assalamualaikum,%20saya%20nak%20buat%20pengisian%20item%20ESyifaa"
             target="_blank"
             rel="noopener noreferrer"
             style={{

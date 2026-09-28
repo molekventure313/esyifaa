@@ -3,8 +3,8 @@
 import { useState } from 'react';
 
 // ─── WhatsApp Button ─────────────────────────────────────────────────────────
-// Nombor WA belum dikemaskini — akan diisi kemudian
-const WA_NUMBER   = '';
+// No. WhatsApp HQ
+const WA_NUMBER   = '60172827714';
 const WA_MESSAGE  = encodeURIComponent("Assalamualaikum, saya berminat untuk mendapatkan Tasbih E-Syifa'. Boleh saya tahu maklumat lanjut?");
 const WA_LINK     = WA_NUMBER ? `https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}` : '#order';
 

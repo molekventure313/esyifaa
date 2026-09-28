@@ -15,6 +15,7 @@ import PengisianComparisonSection from '@/components/salespage/pengisian/Compari
 import PengisianGuaranteeSection from '@/components/salespage/pengisian/GuaranteeSection';
 import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianCheckoutForm';
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
+import { HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
@@ -79,7 +80,7 @@ export default function PengisianEsyifaPage() {
       <PengisianCheckoutForm source="pengisian-esyifa" />
 
       {/* Kad Tempahan Melalui WhatsApp (Selepas Form, Sebelum FAQ) */}
-      <WhatsAppOrderSection product="Pengisian E-Syifa" background="#F0FDF4" />
+      <WhatsAppOrderSection product="Pengisian E-Syifa" background="#F0FDF4" hqNumber={HQ_WHATSAPP_PENGISIAN} />
 
       {/* FAQ 8 Soalan Lazim */}
       <PengisianFAQSection />
