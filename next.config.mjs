@@ -10,6 +10,9 @@ const MARKETER_SLUGS = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Cache gambar next/image di CDN 30 hari (default 60 saat → setiap permintaan 'stale' & ~0.5–0.8s).
+    // Nota: bila tukar gambar, guna NAMA FAIL BARU supaya tak terlekat versi lama dalam cache.
+    minimumCacheTTL: 2592000,
     remotePatterns: [
       {
         protocol: 'https',
