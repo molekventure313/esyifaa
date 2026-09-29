@@ -150,6 +150,15 @@ export async function DELETE(req) {
     await adminSupabase.from('ads_spend').delete().eq('marketer_id', targetUserId);
     await adminSupabase.from('activity_logs').delete().eq('user_id', targetUserId);
 
+    // FK lain ke profiles (tiada ON DELETE) — lepaskan / padam sebelum padam profil
+    const nowIso = new Date().toISOString();
+    await adminSupabase.from('cases').update({ assigned_to: null, updated_at: nowIso }).eq('assigned_to', targetUserId);
+    await adminSupabase.from('cases').update({ assigned_by: null, updated_at: nowIso }).eq('assigned_by', targetUserId);
+    await adminSupabase.from('case_status_history').update({ changed_by: null }).eq('changed_by', targetUserId);
+    await adminSupabase.from('case_notes').delete().eq('created_by', targetUserId);
+    await adminSupabase.from('follow_ups').delete().eq('practitioner_id', targetUserId);
+    await adminSupabase.from('salespage_config').update({ updated_by: null }).eq('updated_by', targetUserId);
+
     // Now safe to delete profile record
     const { error: profileDeleteErr } = await adminSupabase.from('profiles').delete().eq('id', targetUserId).eq('role', 'marketer');
     if (profileDeleteErr) {
