@@ -202,7 +202,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MarketerReportPage() {
   const [mode,    setMode]    = useState('period');   // 'period' | 'monthly'
-  const [period,  setPeriod]  = useState('month');
+  const [period,  setPeriod]  = useState('today');   // default: Hari Ini
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [sortCol, setSortCol] = useState('revenue');

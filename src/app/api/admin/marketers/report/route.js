@@ -227,7 +227,7 @@ export async function GET(req) {
     const admin = await requireAdmin();
     const { searchParams } = new URL(req.url);
     const mode   = searchParams.get('mode')   || 'period';
-    const period = searchParams.get('period') || 'month';
+    const period = searchParams.get('period') || 'today';
 
     // Fetch marketers + product costs in parallel
     const [mktRes, stockRes] = await Promise.all([
