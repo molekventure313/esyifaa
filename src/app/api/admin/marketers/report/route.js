@@ -150,12 +150,20 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     return b.revenue - a.revenue;
   });
 
+  // Sales Web = jumlah − WhatsApp (untuk column berasingan & sort)
+  for (const r of rows) {
+    r.web_orders  = r.orders - (r.wa_orders || 0);
+    r.web_revenue = parseFloat((r.revenue - (r.wa_revenue || 0)).toFixed(2));
+  }
+
   // Grand totals
   const totals = {
     orders:       rows.reduce((s, r) => s + r.orders, 0),
     revenue:      parseFloat(rows.reduce((s, r) => s + r.revenue, 0).toFixed(2)),
     wa_orders:    rows.reduce((s, r) => s + (r.wa_orders || 0), 0),
     wa_revenue:   parseFloat(rows.reduce((s, r) => s + (r.wa_revenue || 0), 0).toFixed(2)),
+    web_orders:   rows.reduce((s, r) => s + (r.web_orders || 0), 0),
+    web_revenue:  parseFloat(rows.reduce((s, r) => s + (r.web_revenue || 0), 0).toFixed(2)),
     product_cogs: parseFloat(rows.reduce((s, r) => s + r.product_cogs, 0).toFixed(2)),
     postage:      parseFloat(rows.reduce((s, r) => s + r.postage, 0).toFixed(2)),
     cogs:         parseFloat(rows.reduce((s, r) => s + r.cogs, 0).toFixed(2)),

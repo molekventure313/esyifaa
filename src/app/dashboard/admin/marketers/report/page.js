@@ -144,7 +144,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: ff, fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ background: lm ? '#F8FAFC' : '#090A0F', borderBottom: lm ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.06)' }}>
-                {['Marketer','Orders','Sales (RM)','💬 WhatsApp (RM)','COGS (RM)','Postage (RM)','Gross Profit','Ads (RM)','Net Profit','Komisen (RM)','Est. Gaji'].map(h => (
+                {['Marketer','Orders','🌐 Sales Web','💬 Sales WhatsApp','💰 Jumlah Sales','COGS (RM)','Postage (RM)','Gross Profit','Ads (RM)','Net Profit','Komisen (RM)','Est. Gaji'].map(h => (
                   <th key={h} style={{ padding: '0.6rem 1rem', textAlign: h === 'Marketer' ? 'left' : 'right', fontWeight: 700, fontSize: '0.7rem', color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -163,8 +163,9 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
                       {isHQ && <span style={{ fontSize: '0.65rem', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)', padding: '0.1rem 0.35rem', borderRadius: '4px', marginLeft: '0.4rem' }}>HQ</span>}
                     </td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textPrimary }}>{m.orders}</td>
-                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 600 }}>{fmtNum(m.revenue)}</td>
-                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: m.wa_revenue ? '#25D366' : textMuted, whiteSpace: 'nowrap' }}>{m.wa_revenue ? <>{fmtNum(m.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.wa_orders})</span></> : '—'}</td>
+                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtNum(m.web_revenue ?? (m.revenue - (m.wa_revenue || 0)))} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({m.web_orders ?? (m.orders - (m.wa_orders || 0))})</span></td>
+                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: m.wa_revenue ? '#25D366' : textMuted, fontWeight: 600, whiteSpace: 'nowrap' }}>{m.wa_revenue ? <>{fmtNum(m.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({m.wa_orders})</span></> : '—'}</td>
+                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmtNum(m.revenue)}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(m.product_cogs ?? m.cogs)}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(m.postage ?? 0)}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit ?? (m.revenue - (m.product_cogs ?? m.cogs) - (m.postage ?? 0))} lm={lm} /></td>
@@ -179,8 +180,9 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
               <tr style={{ background: lm ? '#EFF6FF' : 'rgba(99,102,241,0.08)', borderTop: lm ? '2px solid #BFDBFE' : '1px solid rgba(99,102,241,0.25)', fontWeight: 800 }}>
                 <td style={{ padding: '0.75rem 1rem', color: lm ? '#1E40AF' : '#A5B4FC', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>JUMLAH</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: lm ? '#1E40AF' : '#A5B4FC' }}>{month.totals.orders}</td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399' }}>{fmtNum(month.totals.revenue)}</td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#25D366', whiteSpace: 'nowrap' }}>{fmtNum(month.totals.wa_revenue || 0)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({month.totals.wa_orders || 0})</span></td>
+                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtNum(month.totals.web_revenue ?? (month.totals.revenue - (month.totals.wa_revenue || 0)))} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({month.totals.web_orders ?? (month.totals.orders - (month.totals.wa_orders || 0))})</span></td>
+                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: month.totals.wa_revenue ? '#25D366' : textMuted, fontWeight: 600, whiteSpace: 'nowrap' }}>{month.totals.wa_revenue ? <>{fmtNum(month.totals.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({month.totals.wa_orders})</span></> : '—'}</td>
+                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmtNum(month.totals.revenue)}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(month.totals.product_cogs ?? month.totals.cogs)}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(month.totals.postage ?? 0)}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}><ProfitCell val={month.totals.gross_profit} lm={lm} /></td>
@@ -397,8 +399,9 @@ export default function MarketerReportPage() {
                 <tr style={{ background: lm ? '#F8FAFC' : '#090A0F', borderBottom: lm ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.06)' }}>
                   <ColHeader col="name" label="Marketer" align="left" />
                   <ColHeader col="orders" label="Orders" />
-                  <ColHeader col="revenue" label="Sales (RM)" />
-                  <ColHeader col="wa_revenue" label="💬 WhatsApp (RM)" />
+                  <ColHeader col="web_revenue" label="🌐 Sales Web" />
+                  <ColHeader col="wa_revenue" label="💬 Sales WhatsApp" />
+                  <ColHeader col="revenue" label="💰 Jumlah Sales" />
                   <ColHeader col="product_cogs" label="COGS (RM)" />
                   <ColHeader col="postage" label="Postage (RM)" />
                   <ColHeader col="gross_profit" label="Gross Profit" />
@@ -424,8 +427,9 @@ export default function MarketerReportPage() {
                         {!isHQ && m.is_active === false && <span style={{ fontSize: '0.62rem', color: '#EF4444', marginLeft: '0.4rem' }}>• tidak aktif</span>}
                       </td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textPrimary }}>{m.orders}</td>
-                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 600 }}>{fmtNum(m.revenue)}</td>
-                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: m.wa_revenue ? '#25D366' : textMuted, whiteSpace: 'nowrap' }}>{m.wa_revenue ? <>{fmtNum(m.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.wa_orders})</span></> : '—'}</td>
+                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtNum(m.web_revenue ?? (m.revenue - (m.wa_revenue || 0)))} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({m.web_orders ?? (m.orders - (m.wa_orders || 0))})</span></td>
+                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: m.wa_revenue ? '#25D366' : textMuted, fontWeight: 600, whiteSpace: 'nowrap' }}>{m.wa_revenue ? <>{fmtNum(m.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({m.wa_orders})</span></> : '—'}</td>
+                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmtNum(m.revenue)}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(m.product_cogs ?? m.cogs)}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(m.postage ?? 0)}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit} lm={lm} /></td>
@@ -446,8 +450,9 @@ export default function MarketerReportPage() {
                   }}>
                     <td style={{ padding: '0.9rem 1rem', color: lm ? '#1E40AF' : '#A5B4FC', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>⚡ JUMLAH</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: lm ? '#1E40AF' : '#A5B4FC' }}>{t.orders}</td>
-                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399' }}>{fmtNum(t.revenue)}</td>
-                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: '#25D366', whiteSpace: 'nowrap' }}>{fmtNum(t.wa_revenue || 0)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({t.wa_orders || 0})</span></td>
+                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textSecondary, fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtNum(t.web_revenue ?? (t.revenue - (t.wa_revenue || 0)))} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({t.web_orders ?? (t.orders - (t.wa_orders || 0))})</span></td>
+                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: t.wa_revenue ? '#25D366' : textMuted, fontWeight: 600, whiteSpace: 'nowrap' }}>{t.wa_revenue ? <>{fmtNum(t.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({t.wa_orders})</span></> : '—'}</td>
+                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: lm ? '#047857' : '#34D399', fontWeight: 800, whiteSpace: 'nowrap' }}>{fmtNum(t.revenue)}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(t.product_cogs ?? t.cogs)}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textMuted }}>{fmtNum(t.postage ?? 0)}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right' }}><ProfitCell val={t.gross_profit} lm={lm} /></td>
