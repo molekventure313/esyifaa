@@ -25,7 +25,8 @@ export async function GET(req) {
     const { data: submissions } = await adminSupabase
       .from('submissions')
       .select('marketer_id, amount_paid, payment_status')
-      .eq('payment_status', 'completed');
+      .eq('payment_status', 'completed')
+      .is('returned_at', null);
       
     // Fetch ads_spend
     const { data: ads_spend } = await adminSupabase

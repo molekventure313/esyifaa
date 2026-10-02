@@ -8,6 +8,16 @@ export function parseAmount(s) {
   return m ? parseFloat(m[1]) : 0;
 }
 
+// ─── Struktur komisen marketer (bulanan) ──────────────────────────────────────
+// Profit ≥ RM10,000 → 10% dari SELURUH profit · profit < RM10,000 → 5%. Profit negatif → tiada komisen.
+export const COMMISSION_TIER = { threshold: 10000, high: 10, low: 5 };
+export const commissionPctFor = profit => (profit >= COMMISSION_TIER.threshold ? COMMISSION_TIER.high : COMMISSION_TIER.low);
+export const calcKomisen = (profit, pct = commissionPctFor(profit)) =>
+  parseFloat((Math.max(0, profit) * pct / 100).toFixed(2));
+
+// Caj payment gateway FPX (CHIP) setiap transaksi
+export const FPX_FEE = 1;
+
 const isPhysical = s => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p => (s.source || '').includes(p));
 
 // Add-on disimpan sama ada dalam notes "[ADD-ON: X ...]" atau problem "Add-On: X ..."

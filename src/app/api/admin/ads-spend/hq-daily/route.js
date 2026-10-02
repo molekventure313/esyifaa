@@ -24,6 +24,7 @@ export async function GET(req) {
         .select('amount_paid, notes, problem, source, qty, payment_type, created_at')
         .is('marketer_id', null)
         .eq('payment_status', 'completed')
+        .is('returned_at', null)
         .in('payment_type', ['fpx_payment', 'cod'])
         .gte('created_at', range.from)
         .lte('created_at', range.to),

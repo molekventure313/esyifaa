@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { summarizeByProduct } from '@/lib/products';
-import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared } from '@/lib/marketer-calc';
+import { summarizeByProduct, monthRange } from '@/lib/products';
+import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared, commissionPctFor, calcKomisen, FPX_FEE } from '@/lib/marketer-calc';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 async function requireAdmin() {
@@ -108,8 +108,8 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     const gross_profit = parseFloat((revenue - cogs).toFixed(2));
     const ads          = parseFloat((adsMap[m.id] || 0).toFixed(2));
     const profit       = parseFloat((gross_profit - ads).toFixed(2));
-    const commPct      = parseFloat(m.marketer_commission_pct || 0);
-    const komisen      = parseFloat((Math.max(0, profit) * commPct / 100).toFixed(2));
+    const commPct      = commissionPctFor(profit);     // berperingkat: ≥ RM10k → 10%, < RM10k → 5%
+    const komisen      = calcKomisen(profit, commPct);
     const basicSalary  = parseFloat(m.marketer_basic_salary || 0);
 
     rows.push({
@@ -206,6 +206,7 @@ async function fetchSubs(admin, from, to) {
   let q = admin.from('submissions')
     .select('marketer_id, amount_paid, notes, problem, source, qty, payment_type, order_channel')  // payment_type for postage calc
     .eq('payment_status', 'completed')
+    .is('returned_at', null)   // order return tak dikira sales
     .in('payment_type', ['cod', 'fpx_payment']);
   if (from) q = q.gte('created_at', from);
   if (to)   q = q.lte('created_at', to);
@@ -232,7 +233,7 @@ export async function GET(req) {
     // Fetch marketers + product costs in parallel
     const [mktRes, stockRes] = await Promise.all([
       admin.from('profiles')
-        .select('id, full_name, marketer_code, is_active, marketer_basic_salary, marketer_commission_pct')
+        .select('id, full_name, marketer_code, is_active, marketer_basic_salary')
         .eq('role', 'marketer')
         .order('full_name'),
       admin.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']),
@@ -244,6 +245,85 @@ export async function GET(req) {
     const avgCost      = stockMap2['SGH-200G'] || 0;  // backward compat
     const kasturiCost  = stockMap2['KKE-01']   || 0;
     const garamCost    = stockMap2['GPM-500G']  || 0;
+
+    // ── Report HQ (P&L penuh satu bulan) ─────────────────────────────────────
+    if (mode === 'hq') {
+      const range = monthRange(searchParams.get('month'));
+      const [subs, ads, returnedRes, expRes] = await Promise.all([
+        fetchSubs(admin, range.from, range.to),
+        fetchAds(admin, range.firstDay, range.lastDay),
+        admin.from('submissions')
+          .select('source, payment_type')
+          .eq('payment_status', 'completed')
+          .not('returned_at', 'is', null)
+          .gte('created_at', range.from)
+          .lte('created_at', range.to),
+        admin.from('hq_expenses').select('*').order('amount', { ascending: false }),
+      ]);
+      if (expRes.error) throw new Error(`Jadual hq_expenses belum wujud — run migration 019. (${expRes.error.message})`);
+
+      const { rows, totals } = computeStats(marketers, subs, ads, avgCost, kasturiCost, garamCost);
+      const r2 = n => parseFloat((n || 0).toFixed(2));
+      const mktRows = rows.filter(x => x.id !== '__hq__');
+      const hqRow   = rows.find(x => x.id === '__hq__');
+
+      // Gaji: basic semua marketer AKTIF + komisen ikut profit setiap marketer
+      const payroll = marketers.filter(m => m.is_active).map(m => {
+        const row = mktRows.find(x => x.id === m.id) || {};
+        const basic = parseFloat(m.marketer_basic_salary || 0);
+        return { id: m.id, name: m.full_name || 'Marketer', basic, profit: row.profit || 0, commission_pct: row.commission_pct ?? commissionPctFor(0), komisen: row.komisen || 0, total: r2(basic + (row.komisen || 0)) };
+      });
+      // Marketer tak aktif yang masih dapat komisen bulan ni
+      for (const x of mktRows) {
+        if (!payroll.some(p => p.id === x.id) && x.komisen > 0) {
+          payroll.push({ id: x.id, name: `${x.name} (tak aktif)`, basic: 0, profit: x.profit, commission_pct: x.commission_pct, komisen: x.komisen, total: x.komisen });
+        }
+      }
+      const basicTotal   = r2(payroll.reduce((t, p) => t + p.basic, 0));
+      const komisenTotal = r2(payroll.reduce((t, p) => t + p.komisen, 0));
+
+      // Perbelanjaan HQ yang terpakai untuk bulan ini
+      const all = expRes.data || [];
+      const fixed = all.filter(e => e.type === 'fixed' && e.is_active
+        && (!e.start_month || e.start_month <= range.month) && (!e.end_month || e.end_month >= range.month));
+      const oneOff = all.filter(e => e.type === 'one_off' && e.month === range.month);
+      const fixedTotal  = r2(fixed.reduce((t, e) => t + parseFloat(e.amount || 0), 0));
+      const oneOffTotal = r2(oneOff.reduce((t, e) => t + parseFloat(e.amount || 0), 0));
+
+      // Caj FPX & kos shipping order return
+      const fpxCount  = subs.filter(x => x.payment_type === 'fpx_payment').length;
+      const fpxFee    = r2(fpxCount * FPX_FEE);
+      const returned  = returnedRes.data || [];
+      const returnPostage = calcPostageShared(returned);
+
+      const revenue      = totals.revenue;
+      const grossProfit  = r2(revenue - totals.product_cogs - totals.postage - fpxFee - returnPostage);
+      const afterAds     = r2(grossProfit - totals.ads);
+      const netProfit    = r2(afterAds - basicTotal - komisenTotal - fixedTotal - oneOffTotal);
+
+      return NextResponse.json({
+        success: true, mode: 'hq', month: range.month,
+        sales: {
+          revenue, orders: totals.orders,
+          web_revenue: totals.web_revenue, web_orders: totals.web_orders,
+          wa_revenue: totals.wa_revenue,   wa_orders: totals.wa_orders,
+          hq_revenue: hqRow?.revenue || 0, hq_orders: hqRow?.orders || 0,
+          marketer_revenue: r2(revenue - (hqRow?.revenue || 0)), marketer_orders: totals.orders - (hqRow?.orders || 0),
+        },
+        cogs: {
+          product: totals.product_cogs, postage: totals.postage,
+          fpx_fee: fpxFee, fpx_count: fpxCount, fpx_fee_each: FPX_FEE,
+          return_postage: returnPostage, returned_count: returned.length,
+        },
+        gross_profit: grossProfit,
+        ads: { total: totals.ads, hq: hqRow?.ads || 0, marketer: r2(totals.ads - (hqRow?.ads || 0)) },
+        after_ads: afterAds,
+        payroll: { basic: basicTotal, komisen: komisenTotal, total: r2(basicTotal + komisenTotal), rows: payroll },
+        expenses: { fixed, fixed_total: fixedTotal, one_off: oneOff, one_off_total: oneOffTotal },
+        net_profit: netProfit,
+        total_expenses: r2(revenue - netProfit),
+      });
+    }
 
     // ── Monthly mode ─────────────────────────────────────────────────────────
     if (mode === 'monthly') {

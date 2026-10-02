@@ -111,7 +111,7 @@ async function fetchMovements(adminClient, fromUTC, toUTC, marketer_id) {
   // Cross-check reference_ids — filter out orphans (deleted orders)
   const refIds = [...new Set(orderMvs.map(m => m.reference_id))];
   
-  let subQ = adminClient.from('submissions').select('id').in('id', refIds);
+  let subQ = adminClient.from('submissions').select('id').in('id', refIds).is('returned_at', null);
   if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
   else if (marketer_id) subQ = subQ.eq('marketer_id', marketer_id);
   
@@ -150,7 +150,7 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
     return movements.length;
   }
 
-  let subQ = adminClient.from('submissions').select('id').in('id', refIds);
+  let subQ = adminClient.from('submissions').select('id').in('id', refIds).is('returned_at', null);
   if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
   else if (marketer_id) subQ = subQ.eq('marketer_id', marketer_id);
   

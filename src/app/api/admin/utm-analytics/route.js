@@ -61,6 +61,7 @@ export async function GET(req) {
     let q = admin.from('submissions')
       .select('id, full_name, source, amount_paid, notes, payment_type, created_at, utm_source, utm_medium, utm_campaign, utm_content, utm_term, marketer_id')
       .eq('payment_status', 'completed')
+      .is('returned_at', null)
       .in('payment_type', ['fpx_payment', 'cod'])
       .order('created_at', { ascending: false });
 

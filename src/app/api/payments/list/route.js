@@ -76,12 +76,13 @@ export async function GET(req) {
     try {
       const { data: statsData } = await adminClient
         .from('submissions')
-        .select('payment_status, payment_type, amount_paid, notes')
+        .select('payment_status, payment_type, amount_paid, notes, returned_at')
         .in('payment_type', ['fpx_payment', 'cod']);
 
       (statsData || []).forEach(s => {
         if (s.payment_status === 'completed') {
           statsCompleted++;
+          if (s.returned_at) return;   // order return — tiada revenue
           // Revenue: guna amount_paid kalau ada, else parse dari notes, else fallback
           if (s.amount_paid) {
             totalRevenue += parseFloat(s.amount_paid);

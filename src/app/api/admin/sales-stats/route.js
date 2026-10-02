@@ -87,6 +87,7 @@ async function queryOrders(adminClient, { from, to }, marketer_id) {
     .select('id, full_name, phone, source, payment_type, payment_status, amount_paid, notes, problem, qty, order_channel, created_at')
     .in('payment_type', ['fpx_payment', 'cod'])
     .eq('payment_status', 'completed')
+    .is('returned_at', null)
     .order('created_at', { ascending: false });
 
   if (marketer_id === 'hq') q = q.is('marketer_id', null);
@@ -165,6 +166,7 @@ export async function GET(req) {
       .select('id, full_name, phone, source, payment_type, amount_paid, notes, created_at, marketer_id, order_channel')
       .in('payment_type', ['fpx_payment', 'cod'])
       .eq('payment_status', 'completed')
+      .is('returned_at', null)
       .order('created_at', { ascending: false })
       .limit(10);
       

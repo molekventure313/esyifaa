@@ -158,7 +158,13 @@ export default function MarketerGajiPage() {
                 <span>Komisen {totals.commission_pct}% (dari profit)</span>
                 <span>+ {formatRM(totals.komisen)}</span>
               </div>
-              
+              <div style={{ marginTop: '-0.75rem', marginBottom: '1rem', fontSize: '0.78rem', color: textMuted }}>
+                Struktur komisen: 5% jika profit bawah RM10,000 · 10% jika profit RM10,000 ke atas
+                {totals.profit > 0 && totals.profit < 10000 && (
+                  <> · <strong style={{ color: '#10B981' }}>lagi {formatRM(10000 - totals.profit)} profit untuk naik ke 10%</strong></>
+                )}
+              </div>
+
               {!profitPositive && (
                  <div style={{ marginBottom: '1rem', fontSize: '0.85rem', color: '#EF4444', fontStyle: 'italic' }}>
                    * Profit negatif — komisen tidak dikira

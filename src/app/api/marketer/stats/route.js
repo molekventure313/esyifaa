@@ -49,7 +49,7 @@ export async function GET(req) {
     // Build queries — select all fields needed for COGS + parseAmount
     let subsQ = adminClient
       .from('submissions')
-      .select('id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, order_channel, created_at')
+      .select('id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, order_channel, returned_at, created_at')
       .eq('marketer_id', user.id)
       .in('payment_type', ['fpx_payment', 'cod'])
       .order('created_at', { ascending: false });
@@ -83,7 +83,7 @@ export async function GET(req) {
     const calcCOGS = (arr) => calcCOGSShared(arr, { sabunCost, kasturiCost, garamCost });
 
     // Completed orders only untuk calculations
-    const completedSubs = subs.filter(s => s.payment_status === 'completed');
+    const completedSubs = subs.filter(s => s.payment_status === 'completed' && !s.returned_at);   // order return tak dikira
     const totalOrders   = completedSubs.length;
     const totalRevenue  = parseFloat(completedSubs.reduce((sum, s) => sum + parseAmount(s), 0).toFixed(2));
     const totalAdsSpend = parseFloat(ads.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0).toFixed(2));

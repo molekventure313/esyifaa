@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import HqReport from '@/components/dashboard/HqReport';
 
 const PERIODS = [
   { id: 'today',     label: 'Hari Ini' },
@@ -171,7 +172,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit ?? (m.revenue - (m.product_cogs ?? m.cogs) - (m.postage ?? 0))} lm={lm} /></td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: '#60A5FA' }}>{fmtNum(m.ads)}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right' }}><ProfitCell val={m.profit} lm={lm} /></td>
-                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? fmtNum(m.komisen) : '—'}</td>
+                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? <>{fmtNum(m.komisen)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.commission_pct}%)</span></> : '—'}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textPrimary, fontWeight: 600 }}>{m.est_gaji !== null ? fmtNum(m.est_gaji) : '—'}</td>
                   </tr>
                 );
@@ -201,7 +202,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MarketerReportPage() {
-  const [mode,    setMode]    = useState('period');   // 'period' | 'monthly'
+  const [mode,    setMode]    = useState('period');   // 'period' | 'monthly' | 'hq'
   const [period,  setPeriod]  = useState('today');   // default: Hari Ini
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
@@ -230,6 +231,7 @@ export default function MarketerReportPage() {
   const ff            = 'var(--font-inter), -apple-system, sans-serif';
 
   const fetchData = useCallback(async () => {
+    if (mode === 'hq') return;   // Report HQ fetch sendiri
     setLoading(true);
     try {
       const url = mode === 'monthly'
@@ -318,7 +320,7 @@ export default function MarketerReportPage() {
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Mode toggle */}
         <div style={{ display: 'flex', background: lm ? '#F1F5F9' : '#090A0F', padding: '3px', borderRadius: '8px', border: cardBorder }}>
-          {[{ id: 'period', label: '📅 Ikut Period' }, { id: 'monthly', label: '🗓 Bulanan' }].map(m => (
+          {[{ id: 'period', label: '📅 Ikut Period' }, { id: 'monthly', label: '🗓 Bulanan' }, { id: 'hq', label: '🏢 Report HQ' }].map(m => (
             <button key={m.id} onClick={() => setMode(m.id)} style={{
               padding: '0.4rem 1rem', borderRadius: '5px', fontSize: '0.78rem', fontWeight: mode === m.id ? 700 : 500,
               border: 'none', cursor: 'pointer', fontFamily: ff,
@@ -344,13 +346,16 @@ export default function MarketerReportPage() {
           </div>
         )}
 
-        <button onClick={fetchData} style={{
+        {mode !== 'hq' && <button onClick={fetchData} style={{
           padding: '0.4rem 0.85rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600,
           border: cardBorder, cursor: 'pointer', fontFamily: ff, background: cardBg, color: textSecondary,
-        }}>🔄 Refresh</button>
+        }}>🔄 Refresh</button>}
       </div>
 
-      {loading ? (
+      {mode === 'hq' ? (
+        <HqReport lm={lm} cardBg={cardBg} cardBorder={cardBorder} textPrimary={textPrimary}
+          textSecondary={textSecondary} textMuted={textMuted} ff={ff} />
+      ) : loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px', flexDirection: 'column', gap: '0.75rem' }}>
           <div style={{ width: '32px', height: '32px', borderColor: 'rgba(16,185,129,0.2)', borderTopColor: '#10B981', borderStyle: 'solid', borderWidth: '3px', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
           <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
@@ -435,7 +440,7 @@ export default function MarketerReportPage() {
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit} lm={lm} /></td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: '#60A5FA' }}>{fmtNum(m.ads)}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right' }}><ProfitCell val={m.profit} lm={lm} /></td>
-                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? fmtNum(m.komisen) : '—'}</td>
+                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? <>{fmtNum(m.komisen)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.commission_pct}%)</span></> : '—'}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textPrimary, fontWeight: 600 }}>{m.est_gaji !== null ? fmtNum(m.est_gaji) : '—'}</td>
                     </tr>
                   );

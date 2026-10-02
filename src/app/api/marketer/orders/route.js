@@ -69,7 +69,7 @@ export async function GET(req) {
       total_failed:    all.filter(o => o.payment_status === 'failed').length,
       total_cod:       all.filter(o => o.payment_type === 'cod').length,
       total_fpx:       all.filter(o => o.payment_type === 'fpx_payment').length,
-      total_revenue_rm: parseFloat(completed.reduce((t, o) => t + o.amount, 0).toFixed(2)),
+      total_revenue_rm: parseFloat(completed.filter(o => !o.returned_at).reduce((t, o) => t + o.amount, 0).toFixed(2)),   // order return tiada revenue
     };
 
     const data = status === 'all' ? all : all.filter(o => o.payment_status === status);

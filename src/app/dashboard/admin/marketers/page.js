@@ -108,7 +108,6 @@ export default function MarketersPage() {
         body: JSON.stringify({
           id: marketerId,
           marketer_basic_salary: parseFloat(gajiForm.basic) || 0,
-          marketer_commission_pct: parseFloat(gajiForm.commission) || 0
         })
       });
       const result = await res.json();
@@ -268,13 +267,7 @@ export default function MarketersPage() {
                                 placeholder="Basic RM"
                                 style={{ background: '#000', border: '1px solid #333', color: '#fff', padding: '0.3rem', borderRadius: '4px' }}
                               />
-                              <input 
-                                type="number" 
-                                value={gajiForm.commission} 
-                                onChange={e => setGajiForm({...gajiForm, commission: e.target.value})} 
-                                placeholder="Komisen %"
-                                style={{ background: '#000', border: '1px solid #333', color: '#fff', padding: '0.3rem', borderRadius: '4px' }}
-                              />
+                              <div style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>Komisen: 5% / 10% (profit ≥ RM10k)</div>
                               <div style={{ display: 'flex', gap: '0.3rem' }}>
                                 <button onClick={() => handleSaveGaji(m.id)} style={{ flex: 1, background: '#10B981', color: '#fff', border: 'none', padding: '0.3rem', borderRadius: '4px', cursor: 'pointer' }}>Save</button>
                                 <button onClick={() => setEditingGajiId(null)} style={{ flex: 1, background: '#374151', color: '#fff', border: 'none', padding: '0.3rem', borderRadius: '4px', cursor: 'pointer' }}>Batal</button>
@@ -283,7 +276,7 @@ export default function MarketersPage() {
                           ) : (
                             <div onClick={() => startEditGaji(m)} style={{ cursor: 'pointer', padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', border: '1px dashed rgba(255,255,255,0.2)' }} title="Klik untuk edit">
                               <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>Basic: <strong style={{ color: '#F9FAFB' }}>RM {m.marketer_basic_salary || 0}</strong></div>
-                              <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>Komisen: <strong style={{ color: '#F9FAFB' }}>{m.marketer_commission_pct || 0}%</strong></div>
+                              <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>Komisen: <strong style={{ color: '#F9FAFB' }}>5% / 10%</strong> <span style={{ fontSize: '0.68rem' }}>(≥ RM10k)</span></div>
                             </div>
                           )}
                         </td>

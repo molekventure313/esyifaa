@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { parseAmount, calcCOGS } from '@/lib/marketer-calc';
+import { parseAmount, calcCOGS, commissionPctFor, calcKomisen } from '@/lib/marketer-calc';
 import { monthRange, fetchProductCosts, buildMonthlyBreakdown } from '@/lib/products';
 
 export async function GET(req) {
@@ -11,7 +11,7 @@ export async function GET(req) {
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const adminClient = createAdminClient();
-    const { data: profile } = await adminClient.from('profiles').select('role, marketer_basic_salary, marketer_commission_pct').eq('id', user.id).single();
+    const { data: profile } = await adminClient.from('profiles').select('role, marketer_basic_salary').eq('id', user.id).single();
     if (!profile || profile.role !== 'marketer') {
        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }
@@ -19,7 +19,6 @@ export async function GET(req) {
     const range = monthRange(new URL(req.url).searchParams.get('month'));
 
     const basic_salary = parseFloat(profile.marketer_basic_salary) || 0;
-    const commission_pct = parseFloat(profile.marketer_commission_pct) || 0;
 
     // Sales (sama filter dgn dashboard stats) + ads + kos produk
     const [{ data: submissions }, { data: adsSpend }, costs] = await Promise.all([
@@ -28,6 +27,7 @@ export async function GET(req) {
         .select('id, amount_paid, notes, problem, source, qty, payment_type, order_channel, created_at')
         .eq('marketer_id', user.id)
         .eq('payment_status', 'completed')
+        .is('returned_at', null)   // order return tak dikira sales
         .in('payment_type', ['fpx_payment', 'cod'])
         .gte('created_at', range.from)
         .lte('created_at', range.to),
@@ -48,7 +48,9 @@ export async function GET(req) {
     const totalCOGS  = calcCOGS(subs, costs); // unit × kos + postage
 
     const profit    = totalSales - totalAds - totalCOGS;
-    const komisen   = Math.max(0, profit * (commission_pct / 100));
+    // Komisen berperingkat ikut profit bulanan: ≥ RM10k → 10%, < RM10k → 5%
+    const commission_pct = commissionPctFor(profit);
+    const komisen   = calcKomisen(profit, commission_pct);
     const totalGaji = basic_salary + komisen;
 
     // Jadual harian 1hb → hujung bulan, setiap hari ada pecahan ikut produk

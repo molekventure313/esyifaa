@@ -80,7 +80,8 @@ export async function deductStock({ adminClient, source, qty, referenceId, notes
 // ─── Return stock (COD return) ────────────────────────────────────────────────
 /**
  * Return stock when a COD order is returned.
- * Updates submissions.returned_at + inserts stock movement type='return'.
+ * Updates submissions.returned_at + inserts stock movement type='return' (semua item order).
+ * Order yang di-return (returned_at) tidak dikira dalam sales / profit / komisen di semua laporan.
  *
  * @param {object} opts
  * @param {string} opts.submissionId  — UUID of the submission to return
@@ -102,36 +103,62 @@ export async function returnStock({ submissionId, adminUserId }) {
   if (submission.payment_status !== 'completed') throw new Error('Order belum selesai.');
   if (submission.returned_at) throw new Error('Order ini sudah di-return sebelum ini.');
 
-  // 2. Resolve qty — from submissions.qty column (saved on order), fallback parse notes
-  let qty = parseInt(submission.qty) || 0;
-  if (!qty || qty <= 0) {
-    const m = (submission.notes || '').match(/\[QTY:\s*(\d+)\s*unit\]/i);
-    qty = m ? parseInt(m[1]) : 1;
-  }
+  // Tanda returned dulu (bersyarat) — klik berganda tak pulangkan stok dua kali
+  const { data: claimed } = await adminClient
+    .from('submissions')
+    .update({ returned_at: new Date().toISOString(), returned_by: adminUserId })
+    .eq('id', submissionId)
+    .is('returned_at', null)
+    .select('id');
+  if (!claimed?.length) throw new Error('Order ini sudah di-return sebelum ini.');
 
-  // 3. Get product
-  const sku = SOURCE_TO_SKU[submission.source];
-  if (sku) {
-    const product = await getProductBySku(adminClient, sku);
+  // 2. Pulangkan SEMUA stok yang ditolak untuk order ini (produk utama + add-on + hadiah percuma)
+  //    — cermin setiap movement 'out' yang merujuk order ini
+  let qty = 0;
+  const { data: outs } = await adminClient
+    .from('stock_movements')
+    .select('product_id, qty')
+    .eq('movement_type', 'out')
+    .eq('reference_id', submissionId);
+
+  if (outs?.length) {
+    const { error: insErr } = await adminClient.from('stock_movements').insert(outs.map(o => ({
+      product_id:     o.product_id,
+      movement_type:  'return',
+      qty:            o.qty,
+      reference_type: 'return',
+      reference_id:   submissionId,
+      notes:          `COD Return — ${submission.full_name}`,
+      created_by:     adminUserId,
+    })));
+    if (insErr) {
+      await adminClient.from('submissions').update({ returned_at: null, returned_by: null }).eq('id', submissionId);
+      throw new Error(`Gagal pulangkan stok: ${insErr.message}`);
+    }
+    qty = outs.reduce((t, o) => t + (parseInt(o.qty) || 0), 0);
+  } else {
+    // Order lama tanpa rekod movement — fallback produk utama ikut qty
+    qty = parseInt(submission.qty) || 0;
+    if (!qty || qty <= 0) {
+      const m = (submission.notes || '').match(/\[QTY:\s*(\d+)\s*unit\]/i);
+      qty = m ? parseInt(m[1]) : 1;
+    }
+    const sku = SOURCE_TO_SKU[submission.source];
+    const product = sku ? await getProductBySku(adminClient, sku) : null;
     if (product) {
-      // 4. Insert return movement
       await adminClient.from('stock_movements').insert({
         product_id:     product.id,
         movement_type:  'return',
-        qty:            qty,
+        qty,
         reference_type: 'return',
         reference_id:   submissionId,
         notes:          `COD Return — ${submission.full_name}`,
         created_by:     adminUserId,
       });
+    } else {
+      qty = 0;
     }
   }
-
-  // 5. Mark submission as returned
-  await adminClient
-    .from('submissions')
-    .update({ returned_at: new Date().toISOString(), returned_by: adminUserId })
-    .eq('id', submissionId);
 
   return { success: true, qtyReturned: qty };
 }
