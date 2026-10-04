@@ -44,7 +44,10 @@ export async function POST(req) {
     const garamMasakanTag = addon_garam_masakan ? ' | Add-On: Garam Masakan Pengasihan +RM25' : '';
     // Format sama dgn FPX → addonsOf() kesan untuk COGS & label NinjaVan
     const freeGiftTag     = free_gift_kasturi   ? ' | Free Gift: Minyak Kasturi Kijang' : '';
-    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM5 = RM${amount_total}${kasturiTag}${sabunTag}${garamMasakanTag}${freeGiftTag} | Alamat: ${address.trim()}`;
+    // Postage sebenar = jumlah − harga pakej − add-on (pakej free pos → RM0)
+    const addonTotal  = (addon_kasturi ? 20 : 0) + (addon_sabun ? 25 : 0) + (addon_garam_masakan ? 25 : 0);
+    const postageAmt  = Math.max(0, Math.round(((parseFloat(amount_total) || 0) - (parseFloat(amount_base) || 0) - addonTotal) * 100) / 100);
+    const problemNotes = `[COD] Produk: ${product || 'Sabun Garam Himalaya Pengisian'} | Pakej: ${units_label} | Harga: RM${amount_base} + Postage RM${postageAmt} = RM${amount_total}${kasturiTag}${sabunTag}${garamMasakanTag}${freeGiftTag} | Alamat: ${address.trim()}`;
 
     // Upsert customer
     let customerId = null;
