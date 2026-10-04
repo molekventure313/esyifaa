@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const handleSignOut = async () => {
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       router.push('/login');
     } catch (err) {
       console.error('Sign out error:', err);

@@ -143,7 +143,9 @@ export default function Sidebar({ isOpen, onClose }) {
   const handleSignOut = async () => {
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
+      // scope 'local' — log keluar peranti ini SAHAJA. Default Supabase ('global') padam
+      // semua sesi akaun ni di SEMUA peranti → peranti lain tiba-tiba terlogout.
+      await supabase.auth.signOut({ scope: 'local' });
       router.push('/login');
     } catch (err) {
       console.error('Sign out error:', err);

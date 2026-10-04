@@ -38,14 +38,14 @@ export default function LoginPage() {
           .single();
 
         if (profile && ['practitioner', 'perawat'].includes(profile.role) && !profile.is_active) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           setError('Akaun perawat anda sedang MENUNGGU KELULUSAN / DITOLAK oleh Admin E-SYIFAA\'. Sila hubungi pihak pentadbir.');
           setLoading(false);
           return;
         }
 
         if (profile && profile.role === 'marketer' && !profile.is_active) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           setError('Akaun marketer anda sedang MENUNGGU KELULUSAN oleh Admin. Sila hubungi pihak pentadbir.');
           setLoading(false);
           return;
