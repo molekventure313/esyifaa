@@ -33,8 +33,8 @@ export default function DashboardLayout({ children }) {
       if (pathname.startsWith('/dashboard/perawat') && isMarketer) {
         router.replace('/dashboard/marketer');
       }
-      // Teamsale: tiada team / SP / pixel / UTM sendiri
-      const TEAMSALE_BLOCKED = ['/dashboard/marketer/team', '/dashboard/marketer/links', '/dashboard/marketer/pixels', '/dashboard/marketer/utm-analytics', '/dashboard/marketer/profil'];
+      // Teamsale: tiada team / SP / pixel / UTM sendiri (Profil dibenarkan — isi no. WhatsApp)
+      const TEAMSALE_BLOCKED = ['/dashboard/marketer/team', '/dashboard/marketer/links', '/dashboard/marketer/pixels', '/dashboard/marketer/utm-analytics'];
       if (isMarketer && profile?.team_leader_id && TEAMSALE_BLOCKED.some(p => pathname.startsWith(p))) {
         router.replace('/dashboard/marketer');
       }

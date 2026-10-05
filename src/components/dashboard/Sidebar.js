@@ -133,6 +133,8 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '💬 Order WhatsApp', href: '/dashboard/marketer/order-wasap' },
     { section: 'LAPORAN' },
     { label: '💰 Komisen Saya', href: '/dashboard/marketer/gaji' },
+    { section: 'TETAPAN' },
+    { label: '👤 Profil & WhatsApp', href: '/dashboard/marketer/profil' },
   ];
   const isTeamsale = role === 'marketer' && !!profile?.team_leader_id;
   const marketerMenu = isTeamsale ? teamsaleNav : marketerNav;

@@ -230,8 +230,12 @@ export default function MarketersPage() {
                             {m.marketer_code || '-'}
                           </span>
                           {/* No. WhatsApp SP — kosong = section WA disembunyikan di SP marketer */}
-                          <div style={{ fontSize: '0.72rem', marginTop: '0.35rem', color: m.marketer_whatsapp ? '#25D366' : '#F59E0B' }}>
-                            {m.marketer_whatsapp ? `WA: ${m.marketer_whatsapp}` : '⚠️ WA belum isi'}
+                          <div style={{ fontSize: '0.72rem', marginTop: '0.35rem', color: (m.sp_whatsapp_teamsale || m.marketer_whatsapp) ? '#25D366' : '#F59E0B' }}>
+                            {m.team_leader_id
+                              ? (m.marketer_whatsapp ? `WA: ${m.marketer_whatsapp} (di SP ketua)` : '⚠️ WA belum isi')
+                              : m.sp_whatsapp_teamsale
+                                ? `WA SP: ${m.sp_whatsapp_teamsale} (teamsale)`
+                                : m.marketer_whatsapp ? `WA: ${m.marketer_whatsapp}` : '⚠️ WA belum isi'}
                           </div>
                         </td>
                         <td style={{ padding: '1rem' }}>

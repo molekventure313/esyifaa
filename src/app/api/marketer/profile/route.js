@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
+import { activeTeamsale, spWhatsapp } from '@/lib/team';
 
 async function requireMarketer() {
   const supabase = await createClient();
@@ -21,12 +22,27 @@ export async function GET() {
 
     const { data, error: dbErr } = await adminClient
       .from('profiles')
-      .select('full_name, marketer_code, marketer_whatsapp')
+      .select('id, full_name, marketer_code, marketer_whatsapp, team_leader_id')
       .eq('id', user.id)
       .single();
     if (dbErr) throw dbErr;
 
-    return NextResponse.json({ success: true, data: { ...data, email: user.email } });
+    // Teamsale: nombor dia dipapar di SP ketua. Ketua: SP guna nombor teamsale aktif (kalau dah isi).
+    let leader = null, teamsale = null, sp = null;
+    if (data.team_leader_id) {
+      const { data: l } = await adminClient.from('profiles').select('full_name, is_active').eq('id', data.team_leader_id).maybeSingle();
+      leader = l ? { name: l.full_name } : null;
+    } else {
+      const ts = await activeTeamsale(adminClient, user.id);
+      const res = spWhatsapp(data, ts);
+      teamsale = ts ? { name: ts.full_name, whatsapp: ts.marketer_whatsapp || null } : null;
+      sp = { number: res.number, source: res.source };
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { ...data, email: user.email, is_teamsale: !!data.team_leader_id, leader, teamsale, sp },
+    });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

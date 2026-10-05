@@ -90,6 +90,16 @@ export default function TeamPage() {
     finally { setSaving(false); }
   };
 
+  const editWhatsapp = async (m) => {
+    const val = prompt(`No. WhatsApp ${m.name} (dipapar di salespage anda). Kosongkan untuk buang:`, m.marketer_whatsapp || '');
+    if (val === null) return;
+    const json = await (await fetch('/api/marketer/team', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: m.id, whatsapp: val.trim() }),
+    })).json();
+    if (!json.success) return alert(json.error);
+    load(true);
+  };
+
   const toggleActive = async (m) => {
     if (!confirm(`${m.is_active ? 'Nyahaktif' : 'Aktifkan'} ${m.name}?${m.is_active ? '\n\nDia tidak boleh login selepas dinyahaktif.' : ''}`)) return;
     const json = await (await fetch('/api/marketer/team', {
@@ -117,7 +127,9 @@ export default function TeamPage() {
             Teamsale dapat {data?.teamsale_pct ?? 30}% dari profit selepas ads (tiada basic) · anda dapat override {data?.override_pct ?? 10}% · kos ads teamsale diisi oleh anda
           </p>
         </div>
-        <button onClick={() => { setShowAdd(v => !v); setMsg(''); }} style={btn('#10B981')}>{showAdd ? 'Tutup' : '+ Tambah Teamsale'}</button>
+        {data?.team?.some(m => m.is_active)
+          ? <span style={{ fontSize: '0.75rem', color: textMuted, maxWidth: '260px' }}>Had 1 teamsale aktif. Nyahaktif teamsale sekarang untuk tambah yang baru.</span>
+          : <button onClick={() => { setShowAdd(v => !v); setMsg(''); }} style={btn('#10B981')}>{showAdd ? 'Tutup' : '+ Tambah Teamsale'}</button>}
       </div>
 
       {msg && <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: '8px', background: cardBg, border: cardBorder, fontSize: '0.85rem' }}>{msg}</div>}
@@ -126,11 +138,11 @@ export default function TeamPage() {
         <form onSubmit={addMember} style={{ marginBottom: '1.25rem', padding: '1.1rem', borderRadius: '10px', background: cardBg, border: cardBorder, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.65rem', alignItems: 'end' }}>
           <input style={input} required placeholder="Nama penuh" value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} />
           <input style={input} required type="email" placeholder="E-mel (untuk login)" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-          <input style={input} placeholder="No. telefon" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+          <input style={input} placeholder="No. telefon / WhatsApp" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
           <input style={input} required minLength={6} type="text" placeholder="Kata laluan (min 6)" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
           <button disabled={saving} style={{ ...btn('#3B82F6'), opacity: saving ? 0.6 : 1 }}>{saving ? 'Menyimpan...' : 'Cipta Akaun'}</button>
           <div style={{ gridColumn: '1 / -1', fontSize: '0.75rem', color: textMuted }}>
-            Akaun terus aktif. Beri e-mel & kata laluan ni kepada teamsale — dia login di halaman login biasa dan masukkan order di menu Order WhatsApp.
+            Akaun terus aktif. No. telefon jadi <strong>no. WhatsApp di salespage anda</strong> — butang WhatsApp di SP terus ke teamsale. Beri e-mel & kata laluan kepada teamsale; dia login di halaman login biasa dan masukkan order di menu Order WhatsApp.
           </div>
         </form>
       )}
@@ -170,6 +182,12 @@ export default function TeamPage() {
                         {selected === m.id ? '▾' : '▸'} {m.name}
                         {!m.is_active && <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', color: '#EF4444' }}>TAK AKTIF</span>}
                         <div style={{ fontSize: '0.7rem', color: textMuted, fontWeight: 400 }}>{m.email}</div>
+                        <div onClick={e => { e.stopPropagation(); editWhatsapp(m); }} title="Klik untuk ubah no. WhatsApp"
+                          style={{ fontSize: '0.72rem', fontWeight: 600, marginTop: '0.15rem', cursor: 'pointer', color: m.marketer_whatsapp ? '#25D366' : '#F59E0B' }}>
+                          {m.marketer_whatsapp
+                            ? <>💬 {m.marketer_whatsapp}{m.is_active && ' · dipapar di SP'} ✏️</>
+                            : <>⚠️ No. WhatsApp belum diisi — SP guna nombor anda ✏️</>}
+                        </div>
                       </td>
                       <td style={{ ...cell, color: textSecondary }}>{m.orders}</td>
                       <td style={{ ...cell, color: '#10B981', fontWeight: 600 }}>{formatRM(m.sales)}</td>

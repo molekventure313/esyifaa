@@ -62,9 +62,12 @@ export default function MarketerProfilPage() {
     return <div style={{ padding: '2rem', textAlign: 'center', color: textMuted }}>Memuatkan...</div>;
   }
 
+  const isTeamsale = !!profile?.is_teamsale;
+  const ts = profile?.teamsale;                      // ketua: teamsale aktif
+  const usingTeamsale = profile?.sp?.source === 'teamsale';
   const readOnly = [
     ['Nama', profile?.full_name],
-    ['Kod Marketer', profile?.marketer_code],
+    ...(isTeamsale ? [['Ketua', profile?.leader?.name]] : [['Kod Marketer', profile?.marketer_code]]),
     ['Email', profile?.email],
   ];
   const changed = whatsapp.trim() !== saved;
@@ -75,11 +78,34 @@ export default function MarketerProfilPage() {
         👤 Profil & WhatsApp
       </h1>
       <p style={{ fontSize: '0.85rem', color: textMuted, marginBottom: '1.5rem' }}>
-        No. WhatsApp ini dipapar di <strong>semua salespage</strong> anda — section &quot;Nak order melalui WhatsApp?&quot; & butang WhatsApp terapung.
+        {isTeamsale
+          ? <>No. WhatsApp ini dipapar di <strong>semua salespage ketua anda{profile?.leader?.name ? ` (${profile.leader.name})` : ''}</strong> — pelanggan yang tekan butang WhatsApp akan terus chat dengan anda.</>
+          : <>No. WhatsApp ini dipapar di <strong>semua salespage</strong> anda — section &quot;Nak order melalui WhatsApp?&quot;.</>}
       </p>
 
+      {/* Ketua: SP guna nombor teamsale */}
+      {!isTeamsale && ts && (
+        <div style={{
+          marginBottom: '1.25rem', padding: '1rem', borderRadius: '10px',
+          background: usingTeamsale ? 'rgba(37,211,102,0.08)' : 'rgba(245, 158, 11, 0.1)',
+          border: usingTeamsale ? '1px solid rgba(37,211,102,0.35)' : '1px solid rgba(245, 158, 11, 0.4)',
+        }}>
+          {usingTeamsale ? (
+            <p style={{ fontSize: '0.82rem', color: textPrimary, lineHeight: 1.55, margin: 0 }}>
+              👥 Salespage anda sekarang guna no. WhatsApp teamsale <strong>{ts.name}</strong>: <strong style={{ color: '#25D366' }}>{ts.whatsapp}</strong>.
+              Nombor anda di bawah hanya dipakai sebagai <strong>sandaran</strong> jika teamsale tiada nombor.
+            </p>
+          ) : (
+            <p style={{ fontSize: '0.82rem', color: textPrimary, lineHeight: 1.55, margin: 0 }}>
+              ⚠️ Teamsale <strong>{ts.name}</strong> belum isi no. WhatsApp — salespage anda guna nombor anda <strong>buat sementara</strong>.
+              Minta dia isi di menu Profil & WhatsApp, atau isi untuk dia di Team Saya.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Amaran — belum isi no. WhatsApp */}
-      {!saved && (
+      {!saved && !(isTeamsale ? false : usingTeamsale) && (
         <div style={{
           marginBottom: '1.25rem', padding: '1rem', borderRadius: '10px',
           background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)',
@@ -88,7 +114,9 @@ export default function MarketerProfilPage() {
             ⚠️ No. WhatsApp belum diisi
           </p>
           <p style={{ fontSize: '0.78rem', color: textPrimary, lineHeight: 1.55, margin: 0 }}>
-            Section &quot;Nak order melalui WhatsApp?&quot; dan butang WhatsApp <strong>TIDAK dipapar</strong> di salespage anda sehingga anda isi no. WhatsApp.
+            {isTeamsale
+              ? <>Salespage ketua anda masih guna nombor ketua sehingga anda isi no. WhatsApp anda.</>
+              : <>Section &quot;Nak order melalui WhatsApp?&quot; <strong>TIDAK dipapar</strong> di salespage anda sehingga anda isi no. WhatsApp.</>}
           </p>
         </div>
       )}
@@ -109,7 +137,7 @@ export default function MarketerProfilPage() {
         {/* No. WhatsApp */}
         <div>
           <label style={{ fontSize: '0.8rem', fontWeight: 600, color: textPrimary, marginBottom: '0.4rem', display: 'block' }}>
-            No. WhatsApp untuk Salespage
+            {isTeamsale ? 'No. WhatsApp Anda (untuk pelanggan)' : usingTeamsale ? 'No. WhatsApp Sandaran' : 'No. WhatsApp untuk Salespage'}
           </label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
@@ -141,7 +169,7 @@ export default function MarketerProfilPage() {
             )}
           </div>
           <p style={{ fontSize: '0.7rem', color: textMuted, marginTop: '0.3rem' }}>
-            Disimpan dalam format 60XXXXXXXXX. Kosongkan &amp; simpan untuk sembunyikan section WhatsApp di salespage anda.
+            Disimpan dalam format 60XXXXXXXXX.{!isTeamsale && !ts && ' Kosongkan & simpan untuk sembunyikan section WhatsApp di salespage anda.'}
           </p>
         </div>
 

@@ -7,7 +7,7 @@ const r2 = n => parseFloat((n || 0).toFixed(2));
 export async function getTeam(admin, leaderId) {
   const { data } = await admin
     .from('profiles')
-    .select('id, full_name, email, phone, marketer_code, is_active, created_at')
+    .select('id, full_name, email, phone, marketer_code, marketer_whatsapp, is_active, created_at')
     .eq('team_leader_id', leaderId)
     .eq('role', 'marketer')
     .order('created_at');
@@ -50,4 +50,27 @@ export function memberSummary(id, subs, ads, costs) {
   const adsTotal = r2(a.reduce((t, x) => t + (parseFloat(x.amount) || 0), 0));
   const cogs = calcCOGS(s, costs);
   return { orders: s.length, sales, ads: adsTotal, cogs, profit: r2(sales - adsTotal - cogs) };
+}
+
+// Teamsale AKTIF seorang ketua (had: 1 teamsale aktif setiap marketer)
+export async function activeTeamsale(admin, leaderId) {
+  const { data } = await admin.from('profiles')
+    .select('id, full_name, marketer_whatsapp')
+    .eq('team_leader_id', leaderId)
+    .eq('role', 'marketer')
+    .eq('is_active', true)
+    .order('created_at')
+    .limit(1);
+  return data?.[0] || null;
+}
+
+/**
+ * No. WhatsApp yang dipapar di SP marketer (section "Nak order melalui WhatsApp?").
+ * Teamsale aktif yang dah isi nombor → nombor teamsale. Selain itu → nombor marketer sendiri (sandaran).
+ * @returns { number, source: 'teamsale' | 'self' | null, teamsale }
+ */
+export function spWhatsapp(marketer, teamsale) {
+  if (teamsale?.marketer_whatsapp) return { number: teamsale.marketer_whatsapp, source: 'teamsale', teamsale };
+  if (marketer?.marketer_whatsapp) return { number: marketer.marketer_whatsapp, source: 'self', teamsale: teamsale || null };
+  return { number: null, source: null, teamsale: teamsale || null };
 }

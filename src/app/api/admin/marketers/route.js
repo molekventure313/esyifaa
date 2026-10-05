@@ -54,6 +54,10 @@ export async function GET(req) {
         team_leader_id: m.team_leader_id || null,
         team_leader_name: m.team_leader_id ? ((marketers || []).find(x => x.id === m.team_leader_id)?.full_name || null) : null,
         team_size: (marketers || []).filter(x => x.team_leader_id === m.id).length,
+        // No. WhatsApp yang dipapar di SP: teamsale aktif yang dah isi nombor → nombor teamsale, selain itu nombor sendiri
+        sp_whatsapp_teamsale: m.team_leader_id ? null
+          : ((marketers || []).filter(x => x.team_leader_id === m.id && x.is_active)
+              .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0]?.marketer_whatsapp || null),
         total_orders,
         total_revenue,
         total_ads_spend,

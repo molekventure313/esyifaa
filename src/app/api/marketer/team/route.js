@@ -4,14 +4,16 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount, calcKomisen, calcLeaderPay, TEAMSALE_PCT, LEADER_OVERRIDE_PCT } from '@/lib/marketer-calc';
 import { monthRange, fetchProductCosts, buildMonthlyBreakdown } from '@/lib/products';
 import { formatOrder } from '@/lib/orders';
-import { getTeam, isMyTeamsale, fetchMembersMonth, memberSummary } from '@/lib/team';
+import { getTeam, isMyTeamsale, fetchMembersMonth, memberSummary, activeTeamsale } from '@/lib/team';
+import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
 
 // Team Saya — ketua marketer urus teamsale bawah dia.
 // GET  ?month=YYYY-MM            → senarai team + prestasi bulan
 // GET  ?id=<teamsale>&month=...  → detail: pecahan harian (isi ads), produk, semua order
 // POST { fullName, email, password, phone } → cipta teamsale (terus aktif, tiada basic)
-// PATCH { id, is_active }        → aktif / nyahaktif
+// PATCH { id, is_active?, whatsapp? } → aktif / nyahaktif, isi no. WhatsApp teamsale
+// Had: 1 teamsale AKTIF setiap marketer (nombor dia dipapar di SP ketua)
 
 async function requireLeader() {
   const supabase = await createClient();
@@ -86,6 +88,15 @@ export async function POST(req) {
     if (!name || !mail || !password) throw Object.assign(new Error('Sila isi nama, e-mel dan kata laluan.'), { status: 400 });
     if (String(password).length < 6) throw Object.assign(new Error('Kata laluan mestilah sekurang-kurangnya 6 aksara.'), { status: 400 });
 
+    const current = await activeTeamsale(admin, user.id);
+    if (current) throw Object.assign(new Error(`Had 1 teamsale aktif. Nyahaktif ${current.full_name} dulu sebelum tambah teamsale baru.`), { status: 400 });
+
+    let whatsapp = null;
+    if (phone && String(phone).trim()) {
+      const check = validateMalaysianPhone(String(phone));
+      if (check.valid) whatsapp = check.formatted;   // no. telefon = no. WhatsApp untuk SP (boleh ubah kemudian)
+    }
+
     // Kod unik automatik (teamsale tak guna link SP, tapi column perlu unik)
     const base = (profile.marketer_code || 'team').slice(0, 12);
     let code = null;
@@ -104,7 +115,7 @@ export async function POST(req) {
 
     const userId = authData.user.id;
     const { error: profErr } = await admin.from('profiles').upsert({
-      id: userId, full_name: name, email: mail, phone: phone || null,
+      id: userId, full_name: name, email: mail, phone: phone || null, marketer_whatsapp: whatsapp,
       role: 'marketer', is_active: true,               // terus aktif — ketua yang tambah
       marketer_code: code, team_leader_id: user.id,
       marketer_basic_salary: 0, marketer_commission_pct: TEAMSALE_PCT,
@@ -127,9 +138,27 @@ export async function POST(req) {
 export async function PATCH(req) {
   try {
     const { admin, user } = await requireLeader();
-    const { id, is_active } = await req.json();
+    const { id, is_active, whatsapp } = await req.json();
     if (!(await isMyTeamsale(admin, user.id, id))) throw Object.assign(new Error('Bukan ahli team anda'), { status: 403 });
-    const { error } = await admin.from('profiles').update({ is_active: !!is_active, updated_at: new Date().toISOString() }).eq('id', id);
+
+    const update = { updated_at: new Date().toISOString() };
+    if (is_active !== undefined) {
+      if (is_active) {
+        const current = await activeTeamsale(admin, user.id);
+        if (current && current.id !== id) throw Object.assign(new Error(`Had 1 teamsale aktif. Nyahaktif ${current.full_name} dulu.`), { status: 400 });
+      }
+      update.is_active = !!is_active;
+    }
+    if (whatsapp !== undefined) {
+      if (whatsapp && String(whatsapp).trim()) {
+        const check = validateMalaysianPhone(String(whatsapp));
+        if (!check.valid) throw Object.assign(new Error('No. WhatsApp tidak sah. Contoh: 0123456789'), { status: 400 });
+        update.marketer_whatsapp = check.formatted;
+      } else {
+        update.marketer_whatsapp = null;
+      }
+    }
+    const { error } = await admin.from('profiles').update(update).eq('id', id);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (e) { return fail(e); }
