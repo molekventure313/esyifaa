@@ -159,8 +159,10 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
                     background: isHQ ? (lm ? '#F8FAFC' : 'rgba(255,255,255,0.02)') : 'transparent',
                   }}>
                     <td style={{ padding: '0.65rem 1rem', fontWeight: isHQ ? 600 : 500, color: textPrimary, whiteSpace: 'nowrap' }}>
-                      {m.name}
-                      {m.code && <span style={{ fontSize: '0.68rem', color: textMuted, marginLeft: '0.4rem' }}>({m.code})</span>}
+                      {m.team_leader_id && <span style={{ color: textMuted }}>↳ </span>}{m.name}
+                      {m.team_leader_id
+                        ? <span style={{ fontSize: '0.68rem', color: '#8B5CF6', marginLeft: '0.4rem' }}>teamsale</span>
+                        : m.code && <span style={{ fontSize: '0.68rem', color: textMuted, marginLeft: '0.4rem' }}>({m.code})</span>}
                       {isHQ && <span style={{ fontSize: '0.65rem', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)', padding: '0.1rem 0.35rem', borderRadius: '4px', marginLeft: '0.4rem' }}>HQ</span>}
                     </td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textPrimary }}>{m.orders}</td>
@@ -172,7 +174,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit ?? (m.revenue - (m.product_cogs ?? m.cogs) - (m.postage ?? 0))} lm={lm} /></td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: '#60A5FA' }}>{fmtNum(m.ads)}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right' }}><ProfitCell val={m.profit} lm={lm} /></td>
-                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? <>{fmtNum(m.komisen)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.commission_pct}%)</span></> : '—'}</td>
+                    <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? <>{fmtNum(m.komisen)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.commission_pct}%)</span>{m.override > 0 && <div style={{ fontSize: '0.68rem', color: '#8B5CF6' }}>+ {fmtNum(m.override)} override</div>}</> : '—'}</td>
                     <td style={{ padding: '0.65rem 1rem', textAlign: 'right', color: textPrimary, fontWeight: 600 }}>{m.est_gaji !== null ? fmtNum(m.est_gaji) : '—'}</td>
                   </tr>
                 );
@@ -189,7 +191,7 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}><ProfitCell val={month.totals.gross_profit} lm={lm} /></td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#60A5FA' }}>{fmtNum(month.totals.ads)}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}><ProfitCell val={month.totals.profit} lm={lm} /></td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(month.totals.komisen)}</td>
+                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(month.totals.komisen)}{month.totals.override > 0 && <div style={{ fontSize: '0.68rem', color: '#8B5CF6' }}>+ {fmtNum(month.totals.override)} override</div>}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: textMuted }}>—</td>
               </tr>
             </tbody>
@@ -426,8 +428,10 @@ export default function MarketerReportPage() {
                       transition: 'background 0.1s',
                     }}>
                       <td style={{ padding: '0.8rem 1rem', fontWeight: isHQ ? 600 : 500, color: textPrimary, whiteSpace: 'nowrap' }}>
-                        {m.name}
-                        {m.code && <span style={{ fontSize: '0.68rem', color: textMuted, marginLeft: '0.4rem' }}>({m.code})</span>}
+                        {m.team_leader_id && <span style={{ color: textMuted }}>↳ </span>}{m.name}
+                        {m.team_leader_id
+                          ? <span style={{ fontSize: '0.68rem', color: '#8B5CF6', marginLeft: '0.4rem' }}>teamsale</span>
+                          : m.code && <span style={{ fontSize: '0.68rem', color: textMuted, marginLeft: '0.4rem' }}>({m.code})</span>}
                         {isHQ && <span style={{ fontSize: '0.65rem', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.08)', padding: '0.1rem 0.35rem', borderRadius: '4px', marginLeft: '0.4rem' }}>HQ</span>}
                         {!isHQ && m.is_active === false && <span style={{ fontSize: '0.62rem', color: '#EF4444', marginLeft: '0.4rem' }}>• tidak aktif</span>}
                       </td>
@@ -440,7 +444,7 @@ export default function MarketerReportPage() {
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right' }}><ProfitCell val={m.gross_profit} lm={lm} /></td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: '#60A5FA' }}>{fmtNum(m.ads)}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right' }}><ProfitCell val={m.profit} lm={lm} /></td>
-                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? <>{fmtNum(m.komisen)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.commission_pct}%)</span></> : '—'}</td>
+                      <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textSecondary }}>{m.komisen !== null ? <>{fmtNum(m.komisen)} <span style={{ fontSize: '0.68rem', color: textMuted }}>({m.commission_pct}%)</span>{m.override > 0 && <div style={{ fontSize: '0.68rem', color: '#8B5CF6' }}>+ {fmtNum(m.override)} override</div>}</> : '—'}</td>
                       <td style={{ padding: '0.8rem 1rem', textAlign: 'right', color: textPrimary, fontWeight: 600 }}>{m.est_gaji !== null ? fmtNum(m.est_gaji) : '—'}</td>
                     </tr>
                   );
@@ -463,7 +467,7 @@ export default function MarketerReportPage() {
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right' }}><ProfitCell val={t.gross_profit} lm={lm} /></td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: '#60A5FA' }}>{fmtNum(t.ads)}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right' }}><ProfitCell val={t.profit} lm={lm} /></td>
-                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(t.komisen)}</td>
+                    <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textSecondary }}>{fmtNum(t.komisen)}{t.override > 0 && <div style={{ fontSize: '0.68rem', color: '#8B5CF6' }}>+ {fmtNum(t.override)} override</div>}</td>
                     <td style={{ padding: '0.9rem 1rem', textAlign: 'right', color: textMuted }}>—</td>
                   </tr>
                 )}

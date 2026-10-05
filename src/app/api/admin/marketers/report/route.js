@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { summarizeByProduct, monthRange } from '@/lib/products';
-import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared, commissionPctFor, calcKomisen, FPX_FEE } from '@/lib/marketer-calc';
+import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared, commissionPctFor, calcKomisen, calcLeaderPay, TEAMSALE_PCT, FPX_FEE } from '@/lib/marketer-calc';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 async function requireAdmin() {
@@ -108,18 +108,34 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     const gross_profit = parseFloat((revenue - cogs).toFixed(2));
     const ads          = parseFloat((adsMap[m.id] || 0).toFixed(2));
     const profit       = parseFloat((gross_profit - ads).toFixed(2));
-    const commPct      = commissionPctFor(profit);     // berperingkat: ≥ RM10k → 10%, < RM10k → 5%
-    const komisen      = calcKomisen(profit, commPct);
-    const basicSalary  = parseFloat(m.marketer_basic_salary || 0);
+    const isTeamsale   = !!m.team_leader_id;
+    const basicSalary  = isTeamsale ? 0 : parseFloat(m.marketer_basic_salary || 0);   // teamsale: tiada basic
 
     rows.push({
       id: m.id, name: m.full_name || 'Marketer', code: m.marketer_code || null, is_active: m.is_active,
+      team_leader_id: m.team_leader_id || null,
+      leader_name: isTeamsale ? (marketers.find(x => x.id === m.team_leader_id)?.full_name || null) : null,
       orders, revenue: parseFloat(revenue.toFixed(2)),
       wa_orders: waSubs.length, wa_revenue: parseFloat(waSubs.reduce((s, sub) => s + parseAmount(sub), 0).toFixed(2)),
-      product_cogs, postage, cogs, gross_profit, ads, profit,
-      commission_pct: commPct, komisen, basic_salary: basicSalary,
-      est_gaji: parseFloat((basicSalary + komisen).toFixed(2)),
+      product_cogs, postage, cogs, gross_profit, ads, profit, basic_salary: basicSalary,
     });
+  }
+
+  // Komisen: teamsale 30% · ketua berperingkat (profit sendiri + team) + override 10% · marketer biasa berperingkat
+  for (const row of rows) {
+    if (row.team_leader_id) {
+      row.commission_pct = TEAMSALE_PCT;
+      row.komisen  = calcKomisen(row.profit, TEAMSALE_PCT);
+      row.override = 0;
+    } else {
+      const team = rows.filter(x => x.team_leader_id === row.id);
+      const pay  = calcLeaderPay(row.profit, team.map(x => ({ id: x.id, profit: x.profit })));
+      row.commission_pct = pay.rate;
+      row.komisen  = pay.komisen;
+      row.override = pay.override;
+      row.team_size = team.length;
+    }
+    row.est_gaji = parseFloat((row.basic_salary + row.komisen + row.override).toFixed(2));
   }
 
   // HQ row (marketer_id IS NULL)
@@ -140,15 +156,18 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     wa_revenue: parseFloat(hqSubs.filter(sub => sub.order_channel === 'whatsapp').reduce((s, sub) => s + parseAmount(sub), 0).toFixed(2)),
     product_cogs: hqProductCogs, postage: hqPostage, cogs: hqCogs,
     gross_profit: hqGrossProfit, ads: hqAds, profit: hqProfit,
-    commission_pct: null, komisen: null, basic_salary: null, est_gaji: null,
+    commission_pct: null, komisen: null, override: null, basic_salary: null, est_gaji: null,
   });
 
-  // Sort: marketers by revenue desc, HQ last
+  // Sort: marketers by revenue desc (teamsale terus di bawah ketua), HQ last
   rows.sort((a, b) => {
     if (a.id === '__hq__') return 1;
     if (b.id === '__hq__') return -1;
     return b.revenue - a.revenue;
   });
+  const leaders = rows.filter(x => !x.team_leader_id || !rows.some(l => l.id === x.team_leader_id));
+  const grouped = leaders.flatMap(l => [l, ...rows.filter(x => x.team_leader_id === l.id)]);
+  rows.splice(0, rows.length, ...grouped);
 
   // Sales Web = jumlah − WhatsApp (untuk column berasingan & sort)
   for (const r of rows) {
@@ -171,6 +190,7 @@ function computeStats(marketers, submissions, adsSpend, avgCost, kasturiCost, ga
     ads:          parseFloat(rows.reduce((s, r) => s + r.ads, 0).toFixed(2)),
     profit:       parseFloat(rows.reduce((s, r) => s + r.profit, 0).toFixed(2)),
     komisen:      parseFloat(rows.filter(r => r.komisen !== null).reduce((s, r) => s + (r.komisen || 0), 0).toFixed(2)),
+    override:     parseFloat(rows.reduce((s, r) => s + (r.override || 0), 0).toFixed(2)),
   };
 
   return { rows, totals };
@@ -233,7 +253,7 @@ export async function GET(req) {
     // Fetch marketers + product costs in parallel
     const [mktRes, stockRes] = await Promise.all([
       admin.from('profiles')
-        .select('id, full_name, marketer_code, is_active, marketer_basic_salary')
+        .select('id, full_name, marketer_code, is_active, marketer_basic_salary, team_leader_id')
         .eq('role', 'marketer')
         .order('full_name'),
       admin.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']),
@@ -270,15 +290,25 @@ export async function GET(req) {
       // Gaji: basic semua marketer AKTIF + komisen ikut profit setiap marketer
       const payroll = marketers.filter(m => m.is_active).map(m => {
         const row = mktRows.find(x => x.id === m.id) || {};
-        const basic = parseFloat(m.marketer_basic_salary || 0);
-        return { id: m.id, name: m.full_name || 'Marketer', basic, profit: row.profit || 0, commission_pct: row.commission_pct ?? commissionPctFor(0), komisen: row.komisen || 0, total: r2(basic + (row.komisen || 0)) };
+        const basic = m.team_leader_id ? 0 : parseFloat(m.marketer_basic_salary || 0);   // teamsale: tiada basic
+        const kom   = r2((row.komisen || 0) + (row.override || 0));                     // komisen + override team
+        return {
+          id: m.id, name: m.full_name || 'Marketer', basic, profit: row.profit || 0,
+          commission_pct: row.commission_pct ?? commissionPctFor(0), komisen: kom, override: row.override || 0,
+          is_teamsale: !!m.team_leader_id, leader_name: row.leader_name || null, total: r2(basic + kom),
+        };
       });
       // Marketer tak aktif yang masih dapat komisen bulan ni
       for (const x of mktRows) {
-        if (!payroll.some(p => p.id === x.id) && x.komisen > 0) {
-          payroll.push({ id: x.id, name: `${x.name} (tak aktif)`, basic: 0, profit: x.profit, commission_pct: x.commission_pct, komisen: x.komisen, total: x.komisen });
+        const kom = r2((x.komisen || 0) + (x.override || 0));
+        if (!payroll.some(p => p.id === x.id) && kom > 0) {
+          payroll.push({ id: x.id, name: `${x.name} (tak aktif)`, basic: 0, profit: x.profit, commission_pct: x.commission_pct, komisen: kom, override: x.override || 0, total: kom });
         }
       }
+      // Teamsale terus di bawah ketua
+      const leaderOf = id => marketers.find(m => m.id === id)?.team_leader_id || null;
+      const tops = payroll.filter(p => !leaderOf(p.id) || !payroll.some(x => x.id === leaderOf(p.id)));
+      payroll.splice(0, payroll.length, ...tops.flatMap(l => [l, ...payroll.filter(x => leaderOf(x.id) === l.id)]));
       const basicTotal   = r2(payroll.reduce((t, p) => t + p.basic, 0));
       const komisenTotal = r2(payroll.reduce((t, p) => t + p.komisen, 0));
 

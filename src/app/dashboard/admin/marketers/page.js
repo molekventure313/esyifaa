@@ -221,6 +221,8 @@ export default function MarketersPage() {
                       <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <td style={{ padding: '1rem' }}>
                           <div style={{ fontWeight: 600, color: '#F9FAFB' }}>{m.full_name}</div>
+                          {m.team_leader_id && <div style={{ fontSize: '0.72rem', color: '#A78BFA' }}>👥 Teamsale · Ketua: {m.team_leader_name || '—'}</div>}
+                          {m.team_size > 0 && <div style={{ fontSize: '0.72rem', color: '#A78BFA' }}>👥 Ketua · {m.team_size} teamsale</div>}
                           <div style={{ color: '#6B7280', fontSize: '0.75rem' }}>{m.email}</div>
                         </td>
                         <td style={{ padding: '1rem' }}>

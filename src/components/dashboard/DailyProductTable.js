@@ -63,8 +63,9 @@ export function ProductSummaryTable({ rows = [], theme, title = '📦 Prestasi I
  * @param commissionPct  null = tiada column Komisen (HQ)
  * @param endpoint  API PUT untuk simpan ads (marketer / admin)
  * @param onSaved   dipanggil lepas ads disimpan (refresh data)
+ * @param readOnlyAds  true = ads hanya dipapar (teamsale — ads diisi ketua)
  */
-export default function DailyProductTable({ days = [], totals = {}, commissionPct = null, endpoint, onSaved, theme, hint }) {
+export default function DailyProductTable({ days = [], totals = {}, commissionPct = null, endpoint, onSaved, theme, hint, readOnlyAds = false }) {
   const { lm, cardBg, subCardBg, cardBorder, textPrimary, textSecondary, textMuted } = theme;
   const showKomisen = commissionPct !== null && commissionPct !== undefined;
 
@@ -153,7 +154,9 @@ export default function DailyProductTable({ days = [], totals = {}, commissionPc
                                     <td style={{ ...sub, color: '#10B981' }}>{p.sales ? formatRM(p.sales) : empty}</td>
                                     <td style={{ ...sub, padding: '0.3rem 0.5rem' }} onClick={e => e.stopPropagation()}>
                                       {p.editable ? (
-                                        <AdsInput date={d.date} product={p.key} value={p.ads} endpoint={endpoint} onSaved={onSaved} lm={lm} textPrimary={textPrimary} />
+                                        readOnlyAds
+                                          ? <span style={{ color: '#F59E0B', fontWeight: 600 }}>{p.ads ? formatRM(p.ads) : '—'}</span>
+                                          : <AdsInput date={d.date} product={p.key} value={p.ads} endpoint={endpoint} onSaved={onSaved} lm={lm} textPrimary={textPrimary} />
                                       ) : empty}
                                     </td>
                                     <td style={{ ...sub, color: '#8B5CF6' }}>{p.cogs ? formatRM(p.cogs) : empty}</td>

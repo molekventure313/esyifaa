@@ -15,6 +15,30 @@ export const commissionPctFor = profit => (profit >= COMMISSION_TIER.threshold ?
 export const calcKomisen = (profit, pct = commissionPctFor(profit)) =>
   parseFloat((Math.max(0, profit) * pct / 100).toFixed(2));
 
+// ─── Teamsale (marketer yang ada ketua) ───────────────────────────────────────
+// Teamsale: 30% dari profit selepas ads (tiada basic). Ketua: override 10% dari profit setiap teamsale.
+// Kadar komisen ketua (5%/10%) ditentukan oleh profit SENDIRI + profit SEMUA teamsale, dikenakan pada profit sendiri.
+export const TEAMSALE_PCT = 30;
+export const LEADER_OVERRIDE_PCT = 10;
+
+/**
+ * Komisen ketua + team untuk satu tempoh.
+ * @param ownProfit    profit ketua sendiri (sales − COGS − ads ketua)
+ * @param teamProfits  [{ id, profit }] profit setiap teamsale
+ * @returns { rate, komisen, override, team: [{ id, profit, komisen, override }] }
+ */
+export function calcLeaderPay(ownProfit, teamProfits = []) {
+  const team = teamProfits.map(t => ({
+    ...t,
+    komisen:  calcKomisen(t.profit, TEAMSALE_PCT),
+    override: calcKomisen(t.profit, LEADER_OVERRIDE_PCT),
+  }));
+  const combined = ownProfit + teamProfits.reduce((s, t) => s + (t.profit || 0), 0);
+  const rate     = commissionPctFor(combined);
+  const override = parseFloat(team.reduce((s, t) => s + t.override, 0).toFixed(2));
+  return { rate, komisen: calcKomisen(ownProfit, rate), override, team, combined_profit: parseFloat(combined.toFixed(2)) };
+}
+
 // Caj payment gateway FPX (CHIP) setiap transaksi
 export const FPX_FEE = 1;
 

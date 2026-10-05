@@ -259,8 +259,8 @@ export default function HqReport({ lm, cardBg, cardBorder, textPrimary, textSeco
                   {showPayroll ? '▲ Sembunyi' : `▼ Lihat ${payroll.rows.length} marketer`}
                 </button>
               )}>
-              <Line t={t} minus label="👥 Gaji asas" value={payroll.basic} sub="semua marketer aktif" />
-              <Line t={t} minus label="🎯 Komisen" value={payroll.komisen} sub="5% · 10% jika profit ≥ RM10k" />
+              <Line t={t} minus label="👥 Gaji asas" value={payroll.basic} sub="semua marketer aktif (teamsale tiada basic)" />
+              <Line t={t} minus label="🎯 Komisen" value={payroll.komisen} sub="marketer 5%/10% · teamsale 30% · override ketua 10%" />
               {showPayroll && (
                 <div style={{ overflowX: 'auto', margin: '0.4rem 0 0.6rem' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', fontFamily: ff }}>
@@ -274,7 +274,11 @@ export default function HqReport({ lm, cardBg, cardBorder, textPrimary, textSeco
                     <tbody>
                       {payroll.rows.map(p => (
                         <tr key={p.id} style={{ borderTop: rowBorder, color: textSecondary }}>
-                          <td style={{ padding: '0.4rem 0.6rem', color: textPrimary, fontWeight: 600 }}>{p.name}</td>
+                          <td style={{ padding: '0.4rem 0.6rem', color: textPrimary, fontWeight: 600 }}>
+                            {p.is_teamsale && <span style={{ color: textMuted }}>↳ </span>}{p.name}
+                            {p.is_teamsale && <span style={{ fontSize: '0.68rem', color: '#8B5CF6', marginLeft: '0.3rem' }}>teamsale</span>}
+                            {p.override > 0 && <div style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 400 }}>termasuk override {rm(p.override)}</div>}
+                          </td>
                           <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', whiteSpace: 'nowrap', color: p.profit >= 0 ? green : red }}>{rm(p.profit)}</td>
                           <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right' }}>{p.commission_pct}%</td>
                           <td style={{ padding: '0.4rem 0.6rem', textAlign: 'right', whiteSpace: 'nowrap' }}>{rm(p.komisen)}</td>

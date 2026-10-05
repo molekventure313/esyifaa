@@ -149,21 +149,51 @@ export default function MarketerGajiPage() {
             <div style={{ background: lm ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)' : 'linear-gradient(135deg, rgba(6,78,59,0.4), rgba(5,150,105,0.15))', border: '3px solid #10B981', borderRadius: '10px', padding: '1.5rem', boxShadow: lm ? '0 2px 8px rgba(16,185,129,0.1)' : 'none' }}>
               <h2 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 800, color: lm ? '#065F46' : '#6EE7B7' }}>Ringkasan Gaji</h2>
               
+              {totals.is_teamsale ? (
+                <div style={{ marginBottom: '0.75rem', fontSize: '0.82rem', color: textSecondary }}>
+                  👥 Teamsale{totals.leader ? <> bawah <strong>{totals.leader}</strong></> : ''} · tiada gaji basic · kos ads diisi oleh ketua
+                </div>
+              ) : (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1rem', color: textPrimary, fontWeight: 500 }}>
                 <span>Gaji Basic</span>
                 <span>{formatRM(totals.basic_salary)}</span>
               </div>
+              )}
               
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '1rem', color: textPrimary, fontWeight: 500 }}>
                 <span>Komisen {totals.commission_pct}% (dari profit)</span>
                 <span>+ {formatRM(totals.komisen)}</span>
               </div>
-              <div style={{ marginTop: '-0.75rem', marginBottom: '1rem', fontSize: '0.78rem', color: textMuted }}>
-                Struktur komisen: 5% jika profit bawah RM10,000 · 10% jika profit RM10,000 ke atas
-                {totals.profit > 0 && totals.profit < 10000 && (
-                  <> · <strong style={{ color: '#10B981' }}>lagi {formatRM(10000 - totals.profit)} profit untuk naik ke 10%</strong></>
-                )}
-              </div>
+              {totals.is_teamsale ? (
+                <div style={{ marginTop: '-0.75rem', marginBottom: '1rem', fontSize: '0.78rem', color: textMuted }}>
+                  Komisen teamsale: {totals.commission_pct}% dari profit selepas ads
+                </div>
+              ) : (
+                <div style={{ marginTop: '-0.75rem', marginBottom: '1rem', fontSize: '0.78rem', color: textMuted }}>
+                  Struktur komisen: 5% jika profit bawah RM10,000 · 10% jika profit RM10,000 ke atas
+                  {totals.team?.length > 0 && <> (profit sendiri + team: {formatRM(totals.combined_profit)})</>}
+                  {totals.combined_profit > 0 && totals.combined_profit < 10000 && (
+                    <> · <strong style={{ color: '#10B981' }}>lagi {formatRM(10000 - totals.combined_profit)} profit untuk naik ke 10%</strong></>
+                  )}
+                </div>
+              )}
+
+              {totals.team?.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '1rem', color: textPrimary, fontWeight: 500 }}>
+                    <span>Override Team {totals.override_pct}%</span>
+                    <span>+ {formatRM(totals.override)}</span>
+                  </div>
+                  <div style={{ marginBottom: '1rem', paddingLeft: '0.75rem', fontSize: '0.78rem', color: textSecondary }}>
+                    {totals.team.map(t => (
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', padding: '0.15rem 0' }}>
+                        <span>↳ {t.name}{!t.is_active && ' (tak aktif)'} · profit {formatRM(t.profit)}</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>{formatRM(t.override)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {!profitPositive && (
                  <div style={{ marginBottom: '1rem', fontSize: '0.85rem', color: '#EF4444', fontStyle: 'italic' }}>
@@ -188,6 +218,8 @@ export default function MarketerGajiPage() {
               totals={{ sales: totals.totalSales, ads: totals.totalAds, cogs: totals.totalCOGS, profit: totals.profit, komisen: totals.komisen }}
               commissionPct={totals.commission_pct ?? 0}
               endpoint="/api/marketer/ads-spend"
+              readOnlyAds={totals.is_teamsale}
+              hint={totals.is_teamsale ? 'Kos ads diisi oleh ketua team anda.' : undefined}
               onSaved={() => fetchData(true)}
               theme={theme}
             />

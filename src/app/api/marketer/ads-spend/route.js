@@ -128,9 +128,12 @@ export async function PUT(req) {
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const adminClient = createAdminClient();
-    const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
+    const { data: profile } = await adminClient.from('profiles').select('role, team_leader_id').eq('id', user.id).single();
     if (!profile || profile.role !== 'marketer') {
        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+    if (profile.team_leader_id) {
+      return NextResponse.json({ success: false, error: 'Kos ads teamsale diisi oleh ketua team.' }, { status: 403 });
     }
 
     const { spend_date, product, amount } = await req.json();

@@ -95,6 +95,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '💬 Order WhatsApp', href: '/dashboard/marketer/order-wasap' },
     { section: 'LAPORAN' },
     { label: '💰 Gaji & Kos Ads', href: '/dashboard/marketer/gaji' },
+    { label: '👥 Team Saya', href: '/dashboard/marketer/team' },
     { label: '📊 UTM Analytics', href: '/dashboard/marketer/utm-analytics' },
     { section: 'TETAPAN' },
     { label: '👤 Profil & WhatsApp', href: '/dashboard/marketer/profil' },
@@ -124,6 +125,18 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Log Aktiviti', href: '/dashboard/admin/log' }
   ];
 
+  // Teamsale (marketer yang ada ketua): tiada ads/SP sendiri — menu order & komisen sahaja
+  const teamsaleNav = [
+    { section: 'UTAMA' },
+    { label: 'Dashboard', href: '/dashboard/marketer' },
+    { label: '📦 Orders Saya', href: '/dashboard/marketer/orders' },
+    { label: '💬 Order WhatsApp', href: '/dashboard/marketer/order-wasap' },
+    { section: 'LAPORAN' },
+    { label: '💰 Komisen Saya', href: '/dashboard/marketer/gaji' },
+  ];
+  const isTeamsale = role === 'marketer' && !!profile?.team_leader_id;
+  const marketerMenu = isTeamsale ? teamsaleNav : marketerNav;
+
   const isMarketer = role === 'marketer';
   const isMarketerPath = pathname.startsWith('/dashboard/marketer');
   
@@ -131,11 +144,11 @@ export default function Sidebar({ isOpen, onClose }) {
   if (isPerawatPath) {
     navItems = practitionerNav;
   } else if (isMarketerPath) {
-    navItems = marketerNav;
+    navItems = marketerMenu;
   } else if (isAdminPath) {
     navItems = adminNav;
   } else {
-    navItems = isAdmin ? adminNav : isMarketer ? marketerNav : practitionerNav;
+    navItems = isAdmin ? adminNav : isMarketer ? marketerMenu : practitionerNav;
   }
 
   const initials = profile?.full_name ? profile.full_name.substring(0, 2).toUpperCase() : 'U';
