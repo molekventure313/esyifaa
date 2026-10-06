@@ -48,8 +48,7 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
 
   // Tukar produk → reset pakej & add-on
   useEffect(() => { setPkgIdx(0); setAddons({}); }, [product]);
-  // Sabah/Sarawak → COD tak tersedia
-  useEffect(() => { if (east && payment === 'cod') setPayment('paid'); }, [east, payment]);
+  // Order WhatsApp: COD dibenarkan untuk semua negeri termasuk Sabah/Sarawak (staf sahkan sendiri dengan pelanggan)
 
   const set = (k) => (e) => {
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -227,9 +226,8 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
           <h2 style={h2}>3. Bayaran &amp; Sumber Pelanggan</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.5rem' }}>
             <button type="button" onClick={() => setPayment('paid')} style={pill(payment === 'paid')}>💳 Dah bayar <span style={{ fontWeight: 500, color: textMuted }}>(transfer / QR)</span></button>
-            <button type="button" onClick={() => !east && setPayment('cod')} disabled={east}
-              style={{ ...pill(payment === 'cod', '#F97316'), opacity: east ? 0.45 : 1, cursor: east ? 'not-allowed' : 'pointer' }}>
-              📦 COD <span style={{ fontWeight: 500, color: textMuted }}>{east ? '(tiada untuk Sabah/Sarawak)' : '(bayar masa terima)'}</span>
+            <button type="button" onClick={() => setPayment('cod')} style={pill(payment === 'cod', '#F97316')}>
+              📦 COD <span style={{ fontWeight: 500, color: textMuted }}>(bayar masa terima)</span>
             </button>
           </div>
           <div>

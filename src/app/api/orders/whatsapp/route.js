@@ -51,11 +51,10 @@ export async function POST(req) {
     try {
       priced = priceOrder({ product: b.product, packageIndex: Number(b.package_index), addons: b.addons || {}, state: negeri });
     } catch (e) { return bad(e.message); }
-    const { def, pkg, addonKeys, postage, total: autoTotal, east } = priced;
+    const { def, pkg, addonKeys, postage, total: autoTotal } = priced;
 
     const payment = b.payment === 'cod' ? 'cod' : b.payment === 'paid' ? 'paid' : null;
     if (!payment) return bad('Sila pilih cara bayaran.');
-    if (payment === 'cod' && east) return bad('COD tidak tersedia untuk Sabah & Sarawak.');
 
     const origin = ['fb_ads', 'repeat'].includes(b.origin) ? b.origin : null;
     if (!origin) return bad('Sila pilih sumber pelanggan (FB Ads / Repeat).');
