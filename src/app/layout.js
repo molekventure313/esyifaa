@@ -1,4 +1,4 @@
-import { Inter, Plus_Jakarta_Sans, Outfit } from 'next/font/google';
+import localFont from 'next/font/local';
 import { unstable_cache } from 'next/cache';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
@@ -7,22 +7,26 @@ import ClientPixelProvider from '@/components/salespage/ClientPixelProvider';
 import SocialProofToast from '@/components/salespage/SocialProofToast';
 
 
-const inter = Inter({
-  subsets: ['latin'],
+// Font disimpan dalam projek (src/app/fonts, subset latin, variable) — build TIDAK lagi muat turun
+// dari Google Fonts (pernah gagal di Netlify: respons Google pelik → "Cannot read properties of null").
+const inter = localFont({
+  src: './fonts/inter-latin-var.woff2',
+  weight: '100 900',
   variable: '--font-inter',
   display: 'swap',
 });
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
+const jakarta = localFont({
+  src: './fonts/jakarta-latin-var.woff2',
+  weight: '200 800',
   variable: '--font-jakarta',
   display: 'swap',
 });
 
 // Heading font (--font-heading dalam globals.css) — dulu @import Google Fonts (render-blocking)
-const outfit = Outfit({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '800'],
+const outfit = localFont({
+  src: './fonts/outfit-latin-var.woff2',
+  weight: '100 900',
   variable: '--font-outfit',
   display: 'swap',
   preload: false,
