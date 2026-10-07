@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount } from '@/lib/marketer-calc';
 import { formatOrder } from '@/lib/orders';
+import { ownerScope } from '@/lib/team';
 
 export async function GET(req) {
   try {
@@ -19,6 +20,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'all';
     const status = searchParams.get('status') || 'all';
+    const owner  = searchParams.get('owner') || 'all';   // ketua: all | self | team
 
     const nowUTC = new Date();
     const myNow = new Date(nowUTC.getTime() + 8 * 60 * 60 * 1000);
@@ -44,11 +46,18 @@ export async function GET(req) {
       dateFrom = `${myNow.getUTCFullYear()}-${String(myNow.getUTCMonth() + 1).padStart(2, '0')}-01T00:00:00+08:00`;
     }
 
+    // Ketua: order sendiri + teamsale (lihat sahaja — padam / tanda bayar hanya order sendiri)
+    const scope = await ownerScope(adminClient, user.id);
+    const ownerIds = owner === 'self' ? [user.id]
+      : owner === 'team' ? scope.ids.filter(id => id !== user.id)
+      : scope.ids;
+    if (!ownerIds.length) return NextResponse.json({ success: true, data: [], stats: {}, has_team: scope.team.length > 0 });
+
     // Order FPX/COD marketer sendiri (sama skop dgn Pengurusan Order admin)
     let query = adminClient
       .from('submissions')
       .select('id, full_name, phone, address, problem, notes, source, qty, payment_type, payment_status, chip_bill_id, amount_paid, ninjavan_exported_at, returned_at, marketer_id, order_channel, order_origin, created_at')
-      .eq('marketer_id', user.id)
+      .in('marketer_id', ownerIds)
       .in('payment_type', ['fpx_payment', 'cod'])
       .order('created_at', { ascending: false });
 
@@ -59,7 +68,11 @@ export async function GET(req) {
     if (error) throw error;
 
     // Format sama dgn admin: label produk (pakej + add-on), alamat, amaun
-    const all = (orders || []).map(o => ({ ...formatOrder(o), amount: parseAmount(o) }));
+    const all = (orders || []).map(o => ({
+      ...formatOrder(o), amount: parseAmount(o),
+      is_team: o.marketer_id !== user.id,
+      owner_name: o.marketer_id !== user.id ? scope.names[o.marketer_id] : null,
+    }));
 
     // Ringkasan untuk tempoh dipilih (tanpa tapis status)
     const completed = all.filter(o => o.payment_status === 'completed');
@@ -73,7 +86,7 @@ export async function GET(req) {
     };
 
     const data = status === 'all' ? all : all.filter(o => o.payment_status === status);
-    return NextResponse.json({ success: true, data, stats });
+    return NextResponse.json({ success: true, data, stats, has_team: scope.team.length > 0 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

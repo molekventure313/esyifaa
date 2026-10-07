@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { productUnits, calcPostage } from '@/lib/marketer-calc';
+import { ownerScope } from '@/lib/team';
 
 // ─── Timezone helpers (MYT = UTC+8) ────────────────────────────────────────
 const MYT_OFFSET_MS = 8 * 3600 * 1000;
@@ -91,6 +92,7 @@ async function queryOrders(adminClient, { from, to }, marketer_id) {
     .order('created_at', { ascending: false });
 
   if (marketer_id === 'hq') q = q.is('marketer_id', null);
+  else if (Array.isArray(marketer_id)) q = q.in('marketer_id', marketer_id);   // ketua + teamsale
   else if (marketer_id) q = q.eq('marketer_id', marketer_id);
 
   if (from) q = q.gte('created_at', from.toISOString());
@@ -157,7 +159,9 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'today';
-    const marketer_id = searchParams.get('marketer_id');
+    // Pilih ketua → termasuk order teamsale dia
+    const marketerParam = searchParams.get('marketer_id');
+    const marketer_id = marketerParam && marketerParam !== 'hq' ? (await ownerScope(adminClient, marketerParam)).ids : marketerParam;
 
     const { current, previous } = getMYTBounds(period);
 
@@ -171,7 +175,7 @@ export async function GET(req) {
       .limit(10);
       
     if (marketer_id === 'hq') recentQ = recentQ.is('marketer_id', null);
-    else if (marketer_id) recentQ = recentQ.eq('marketer_id', marketer_id);
+    else if (Array.isArray(marketer_id)) recentQ = recentQ.in('marketer_id', marketer_id);
 
     // Fetch current + previous period + last 10 recent + product costs (SGH-200G, KKE-01, GPM-500G)
     const [currentOrders, previousOrders, allRecentRes, stockRes] = await Promise.all([

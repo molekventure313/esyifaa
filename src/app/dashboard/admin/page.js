@@ -216,7 +216,9 @@ export default function AdminDashboardPage() {
               <option value="all">Semua (HQ + Marketers)</option>
               <option value="hq">HQ Sahaja</option>
               {marketers.map(m => (
-                <option key={m.id} value={m.id}>{m.full_name} ({m.marketer_code || 'Tiada Kod'})</option>
+                <option key={m.id} value={m.id}>
+                  {m.team_leader_id ? '↳ ' : ''}{m.full_name} ({m.team_leader_id ? 'teamsale' : m.marketer_code || 'Tiada Kod'}){m.team_size > 0 ? ' + team' : ''}
+                </option>
               ))}
             </select>
           </div>

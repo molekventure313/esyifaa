@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildCampaignTree, summarizeClicks } from '@/lib/utm';
+import { ownerScope } from '@/lib/team';
 
 const MYT_MS = 8 * 3600 * 1000;
 
@@ -60,7 +61,7 @@ export async function GET(req) {
       .eq('payment_status', 'completed')
       .is('returned_at', null)
       .in('payment_type', ['fpx_payment', 'cod'])
-      .eq('marketer_id', user.id)   // ← filter marketer sendiri
+      .in('marketer_id', (await ownerScope(admin, user.id)).ids)   // ← marketer sendiri + teamsale (order WA team dari ads ketua)
       .order('created_at', { ascending: false });
 
     if (from) q = q.gte('created_at', from);

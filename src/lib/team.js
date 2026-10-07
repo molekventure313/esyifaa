@@ -74,3 +74,24 @@ export function spWhatsapp(marketer, teamsale) {
   if (marketer?.marketer_whatsapp) return { number: marketer.marketer_whatsapp, source: 'self', teamsale: teamsale || null };
   return { number: null, source: null, teamsale: teamsale || null };
 }
+
+/**
+ * Pemilik order yang dikira untuk seorang marketer:
+ * ketua → diri sendiri + SEMUA teamsale dia (aktif & tak aktif — order lama kekal dikira);
+ * teamsale / marketer tanpa team → diri sendiri sahaja.
+ * @returns { ids: [uuid], names: { [id]: nama }, team: [{ id, full_name }], isTeamsale }
+ */
+export async function ownerScope(admin, userId) {
+  const { data: me } = await admin.from('profiles').select('id, full_name, team_leader_id').eq('id', userId).maybeSingle();
+  if (!me || me.team_leader_id) {
+    return { ids: [userId], names: { [userId]: me?.full_name || '' }, team: [], isTeamsale: !!me?.team_leader_id };
+  }
+  const { data: team } = await admin.from('profiles').select('id, full_name').eq('team_leader_id', userId).eq('role', 'marketer');
+  const t = team || [];
+  return {
+    ids: [userId, ...t.map(x => x.id)],
+    names: Object.fromEntries([[userId, me.full_name || ''], ...t.map(x => [x.id, x.full_name || 'Teamsale'])]),
+    team: t,
+    isTeamsale: false,
+  };
+}

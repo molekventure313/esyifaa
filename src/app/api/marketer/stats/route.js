@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount, calcCOGS as calcCOGSShared } from '@/lib/marketer-calc';
+import { ownerScope } from '@/lib/team';
 
 export async function GET(req) {
   try {
@@ -46,18 +47,21 @@ export async function GET(req) {
     }
     // 'all' → no date filter
 
+    // Ketua: order & ads sendiri + teamsale. Teamsale: sendiri sahaja.
+    const scope = await ownerScope(adminClient, user.id);
+
     // Build queries — select all fields needed for COGS + parseAmount
     let subsQ = adminClient
       .from('submissions')
-      .select('id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, order_channel, returned_at, created_at')
-      .eq('marketer_id', user.id)
+      .select('id, marketer_id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, order_channel, returned_at, created_at')
+      .in('marketer_id', scope.ids)
       .in('payment_type', ['fpx_payment', 'cod'])
       .order('created_at', { ascending: false });
 
     let adsQ = adminClient
       .from('ads_spend')
-      .select('amount, spend_date')
-      .eq('marketer_id', user.id);
+      .select('marketer_id, amount, spend_date')
+      .in('marketer_id', scope.ids);
 
     if (dateFrom) { subsQ = subsQ.gte('created_at', dateFrom); adsQ = adsQ.gte('spend_date', dateFrom.split('T')[0]); }
     if (dateTo)   { subsQ = subsQ.lte('created_at', dateTo);   adsQ = adsQ.lte('spend_date', dateTo.split('T')[0]); }
@@ -93,7 +97,7 @@ export async function GET(req) {
     // Recent orders — completed only, dengan parsed amount
     const recentOrders = completedSubs
       .slice(0, 10)
-      .map(s => ({ ...s, amount: parseAmount(s) }));
+      .map(s => ({ ...s, amount: parseAmount(s), owner_name: s.marketer_id !== user.id ? scope.names[s.marketer_id] : null }));
 
     // Sales by source — guna parseAmount untuk revenue yang betul
     const sourceMap = {};
@@ -113,10 +117,23 @@ export async function GET(req) {
       return { channel: ch, orders: arr.length, revenue: parseFloat(arr.reduce((t, s) => t + parseAmount(s), 0).toFixed(2)) };
     });
 
+    // Pecahan Sendiri | Team (ketua sahaja)
+    const ownerBreakdown = scope.team.length ? scope.ids.map(id => {
+      const arr = completedSubs.filter(s => s.marketer_id === id);
+      const adsAmt = ads.filter(a => a.marketer_id === id).reduce((t, a) => t + (parseFloat(a.amount) || 0), 0);
+      const rev = arr.reduce((t, s) => t + parseAmount(s), 0);
+      return {
+        id, name: scope.names[id], is_self: id === user.id,
+        orders: arr.length, revenue: parseFloat(rev.toFixed(2)),
+        profit: parseFloat((rev - adsAmt - calcCOGS(arr)).toFixed(2)),
+      };
+    }) : [];
+
     return NextResponse.json({
       success: true,
       data: {
         channels,
+        ownerBreakdown,
         profile,
         totalOrders,
         totalRevenue,

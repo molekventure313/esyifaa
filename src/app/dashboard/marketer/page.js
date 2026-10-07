@@ -152,6 +152,23 @@ export default function MarketerDashboardPage() {
             </div>
           </div>
 
+          {/* Ketua: pecahan Sendiri | Team — angka di atas dah termasuk order teamsale */}
+          {(totals.ownerBreakdown || []).length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              {totals.ownerBreakdown.map(o => (
+                <div key={o.id} style={{ background: cardBg, border: cardBorder, borderRadius: '10px', padding: '1rem 1.25rem', boxShadow: lm ? '0 1px 3px rgba(0,0,0,0.05)' : 'none' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: o.is_self ? '#10B981' : '#A78BFA', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
+                    {o.is_self ? '👤 Sendiri' : `👥 Team · ${o.name}`}
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.03em', lineHeight: 1 }}>{formatRM(o.revenue)}</div>
+                  <div style={{ fontSize: '0.75rem', color: textMuted, marginTop: '0.4rem' }}>
+                    {o.orders} order · profit <span style={{ color: o.profit >= 0 ? '#10B981' : '#EF4444', fontWeight: 600 }}>{formatRM(o.profit)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Sales ikut saluran — Web (borang SP) vs WhatsApp (Order WhatsApp) */}
           {(totals.channels || []).length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -219,7 +236,9 @@ export default function MarketerDashboardPage() {
                     <div key={o.id} style={{ padding: '0.7rem 0.9rem', borderRadius: '8px', background: subCardBg, border: lm ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: '0.85rem', color: textPrimary }}>{o.full_name}</div>
-                        <div style={{ fontSize: '0.7rem', color: textMuted, marginTop: '0.1rem' }}>{o.source} · {formatTimeAgo(o.created_at)}</div>
+                        <div style={{ fontSize: '0.7rem', color: textMuted, marginTop: '0.1rem' }}>
+                          {o.owner_name && <span style={{ color: '#A78BFA', fontWeight: 600 }}>👥 {o.owner_name} · </span>}{o.source} · {formatTimeAgo(o.created_at)}
+                        </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.4rem', borderRadius: '5px', background: o.payment_status === 'completed' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', color: o.payment_status === 'completed' ? '#10B981' : '#F59E0B' }}>

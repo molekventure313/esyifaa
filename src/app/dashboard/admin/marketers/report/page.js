@@ -34,6 +34,42 @@ function ProfitCell({ val, lm }) {
   );
 }
 
+// ── Teamsale: susun di bawah ketua + baris "Jumlah Team" ───────────────────────
+// tops = baris bukan teamsale (dah tersusun). Teamsale ikut terus di bawah ketua, diikuti baris subtotal.
+const SUM_KEYS = ['orders', 'revenue', 'web_revenue', 'web_orders', 'wa_revenue', 'wa_orders', 'product_cogs', 'postage', 'gross_profit', 'ads', 'profit', 'est_gaji'];
+function groupWithTeams(tops, all) {
+  return tops.flatMap(l => {
+    const team = all.filter(x => x.team_leader_id && x.team_leader_id === l.id);
+    if (!team.length) return [l];
+    const members = [l, ...team];
+    const sub = { __team: true, id: `${l.id}__team`, name: l.name, size: team.length };
+    for (const k of SUM_KEYS) sub[k] = members.reduce((t, x) => t + (parseFloat(x[k]) || 0), 0);
+    sub.komisen = members.reduce((t, x) => t + (x.komisen || 0) + (x.override || 0), 0);
+    return [...members, sub];
+  });
+}
+
+function TeamSubtotalRow({ m, lm, textPrimary, textSecondary, textMuted, pad }) {
+  const td = { padding: pad, textAlign: 'right', whiteSpace: 'nowrap', fontWeight: 700 };
+  const purple = lm ? '#6D28D9' : '#C4B5FD';
+  return (
+    <tr style={{ background: lm ? 'rgba(139,92,246,0.06)' : 'rgba(139,92,246,0.08)', borderBottom: lm ? '1px solid #E9D5FF' : '1px solid rgba(139,92,246,0.25)' }}>
+      <td style={{ ...td, textAlign: 'left', color: purple, fontSize: '0.78rem' }}>👥 Jumlah Team {m.name} <span style={{ fontWeight: 500, color: textMuted }}>(ketua + {m.size})</span></td>
+      <td style={{ ...td, color: textPrimary }}>{m.orders}</td>
+      <td style={{ ...td, color: textSecondary }}>{fmtNum(m.web_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({m.web_orders})</span></td>
+      <td style={{ ...td, color: m.wa_revenue ? '#25D366' : textMuted }}>{m.wa_revenue ? <>{fmtNum(m.wa_revenue)} <span style={{ fontSize: '0.68rem', color: textMuted, fontWeight: 500 }}>({m.wa_orders})</span></> : '—'}</td>
+      <td style={{ ...td, color: lm ? '#047857' : '#34D399', fontWeight: 800 }}>{fmtNum(m.revenue)}</td>
+      <td style={{ ...td, color: textSecondary }}>{fmtNum(m.product_cogs)}</td>
+      <td style={{ ...td, color: textMuted }}>{fmtNum(m.postage)}</td>
+      <td style={td}><ProfitCell val={m.gross_profit} lm={lm} /></td>
+      <td style={{ ...td, color: '#60A5FA' }}>{fmtNum(m.ads)}</td>
+      <td style={td}><ProfitCell val={m.profit} lm={lm} /></td>
+      <td style={{ ...td, color: textSecondary }}>{fmtNum(m.komisen)}</td>
+      <td style={{ ...td, color: textPrimary }}>{fmtNum(m.est_gaji)}</td>
+    </tr>
+  );
+}
+
 // ── Sales & Ads Ikut Produk ────────────────────────────────────────────────────
 function RoasCell({ roas, textMuted }) {
   if (roas === null || roas === undefined) return <span style={{ color: textMuted }}>—</span>;
@@ -151,7 +187,8 @@ function MonthSection({ month, lm, cardBg, cardBorder, textPrimary, textSecondar
               </tr>
             </thead>
             <tbody>
-              {month.marketers.map((m, i) => {
+              {groupWithTeams(month.marketers.filter(x => !x.team_leader_id || !month.marketers.some(l => l.id === x.team_leader_id)), month.marketers).map((m, i) => {
+                if (m.__team) return <TeamSubtotalRow key={m.id} m={m} lm={lm} textPrimary={textPrimary} textSecondary={textSecondary} textMuted={textMuted} pad="0.65rem 1rem" />;
                 const isHQ = m.id === '__hq__';
                 return (
                   <tr key={m.id} style={{
@@ -256,14 +293,16 @@ export default function MarketerReportPage() {
 
   const sortedMarketers = (() => {
     if (!data?.marketers) return [];
-    const hq  = data.marketers.filter(m => m.id === '__hq__');
-    const rest = data.marketers.filter(m => m.id !== '__hq__');
+    const all  = data.marketers;
+    const hq   = all.filter(m => m.id === '__hq__');
+    // Susun ketua / marketer biasa; teamsale kekal di bawah ketua masing-masing
+    const rest = all.filter(m => m.id !== '__hq__' && (!m.team_leader_id || !all.some(l => l.id === m.team_leader_id)));
     rest.sort((a, b) => {
       const av = a[sortCol] ?? -Infinity;
       const bv = b[sortCol] ?? -Infinity;
       return sortDir === 'asc' ? av - bv : bv - av;
     });
-    return [...rest, ...hq];
+    return [...groupWithTeams(rest, all), ...hq];
   })();
 
   const t = data?.totals;
@@ -420,6 +459,7 @@ export default function MarketerReportPage() {
               </thead>
               <tbody>
                 {sortedMarketers.map((m) => {
+                  if (m.__team) return <TeamSubtotalRow key={m.id} m={m} lm={lm} textPrimary={textPrimary} textSecondary={textSecondary} textMuted={textMuted} pad="0.8rem 1rem" />;
                   const isHQ = m.id === '__hq__';
                   return (
                     <tr key={m.id} style={{

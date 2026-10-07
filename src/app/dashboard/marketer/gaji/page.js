@@ -187,7 +187,7 @@ export default function MarketerGajiPage() {
                   <div style={{ marginBottom: '1rem', paddingLeft: '0.75rem', fontSize: '0.78rem', color: textSecondary }}>
                     {totals.team.map(t => (
                       <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', padding: '0.15rem 0' }}>
-                        <span>↳ {t.name}{!t.is_active && ' (tak aktif)'} · profit {formatRM(t.profit)}</span>
+                        <span>↳ {t.name}{!t.is_active && ' (tak aktif)'} · {t.orders} order · sales {formatRM(t.sales)} · profit {formatRM(t.profit)}</span>
                         <span style={{ whiteSpace: 'nowrap' }}>{formatRM(t.override)}</span>
                       </div>
                     ))}

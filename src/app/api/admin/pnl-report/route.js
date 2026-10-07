@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { ownerScope } from '@/lib/team';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 async function requireAdmin() {
@@ -113,7 +114,7 @@ async function fetchMovements(adminClient, fromUTC, toUTC, marketer_id) {
   
   let subQ = adminClient.from('submissions').select('id').in('id', refIds).is('returned_at', null);
   if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
-  else if (marketer_id) subQ = subQ.eq('marketer_id', marketer_id);
+  else if (Array.isArray(marketer_id)) subQ = subQ.in('marketer_id', marketer_id);   // ketua + teamsale
   
   const { data: subs } = await subQ;
   const existingIds = new Set((subs || []).map(s => s.id));
@@ -152,7 +153,7 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
 
   let subQ = adminClient.from('submissions').select('id').in('id', refIds).is('returned_at', null);
   if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
-  else if (marketer_id) subQ = subQ.eq('marketer_id', marketer_id);
+  else if (Array.isArray(marketer_id)) subQ = subQ.in('marketer_id', marketer_id);   // ketua + teamsale
   
   const { data: subs } = await subQ;
   const existingIds = new Set((subs || []).map(s => s.id));
@@ -187,7 +188,7 @@ async function fetchAds(adminClient, fromDate, toDate, marketer_id) {
   if (fromDate) q = q.gte('spend_date', fromDate);
   if (toDate)   q = q.lte('spend_date', toDate);
   if (marketer_id === 'hq') q = q.is('marketer_id', null);
-  else if (marketer_id) q = q.eq('marketer_id', marketer_id);
+  else if (Array.isArray(marketer_id)) q = q.in('marketer_id', marketer_id);   // ketua + teamsale
   const { data } = await q;
   return data || [];
 }
@@ -227,7 +228,9 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const mode   = searchParams.get('mode')   || 'daily';
     const period = searchParams.get('period') || 'today';
-    const marketer_id = searchParams.get('marketer_id');
+    // Pilih ketua → termasuk teamsale dia
+    const marketerParam = searchParams.get('marketer_id');
+    const marketer_id = marketerParam && marketerParam !== 'hq' ? (await ownerScope(adminClient, marketerParam)).ids : marketerParam;
 
     // Avg cost for COGS — fetch all physical products
     const stockRes = await adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']);

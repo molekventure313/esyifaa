@@ -33,6 +33,8 @@ export default function MarketerOrdersPage() {
   const [period, setPeriod] = useState('all');
   const [status, setStatus] = useState('all');
   const [channel, setChannel] = useState('all');   // all | web | whatsapp
+  const [owner, setOwner] = useState('all');       // ketua: all | self | team
+  const [hasTeam, setHasTeam] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [lastUpdated, setLastUpdated] = useState('');
   const [isLightMode, setIsLightMode] = useState(false);
@@ -67,16 +69,17 @@ export default function MarketerOrdersPage() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch(`/api/marketer/orders?period=${period}&status=${status}`);
+      const res = await fetch(`/api/marketer/orders?period=${period}&status=${status}&owner=${owner}`);
       const json = await res.json();
       if (json.success) {
         setOrders(json.data || []);
+        setHasTeam(!!json.has_team);
         setStats(json.stats || null);
         setLastUpdated(new Date().toLocaleTimeString('ms-MY'));
       }
     } catch (_) {}
     finally { setLoading(false); }
-  }, [period, status]);
+  }, [period, status, owner]);
 
   useEffect(() => {
     setLoading(true);
@@ -245,6 +248,25 @@ export default function MarketerOrdersPage() {
             }}>{t.label}</button>
           ))}
         </div>
+        {hasTeam && (
+          <>
+            <div style={{ width: '1px', height: '28px', background: lm ? '#E2E8F0' : 'rgba(255,255,255,0.1)' }} />
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {[
+                { value: 'all', label: 'Semua (Sendiri + Team)' },
+                { value: 'self', label: '👤 Sendiri' },
+                { value: 'team', label: '👥 Team' },
+              ].map(t => (
+                <button key={t.value} onClick={() => setOwner(t.value)} style={{
+                  padding: '0.45rem 0.9rem', borderRadius: '6px', fontSize: '0.78rem',
+                  fontWeight: 600, cursor: 'pointer', border: 'none',
+                  background: owner === t.value ? '#7C3AED' : subCardBg,
+                  color: owner === t.value ? '#fff' : textSecondary,
+                }}>{t.label}</button>
+              ))}
+            </div>
+          </>
+        )}
         <input
           type="text" placeholder="Cari nama / phone..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
           style={{
@@ -286,6 +308,9 @@ export default function MarketerOrdersPage() {
                   {/* Pelanggan */}
                   <td style={{ ...td, minWidth: '140px' }}>
                     <div style={{ fontWeight: 700, color: textPrimary, fontSize: '0.875rem' }}>{order.full_name}</div>
+                    {order.is_team && (
+                      <div style={{ fontSize: '0.65rem', color: '#A78BFA', fontWeight: 700, marginTop: '0.15rem' }}>👥 {order.owner_name || 'Teamsale'}</div>
+                    )}
                     {order.source && (
                       <div style={{ fontSize: '0.65rem', color: textMuted, marginTop: '0.15rem' }}>
                         Dari: <span style={{ fontWeight: 600 }}>{order.source}</span>
@@ -356,7 +381,7 @@ export default function MarketerOrdersPage() {
                   {/* Tindakan */}
                   <td style={td}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      {canMarkPaid(order) && (
+                      {!order.is_team && canMarkPaid(order) && (
                         <button onClick={() => openPay(order)} style={actionBtn('rgba(16,185,129,0.12)', 'rgba(16,185,129,0.35)', '#10B981')}>
                           ✅ Mark as Paid
                         </button>
@@ -366,6 +391,7 @@ export default function MarketerOrdersPage() {
                           💬 WA
                         </a>
                       )}
+                      {!order.is_team && (   // order teamsale: lihat sahaja
                       <button
                         onClick={() => handleDelete(order)}
                         disabled={deletingId === order.id}
@@ -373,6 +399,7 @@ export default function MarketerOrdersPage() {
                       >
                         {deletingId === order.id ? '...' : '🗑 Padam'}
                       </button>
+                      )}
                     </div>
                   </td>
 
