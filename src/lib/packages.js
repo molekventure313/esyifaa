@@ -26,11 +26,11 @@ export const ORDER_PRODUCTS = {
     name: 'Sabun Garam Himalaya Pengisian ESyifaa (200g)',
     packages: [
       { units: 1, label: '1 Unit', price: 39 },
-      { units: 2, label: '2 Unit', price: 70, freePostage: true },
-      { units: 3, label: '3 Unit', price: 90, freePostage: true, includesKasturi: true, noAddons: ['kasturi'] },   // Kasturi dah percuma
+      { units: 2, label: '2 Unit', price: 70 },
+      { units: 3, label: '3 Unit', price: 90, freePostage: true },   // 3 Unit: free pos (tiada hadiah Kasturi)
     ],
     addons: ['kasturi'],
-    // 2 & 3 Unit: postage percuma (semua negeri). 1 Unit: add-on Kasturi diskaun postage RM5.
+    // 3 Unit: postage percuma (semua negeri). 1 & 2 Unit: add-on Kasturi diskaun postage RM5.
     postage: ({ east, pkg, addons }) => (pkg.freePostage ? 0 : Math.max(0, (east ? POSTAGE_EAST : POSTAGE_NORMAL) - (addons.kasturi ? 5 : 0))),
   },
   'garam-pengasihan': {

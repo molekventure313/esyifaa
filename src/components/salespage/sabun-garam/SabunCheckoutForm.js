@@ -13,17 +13,15 @@ const BASE_PACKAGES = [
     features: ['1 KETUL SABUN GARAM (200g)', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
   },
   {
-    units: 2, label: '2 Unit', price: 70, savings: 8, badge: 'JIMAT RM8 + FREE POS',
+    units: 2, label: '2 Unit', price: 70, savings: 8, badge: 'JIMAT RM8',
     pillLabel: 'PAKEJ BERDUA', originalPrice: 78,
-    freePostage: true,
-    features: ['2 KETUL SABUN GARAM (200g)', 'JIMAT RM8', 'PERCUMA POSTAGE', 'COD TERSEDIA (SEMENANJUNG)'],
+    features: ['2 KETUL SABUN GARAM (200g)', 'JIMAT RM8', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
   },
   {
-    units: 3, label: '3 Unit', price: 90, savings: 27, badge: 'Paling Jimat + Free Gift', recommended: true,
+    units: 3, label: '3 Unit', price: 90, savings: 27, badge: 'Paling Jimat + Free Pos', recommended: true,
     pillLabel: 'PAKEJ PALING JIMAT', originalPrice: 117,
-    freePostage: true,
-    includesKasturi: true,   // hadiah percuma 1 botol Kasturi — stok ditolak (FPX: nota "Free Gift", COD: free_gift_kasturi)
-    features: ['3 KETUL SABUN GARAM (200g)', 'PERCUMA MINYAK KASTURI KIJANG (BERNILAI RM20)', 'PERCUMA POSTAGE', 'JIMAT RM27'],
+    freePostage: true,   // 3 Unit sahaja: postage percuma (semua negeri). Tiada hadiah Kasturi — add-on Kasturi boleh ditambah.
+    features: ['3 KETUL SABUN GARAM (200g)', 'PERCUMA POSTAGE', 'JIMAT RM27', 'COD TERSEDIA (SEMENANJUNG)'],
   },
 ];
 
@@ -110,7 +108,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const isEastMalaysia = EAST_MALAYSIA.includes(formData.negeri);
   const postage        = isEastMalaysia ? POSTAGE_EAST : POSTAGE_NORMAL;
 
-  // Build packages with dynamic postage — 2 & 3 Unit: postage percuma (semua negeri)
+  // Build packages with dynamic postage — 3 Unit: postage percuma (semua negeri)
   const PACKAGES = BASE_PACKAGES.map(p => ({
     ...p,
     postage: p.freePostage ? 0 : postage,
@@ -378,7 +376,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
             Pilih Pakej &amp; Tempah
           </h2>
           <p style={{ color: '#64748B', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto' }}>
-            Postage <strong style={{ color: '#047857' }}>PERCUMA</strong> untuk 2 unit ke atas · 1 unit: RM5 Semenanjung / RM10 Sabah &amp; Sarawak
+            Postage <strong style={{ color: '#047857' }}>PERCUMA</strong> untuk 3 unit · 1–2 unit: RM5 Semenanjung / RM10 Sabah &amp; Sarawak
           </p>
         </div>
 
