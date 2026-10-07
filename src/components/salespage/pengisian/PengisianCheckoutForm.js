@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
+import { useWaButton, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
 
 const PACKAGE_FEATURES = [
   { icon: '🔥', text: 'Pengisian Ayat Ruqyah Pembakar & Pemusnah Jin' },
@@ -94,6 +95,8 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
 
   const ff = 'var(--font-inter), -apple-system, sans-serif';
   const pkg = PACKAGES[selectedPkg];
+  // Butang 'Bayar Manual Melalui WhatsApp' — SP marketer guna no. marketer/teamsale; klik → Lead + rekod klik
+  const wa = useWaButton({ hqNumber: HQ_WHATSAPP_PENGISIAN, message: `Assalamualaikum, saya nak buat pengisian item (${pkg.label})`, product: 'Pengisian E-Syifa' });
   const grandTotal = pkg.price; // Fokus 100% pada pakej pengisian item tanpa add-on
 
   // FPX Pixel Init
@@ -732,12 +735,13 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
             </p>
 
             {/* WhatsApp Alternative */}
-            <div style={{ textAlign: 'center', marginTop: '1rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem' }}>
+            <div style={{ textAlign: 'center', marginTop: '1rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem', visibility: wa.hidden ? 'hidden' : 'visible' }}>
               <p style={{ margin: '0 0 0.6rem 0', fontSize: '0.88rem', color: '#475569' }}>
                 Ada kesulitan membuat bayaran online banking?
               </p>
               <a
-                href={`https://wa.me/601118939984?text=Assalamualaikum,%20saya%20nak%20buat%20pengisian%20item%20(${encodeURIComponent(pkg.label)})`}
+                href={wa.href}
+                onClick={wa.onClick}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

@@ -15,6 +15,7 @@ import PengisianComparisonSection from '@/components/salespage/pengisian/Compari
 import PengisianGuaranteeSection from '@/components/salespage/pengisian/GuaranteeSection';
 import PengisianCheckoutForm from '@/components/salespage/pengisian/PengisianCheckoutForm';
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
+import AirTawarTrialSection from '@/components/salespage/pengisian/AirTawarTrialSection';
 import { HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
 import PengisianFAQSection from '@/components/salespage/pengisian/FAQSection';
 import PengisianClosingSection from '@/components/salespage/pengisian/ClosingSection';
@@ -78,6 +79,9 @@ export default function PengisianEsyifaPage() {
 
       {/* #16 — Section CTA, Pakej FSP PRO & Borang Tempahan */}
       <PengisianCheckoutForm source="pengisian-esyifa" />
+
+      {/* Counter-rejection: tak percaya kesan → cuba air tawar jarak jauh percuma (selepas borang) */}
+      <AirTawarTrialSection background="linear-gradient(180deg, #FFFFFF 0%, #F0FDF4 100%)" />
 
       {/* Kad Tempahan Melalui WhatsApp (Selepas Form, Sebelum FAQ) */}
       <WhatsAppOrderSection product="Pengisian E-Syifa" background="#F0FDF4" hqNumber={HQ_WHATSAPP_PENGISIAN} />

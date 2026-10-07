@@ -1,6 +1,10 @@
 'use client';
 
+import { useWaButton, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+
 export default function PengisianClosingSection() {
+  // SP HQ: no. Pengisian · SP marketer: no. marketer/teamsale. Klik → Lead + rekod klik
+  const wa = useWaButton({ hqNumber: HQ_WHATSAPP_PENGISIAN, message: 'Assalamualaikum, saya nak buat pengisian item ESyifaa', product: 'Pengisian E-Syifa' });
   const scrollToForm = (e) => {
     e.preventDefault();
     const target = document.getElementById('borang');
@@ -82,10 +86,12 @@ export default function PengisianClosingSection() {
 
           {/* WA Payment Button */}
           <a
-            href="https://wa.me/601118939984?text=Assalamualaikum,%20saya%20nak%20buat%20pengisian%20item%20ESyifaa"
+            href={wa.href}
+            onClick={wa.onClick}
             target="_blank"
             rel="noopener noreferrer"
             style={{
+              visibility: wa.hidden ? 'hidden' : 'visible',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               gap: '0.6rem', padding: '0.95rem 2.2rem',
               fontSize: '0.98rem', fontWeight: 800, color: '#FFFFFF',

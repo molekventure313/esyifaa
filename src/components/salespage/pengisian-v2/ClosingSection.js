@@ -1,6 +1,10 @@
 'use client';
 
+import { useWaButton, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+
 export default function RawatSendiriClosingSection() {
+  // SP HQ: no. Pengisian · SP marketer: no. marketer/teamsale. Klik → Lead + rekod klik
+  const wa = useWaButton({ hqNumber: HQ_WHATSAPP_PENGISIAN, message: 'Saya nak buat pengisian item RM90', product: 'Pengisian E-Syifa (Rawat Sendiri)' });
   const scrollToForm = (e) => {
     e.preventDefault();
     const target = document.getElementById('borang');
@@ -69,10 +73,12 @@ export default function RawatSendiriClosingSection() {
 
           {/* WA button */}
           <a
-            href="https://wa.me/601118939984?text=Saya%20nak%20buat%20pengisian%20item%20RM90"
+            href={wa.href}
+            onClick={wa.onClick}
             target="_blank"
             rel="noopener noreferrer"
             style={{
+              visibility: wa.hidden ? 'hidden' : 'visible',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               gap: '0.6rem', padding: '0.95rem 2rem',
               fontSize: '1rem', fontWeight: 800, color: '#FFFFFF',

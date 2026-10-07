@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { trackWaClick } from '@/components/salespage/useSalesContact';
 
 // ─── WhatsApp Button ─────────────────────────────────────────────────────────
 // No. WhatsApp HQ
@@ -16,7 +17,10 @@ function WAButton({ label = "👉 Saya Mahu Tasbih E-Syifa'", size = 'large', id
       href={WA_LINK}
       target={WA_NUMBER ? '_blank' : '_self'}
       rel="noopener noreferrer"
-      onClick={() => { try { window.fbq('track', 'InitiateCheckout'); } catch (_) {} }}
+      onClick={() => {
+        try { window.fbq('track', 'InitiateCheckout'); } catch (_) {}
+        if (WA_NUMBER) trackWaClick({ product: "Tasbih E-Syifa'" });   // Lead + rekod klik
+      }}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.55rem',
         padding: isLarge ? '1.15rem 2.4rem' : '0.85rem 1.8rem',

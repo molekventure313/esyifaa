@@ -66,3 +66,19 @@ export function trackWaClick({ product } = {}) {
 
   try { window.fbq?.('track', 'Lead', { content_name: product ? `WhatsApp — ${product}` : 'WhatsApp' }); } catch (_) {}
 }
+
+/**
+ * Butang WhatsApp tambahan di SP (selain section "Nak order melalui WhatsApp?").
+ * - SP HQ → nombor hardcode butang tu (hqNumber), tak berubah
+ * - SP marketer (/m/… atau ?m=) → nombor marketer / teamsale; tiada nombor → butang disembunyikan
+ * Klik → rekod klik + UTM (wa_clicks) & Meta Pixel `Lead` (sama dgn section WhatsApp).
+ * `hidden` = true sebelum nombor marketer sedia / bila tiada nombor (guna visibility supaya layout tak lompat).
+ */
+export function useWaButton({ hqNumber, message, product }) {
+  const { ready, number } = useSalesContact({ hqNumber });
+  return {
+    href: buildWaLink(number || hqNumber, message),
+    hidden: !ready || !number,
+    onClick: () => trackWaClick({ product }),
+  };
+}
