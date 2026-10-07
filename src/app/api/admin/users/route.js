@@ -3,6 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
 
+// Hanya admin / super_admin boleh guna API ni (dulu GET/POST/PATCH tiada semakan role —
+// sesiapa yang login boleh senarai pengguna, cipta admin, atau naikkan role sendiri).
+async function isAdminCaller(adminSupabase, userId) {
+  const { data } = await adminSupabase.from('profiles').select('role').eq('id', userId).single();
+  return ['admin', 'super_admin'].includes(data?.role);
+}
+const FORBIDDEN = () => NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+
 export async function GET(req) {
   try {
     const supabase = await createClient();
@@ -14,6 +22,7 @@ export async function GET(req) {
 
     // Use service role client if RLS restricts normal profile reads across users
     const adminSupabase = createAdminClient();
+    if (!(await isAdminCaller(adminSupabase, user.id))) return FORBIDDEN();
 
     let query = adminSupabase.from('profiles').select('*').order('created_at', { ascending: false });
     if (roleParam === 'perawat' || roleParam === 'practitioner') {
@@ -56,6 +65,7 @@ export async function POST(req) {
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const adminSupabase = createAdminClient();
+    if (!(await isAdminCaller(adminSupabase, user.id))) return FORBIDDEN();
     const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
       email,
       password,
@@ -102,6 +112,7 @@ export async function PATCH(req) {
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const adminSupabase = createAdminClient();
+    if (!(await isAdminCaller(adminSupabase, user.id))) return FORBIDDEN();
     
     const updatePayload = { updated_at: new Date().toISOString() };
     if (full_name !== undefined) updatePayload.full_name = full_name;

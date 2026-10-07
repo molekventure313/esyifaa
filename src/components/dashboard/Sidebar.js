@@ -112,6 +112,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '💬 Order WhatsApp',   href: '/dashboard/admin/order-wasap' },
     { label: '🏪 Stok Produk',      href: '/dashboard/admin/stok' },
     { section: 'PENGURUSAN' },
+    { label: '👤 Pengguna', href: '/dashboard/admin/users' },
     { label: 'Perawat', href: '/dashboard/admin/perawat' },
     { label: 'Marketers', href: '/dashboard/admin/marketers' },
     { label: 'Pelanggan', href: '/dashboard/admin/pelanggan' },

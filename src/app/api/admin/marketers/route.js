@@ -3,6 +3,12 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
 
+// Hanya admin / super_admin (dulu GET & PATCH tiada semakan role — marketer boleh ubah gaji basic sendiri)
+async function isAdminCaller(adminSupabase, userId) {
+  const { data } = await adminSupabase.from('profiles').select('role').eq('id', userId).single();
+  return ['admin', 'super_admin'].includes(data?.role);
+}
+
 export async function GET(req) {
   try {
     const supabase = await createClient();
@@ -11,6 +17,7 @@ export async function GET(req) {
     
     // Use service role client
     const adminSupabase = createAdminClient();
+    if (!(await isAdminCaller(adminSupabase, user.id))) return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
 
     // Fetch marketers
     const { data: marketers, error } = await adminSupabase
@@ -81,6 +88,7 @@ export async function PATCH(req) {
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const adminSupabase = createAdminClient();
+    if (!(await isAdminCaller(adminSupabase, user.id))) return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     
     const updatePayload = { updated_at: new Date().toISOString() };
     if (full_name !== undefined) updatePayload.full_name = full_name;
