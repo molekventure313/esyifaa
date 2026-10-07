@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 export async function GET(req, { params }) {
   try {
@@ -254,7 +255,7 @@ export async function DELETE(req, { params }) {
       .eq('id', user.id)
       .single();
 
-    if (!['admin', 'super_admin'].includes(profile?.role)) {
+    if (!['super_admin'].includes(profile?.role)) {
       return NextResponse.json({ success: false, error: 'Hanya admin boleh memadam kes' }, { status: 403 });
     }
 

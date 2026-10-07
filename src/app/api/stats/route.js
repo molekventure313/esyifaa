@@ -39,7 +39,8 @@ export async function GET(req) {
     }
     // period === 'all': no dateFrom filter
 
-    const isAdminRequest = roleParam === 'admin' || ['admin', 'super_admin'].includes(profile.role);
+    // Statistik penuh hanya untuk super_admin (dulu ?role=admin dari client pun dapat statistik admin)
+    const isAdminRequest = profile.role === 'super_admin';
 
     let data = {};
 

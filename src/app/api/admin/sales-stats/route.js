@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { productUnits, calcPostage } from '@/lib/marketer-calc';
 import { ownerScope } from '@/lib/team';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // ─── Timezone helpers (MYT = UTC+8) ────────────────────────────────────────
 const MYT_OFFSET_MS = 8 * 3600 * 1000;
@@ -153,7 +154,7 @@ export async function GET(req) {
     const adminClient = createAdminClient();
     const { data: profile } = await adminClient
       .from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile?.role)) {
+    if (!['super_admin'].includes(profile?.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

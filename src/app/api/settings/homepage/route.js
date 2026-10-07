@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { guard, OWNER } from '@/lib/auth';
 
 // GET - read active homepage slug
 export async function GET() {
@@ -27,6 +28,9 @@ export async function GET() {
 // POST - update active homepage slug
 export async function POST(req) {
   try {
+    // Dulu TIADA semakan langsung (laluan /api/settings awam) — sesiapa boleh tukar homepage
+    const g = await guard(OWNER);
+    if (g.error) return g.error;
     const { slug } = await req.json();
 
     const supabase = createAdminClient();

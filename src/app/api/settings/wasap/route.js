@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+// super_admin sahaja (dulu mana-mana pengguna yang login boleh ubah nombor WA perawat)
 async function requireAuth() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
+  const { data: profile } = await createAdminClient().from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'super_admin') throw new Error('Forbidden');
   return user;
 }
 
@@ -26,7 +29,7 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json({ success: true, data: data || [] });
   } catch (error) {
-    const status = error.message === 'Unauthorized' ? 401 : 500;
+    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
     return NextResponse.json({ success: false, error: error.message }, { status });
   }
 }
@@ -70,7 +73,7 @@ export async function POST(req) {
     if (error) throw error;
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    const status = error.message === 'Unauthorized' ? 401 : 500;
+    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
     return NextResponse.json({ success: false, error: error.message }, { status });
   }
 }
@@ -123,7 +126,7 @@ export async function PATCH(req) {
     if (error) throw error;
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    const status = error.message === 'Unauthorized' ? 401 : 500;
+    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
     return NextResponse.json({ success: false, error: error.message }, { status });
   }
 }
@@ -152,7 +155,7 @@ export async function DELETE(req) {
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (error) {
-    const status = error.message === 'Unauthorized' ? 401 : 500;
+    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
     return NextResponse.json({ success: false, error: error.message }, { status });
   }
 }

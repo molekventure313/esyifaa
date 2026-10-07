@@ -57,7 +57,9 @@ export default function LoginPage() {
 
         showToast(`Berjaya log masuk sebagai ${isAdmin ? 'Admin' : isMarketer ? 'Marketer' : 'Perawat'}!`, 'success');
         
-        if (isAdmin) {
+        if (role === 'admin') {
+          router.push('/dashboard/admin/pesakit-berbayar');   // staff order
+        } else if (isAdmin) {
           router.push('/dashboard/admin');
         } else if (isMarketer) {
           router.push('/dashboard/marketer');

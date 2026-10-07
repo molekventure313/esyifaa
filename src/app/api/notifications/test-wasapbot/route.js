@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendGroupNotification, buildLeadMessage } from '@/lib/notifications/wasapbot';
+import { guard, OWNER } from '@/lib/auth';
 
 /**
  * POST /api/notifications/test-wasapbot
@@ -8,6 +9,8 @@ import { sendGroupNotification, buildLeadMessage } from '@/lib/notifications/was
  */
 export async function POST() {
   try {
+    const g = await guard(OWNER);
+    if (g.error) return g.error;
     const message = buildLeadMessage({
       name:       'Ahmad Test',
       phone:      '+60123456789',

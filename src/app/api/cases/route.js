@@ -19,7 +19,7 @@ export async function GET(req) {
       .single();
 
     const role = profile?.role || 'practitioner';
-    const isAdmin = role === 'admin' || role === 'super_admin';
+    const isAdmin = role === 'super_admin';   // admin = staff order, tiada akses kes
 
 
     const { searchParams } = new URL(req.url);

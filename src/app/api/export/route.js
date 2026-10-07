@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { generateCSV } from '@/lib/utils/csv';
 import { logActivity } from '@/lib/utils/logger';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 export async function GET(req) {
   try {
@@ -10,7 +11,7 @@ export async function GET(req) {
     if (!user) return new NextResponse('Unauthorized', { status: 401 });
     
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile.role)) return new NextResponse('Forbidden', { status: 403 });
+    if (!['super_admin'].includes(profile.role)) return new NextResponse('Forbidden', { status: 403 });
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type') || 'customers';

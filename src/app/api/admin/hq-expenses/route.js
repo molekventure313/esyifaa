@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // Perbelanjaan HQ — komitmen tetap bulanan ('fixed') & belanja sekali ('one_off') untuk tab Report HQ
 
@@ -10,7 +11,7 @@ async function requireAdmin() {
   if (!user) throw new Error('Unauthorized');
   const admin = createAdminClient();
   const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single();
-  if (!['admin', 'super_admin'].includes(profile?.role)) throw new Error('Forbidden');
+  if (!['super_admin'].includes(profile?.role)) throw new Error('Forbidden');
   return { admin, user };
 }
 

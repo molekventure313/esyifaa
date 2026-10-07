@@ -3,11 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
 
-// Hanya admin / super_admin boleh guna API ni (dulu GET/POST/PATCH tiada semakan role —
+// Hanya super_admin boleh guna API ni (dulu GET/POST/PATCH tiada semakan role —
 // sesiapa yang login boleh senarai pengguna, cipta admin, atau naikkan role sendiri).
 async function isAdminCaller(adminSupabase, userId) {
   const { data } = await adminSupabase.from('profiles').select('role').eq('id', userId).single();
-  return ['admin', 'super_admin'].includes(data?.role);
+  return data?.role === 'super_admin';
 }
 const FORBIDDEN = () => NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
 
@@ -169,7 +169,7 @@ export async function DELETE(req) {
       return NextResponse.json({ success: false, error: `Gagal semak peranan: ${callerErr.message}` }, { status: 500 });
     }
 
-    if (!['admin', 'super_admin'].includes(callerProfile?.role)) {
+    if (callerProfile?.role !== 'super_admin') {
       return NextResponse.json({
         success: false,
         error: `Hanya admin boleh memadam akaun. Peranan semasa: ${callerProfile?.role || 'tidak dikenali'}`

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { staffCanAccess } from '@/lib/roles';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/Toast';
 
@@ -111,6 +112,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '📦 Pengurusan Order', href: '/dashboard/admin/pesakit-berbayar' },
     { label: '💬 Order WhatsApp',   href: '/dashboard/admin/order-wasap' },
     { label: '🏪 Stok Produk',      href: '/dashboard/admin/stok' },
+    { label: '📸 Pengisian Stok',   href: '/dashboard/admin/pengisian-stok' },
     { section: 'PENGURUSAN' },
     { label: '👤 Pengguna', href: '/dashboard/admin/users' },
     { label: 'Perawat', href: '/dashboard/admin/perawat' },
@@ -140,18 +142,28 @@ export default function Sidebar({ isOpen, onClose }) {
   const isTeamsale = role === 'marketer' && !!profile?.team_leader_id;
   const marketerMenu = isTeamsale ? teamsaleNav : marketerNav;
 
+  // Role 'admin' = staff order: hanya menu order & stok (laporan / PnL / tetapan untuk super_admin)
+  const staffNav = [];
+  for (const item of adminNav) {
+    if (item.section) staffNav.push(item);
+    else if (staffCanAccess(item.href)) staffNav.push(item);
+  }
+  // buang tajuk section yang tiada menu di bawahnya
+  const staffMenu = staffNav.filter((item, i) => !item.section || (staffNav[i + 1] && !staffNav[i + 1].section));
+  const adminMenu = role === 'admin' ? staffMenu : adminNav;
+
   const isMarketer = role === 'marketer';
   const isMarketerPath = pathname.startsWith('/dashboard/marketer');
   
-  let navItems = adminNav;
+  let navItems = adminMenu;
   if (isPerawatPath) {
     navItems = practitionerNav;
   } else if (isMarketerPath) {
     navItems = marketerMenu;
   } else if (isAdminPath) {
-    navItems = adminNav;
+    navItems = adminMenu;
   } else {
-    navItems = isAdmin ? adminNav : isMarketer ? marketerMenu : practitionerNav;
+    navItems = isAdmin ? adminMenu : isMarketer ? marketerMenu : practitionerNav;
   }
 
   const initials = profile?.full_name ? profile.full_name.substring(0, 2).toUpperCase() : 'U';

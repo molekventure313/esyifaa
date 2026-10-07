@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 const SALESPAGES = [
   { slug: 'sihir',             label: 'Salespage Sihir' },
@@ -19,7 +20,7 @@ export async function GET(req) {
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile.role)) {
+    if (!['super_admin'].includes(profile.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 

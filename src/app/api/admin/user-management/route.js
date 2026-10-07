@@ -5,7 +5,7 @@ import { logActivity } from '@/lib/utils/logger';
 
 // Pengurusan Pengguna — semua akaun sistem (admin / perawat / marketer / teamsale).
 // Peraturan:
-//  · Hanya admin & super_admin boleh guna
+//  · Hanya super_admin boleh guna (admin = staff order)
 //  · Akaun super_admin, dan pemberian role super_admin → super_admin sahaja
 //  · Tak boleh tukar role / nyahaktif / padam akaun sendiri (elak terkunci keluar)
 
@@ -22,7 +22,7 @@ async function requireAdmin() {
   if (!user) throw new HttpError('Unauthorized', 401);
   const admin = createAdminClient();
   const { data: me } = await admin.from('profiles').select('id, role, full_name').eq('id', user.id).single();
-  if (!['admin', 'super_admin'].includes(me?.role)) throw new HttpError('Forbidden', 403);
+  if (me?.role !== 'super_admin') throw new HttpError('Forbidden', 403);
   return { admin, me };
 }
 

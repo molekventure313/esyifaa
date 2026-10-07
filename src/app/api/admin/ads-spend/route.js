@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { upsertDailyAds } from '@/lib/products';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // Ads HQ (marketer_id NULL) ikut produk — diisi dari page Kos Ads HQ (/dashboard/admin/ads).
 // Data paparan: /api/admin/ads-spend/hq-daily
@@ -16,7 +17,7 @@ export async function PUT(req) {
 
     const adminClient = createAdminClient();
     const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile?.role)) {
+    if (!['super_admin'].includes(profile?.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 

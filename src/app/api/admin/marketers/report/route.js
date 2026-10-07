@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { summarizeByProduct, monthRange } from '@/lib/products';
 import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared, commissionPctFor, calcKomisen, calcLeaderPay, TEAMSALE_PCT, FPX_FEE } from '@/lib/marketer-calc';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 async function requireAdmin() {
@@ -11,7 +12,7 @@ async function requireAdmin() {
   if (!user) throw new Error('Unauthorized');
   const admin = createAdminClient();
   const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single();
-  if (!['admin', 'super_admin'].includes(profile?.role)) throw new Error('Forbidden');
+  if (!['super_admin'].includes(profile?.role)) throw new Error('Forbidden');
   return admin;
 }
 

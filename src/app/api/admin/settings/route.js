@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // GET — fetch treatment_price from tracking_config
 export async function GET(req) {
@@ -11,7 +12,7 @@ export async function GET(req) {
 
     const adminClient = createAdminClient();
     const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile?.role)) {
+    if (!['super_admin'].includes(profile?.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
@@ -38,7 +39,7 @@ export async function PATCH(req) {
 
     const adminClient = createAdminClient();
     const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile?.role)) {
+    if (!['super_admin'].includes(profile?.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 

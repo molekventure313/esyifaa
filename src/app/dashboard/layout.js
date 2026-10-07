@@ -5,6 +5,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { ToastProvider } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/hooks/useAuth';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { staffCanAccess, STAFF_HOME } from '@/lib/roles';
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +25,11 @@ export default function DashboardLayout({ children }) {
       const isMarketer = role === 'marketer';
 
       // Role Access Guard
+      // admin = staff order: hanya Pengurusan Order, Order WhatsApp, Stok, Pengisian Stok
+      if (role === 'admin' && pathname.startsWith('/dashboard/admin') && !staffCanAccess(pathname)) {
+        router.replace(STAFF_HOME);
+        return;
+      }
       if (pathname.startsWith('/dashboard/admin') && !isAdmin) {
         router.replace(isMarketer ? '/dashboard/marketer' : '/dashboard/perawat');
       }

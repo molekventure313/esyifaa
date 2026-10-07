@@ -5,8 +5,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 // Pengurusan Pengguna — semua akaun sistem: lihat, tambah, tukar role, aktif/nyahaktif, reset kata laluan, padam.
 
 const ROLE_INFO = {
-  super_admin:  { label: 'Super Admin', color: '#F43F5E', desc: 'Akses penuh, termasuk urus akaun admin' },
-  admin:        { label: 'Admin',       color: '#F59E0B', desc: 'Urus order, stok, marketer, perawat & laporan' },
+  super_admin:  { label: 'Super Admin', color: '#F43F5E', desc: 'Pemilik — akses penuh: laporan, PnL, gaji, tetapan & pengguna' },
+  admin:        { label: 'Admin (Staff Order)', color: '#F59E0B', desc: 'Pengurusan Order (print, return, mark paid, padam), Order WhatsApp, Stok & Pengisian Stok — TIADA laporan / PnL' },
   practitioner: { label: 'Perawat',     color: '#10B981', desc: 'Terima & urus kes rawatan' },
   marketer:     { label: 'Marketer',    color: '#3B82F6', desc: 'SP sendiri, order, ads & gaji' },
 };

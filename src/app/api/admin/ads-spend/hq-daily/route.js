@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { monthRange, fetchProductCosts, buildMonthlyBreakdown } from '@/lib/products';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // GET /api/admin/ads-spend/hq-daily?month=YYYY-MM
 // Page Kos Ads HQ: order HQ (marketer_id NULL) + ads HQ ikut produk, harian 1hb → hujung bulan.
@@ -13,7 +14,7 @@ export async function GET(req) {
 
     const adminClient = createAdminClient();
     const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile?.role)) {
+    if (!['super_admin'].includes(profile?.role)) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 

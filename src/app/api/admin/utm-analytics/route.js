@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildCampaignTree, summarizeClicks } from '@/lib/utm';
+// Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 const MYT_MS = 8 * 3600 * 1000;
 
@@ -43,7 +44,7 @@ export async function GET(req) {
 
     const admin = createAdminClient();
     const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single();
-    if (!['admin', 'super_admin'].includes(profile?.role))
+    if (!['super_admin'].includes(profile?.role))
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);

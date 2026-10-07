@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendCAPIEvent, sendFpxCAPIEvent } from '@/lib/tracking/capi';
 import { logActivity } from '@/lib/utils/logger';
+import { guard, OWNER } from '@/lib/auth';
 
 export async function POST(req) {
   try {
@@ -35,6 +36,8 @@ export async function GET(req) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const g = await guard(OWNER);   // super_admin sahaja (dulu sesiapa yang login — termasuk baca access token pixel)
+    if (g.error) return g.error;
 
     const adminClient = createAdminClient();
     const { data } = await adminClient
@@ -67,6 +70,8 @@ export async function PATCH(req) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const g = await guard(OWNER);   // super_admin sahaja (dulu sesiapa yang login — termasuk baca access token pixel)
+    if (g.error) return g.error;
 
     const adminClient = createAdminClient();
 

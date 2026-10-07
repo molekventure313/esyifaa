@@ -3,10 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
 
-// Hanya admin / super_admin (dulu GET & PATCH tiada semakan role — marketer boleh ubah gaji basic sendiri)
-async function isAdminCaller(adminSupabase, userId) {
+// GET: admin (staff) dapat senarai nama sahaja (untuk penapis order) · super_admin dapat penuh.
+// PATCH / DELETE: super_admin sahaja. (Dulu GET & PATCH tiada semakan role.)
+async function callerRole(adminSupabase, userId) {
   const { data } = await adminSupabase.from('profiles').select('role').eq('id', userId).single();
-  return ['admin', 'super_admin'].includes(data?.role);
+  return data?.role || null;
+}
+async function isAdminCaller(adminSupabase, userId) {
+  return (await callerRole(adminSupabase, userId)) === 'super_admin';
 }
 
 export async function GET(req) {
@@ -17,7 +21,15 @@ export async function GET(req) {
     
     // Use service role client
     const adminSupabase = createAdminClient();
-    if (!(await isAdminCaller(adminSupabase, user.id))) return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    const role = await callerRole(adminSupabase, user.id);
+    if (!['admin', 'super_admin'].includes(role)) return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+
+    // Staff order: nama & kod sahaja (tiada sales / gaji)
+    if (role === 'admin') {
+      const { data } = await adminSupabase.from('profiles')
+        .select('id, full_name, marketer_code, team_leader_id, is_active').eq('role', 'marketer').order('full_name');
+      return NextResponse.json({ success: true, data: (data || []).map(m => ({ ...m, team_size: (data || []).filter(x => x.team_leader_id === m.id).length })) });
+    }
 
     // Fetch marketers
     const { data: marketers, error } = await adminSupabase
@@ -144,7 +156,7 @@ export async function DELETE(req) {
       return NextResponse.json({ success: false, error: `Gagal semak peranan: ${callerErr.message}` }, { status: 500 });
     }
 
-    if (!['admin', 'super_admin'].includes(callerProfile?.role)) {
+    if (callerProfile?.role !== 'super_admin') {
       return NextResponse.json({
         success: false,
         error: `Hanya admin boleh memadam akaun.`
