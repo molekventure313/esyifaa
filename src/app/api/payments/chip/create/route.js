@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
+import { isRuqyahHarian, RH_PRICES, RH_MAX_SLOTS } from '@/lib/ruqyah-harian';
+import { countRhSlotsUsed } from '@/lib/ruqyah-harian-server';
 
 export async function POST(req) {
   try {
@@ -32,6 +34,14 @@ export async function POST(req) {
     const user_agent = req.headers.get('user-agent') || 'unknown';
 
     const supabase       = createAdminClient();
+
+    // Ruqyah Harian: harga mesti pakej sah & had 100 pendaftaran baru sebulan (kapasiti perawat)
+    if (isRuqyahHarian(source)) {
+      if (!RH_PRICES.includes(Number(amount_in_myr)))
+        return NextResponse.json({ success: false, error: 'Pakej tidak sah. Sila muat semula halaman.' }, { status: 400 });
+      if ((await countRhSlotsUsed(supabase)) >= RH_MAX_SLOTS)
+        return NextResponse.json({ success: false, error: 'Maaf, slot bulan ini dah penuh. Sila hubungi kami di WhatsApp untuk senarai menunggu.' }, { status: 409 });
+    }
     const kasturiTag     = addon_kasturi      ? ' | Add-On: Kasturi Kijang E-Syifa\' +RM20' : '';
     const sabunTag       = addon_sabun        ? ' | Add-On: Sabun Garam Pengisian +RM25' : '';
     const garamMasakanTag = addon_garam_masakan ? ' | Add-On: Garam Masakan Pengasihan +RM25' : '';

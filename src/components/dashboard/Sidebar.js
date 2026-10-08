@@ -115,6 +115,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '📸 Pengisian Stok',   href: '/dashboard/admin/pengisian-stok' },
     { section: 'PENGURUSAN' },
     { label: '👤 Pengguna', href: '/dashboard/admin/users' },
+    { label: '🌙 Ruqyah Harian', href: '/dashboard/admin/ruqyah-harian' },
     { label: 'Perawat', href: '/dashboard/admin/perawat' },
     { label: 'Marketers', href: '/dashboard/admin/marketers' },
     { label: 'Pelanggan', href: '/dashboard/admin/pelanggan' },

@@ -21,6 +21,7 @@ export async function middleware(request) {
     '/m/',
     '/wa',
     '/pengisian-esyifa',
+    '/ruqyah-harian',
     '/pengisian-wasap',
     '/sabun-garam',
     '/rawat-sendiri',

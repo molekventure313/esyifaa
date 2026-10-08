@@ -4,7 +4,7 @@ const MARKETER_SLUGS = [
   'penyakit-misteri', 'fsp', 'e-video', 'pengisian-esyifa', 'rawat-sendiri',
   'tasbih-esyifa', 'sabun-garam', 'sabun-garam-1', 'sabun-garam-2',
   'sabun-garam-3', 'sabun-garam-4', 'sabun-garam-5', 'garam-pengasihan',
-  'kasturi-kijang',
+  'kasturi-kijang', 'ruqyah-harian',
 ];
 
 /** @type {import('next').NextConfig} */

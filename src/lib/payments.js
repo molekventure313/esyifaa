@@ -7,12 +7,14 @@ import { deductStock } from '@/lib/stock';
 import { parseAmount, orderQty, addonsOf } from '@/lib/marketer-calc';
 import { PRODUCTS, productOf } from '@/lib/products';
 import { logActivity } from '@/lib/utils/logger';
+import { isRuqyahHarian, RH_NAME } from '@/lib/ruqyah-harian';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 
 // Label produk untuk notifikasi / log
 export function productLabelOf(submission) {
   const key = productOf(submission.source);
   if (key) return PRODUCTS.find(p => p.key === key).label;
+  if (isRuqyahHarian(submission.source)) return RH_NAME;
   return (submission.source || '').includes('pengisian') || (submission.source || '').includes('fsp')
     ? 'Pengisian ESyifaa' : (submission.source || 'Produk digital');
 }
