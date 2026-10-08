@@ -10,7 +10,7 @@ import { PRODUCT_KEYS } from '@/lib/products';
 
 const BUCKET = 'stock-filling';
 const MAX_BYTES = 5 * 1024 * 1024;   // gambar dimampatkan di browser dulu (~300KB)
-const PRODUCTS = [...PRODUCT_KEYS, 'lain'];
+const PRODUCTS = [...PRODUCT_KEYS, 'pengisian-esyifa', 'lain'];
 
 export async function GET(req) {
   const g = await guard(STAFF);

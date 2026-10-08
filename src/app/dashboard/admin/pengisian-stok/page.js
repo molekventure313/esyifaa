@@ -9,6 +9,7 @@ const TABS = [
   { key: 'sabun-garam',      label: '🧼 Sabun Garam' },
   { key: 'garam-pengasihan', label: '🧂 Garam Pengasihan' },
   { key: 'kasturi-kijang',   label: '🌿 Kasturi Kijang' },
+  { key: 'pengisian-esyifa', label: '✨ Pengisian E-Syifa' },
   { key: 'lain',             label: '📦 Lain-lain' },
 ];
 const LABEL = Object.fromEntries(TABS.map(t => [t.key, t.label]));

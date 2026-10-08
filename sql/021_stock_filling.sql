@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS stock_filling_photos (
   id           BIGSERIAL PRIMARY KEY,
-  product      TEXT NOT NULL DEFAULT 'lain',     -- 'sabun-garam' | 'garam-pengasihan' | 'kasturi-kijang' | 'lain'
+  product      TEXT NOT NULL DEFAULT 'lain',     -- 'sabun-garam' | 'garam-pengasihan' | 'kasturi-kijang' | 'pengisian-esyifa' | 'lain'
   image_path   TEXT NOT NULL,                    -- path dalam storage bucket 'stock-filling'
   qty          INTEGER,                          -- bilangan unit dalam gambar (pilihan)
   notes        TEXT,
