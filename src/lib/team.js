@@ -95,3 +95,13 @@ export async function ownerScope(admin, userId) {
     isTeamsale: false,
   };
 }
+
+/**
+ * Tapis query submissions ikut pemilik order:
+ * 'hq' → order HQ · <marketer id> → marketer tu (ketua: termasuk teamsale dia) · 'all'/kosong → semua
+ */
+export async function applyOwnerFilter(admin, q, owner) {
+  if (!owner || owner === 'all') return q;
+  if (owner === 'hq') return q.is('marketer_id', null);
+  return q.in('marketer_id', (await ownerScope(admin, owner)).ids);
+}

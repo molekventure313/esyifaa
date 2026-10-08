@@ -27,6 +27,8 @@ export default function PengurusanOrderPage() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [paymentTypeFilter,   setPaymentTypeFilter]   = useState('all');
   const [searchTerm,          setSearchTerm]          = useState('');
+  const [productFilter,       setProductFilter]       = useState('all');   // all | sabun-garam | garam-pengasihan | kasturi-kijang | digital
+  const [ownerFilter,         setOwnerFilter]         = useState('all');   // all | hq | <marketer id> (ketua termasuk teamsale)
   const [lastUpdated,         setLastUpdated]         = useState('');
   const [stats, setStats] = useState({
     total_completed: 0, total_pending: 0, total_failed: 0,
@@ -95,6 +97,8 @@ export default function PengurusanOrderPage() {
       if (searchTerm.trim()) params.set('search', searchTerm.trim());
       // Tapis di server — kalau tak, hanya 100 order terbaru disemak & order lama yang belum export tercicir
       if (notExportedOnly) params.set('not_exported', 'true');
+      if (productFilter !== 'all') params.set('product', productFilter);
+      if (ownerFilter !== 'all') params.set('owner', ownerFilter);
 
       const res  = await fetch(`/api/payments/list?${params.toString()}`);
       const json = await res.json();
@@ -114,7 +118,7 @@ export default function PengurusanOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly]);
+  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter]);
 
   useEffect(() => {
     fetchOrders();
@@ -177,6 +181,8 @@ export default function PengurusanOrderPage() {
         else if (paymentTypeFilter !== 'all') params.set('payment_type', paymentTypeFilter);
         if (paymentStatusFilter !== 'all') params.set('status', paymentStatusFilter);
         if (notExportedOnly) params.set('not_exported', 'true'); // ← filter belum diexport
+        if (productFilter !== 'all') params.set('product', productFilter);
+        if (ownerFilter !== 'all') params.set('owner', ownerFilter);
       }
 
       const res = await fetch(`/api/orders/export-ninjavan?${params.toString()}`);
@@ -456,6 +462,40 @@ export default function PengurusanOrderPage() {
             }}>{tab.label}</button>
           ))}
         </div>
+
+        <div style={{ width: '1px', height: '28px', background: isLightMode ? '#E2E8F0' : 'rgba(255,255,255,0.1)' }} />
+
+        {/* Produk & Pemilik order */}
+        <select value={productFilter} onChange={e => setProductFilter(e.target.value)} style={{
+          padding: '0.45rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+          background: productFilter !== 'all' ? (isLightMode ? '#EDE9FE' : 'rgba(139,92,246,0.18)') : subCardBg,
+          color: productFilter !== 'all' ? (isLightMode ? '#6D28D9' : '#C4B5FD') : textSecondary,
+          border: isLightMode ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.12)',
+        }}>
+          <option value="all">📦 Semua Produk</option>
+          <option value="sabun-garam">🧼 Sabun Garam</option>
+          <option value="garam-pengasihan">🧂 Garam Pengasihan</option>
+          <option value="kasturi-kijang">🌿 Kasturi Kijang</option>
+          <option value="digital">✨ Pengisian / Rawatan</option>
+        </select>
+        <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} style={{
+          padding: '0.45rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', maxWidth: '230px',
+          background: ownerFilter !== 'all' ? (isLightMode ? '#FEF3C7' : 'rgba(245,158,11,0.15)') : subCardBg,
+          color: ownerFilter !== 'all' ? (isLightMode ? '#92400E' : '#FCD34D') : textSecondary,
+          border: isLightMode ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.12)',
+        }}>
+          <option value="all">👥 Semua (HQ + Marketer)</option>
+          <option value="hq">🏢 HQ sahaja</option>
+          {[...marketers]
+            .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
+            .filter(m => !m.team_leader_id || !marketers.some(l => l.id === m.team_leader_id))
+            .flatMap(m => [m, ...marketers.filter(t => t.team_leader_id === m.id)])
+            .map(m => (
+              <option key={m.id} value={m.id}>
+                {m.team_leader_id ? '   ↳ ' : '📢 '}{m.full_name || m.marketer_code}{m.team_size > 0 ? ' (+ team)' : ''}{m.is_active === false ? ' — tak aktif' : ''}
+              </option>
+            ))}
+        </select>
 
         <input
           type="text"

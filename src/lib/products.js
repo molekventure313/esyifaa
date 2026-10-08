@@ -20,6 +20,15 @@ export function productOf(source) {
   return null;
 }
 
+// Tapis query submissions ikut produk: key produk fizikal, atau 'digital' (Pengisian / rawatan / lain-lain)
+export function applyProductFilter(q, product) {
+  if (!product || product === 'all') return q;
+  if (product === 'digital') {
+    return PRODUCT_KEYS.reduce((acc, k) => acc.not('source', 'like', `${k}%`), q);
+  }
+  return PRODUCT_KEYS.includes(product) ? q.like('source', `${product}%`) : q;
+}
+
 // Order produk fizikal (perlu dihantar / export NinjaVan): semua COD + FPX produk fizikal
 export const isPhysicalOrder = o => o.payment_type === 'cod' || (o.payment_type === 'fpx_payment' && !!productOf(o.source));
 

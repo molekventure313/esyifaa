@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { productOf, isPhysicalOrder } from '@/lib/products';
+import { productOf, isPhysicalOrder, applyProductFilter } from '@/lib/products';
+import { applyOwnerFilter } from '@/lib/team';
 import { addonsOf, orderQty } from '@/lib/marketer-calc';
 
 export const dynamic = 'force-dynamic';
@@ -177,6 +178,8 @@ export async function GET(req) {
     const dateFrom      = searchParams.get('date_from') || '';
     const dateTo        = searchParams.get('date_to') || '';
     const notExported   = searchParams.get('not_exported') === 'true';
+    const product       = searchParams.get('product') || 'all';
+    const owner         = searchParams.get('owner') || 'all';
 
     // ─── Query submissions ───
     let query = adminClient
@@ -194,6 +197,10 @@ export async function GET(req) {
     if (dateFrom)     query = query.gte('created_at', dateFrom);
     if (dateTo)       query = query.lte('created_at', dateTo + 'T23:59:59Z');
     if (notExported)  query = query.is('ninjavan_exported_at', null);   // ← belum diexport
+    if (!idsParam) {
+      query = applyProductFilter(query, product);                       // ikut penapis page Pengurusan Order
+      query = await applyOwnerFilter(adminClient, query, owner);
+    }
 
     query = query.order('created_at', { ascending: true });
 

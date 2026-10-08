@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isPhysicalOrder } from '@/lib/products';
+import { isPhysicalOrder, applyProductFilter } from '@/lib/products';
+import { applyOwnerFilter } from '@/lib/team';
 import { formatOrder } from '@/lib/orders';
 
 export async function GET(req) {
@@ -20,6 +21,8 @@ export async function GET(req) {
     const paymentType   = searchParams.get('payment_type') || 'all';   // all | fpx_payment | cod | physical
     const physical      = searchParams.get('physical') === 'true';     // COD + FPX produk fizikal (sabun/garam/kasturi)
     const notExported   = searchParams.get('not_exported') === 'true'; // belum export NinjaVan — tapis di SERVER
+    const product       = searchParams.get('product') || 'all';         // sabun-garam | garam-pengasihan | kasturi-kijang | digital
+    const owner         = searchParams.get('owner') || 'all';           // hq | <marketer id> (ketua termasuk teamsale)
     const search = searchParams.get('search') || '';
     const page   = parseInt(searchParams.get('page'))  || 1;
     // Belum export: had lebih besar supaya order lama yang belum dihantar tak tercicir
@@ -57,6 +60,9 @@ export async function GET(req) {
     if (notExported) {
       query = query.is('ninjavan_exported_at', null);
     }
+
+    query = applyProductFilter(query, product);
+    query = await applyOwnerFilter(adminClient, query, owner);
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
