@@ -118,6 +118,23 @@ export function monthRange(monthParam) {
   return { month: m, year, mon: month, lastDayNum, firstDay, lastDay, from: `${firstDay}T00:00:00+08:00`, to: `${lastDay}T23:59:59+08:00` };
 }
 
+/**
+ * Julat tarikh (waktu Malaysia) untuk penapis tempoh order.
+ * period: 'today' | 'yesterday' | 'month' | 'year' | 'all' → { from, to } (ISO +08:00) atau null (semua)
+ */
+export function periodRange(period) {
+  const today = todayMYT();
+  const day = (d, end) => `${d}T${end ? '23:59:59' : '00:00:00'}+08:00`;
+  if (period === 'today') return { from: day(today), to: day(today, true) };
+  if (period === 'yesterday') {
+    const y = new Date(Date.parse(`${today}T12:00:00Z`) - 86400000).toISOString().slice(0, 10);
+    return { from: day(y), to: day(y, true) };
+  }
+  if (period === 'month') return { from: day(`${today.slice(0, 7)}-01`), to: day(today, true) };
+  if (period === 'year')  return { from: day(`${today.slice(0, 4)}-01-01`), to: day(today, true) };
+  return null;
+}
+
 // Kos seunit produk dari stock_summary → param untuk calcCOGS
 export async function fetchProductCosts(adminClient) {
   const map = {};

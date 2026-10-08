@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { productOf, isPhysicalOrder, applyProductFilter } from '@/lib/products';
+import { productOf, isPhysicalOrder, applyProductFilter, periodRange } from '@/lib/products';
 import { resolveOwner, applyOwner } from '@/lib/team';
 import { addonsOf, orderQty } from '@/lib/marketer-calc';
 
@@ -181,6 +181,7 @@ export async function GET(req) {
     const product       = searchParams.get('product') || 'all';
     const owner         = searchParams.get('owner') || 'all';
     const channel       = searchParams.get('channel') || 'all';
+    const range         = notExported ? null : periodRange(searchParams.get('period') || 'all');   // belum export: semua tarikh
 
     // ─── Query submissions ───
     let query = adminClient
@@ -203,6 +204,7 @@ export async function GET(req) {
       query = applyOwner(query, await resolveOwner(adminClient, owner));   // await pada resolveOwner sahaja, BUKAN query
       if (channel === 'whatsapp') query = query.eq('order_channel', 'whatsapp');
       else if (channel === 'web') query = query.neq('order_channel', 'whatsapp');
+      if (range) query = query.gte('created_at', range.from).lte('created_at', range.to);
     }
 
     query = query.order('created_at', { ascending: true });

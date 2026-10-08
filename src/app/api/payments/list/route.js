@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isPhysicalOrder, applyProductFilter } from '@/lib/products';
+import { isPhysicalOrder, applyProductFilter, periodRange } from '@/lib/products';
 import { resolveOwner, applyOwner } from '@/lib/team';
 import { formatOrder } from '@/lib/orders';
 
@@ -24,6 +24,8 @@ export async function GET(req) {
     const product       = searchParams.get('product') || 'all';         // sabun-garam | garam-pengasihan | kasturi-kijang | digital
     const owner         = searchParams.get('owner') || 'all';           // hq | <marketer id> (ketua termasuk teamsale)
     const channel       = searchParams.get('channel') || 'all';         // web | whatsapp
+    // Tempoh (MYT): today | yesterday | month | year | all. 'Belum Diexport' abaikan tempoh — order lama yang belum dihantar tak tercicir
+    const range         = notExported ? null : periodRange(searchParams.get('period') || 'all');
     const search = searchParams.get('search') || '';
     const page   = parseInt(searchParams.get('page'))  || 1;
     // Belum export: had lebih besar supaya order lama yang belum dihantar tak tercicir
@@ -71,7 +73,9 @@ export async function GET(req) {
       else if (channel === 'web') q = q.neq('order_channel', 'whatsapp');
       return q;
     };
-    query = scoped(query);
+    // Tempoh — senarai & statistik (bukan bilangan 'belum export', itu amaran keseluruhan)
+    const dated = q => (range ? q.gte('created_at', range.from).lte('created_at', range.to) : q);
+    query = dated(scoped(query));
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
@@ -100,11 +104,11 @@ export async function GET(req) {
     let totalRevenue = 0;
 
     try {
-      const statsData = await fetchAll(() => scoped(adminClient
+      const statsData = await fetchAll(() => dated(scoped(adminClient
         .from('submissions')
         .select('payment_status, payment_type, amount_paid, notes, returned_at')
         .in('payment_type', ['fpx_payment', 'cod'])
-        .order('created_at', { ascending: true })));
+        .order('created_at', { ascending: true }))));
 
       (statsData || []).forEach(s => {
         if (s.payment_status === 'completed') {

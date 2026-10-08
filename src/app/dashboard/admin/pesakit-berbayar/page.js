@@ -27,6 +27,7 @@ export default function PengurusanOrderPage() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [paymentTypeFilter,   setPaymentTypeFilter]   = useState('all');
   const [searchTerm,          setSearchTerm]          = useState('');
+  const [period,              setPeriod]              = useState('today'); // today | yesterday | month | year | all
   const [productFilter,       setProductFilter]       = useState('all');   // all | sabun-garam | garam-pengasihan | kasturi-kijang | digital
   const [ownerFilter,         setOwnerFilter]         = useState('all');   // all | hq | <marketer id> (ketua termasuk teamsale)
   const [lastUpdated,         setLastUpdated]         = useState('');
@@ -100,6 +101,7 @@ export default function PengurusanOrderPage() {
       if (productFilter !== 'all') params.set('product', productFilter);
       if (ownerFilter !== 'all') params.set('owner', ownerFilter);
       if (channel !== 'all') params.set('channel', channel);   // statistik ikut penapis
+      params.set('period', period);
 
       const res  = await fetch(`/api/payments/list?${params.toString()}`);
       const json = await res.json();
@@ -119,7 +121,7 @@ export default function PengurusanOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter, channel]);
+  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter, channel, period]);
 
   useEffect(() => {
     fetchOrders();
@@ -185,6 +187,7 @@ export default function PengurusanOrderPage() {
         if (productFilter !== 'all') params.set('product', productFilter);
         if (ownerFilter !== 'all') params.set('owner', ownerFilter);
         if (channel !== 'all') params.set('channel', channel);
+        params.set('period', period);
       }
 
       const res = await fetch(`/api/orders/export-ninjavan?${params.toString()}`);
@@ -390,10 +393,11 @@ export default function PengurusanOrderPage() {
       </div>
 
       {/* ─── Stats Cards ─── (ikut penapis produk / pemilik / saluran) */}
-      {(productFilter !== 'all' || ownerFilter !== 'all' || channel !== 'all') && (
+      {(
         <div style={{ marginBottom: '0.6rem', fontSize: '0.78rem', color: textSecondary, display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
           <span>📊 Statistik untuk:</span>
           {[
+            notExportedOnly ? '🕒 Semua tarikh' : ({ today: '📅 Hari Ini', yesterday: '📅 Semalam', month: '📅 Bulan Ini', year: '📅 Tahun Ini', all: '📅 Semua tarikh' })[period],
             productFilter !== 'all' && ({ 'sabun-garam': '🧼 Sabun Garam', 'garam-pengasihan': '🧂 Garam Pengasihan', 'kasturi-kijang': '🌿 Kasturi Kijang', digital: '✨ Pengisian / Rawatan' })[productFilter],
             ownerFilter === 'hq' ? '🏢 HQ' : ownerFilter !== 'all' && (() => {
               const m = marketers.find(x => x.id === ownerFilter);
@@ -403,8 +407,8 @@ export default function PengurusanOrderPage() {
           ].filter(Boolean).map(t => (
             <span key={t} style={{ fontWeight: 700, padding: '0.15rem 0.55rem', borderRadius: '999px', background: subCardBg, border: cardBorder, color: textPrimary }}>{t}</span>
           ))}
-          <button onClick={() => { setProductFilter('all'); setOwnerFilter('all'); setChannel('all'); }}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', color: isLightMode ? '#2563EB' : '#60A5FA', fontSize: '0.75rem', fontWeight: 600 }}>✕ Reset</button>
+          {(productFilter !== 'all' || ownerFilter !== 'all' || channel !== 'all') && <button onClick={() => { setProductFilter('all'); setOwnerFilter('all'); setChannel('all'); }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', color: isLightMode ? '#2563EB' : '#60A5FA', fontSize: '0.75rem', fontWeight: 600 }}>✕ Reset penapis</button>}
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -422,6 +426,30 @@ export default function PengurusanOrderPage() {
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: '0.15rem' }}>{stat.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* ─── Tempoh ─── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', background: subCardBg, border: cardBorder, borderRadius: '8px', padding: '3px', opacity: notExportedOnly ? 0.45 : 1 }}>
+          {[
+            { value: 'today',     label: '📅 Hari Ini' },
+            { value: 'yesterday', label: 'Semalam' },
+            { value: 'month',     label: 'Bulan Ini' },
+            { value: 'year',      label: 'Tahun Ini' },
+            { value: 'all',       label: 'Semua' },
+          ].map(t => (
+            <button key={t.value} onClick={() => setPeriod(t.value)} disabled={notExportedOnly} style={{
+              padding: '0.4rem 0.85rem', borderRadius: '6px', fontSize: '0.78rem', border: 'none',
+              cursor: notExportedOnly ? 'not-allowed' : 'pointer', fontWeight: period === t.value ? 700 : 500,
+              background: period === t.value ? (isLightMode ? '#FFFFFF' : '#1E1B4B') : 'transparent',
+              color: period === t.value ? (isLightMode ? '#4F46E5' : '#A5B4FC') : textSecondary,
+              boxShadow: period === t.value && isLightMode ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+            }}>{t.label}</button>
+          ))}
+        </div>
+        {notExportedOnly && (
+          <span style={{ fontSize: '0.75rem', color: textMuted }}>"Belum Diexport" tunjuk semua tarikh — supaya order lama yang belum dihantar tak tercicir</span>
+        )}
       </div>
 
       {/* ─── Filters ─── */}
