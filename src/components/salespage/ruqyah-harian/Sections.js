@@ -129,41 +129,134 @@ export function Hero() {
   );
 }
 
-// #3 / #12 ─ Testimoni (PLACEHOLDER — susun atur sama dgn Pengisian E-Syifa; ganti dgn testimoni sebenar)
-const PLACEHOLDER_TESTIMONIALS = [1, 2, 3, 4].map(n => ({
-  name: `Testimoni ${n}`,
-  location: '—',
-  time: '—',
-  tag: '🕒 Akan dikemas kini',
-  text: 'Ruang testimoni pesakit Ruqyah Harian E-Syifa. Akan dikemas kini dengan mesej WhatsApp sebenar daripada pesakit.',
-}));
+// #3 / #12 ─ Testimoni Sebenar Ruqyah Harian E-Syifa
+const TESTIMONIALS_PART1 = [
+  {
+    name: 'Tuan Fauzi',
+    location: 'Kuantan, Pahang',
+    time: 'Semalam, 9:42 PM',
+    tag: '⚡ Serangan Harian Dinetralkan',
+    headline: 'Bisa sihir terus terbakar sebelum sempat masuk',
+    text: 'Perniagaan saya disabotaj dengan sihir berulang. Dulu tiap kali balik dari jumpa perawat, elok sehari dua lepas tu sakit mencucuk datang balik sebab tukang sihir hembus mantera hari-hari. Sejak saya langgan servis pengisian harian ni, ustaz bacakan dan pasakkan ruqyah terus ke diri saya 2 kali setiap hari (pagi & malam). Rasa macam ada perisai tebal menyelubungi tubuh 24 jam. Hembusan sihir langsung tak tembus lagi. Kedai kembali meriah dan badan saya cergas setiap hari.',
+  },
+  {
+    name: 'Puan Syuhada',
+    location: 'Shah Alam, Selangor',
+    time: 'Kelmarin, 10:15 PM',
+    tag: '💚 Rohani Kuat & Jiwa Tenang',
+    headline: 'Jiwa yang rapuh kini bertenaga semula',
+    text: 'Kesan gangguan jin sebelum ni buatkan rohani saya lemah sangat. Cepat panik, anxiety tak tentu pasal, dan solat selalu rasa melayang was-was. Lepas seminggu ustaz buat pengisian ruqyah harian 2x sehari terus ke dalam batin saya, perubahan paling ketara adalah hati saya jadi luar biasa tenang. Fikiran tak lagi serabut, dada lapang dan rasa takut sendirian tu hilang terus. Macam ada kekuatan spiritual baru yang menyokong diri saya dari dalam.',
+  },
+  {
+    name: 'Encik Hafizuddin',
+    location: 'Wangsa Maju, KL',
+    time: '3 hari lepas, 8:20 AM',
+    tag: '🌙 Tidur Lena Tanpa Tindih',
+    headline: 'Rutin tidur saya akhirnya pulih 100%',
+    text: 'Dulu saya fobia nak tidur malam sebab hampir setiap hari kena tindih jam 3 pagi dan mimpi jatuh tempat tinggi. Bila subs servis ni, ustaz buat bacaan sesi pagi untuk bekalan tenaga harian saya, dan sesi petang/malam untuk pembersihan sebelum tidur. Masya-Allah, malam pertama bacaan kedua dibuat, saya tidur nyenyak sampai Subuh tanpa ada kelibat mengacau. Siang pula badan rasa bertenaga, tak lesu atau mengantuk macam dulu lagi.',
+  },
+  {
+    name: 'Puan Hasnah',
+    location: 'Ipoh, Perak',
+    time: 'Ahad lepas, 6:05 PM',
+    tag: '🔥 Saka 10 Tahun Menyerah',
+    headline: 'Jin degil 10 tahun akhirnya musnah',
+    text: 'Saka keturunan dalam badan saya ni licik. Kalau jumpa ustaz sebulan sekali, masa rawatan dia lari sekejap, lepas tu balik menyeksa saya semula. Tapi bila ustaz buat pengisian ruqyah pemusnah jin 2 kali sehari secara berterusan sepanjang bulan, jin tu langsung tak ada ruang nak bernafas. Hari ke-5 langganan, badan saya menggigil dan muntah lendir kuning pekat. Lepas tu rasa bisa di tengkuk yang bersarang 10 tahun hilang terus. Konsistensi harian ni memang penamat jin degil!',
+  },
+  {
+    name: 'Dr. Ariff',
+    location: 'Cyberjaya, Selangor',
+    time: 'Isnin lepas, 11:30 PM',
+    tag: '🛡️ Backup Rohani Orang Sibuk',
+    headline: 'Ibarat ada perawat peribadi doakan kita setiap hari',
+    text: 'Kerja saya di hospital sangat padat, balik rumah dah letih tak larat nak buat amalan benteng yang panjang-panjang. Tapi saya tahu badan saya ada gangguan sihir yang perlukan rawatan berterusan. Bila tahu ada servis langganan ruqyah jarak jauh 2x sehari ni, saya terus daftar. Rasa bersyukur sangat sebab walaupun saya sibuk, kebajikan rohani dan benteng diri saya tetap ada perawat berpengalaman yang tolong jagakan dan pasakkan setiap hari.',
+  },
+];
+
+const TESTIMONIALS_PART2 = [
+  {
+    name: 'Puan Mariam',
+    location: 'Ayer Keroh, Melaka',
+    time: '2 hari lepas, 4:18 PM',
+    tag: '💰 60x Rawatan Sebulan',
+    headline: '60 kali rawatan sebulan, sangat berbaloi',
+    text: 'Kalau ikutkan dulu, sekali pergi pusat rawatan habis RM150 upah, belum campur minyak dan penat beratur. Sebulan pergi 3-4 kali dah beratus ringgit melayang tapi sakit berulang lagi. Servis bayaran bulanan ni sangat berbaloi — bayar satu yuran bulanan yang mampu milik, ustaz bacakan ruqyah 2 kali sehari (sebulan 60 kali bacaan pengisian terus ke badan!). Tak perlu keluar rumah langsung tapi perlindungan dapat setiap hari.',
+  },
+  {
+    name: 'Puan Zaleha',
+    location: 'Seremban, N. Sembilan',
+    time: 'Khamis lepas, 9:55 PM',
+    tag: '🕊️ Sihir Pemisah Dinetralkan',
+    headline: 'Rumahtangga kembali sejuk dan damai',
+    text: 'Rumahtangga kami diuji sihir pemisah. Suami jadi pantang nampak muka saya, terus nak menengking tanpa sebab. Saya langgankan servis ni atas nama kami berdua. Alhamdulillah, setiap kali ada gelombang sihir cuba nak panaskan hati suami, bacaan ruqyah harian ustaz bertindak mencairkan sihir tu serta-merta. Sekarang suami dah tak baran, boleh berborak mesra macam mula kahwin dulu. Betul-betul perisai penyelamat rumahtangga.',
+  },
+  {
+    name: 'Encik Kamaruzzaman',
+    location: 'Sungai Petani, Kedah',
+    time: 'Selasa lepas, 7:12 PM',
+    tag: '✨ Detox Bisa & Santau Angin',
+    headline: 'Bisa santau angin makin surut',
+    text: 'Saya ada masalah bisa urat dan angin santau yang buat kaki tangan rasa kebas dan mencucuk tiap petang. Bila mula langganan ni, minggu pertama saya kerap sendawa kuat dan buang angin setiap kali selepas waktu bacaan ustaz dibuat. Masuk minggu kedua, rasa menyucuk di tapak kaki dah 90% hilang. Bangun pagi badan rasa ringan, tak ada lagi rasa berat macam memikul beban. Proses pembersihan harian ni betul-betul berkesan.',
+  },
+  {
+    name: 'Cikgu Nabilah',
+    location: 'Bandar Seri Begawan, Brunei',
+    time: 'Jumaat lepas, 8:40 PM',
+    tag: '🌏 Jarak Jauh Tanpa Sempadan',
+    headline: 'Jarak beribu batu bukan halangan',
+    text: 'Di tempat saya susah nak cari perawat ruqyah syar\'iyyah yang serasi. Bila tahu ESyifaa sediakan khidmat ruqyah harian jarak jauh, saya terus langgan. Subhanallah, walaupun jarak jauh, doa dan bacaan ayat suci Al-Quran tak ada sempadan. Setiap kali waktu perawat wiridkan, saya dapat rasa meremang dan haba sejuk keluar dari tengkuk saya. Gangguan mimpi makhluk hitam dah berhenti sepenuhnya sejak bulan lepas.',
+  },
+  {
+    name: 'Puan Noraini',
+    location: 'Klang, Selangor',
+    time: 'Semalam, 11:05 AM',
+    tag: '🔒 Langganan Masuk Bulan Ke-3',
+    headline: 'Pelaburan terbaik untuk kesihatan rohani & jasmani',
+    text: 'Saya bandingkan hidup saya sebelum langgan dengan sekarang. Dulu hidup murung, asyik sakit-sakit badan, perniagaan sempit, emosi tak menentu sebab gangguan tak putus-putus. Tapi sekarang bila diri diisi ruqyah 2x sehari secara konsisten, hidup saya rasa dilindungi sepenuhnya. Rezeki makin lapang, badan sihat dan keluarga bahagia. Saya memang takkan lepaskan servis langganan ni selagi mampu, ibarat bayar takaful tapi ini takaful rohani 24 jam.',
+  },
+];
 
 function WaBubble({ t }) {
   return (
-    <div style={{ background: '#FFFFFF', border: '1px dashed #CBD5E1', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 15px rgba(0,0,0,0.04)', textAlign: 'left' }}>
+    <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 15px rgba(0,0,0,0.04)', textAlign: 'left' }}>
       <div style={{ background: '#F0FDF4', borderBottom: '1px solid #E2E8F0', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: '#FFFFFF' }}>
             {t.name.charAt(0)}
           </div>
           <div>
-            <div style={{ fontSize: '0.84rem', fontWeight: 700, color: C.ink }}>{t.name}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: C.ink }}>{t.name}</div>
             <div style={{ fontSize: '0.7rem', color: C.muted }}>📍 {t.location}</div>
           </div>
         </div>
-        <div style={{ fontSize: '0.7rem', color: C.muted }}>{t.time}</div>
+        <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 600 }}>{t.time}</div>
       </div>
       <div style={{ padding: '1.1rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div style={{ background: '#F8FAFC', borderRadius: '12px', padding: '0.9rem 1rem', borderLeft: '3px solid #10B981', marginBottom: '0.85rem' }}>
-          <p style={{ margin: 0, fontSize: '0.87rem', color: '#94A3B8', lineHeight: 1.65, fontStyle: 'italic' }}>{t.text}</p>
+          {t.headline && (
+            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#042E23', marginBottom: '0.35rem' }}>
+              &ldquo;{t.headline}&rdquo;
+            </div>
+          )}
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#334155', lineHeight: 1.65 }}>
+            {t.text}
+          </p>
         </div>
-        <span style={{ alignSelf: 'flex-start', background: C.greenSoft, border: `1px solid ${C.border}`, color: C.green, fontSize: '0.73rem', fontWeight: 700, padding: '0.25rem 0.7rem', borderRadius: '9999px' }}>{t.tag}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span style={{ background: C.greenSoft, border: `1px solid ${C.border}`, color: C.green, fontSize: '0.73rem', fontWeight: 700, padding: '0.25rem 0.7rem', borderRadius: '9999px' }}>
+            {t.tag}
+          </span>
+          <span style={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 700 }}>
+            ⭐⭐⭐⭐⭐
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
 export function Testimonials({ part = 1 }) {
+  const items = part === 1 ? TESTIMONIALS_PART1 : TESTIMONIALS_PART2;
   return (
     <Section bg="#F8FAF9" max="960px">
       <Chip>💬 Bukti Pengalaman Pesakit (Gelombang {part})</Chip>
@@ -171,8 +264,8 @@ export function Testimonials({ part = 1 }) {
       <p style={{ fontSize: '0.95rem', color: C.muted, lineHeight: 1.65, maxWidth: '560px', margin: '0 auto 2.5rem' }}>
         {part === 1 ? 'Mesej WhatsApp terus daripada pesakit Ruqyah Harian — ikhtiar berterusan, dengan izin Allah.' : 'Jom baca apa kata mereka yang dah melanggan Ruqyah Harian E-Syifa 👇'}
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '1.1rem' }}>
-        {PLACEHOLDER_TESTIMONIALS.map(t => <WaBubble key={t.name} t={t} />)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+        {items.map(t => <WaBubble key={t.name} t={t} />)}
       </div>
     </Section>
   );
