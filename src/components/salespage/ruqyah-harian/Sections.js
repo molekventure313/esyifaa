@@ -52,9 +52,20 @@ export function useRhSlots() {
   return slots;   // { max, used, remaining } | null
 }
 
+// Meter/baki hanya dipapar bila slot dah diisi ≥20% — sebelum itu cukup teks "terhad 100 sebulan"
+const METER_FROM = 0.2;
+const showCount = s => s && s.remaining !== null && s.remaining !== undefined && ((s.used || 0) / (s.max || RH_MAX_SLOTS) >= METER_FROM || s.remaining <= 0);
+
 export function SlotMeter({ dark }) {
   const s = useRhSlots();
-  if (!s || s.remaining === null || s.remaining === undefined) return null;
+  if (!s) return null;
+  if (!showCount(s)) {
+    return (
+      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: dark ? '#FDE047' : '#B45309' }}>
+        ⏳ Terhad {RH_MAX_SLOTS} pesakit baru sebulan — untuk menjaga kualiti bacaan
+      </div>
+    );
+  }
   const pct = Math.min(100, Math.round(((s.used || 0) / (s.max || RH_MAX_SLOTS)) * 100));
   const full = s.remaining <= 0;
   return (
@@ -76,7 +87,7 @@ export function AnnouncementBar() {
   return (
     <div style={{ background: '#042E23', color: '#FEF3C7', textAlign: 'center', padding: '0.6rem 1rem', fontFamily: ff, fontSize: '0.82rem', fontWeight: 700 }}>
       🌙 Dibacakan 2x sehari · Tak perlu keluar rumah · Perawat hanya terima {RH_MAX_SLOTS} pesakit baru sebulan
-      {s?.remaining !== null && s?.remaining !== undefined && <span style={{ color: '#FDE047' }}> · Baki {s.remaining} slot</span>}
+      {showCount(s) && <span style={{ color: '#FDE047' }}> · Baki {s.remaining} slot</span>}
     </div>
   );
 }
