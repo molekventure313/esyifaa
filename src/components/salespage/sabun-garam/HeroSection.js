@@ -154,7 +154,7 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
             🧼 Dapatkan Sabun Pengisian Sekarang
           </button>
           <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748B' }}>
-            Dari <strong style={{ color: '#047857' }}>RM39</strong> seunit · <strong style={{ color: '#047857' }}>Free postage</strong> 3 unit · Bayar Masa Terima (COD) atau FPX
+            Dari <strong style={{ color: '#047857' }}>RM39</strong> seunit · Postage RM5 · Bayar Masa Terima (COD) atau FPX
           </p>
         </div>
 

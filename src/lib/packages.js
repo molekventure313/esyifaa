@@ -27,10 +27,10 @@ export const ORDER_PRODUCTS = {
     packages: [
       { units: 1, label: '1 Unit', price: 39 },
       { units: 2, label: '2 Unit', price: 70 },
-      { units: 3, label: '3 Unit', price: 90, freePostage: true },   // 3 Unit: free pos (tiada hadiah Kasturi)
+      { units: 3, label: '3 Unit', price: 90 },
     ],
     addons: ['kasturi'],
-    // 3 Unit: postage percuma (semua negeri). 1 & 2 Unit: add-on Kasturi diskaun postage RM5.
+    // Pakej asal: semua pakej + postage (RM5 Semenanjung / RM10 Sabah & Sarawak). Add-on Kasturi: diskaun postage RM5.
     postage: ({ east, pkg, addons }) => (pkg.freePostage ? 0 : Math.max(0, (east ? POSTAGE_EAST : POSTAGE_NORMAL) - (addons.kasturi ? 5 : 0))),
   },
   'garam-pengasihan': {

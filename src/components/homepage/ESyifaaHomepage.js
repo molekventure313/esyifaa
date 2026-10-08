@@ -21,7 +21,7 @@ const PRODUCTS = [
     color: '#10B981',
     image: '/images/sabun-garam/hero-saka-sihir-santau.png',
     price: 'Dari RM39',
-    priceSub: '3 unit: FREE postage',
+    priceSub: '+ postage RM5 · 3 unit RM90',
     bullets: [
       'Larut dalam baldi & mandi — amalkan di rumah',
       'Ikhtiar saka, sihir, santau & lenguh badan',
