@@ -99,6 +99,7 @@ export default function PengurusanOrderPage() {
       if (notExportedOnly) params.set('not_exported', 'true');
       if (productFilter !== 'all') params.set('product', productFilter);
       if (ownerFilter !== 'all') params.set('owner', ownerFilter);
+      if (channel !== 'all') params.set('channel', channel);   // statistik ikut penapis
 
       const res  = await fetch(`/api/payments/list?${params.toString()}`);
       const json = await res.json();
@@ -118,7 +119,7 @@ export default function PengurusanOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter]);
+  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter, channel]);
 
   useEffect(() => {
     fetchOrders();
@@ -183,6 +184,7 @@ export default function PengurusanOrderPage() {
         if (notExportedOnly) params.set('not_exported', 'true'); // ← filter belum diexport
         if (productFilter !== 'all') params.set('product', productFilter);
         if (ownerFilter !== 'all') params.set('owner', ownerFilter);
+        if (channel !== 'all') params.set('channel', channel);
       }
 
       const res = await fetch(`/api/orders/export-ninjavan?${params.toString()}`);
@@ -387,7 +389,24 @@ export default function PengurusanOrderPage() {
         </div>
       </div>
 
-      {/* ─── Stats Cards ─── */}
+      {/* ─── Stats Cards ─── (ikut penapis produk / pemilik / saluran) */}
+      {(productFilter !== 'all' || ownerFilter !== 'all' || channel !== 'all') && (
+        <div style={{ marginBottom: '0.6rem', fontSize: '0.78rem', color: textSecondary, display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+          <span>📊 Statistik untuk:</span>
+          {[
+            productFilter !== 'all' && ({ 'sabun-garam': '🧼 Sabun Garam', 'garam-pengasihan': '🧂 Garam Pengasihan', 'kasturi-kijang': '🌿 Kasturi Kijang', digital: '✨ Pengisian / Rawatan' })[productFilter],
+            ownerFilter === 'hq' ? '🏢 HQ' : ownerFilter !== 'all' && (() => {
+              const m = marketers.find(x => x.id === ownerFilter);
+              return m ? `📢 ${m.full_name || m.marketer_code}${m.team_size > 0 ? ' + team' : ''}` : 'Marketer';
+            })(),
+            channel !== 'all' && (channel === 'whatsapp' ? '💬 WhatsApp' : '🌐 Web'),
+          ].filter(Boolean).map(t => (
+            <span key={t} style={{ fontWeight: 700, padding: '0.15rem 0.55rem', borderRadius: '999px', background: subCardBg, border: cardBorder, color: textPrimary }}>{t}</span>
+          ))}
+          <button onClick={() => { setProductFilter('all'); setOwnerFilter('all'); setChannel('all'); }}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', color: isLightMode ? '#2563EB' : '#60A5FA', fontSize: '0.75rem', fontWeight: 600 }}>✕ Reset</button>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {[
           { label: 'Order Selesai',     value: stats.total_completed,                          color: '#10B981', icon: '✅' },

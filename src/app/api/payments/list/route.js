@@ -23,6 +23,7 @@ export async function GET(req) {
     const notExported   = searchParams.get('not_exported') === 'true'; // belum export NinjaVan — tapis di SERVER
     const product       = searchParams.get('product') || 'all';         // sabun-garam | garam-pengasihan | kasturi-kijang | digital
     const owner         = searchParams.get('owner') || 'all';           // hq | <marketer id> (ketua termasuk teamsale)
+    const channel       = searchParams.get('channel') || 'all';         // web | whatsapp
     const search = searchParams.get('search') || '';
     const page   = parseInt(searchParams.get('page'))  || 1;
     // Belum export: had lebih besar supaya order lama yang belum dihantar tak tercicir
@@ -61,8 +62,15 @@ export async function GET(req) {
       query = query.is('ninjavan_exported_at', null);
     }
 
-    query = applyProductFilter(query, product);
-    query = await applyOwnerFilter(adminClient, query, owner);
+    // Penapis produk / pemilik / saluran — dikenakan pada senarai DAN statistik
+    const scoped = async q => {
+      q = applyProductFilter(q, product);
+      q = await applyOwnerFilter(adminClient, q, owner);
+      if (channel === 'whatsapp') q = q.eq('order_channel', 'whatsapp');
+      else if (channel === 'web') q = q.neq('order_channel', 'whatsapp');
+      return q;
+    };
+    query = await scoped(query);
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
@@ -74,16 +82,28 @@ export async function GET(req) {
       ? (submissions || []).filter(isPhysicalOrder)
       : (submissions || []);
 
-    // Stats: kira semua order (FPX + COD)
+    // Ambil semua baris (Supabase hadkan 1000 baris satu query)
+    const fetchAll = async build => {
+      const out = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error: e } = await (await build()).range(from, from + 999);
+        if (e) throw e;
+        out.push(...(data || []));
+        if (!data || data.length < 1000) return out;
+      }
+    };
+
+    // Stats: kira semua order (FPX + COD) yang sepadan penapis produk / pemilik / saluran
     let statsCompleted = 0, statsPending = 0, statsFailed = 0;
     let statsCod = 0, statsFpx = 0;
     let totalRevenue = 0;
 
     try {
-      const { data: statsData } = await adminClient
+      const statsData = await fetchAll(() => scoped(adminClient
         .from('submissions')
         .select('payment_status, payment_type, amount_paid, notes, returned_at')
-        .in('payment_type', ['fpx_payment', 'cod']);
+        .in('payment_type', ['fpx_payment', 'cod'])
+        .order('created_at', { ascending: true })));
 
       (statsData || []).forEach(s => {
         if (s.payment_status === 'completed') {
@@ -118,11 +138,12 @@ export async function GET(req) {
           .not('ninjavan_exported_at', 'is', null)
           .order('ninjavan_exported_at', { ascending: false })
           .limit(1),
-        adminClient.from('submissions')
+        fetchAll(() => scoped(adminClient.from('submissions')
           .select('payment_type, source')
           .in('payment_type', ['fpx_payment', 'cod'])
           .eq('payment_status', 'completed')
-          .is('ninjavan_exported_at', null),
+          .is('ninjavan_exported_at', null)
+          .order('created_at', { ascending: true }))).then(data => ({ data })),
       ]);
       notExportedCount = (pendingExport || []).filter(isPhysicalOrder).length;
 

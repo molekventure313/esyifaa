@@ -180,6 +180,7 @@ export async function GET(req) {
     const notExported   = searchParams.get('not_exported') === 'true';
     const product       = searchParams.get('product') || 'all';
     const owner         = searchParams.get('owner') || 'all';
+    const channel       = searchParams.get('channel') || 'all';
 
     // ─── Query submissions ───
     let query = adminClient
@@ -200,6 +201,8 @@ export async function GET(req) {
     if (!idsParam) {
       query = applyProductFilter(query, product);                       // ikut penapis page Pengurusan Order
       query = await applyOwnerFilter(adminClient, query, owner);
+      if (channel === 'whatsapp') query = query.eq('order_channel', 'whatsapp');
+      else if (channel === 'web') query = query.neq('order_channel', 'whatsapp');
     }
 
     query = query.order('created_at', { ascending: true });
