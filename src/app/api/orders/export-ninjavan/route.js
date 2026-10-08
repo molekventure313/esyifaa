@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { productOf, isPhysicalOrder, applyProductFilter } from '@/lib/products';
-import { applyOwnerFilter } from '@/lib/team';
+import { resolveOwner, applyOwner } from '@/lib/team';
 import { addonsOf, orderQty } from '@/lib/marketer-calc';
 
 export const dynamic = 'force-dynamic';
@@ -200,7 +200,7 @@ export async function GET(req) {
     if (notExported)  query = query.is('ninjavan_exported_at', null);   // ← belum diexport
     if (!idsParam) {
       query = applyProductFilter(query, product);                       // ikut penapis page Pengurusan Order
-      query = await applyOwnerFilter(adminClient, query, owner);
+      query = applyOwner(query, await resolveOwner(adminClient, owner));   // await pada resolveOwner sahaja, BUKAN query
       if (channel === 'whatsapp') query = query.eq('order_channel', 'whatsapp');
       else if (channel === 'web') query = query.neq('order_channel', 'whatsapp');
     }

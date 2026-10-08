@@ -97,11 +97,18 @@ export async function ownerScope(admin, userId) {
 }
 
 /**
- * Tapis query submissions ikut pemilik order:
+ * Penapis pemilik order — 2 langkah kerana query Supabase ialah "thenable":
+ * kalau dipulangkan dari fungsi async, query tu TERUS DIJALANKAN (bukan dipulangkan sebagai query).
+ *   const owner = await resolveOwner(admin, 'hq' | <marketer id> | 'all');   // async — cari ID team
+ *   q = applyOwner(q, owner);                                               // sync — kenakan pada query
  * 'hq' → order HQ · <marketer id> → marketer tu (ketua: termasuk teamsale dia) · 'all'/kosong → semua
  */
-export async function applyOwnerFilter(admin, q, owner) {
-  if (!owner || owner === 'all') return q;
-  if (owner === 'hq') return q.is('marketer_id', null);
-  return q.in('marketer_id', (await ownerScope(admin, owner)).ids);
+export async function resolveOwner(admin, owner) {
+  if (!owner || owner === 'all') return null;
+  if (owner === 'hq') return 'hq';
+  return (await ownerScope(admin, owner)).ids;
+}
+export function applyOwner(q, resolved) {
+  if (!resolved) return q;
+  return resolved === 'hq' ? q.is('marketer_id', null) : q.in('marketer_id', resolved);
 }

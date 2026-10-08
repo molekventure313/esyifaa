@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isPhysicalOrder, applyProductFilter } from '@/lib/products';
-import { applyOwnerFilter } from '@/lib/team';
+import { resolveOwner, applyOwner } from '@/lib/team';
 import { formatOrder } from '@/lib/orders';
 
 export async function GET(req) {
@@ -62,15 +62,16 @@ export async function GET(req) {
       query = query.is('ninjavan_exported_at', null);
     }
 
-    // Penapis produk / pemilik / saluran — dikenakan pada senarai DAN statistik
-    const scoped = async q => {
-      q = applyProductFilter(q, product);
-      q = await applyOwnerFilter(adminClient, q, owner);
+    // Penapis produk / pemilik / saluran — dikenakan pada senarai DAN statistik.
+    // JANGAN jadikan async / await pada query (query Supabase "thenable" → terus dijalankan).
+    const ownerIds = await resolveOwner(adminClient, owner);
+    const scoped = q => {
+      q = applyOwner(applyProductFilter(q, product), ownerIds);
       if (channel === 'whatsapp') q = q.eq('order_channel', 'whatsapp');
       else if (channel === 'web') q = q.neq('order_channel', 'whatsapp');
       return q;
     };
-    query = await scoped(query);
+    query = scoped(query);
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
@@ -86,7 +87,7 @@ export async function GET(req) {
     const fetchAll = async build => {
       const out = [];
       for (let from = 0; ; from += 1000) {
-        const { data, error: e } = await (await build()).range(from, from + 999);
+        const { data, error: e } = await build().range(from, from + 999);
         if (e) throw e;
         out.push(...(data || []));
         if (!data || data.length < 1000) return out;
