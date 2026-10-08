@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import FspTestimonialSection from '@/components/salespage/fsp/TestimonialSection';
-import FspTestimonialPart2Section from '@/components/salespage/fsp/TestimonialPart2Section';
 
 // ─── WA Rotator ───────────────────────────────────────────────────────────────
 const FALLBACK_NUMBER = '601135172611';
@@ -11,6 +11,74 @@ const LS_KEY          = 'esyifaa_wa_idx';
 const buildWaLink     = (num) => `https://wa.me/${num}?text=${WA_MESSAGE}`;
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
+// Produk fizikal — dipapar DULU (sumber jualan utama). Butang terus ke SP produk.
+const PRODUCTS = [
+  {
+    id: 'sabun',
+    name: 'Sabun Garam Himalaya Pengisian',
+    sub: '200g · mandian ruqyah',
+    badge: 'PALING LARIS',
+    color: '#10B981',
+    image: '/images/sabun-garam/hero-saka-sihir-santau.png',
+    price: 'Dari RM39',
+    priceSub: '3 unit: FREE postage',
+    bullets: [
+      'Larut dalam baldi & mandi — amalkan di rumah',
+      'Ikhtiar saka, sihir, santau & lenguh badan',
+      'COD tersedia seluruh Semenanjung',
+    ],
+    url: '/sabun-garam-1',
+    cta: '🧼 Tempah Sabun Garam',
+  },
+  {
+    id: 'garam',
+    name: 'Garam Pengasihan Masakan',
+    sub: '250g · secubit dalam masakan',
+    badge: 'BELI 1 FREE 1',
+    color: '#F59E0B',
+    image: null,
+    emoji: '🧂',
+    price: 'Dari RM39',
+    priceSub: '2 pek (250g x 2)',
+    bullets: [
+      'Masukkan secubit dalam masakan & minuman harian',
+      'Ikhtiar keharmonian & kemesraan rumahtangga',
+      '6 pek: FREE postage + FREE Minyak Kasturi',
+    ],
+    url: '/garam-pengasihan',
+    cta: '🧂 Tempah Garam Pengasihan',
+  },
+  {
+    id: 'kasturi',
+    name: 'Minyak Kasturi Kijang Ruqyah',
+    sub: 'botol poket · calit & sapu',
+    badge: 'MESRA POKET',
+    color: '#A78BFA',
+    image: '/images/kasturi-kijang-opt.jpg',
+    price: 'Dari RM20',
+    priceSub: '5 botol hanya RM40',
+    bullets: [
+      'Calit di nadi, ubun-ubun & bantal sebelum tidur',
+      'Pendinding diri & anak dari gangguan waktu malam',
+      'Kecil & mudah dibawa ke mana-mana',
+    ],
+    url: '/kasturi-kijang',
+    cta: '🌿 Tempah Kasturi Kijang',
+  },
+];
+
+// Testimoni produk (dari SP produk) — dicampur dengan testimoni rawatan (gambar WhatsApp)
+const PRODUCT_TESTIMONIALS = [
+  { product: '🧼 Sabun Garam', name: 'Aishah M.', place: 'Kuala Lumpur', tag: 'Susah Tidur → Tidur Nyenyak',
+    quote: 'Dulu kul 3 pagi masih terkebil-kebil dada gelisah tak boleh tidur. Lepas mandi sabun ni malam terus tidur lena sampai subuh, alhamdulillah.' },
+  { product: '🧼 Sabun Garam', name: 'Rahman A.', place: 'Selangor', tag: 'Lenguh Urat → Lega',
+    quote: 'Bahu saya yang lenguh tegang bertahun tu terus lega lepas mandi. Rasa ringan badan sekarang.' },
+  { product: '🧂 Garam Pengasihan', name: 'Puan Noraini', place: 'Shah Alam', tag: 'Suami Kembali Mesra',
+    quote: 'Saya ikhtiar letak secubit garam ni dalam teh O dan sup ayam dia. Masuk hari ke-5, tiba-tiba dia ajak makan sama-sama dan minta maaf.' },
+  { product: '🌿 Kasturi Kijang', name: 'Puan Shikin', place: 'Seremban', tag: 'Anak Berhenti Meracau',
+    quote: 'Lepas calit kasturi kijang di ubun-ubun dan belakang telinga anak, masyaAllah terus berhenti menangis dan tidur dengan sangat tenang.' },
+];
+
 const SERVICES = [
   {
     id: 'rawatan',
@@ -56,36 +124,11 @@ const SERVICES = [
       'Berubat sendiri tanpa bergantung pada perawat',
     ],
     ctaLabel: '💎 Tempah Pengisian Sekarang',
-    ctaUrl: '/pengisian-wasap',
+    ctaUrl: '/pengisian-esyifa',
     ctaColor: '#FDE047',
     ctaTextColor: '#042E23',
-    secondaryLabel: 'Lihat butiran penuh →',
-    secondaryUrl: '/pengisian-esyifa',
-  },
-  {
-    id: 'evideo',
-    icon: '🎬',
-    badge: 'PRODUK DIGITAL',
-    badgeColor: '#8B5CF6',
-    name: 'E-Video Rawatan',
-    tagline: 'Pakej Video Rawatan Ruqyah — Ulang Tonton Bila-Bila Masa',
-    price: 'RM60',
-    priceSub: 'harga promo 50 terawal',
-    color: '#A78BFA',
-    cardBorder: 'rgba(139,92,246,0.4)',
-    cardGlow: 'rgba(139,92,246,0.08)',
-    bullets: [
-      '8 video rawatan + 1 amalan harian bonus',
-      'Rawatan sebenar — bukan sekadar rakaman biasa',
-      'Ulang tonton percuma, tanpa bayar extra',
-      'Dihantar via WhatsApp dalam 24 jam selepas bayar',
-    ],
-    ctaLabel: '🎬 Dapatkan E-Video Sekarang',
-    ctaUrl: '/e-video',
-    ctaColor: '#8B5CF6',
-    ctaTextColor: '#FFFFFF',
-    secondaryLabel: 'Lihat butiran penuh →',
-    secondaryUrl: '/e-video',
+    secondaryLabel: 'Tanya perawat dulu di WhatsApp →',
+    secondaryUrl: '/pengisian-wasap',
   },
 ];
 
@@ -98,24 +141,28 @@ const TRUST_ITEMS = [
 
 const FAQS = [
   {
+    q: "Apa beza produk-produk E-Syifa'?",
+    a: "Sabun Garam Himalaya — mandian ruqyah untuk ikhtiar saka, sihir, santau & lenguh badan. Garam Pengasihan — secubit dalam masakan harian untuk keharmonian rumahtangga. Minyak Kasturi Kijang — calit & sapu sebagai pendinding diri dan anak. Pengisian E-Syifa' — ayat ruqyah dipasakkan ke dalam item peribadi anda (cincin, tasbih dll) untuk rawat diri sendiri. Rawatan Ruqyah — sesi rawatan jarak jauh terus bersama perawat.",
+  },
+  {
+    q: 'Boleh bayar masa terima barang (COD)?',
+    a: 'Boleh — COD tersedia untuk produk fizikal (Sabun Garam, Garam Pengasihan, Kasturi Kijang) ke seluruh Semenanjung. Untuk Sabah & Sarawak, bayaran melalui FPX (online banking).',
+  },
+  {
+    q: 'Berapa lama barang sampai?',
+    a: 'Order diproses setiap hari bekerja dan dihantar melalui kurier. Kebiasaannya sampai dalam 2–5 hari bekerja untuk Semenanjung, lebih sedikit untuk Sabah & Sarawak.',
+  },
+  {
     q: 'Boleh ke rawatan jarak jauh ni berkesan?',
-    a: 'Ya — ruqyah syar\'iyyah tidak terhad oleh jarak. Bacaan Al-Quran dan doa perawat tetap sampai kepada pesakit walaupun berjauhan. Ramai pesakit kami yang berada di luar negara turut merasai kesan rawatan.',
+    a: "Ya — ruqyah syar'iyyah tidak terhad oleh jarak. Bacaan Al-Quran dan doa perawat tetap sampai kepada pesakit walaupun berjauhan. Ramai pesakit kami yang berada di luar negara turut merasai kesan rawatan.",
   },
   {
-    q: "Apa beza antara Rawatan, Pengisian E-Syifa' dan E-Video?",
-    a: "Rawatan (RM50) — sesi rawatan berdepan (jarak jauh) dengan perawat. Pengisian E-Syifa' (RM90) — tenaga ruqyah dipaksakan ke dalam item peribadi anda untuk rawatan berterusan tanpa sesi. E-Video (RM60) — pakej video rawatan untuk anda gunakan sendiri di rumah, bila-bila masa.",
-  },
-  {
-    q: 'Berapa lama untuk rasa kesan rawatan?',
-    a: 'Bergantung kepada tahap gangguan. Sesetengah pesakit rasa kesan sejurus dalam sesi pertama. Sesetengah yang lain memerlukan beberapa sesi. Perawat akan beri panduan ikut keadaan masing-masing.',
-  },
-  {
-    q: 'Adakah perlu buat banyak sesi rawatan?',
-    a: 'Tidak semestinya. Kes ringan mungkin selesai dalam 1-2 sesi. Kes gangguan lama & berulang mungkin perlukan lebih. Perawat akan nilai dan cadangkan ikut keperluan sebenar — tiada paksaan untuk teruskan.',
+    q: 'Ada unsur syirik atau khurafat?',
+    a: "Tiada. Semua produk & rawatan berasaskan bacaan ayat Al-Quran dan doa yang ma'thur — 100% ruqyah syar'iyyah. Produk hanyalah wasilah (perantara); kesembuhan datang daripada Allah SWT.",
   },
   {
     q: 'Bagaimana cara nak mula?',
-    a: 'Mudah sahaja — pilih servis yang sesuai di atas, klik butang, dan ikut arahan. Untuk Rawatan, anda boleh terus bayar dan perawat akan hubungi. Untuk Pengisian & E-Video, proses serupa melalui WhatsApp atau bayaran FPX.',
+    a: 'Pilih produk atau servis di atas, klik butang tempah dan isi borang — pilih COD atau FPX. Kalau masih ragu, tekan butang WhatsApp untuk bertanya terus kepada perawat kami.',
   },
 ];
 
@@ -154,9 +201,10 @@ function Navbar({ waLink, firePixel }) {
       {/* Nav links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
         {[
-          { label: 'Servis Kami', id: 'servis-kami' },
-          { label: 'Kenapa ESyifaa', id: 'kenapa-esyifaa' },
+          { label: 'Produk', id: 'produk' },
+          { label: 'Rawatan', id: 'servis-kami' },
           { label: 'Testimoni', id: 'testimoni' },
+          { label: 'FAQ', id: 'faq' },
         ].map(item => (
           <button
             key={item.id}
@@ -204,7 +252,7 @@ function HeroSection({ waLink, firePixel }) {
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', padding: '0.4rem 1.1rem', borderRadius: '50px', marginBottom: '1.5rem' }}>
           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ADE80', display: 'inline-block' }} />
           <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#4ADE80', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            Rawatan Ruqyah Syar&apos;iyyah Online
+            Produk &amp; Rawatan Ruqyah Syar&apos;iyyah
           </span>
         </div>
 
@@ -215,28 +263,30 @@ function HeroSection({ waLink, firePixel }) {
           margin: '0 0 1rem 0',
           letterSpacing: '-0.03em', lineHeight: 1.15,
         }}>
-          Rawat Gangguan Jin, Sihir & Saka{' '}
-          <span style={{ color: '#FDE047' }}>Dari Rumah</span>
+          Ikhtiar Gangguan Jin, Sihir & Saka{' '}
+          <span style={{ color: '#FDE047' }}>Terus Dari Rumah</span>
         </h1>
 
         {/* Sub */}
         <p style={{ fontSize: 'clamp(0.95rem, 2vw, 1.15rem)', color: '#A7F3D0', lineHeight: 1.7, maxWidth: '580px', margin: '0 auto 2.5rem auto' }}>
-          Tiga perkhidmatan rawatan ruqyah syar&apos;iyyah dalam satu tempat — rawatan terus, pengisian item, atau pakej video. Pilih yang sesuai untuk anda.
+          Produk ruqyah untuk amalan harian di rumah — sabun mandian, garam masakan &amp; minyak kasturi — serta rawatan jarak jauh &amp; pengisian item bersama perawat kami.
         </p>
 
         {/* 3 service pills */}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.65rem', marginBottom: '2.5rem' }}>
           {[
-            { label: '🏥 Rawatan RM50', id: 'rawatan', color: '#10B981' },
-            { label: "💎 Pengisian RM90", id: 'pengisian', color: '#D97706' },
-            { label: '🎬 E-Video RM60', id: 'evideo', color: '#8B5CF6' },
+            { label: '🧼 Sabun Garam', id: 'product-sabun', color: '#10B981' },
+            { label: '🧂 Garam Pengasihan', id: 'product-garam', color: '#F59E0B' },
+            { label: '🌿 Kasturi Kijang', id: 'product-kasturi', color: '#A78BFA' },
+            { label: '🏥 Rawatan RM50', id: 'service-rawatan', color: '#10B981' },
+            { label: "💎 Pengisian RM90", id: 'service-pengisian', color: '#D97706' },
           ].map(pill => (
             <button
               key={pill.id}
-              onClick={() => scrollTo(`service-${pill.id}`)}
+              onClick={() => scrollTo(pill.id)}
               style={{
-                padding: '0.6rem 1.3rem', borderRadius: '50px',
-                fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+                padding: '0.5rem 0.95rem', borderRadius: '50px',
+                fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
                 background: `${pill.color}22`, border: `1.5px solid ${pill.color}66`,
                 color: '#FEF3C7', fontFamily: ff,
                 transition: 'all 0.15s',
@@ -250,7 +300,7 @@ function HeroSection({ waLink, firePixel }) {
         {/* Main CTA */}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.85rem' }}>
           <button
-            onClick={() => scrollTo('servis-kami')}
+            onClick={() => scrollTo('produk')}
             style={{
               padding: '0.9rem 2rem', borderRadius: '50px',
               fontSize: '1rem', fontWeight: 800, cursor: 'pointer',
@@ -259,7 +309,7 @@ function HeroSection({ waLink, firePixel }) {
               boxShadow: '0 8px 25px rgba(234,179,8,0.35)', fontFamily: ff,
             }}
           >
-            Lihat Semua Servis ↓
+            🛒 Lihat Produk ↓
           </button>
           <a
             href={waLink}
@@ -284,6 +334,101 @@ function HeroSection({ waLink, firePixel }) {
   );
 }
 
+function ProductsSection() {
+  return (
+    <section id="produk" style={{ background: '#031E17', padding: '4rem 1.5rem', fontFamily: ff }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <span style={{ display: 'inline-block', background: 'rgba(253,224,71,0.1)', border: '1px solid rgba(253,224,71,0.4)', color: '#FDE047', padding: '0.4rem 1.1rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1rem' }}>
+            🛒 Produk Ruqyah E-Syifa&apos;
+          </span>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)', fontWeight: 900, color: '#FEF3C7', margin: '0.4rem 0 0.6rem', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
+            Amalan Ruqyah Harian — Terus Ke Pintu Rumah
+          </h2>
+          <p style={{ fontSize: '1rem', color: '#A7F3D0', lineHeight: 1.65, maxWidth: '580px', margin: '0 auto' }}>
+            Setiap produk diisi dengan bacaan ayat ruqyah syar&apos;iyyah oleh perawat kami. Bayar masa terima (COD) atau FPX.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          {PRODUCTS.map(p => (
+            <div key={p.id} id={`product-${p.id}`} style={{
+              background: 'linear-gradient(135deg, #042E23 0%, #031E17 100%)',
+              border: `2px solid ${p.color}66`, borderRadius: '20px', overflow: 'hidden',
+              boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 40px ${p.color}14`,
+              display: 'flex', flexDirection: 'column',
+            }}>
+              {/* Gambar */}
+              <a href={p.url} style={{ position: 'relative', display: 'block', aspectRatio: '4 / 3', background: `radial-gradient(circle at 50% 40%, ${p.color}33, #021812 75%)` }}>
+                {p.image
+                  ? <Image src={p.image} alt={p.name} fill sizes="(max-width: 700px) 100vw, 360px" style={{ objectFit: 'contain' }} />
+                  : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5.5rem' }}>{p.emoji}</span>}
+                <span style={{ position: 'absolute', bottom: '0.75rem', left: '0.75rem', background: p.color, color: '#042E23', fontSize: '0.66rem', fontWeight: 900, letterSpacing: '0.08em', padding: '0.3rem 0.65rem', borderRadius: '999px' }}>
+                  {p.badge}
+                </span>
+              </a>
+
+              <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '1.12rem', fontWeight: 900, color: '#FEF3C7', marginBottom: '0.2rem' }}>{p.name}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#6EE7B7' }}>{p.sub}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '1.85rem', fontWeight: 900, color: p.color, lineHeight: 1 }}>{p.price}</span>
+                  <span style={{ fontSize: '0.78rem', color: '#A7F3D0' }}>{p.priceSub}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {p.bullets.map((b, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
+                      <span style={{ color: p.color, fontWeight: 900, fontSize: '0.85rem', flexShrink: 0 }}>✓</span>
+                      <span style={{ fontSize: '0.85rem', color: '#D1FAE5', lineHeight: 1.45 }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
+                <a href={p.url} style={{
+                  marginTop: 'auto', display: 'block', textAlign: 'center', padding: '0.9rem', borderRadius: '50px',
+                  fontSize: '0.9rem', fontWeight: 800, color: '#042E23', background: p.color, textDecoration: 'none',
+                  boxShadow: `0 6px 20px ${p.color}44`,
+                }}>
+                  {p.cta} →
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProductTestimonialSection() {
+  return (
+    <section style={{ background: '#F8FAFC', padding: '3.5rem 1.25rem 1rem', fontFamily: ff }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          Testimoni Pengguna Produk
+        </span>
+        <h2 style={{ fontSize: 'clamp(1.4rem, 3.2vw, 2rem)', fontWeight: 800, color: '#0F172A', margin: '0.5rem 0 2rem', letterSpacing: '-0.02em' }}>
+          Apa Kata Mereka Yang Dah Amalkan
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem', textAlign: 'left' }}>
+          {PRODUCT_TESTIMONIALS.map(t => (
+            <div key={t.name} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '1.25rem', boxShadow: '0 6px 20px rgba(15,23,42,0.05)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#047857', background: '#ECFDF5', padding: '0.2rem 0.55rem', borderRadius: '999px' }}>{t.product}</span>
+                <span style={{ color: '#F59E0B', fontSize: '0.75rem' }}>★★★★★</span>
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F172A' }}>{t.tag}</div>
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#334155', lineHeight: 1.6, fontStyle: 'italic', flex: 1 }}>&ldquo;{t.quote}&rdquo;</p>
+              <div style={{ fontSize: '0.75rem', color: '#64748B' }}>— {t.name}, {t.place}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ServicesSection({ waLink, firePixel }) {
   return (
     <section id="servis-kami" style={{ background: '#031E17', padding: '4rem 1.5rem', fontFamily: ff }}>
@@ -291,18 +436,18 @@ function ServicesSection({ waLink, firePixel }) {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <span style={{ display: 'inline-block', background: 'rgba(253,224,71,0.1)', border: '1px solid rgba(253,224,71,0.4)', color: '#FDE047', padding: '0.4rem 1.1rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-            🛎️ Perkhidmatan Kami
+            ✨ Rawatan &amp; Pengisian
           </span>
           <h2 style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.2rem)', fontWeight: 900, color: '#FEF3C7', margin: '0.4rem 0 0.6rem', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
-            Tiga Servis, Satu Tujuan — Sembuh & Terlindung
+            Perlukan Bantuan Perawat? Sembuh & Terlindung
           </h2>
           <p style={{ fontSize: '1rem', color: '#A7F3D0', lineHeight: 1.65, maxWidth: '560px', margin: '0 auto' }}>
-            Pilih servis mengikut keperluan dan kemampuan anda. Semua berasaskan ruqyah syar&apos;iyyah.
+            Untuk kes yang lebih berat atau berulang — rawatan jarak jauh terus bersama perawat, atau pengisian ayat ruqyah ke dalam item peribadi anda.
           </p>
         </div>
 
-        {/* 3 Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        {/* Kad servis */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', maxWidth: '820px', margin: '0 auto' }}>
           {SERVICES.map(svc => (
             <div
               key={svc.id}
@@ -425,7 +570,7 @@ function FAQSection() {
   const [open, setOpen] = useState(null);
 
   return (
-    <section style={{ background: '#031E17', padding: '4rem 1.5rem', fontFamily: ff }}>
+    <section id="faq" style={{ background: '#031E17', padding: '4rem 1.5rem', fontFamily: ff }}>
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <span style={{ display: 'inline-block', background: 'rgba(253,224,71,0.1)', border: '1px solid rgba(253,224,71,0.4)', color: '#FDE047', padding: '0.4rem 1.1rem', borderRadius: '50px', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1rem' }}>
@@ -503,9 +648,10 @@ function Footer({ waLink, firePixel }) {
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.8rem', color: '#FDE047', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.85rem' }}>Produk</div>
             {[
-              { label: "Pengisian E-Syifa' (RM90)", url: '/pengisian-wasap' },
-              { label: "Pengisian — Bayar FPX", url: '/pengisian-esyifa' },
-              { label: 'E-Video Rawatan (RM60)', url: '/e-video' },
+              { label: 'Sabun Garam Himalaya', url: '/sabun-garam-1' },
+              { label: 'Garam Pengasihan', url: '/garam-pengasihan' },
+              { label: 'Minyak Kasturi Kijang', url: '/kasturi-kijang' },
+              { label: "Pengisian E-Syifa' (RM90)", url: '/pengisian-esyifa' },
               { label: 'Rawat Sendiri', url: '/rawat-sendiri' },
             ].map(l => (
               <a key={l.url} href={l.url} style={{ display: 'block', fontSize: '0.8rem', color: '#A7F3D0', textDecoration: 'none', marginBottom: '0.4rem', opacity: 0.85 }}>{l.label}</a>
@@ -559,11 +705,12 @@ export default function ESyifaaHomepage() {
     <main style={{ minHeight: '100vh', background: '#042E23', fontFamily: ff }}>
       <Navbar waLink={waLink} firePixel={firePixel} />
       <HeroSection waLink={waLink} firePixel={firePixel} />
+      <ProductsSection />
       <ServicesSection waLink={waLink} firePixel={firePixel} />
       <TrustSection />
       <div id="testimoni">
+        <ProductTestimonialSection />
         <FspTestimonialSection />
-        <FspTestimonialPart2Section />
       </div>
       <FAQSection />
       <Footer waLink={waLink} firePixel={firePixel} />
