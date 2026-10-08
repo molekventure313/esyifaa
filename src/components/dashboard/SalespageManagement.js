@@ -30,6 +30,11 @@ const PENGISIAN_PAGES = [
   { label: "Pengisian Item — Simple WA",   desc: "Landing page simple & laju — hero + 4 testimoni + harga card + sticky WA. Angle: Rawat sendiri tanpa bergantung perawat.", url: '/pengisian-item', color: '#25D366', icon: '⚡', isNew: true },
 ];
 
+// TAB: Langganan (servis bayaran bulanan)
+const LANGGANAN_PAGES = [
+  { label: "Ruqyah Harian E-Syifa'", desc: 'Servis langganan — perawat bacakan ruqyah terus ke atas diri pesakit 2x sehari. 3 Bulan RM300 · 1 Bulan RM150. Had 100 pendaftaran baru sebulan.', url: '/ruqyah-harian', color: '#047857', icon: '🌙', isNew: true },
+];
+
 // TAB 3: E-Video
 const EVIDEO_PAGES = [
   { label: 'E-Video Rawatan Ruqyah', desc: 'Produk digital — pakej 8 video rawatan RM60 (promo). Dihantar via WhatsApp dalam 24 jam selepas bayar FPX.', url: '/e-video', color: '#8B5CF6', icon: '🎬', isNew: true },
@@ -50,6 +55,7 @@ const PRODUK_PAGES = [
 const TABS = [
   { id: 'rawatan',   label: '🏥 Rawatan',           count: RAWATAN_HOMEPAGE_VARIANTS.length + RAWATAN_STANDALONE.length },
   { id: 'pengisian', label: "💎 Pengisian E-Syifa'", count: PENGISIAN_PAGES.length },
+  { id: 'langganan', label: '🌙 Langganan',          count: LANGGANAN_PAGES.length },
   { id: 'evideo',    label: '🎬 E-Video',            count: EVIDEO_PAGES.length },
   { id: 'produk',    label: '🧼 Produk Fizikal',     count: PRODUK_PAGES.length },
 ];
@@ -408,6 +414,19 @@ export default function SalespageManagement({ isLightMode, cardBg, cardBorder, t
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '0.85rem' }}>
             {EVIDEO_PAGES.map((page, i) => (
+              <ProductCard key={i} page={page} {...shared} />
+            ))}
+          </div>
+        </div>
+      )}
+      {/* ── TAB: Langganan ── */}
+      {activeTab === 'langganan' && (
+        <div>
+          <p style={{ margin: '0 0 1rem 0', fontSize: '0.78rem', color: textSecondary }}>
+            Servis langganan prabayar (FPX). Senarai pelanggan & tempoh langganan di menu 🌙 Ruqyah Harian.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '0.85rem' }}>
+            {LANGGANAN_PAGES.map((page, i) => (
               <ProductCard key={i} page={page} {...shared} />
             ))}
           </div>
