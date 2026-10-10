@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { trackWaClick } from '@/components/salespage/useSalesContact';
+import { trackWaClick, HQ_WHATSAPP } from '@/components/salespage/useSalesContact';
 
 // ─── WhatsApp Button ─────────────────────────────────────────────────────────
 // No. WhatsApp HQ
-const WA_NUMBER   = '60172827714';
+const WA_NUMBER   = HQ_WHATSAPP;
 const WA_MESSAGE  = encodeURIComponent("Assalamualaikum, saya berminat untuk mendapatkan Tasbih E-Syifa'. Boleh saya tahu maklumat lanjut?");
 const WA_LINK     = WA_NUMBER ? `https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}` : '#order';
 

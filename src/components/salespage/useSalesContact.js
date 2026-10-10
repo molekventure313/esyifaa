@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-// No. WhatsApp HQ — section "Nak order melalui WhatsApp?" & butang WA di SP HQ
-export const HQ_WHATSAPP = '60172827714';
-// SP Pengisian (Pengisian E-Syifa, /rawat-sendiri) kekal guna nombor asal
-export const HQ_WHATSAPP_PENGISIAN = '601118939984';
+// No. WhatsApp HQ — SATU nombor untuk SEMUA SP HQ (section WhatsApp, butang WA, Air Tawar, Pengisian, Ruqyah Harian, Tasbih)
+export const HQ_WHATSAPP = '601149794073';
+// Dulu SP Pengisian guna nombor berasingan — kini sama dengan HQ (nama dikekalkan supaya import sedia ada tak rosak)
+export const HQ_WHATSAPP_PENGISIAN = HQ_WHATSAPP;
 
 export const buildWaLink = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 

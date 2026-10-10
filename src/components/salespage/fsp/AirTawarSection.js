@@ -1,7 +1,9 @@
 'use client';
 
+import { HQ_WHATSAPP } from '@/components/salespage/useSalesContact';
+
 export default function FspAirTawarSection() {
-  const waNumber = '60172827714';
+  const waNumber = HQ_WHATSAPP;
   const pretext = encodeURIComponent('Saya nak scan guna air tawar');
   const waUrl = `https://wa.me/${waNumber}?text=${pretext}`;
 
