@@ -42,12 +42,18 @@ export default function useSalesContact({ hqNumber = HQ_WHATSAPP } = {}) {
 }
 
 /**
- * Rekod klik butang WhatsApp section — UTM + marketer + SP, dan fire Meta Pixel `Lead`.
+ * Rekod klik butang WhatsApp — UTM + marketer + SP, dan fire Meta `Lead` melalui 2 saluran:
+ *  · Pixel browser (fbq) — mudah hilang bila telefon terus buka WhatsApp / adblock / iOS
+ *  · Conversions API dari server (/api/track-wa-click) — sampai walaupun browser dah tinggalkan page
+ * Kedua-dua guna event_id yang SAMA → Meta kira sekali sahaja (dedup).
  * sendBeacon: tak tunggu jawapan & tetap sampai walaupun browser terus buka WhatsApp.
  * Pixel: di SP marketer hanya pixel marketer di-init, di SP HQ hanya pixel HQ — `track` ikut itu.
  */
 export function trackWaClick({ product } = {}) {
+  const eventId = `lead_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+  const contentName = product ? `WhatsApp — ${product}` : 'WhatsApp';
   try {
+    const cookie = n => (document.cookie.match(new RegExp(`(?:^|; )${n}=([^;]*)`)) || [])[1] || null;
     const q = new URLSearchParams(window.location.search);
     const path = window.location.pathname.replace(/^\/m\//, '/');
     const payload = JSON.stringify({
@@ -59,12 +65,17 @@ export function trackWaClick({ product } = {}) {
       utm_content:   q.get('utm_content'),
       utm_term:      q.get('utm_term'),
       fbclid:        q.get('fbclid'),
+      event_id:      eventId,
+      content_name:  contentName,
+      page_url:      window.location.href,
+      fbp:           cookie('_fbp'),
+      fbc:           cookie('_fbc'),
     });
     const sent = navigator.sendBeacon?.('/api/track-wa-click', new Blob([payload], { type: 'application/json' }));
     if (!sent) fetch('/api/track-wa-click', { method: 'POST', body: payload, keepalive: true }).catch(() => {});
   } catch (_) { /* jangan ganggu klik */ }
 
-  try { window.fbq?.('track', 'Lead', { content_name: product ? `WhatsApp — ${product}` : 'WhatsApp' }); } catch (_) {}
+  try { window.fbq?.('track', 'Lead', { content_name: contentName }, { eventID: eventId }); } catch (_) {}
 }
 
 /**
