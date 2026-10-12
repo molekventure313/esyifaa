@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 export const HQ_WHATSAPP = '601149794073';
 // Dulu SP Pengisian guna nombor berasingan — kini sama dengan HQ (nama dikekalkan supaya import sedia ada tak rosak)
 export const HQ_WHATSAPP_PENGISIAN = HQ_WHATSAPP;
+// No. WhatsApp HQ khas untuk SP Sabun Garam (semua /sabun-garam*)
+export const HQ_WHATSAPP_SABUN = '60172827714';
 
 export const buildWaLink = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 
