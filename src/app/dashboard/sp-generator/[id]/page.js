@@ -192,7 +192,11 @@ function SpEditor({ id }) {
       await saveNow().catch(() => {});
     } catch (e) {
       setError(e.message);
-      setGen(g => (g ? { ...g, brief: g.brief === 'run' ? 'fail' : g.brief } : g));
+      // brief gagal → section yang belum jalan ditanda gagal (jangan tersangkut "menulis...")
+      setGen(g => (g ? {
+        ...g, err: e.message, brief: g.brief === 'run' ? 'fail' : g.brief,
+        sections: Object.fromEntries(Object.entries(g.sections).map(([k, s]) => [k, s === 'wait' || s === 'run' ? 'fail' : s])),
+      } : g));
     } finally {
       refreshQuota();
     }
