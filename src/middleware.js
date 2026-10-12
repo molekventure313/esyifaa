@@ -19,6 +19,7 @@ export async function middleware(request) {
 
   const PUBLIC_PREFIXES = [
     '/m/',
+    '/s/',              // SP dijana marketer (SP Generator)
     '/wa',
     '/pengisian-esyifa',
     '/ruqyah-harian',
