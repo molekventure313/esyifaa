@@ -83,6 +83,7 @@ export async function callClaude({ model = AI_MODEL_MAIN, system, prompt, toolNa
     const msg = json?.error?.message || `HTTP ${res.status}`;
     throw Object.assign(new Error(`AI gagal: ${msg}`), { status: res.status === 429 || res.status === 529 ? 503 : 502 });
   }
+  if (json.stop_reason === 'max_tokens') throw Object.assign(new Error('AI terpotong (had token) — cuba lagi.'), { status: 502 });
   const block = (json.content || []).find(b => b.type === 'tool_use' && b.name === toolName);
   if (block?.input) return { data: block.input, usage: json.usage || {}, model };
   // Sandaran: model jawab dengan teks JSON

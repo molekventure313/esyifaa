@@ -14,6 +14,15 @@ import { SYSTEM_PROMPT, BRIEF_SCHEMA, briefPrompt, sectionPrompt } from '@/lib/s
 
 export const maxDuration = 26;
 
+// Buang ✅ / • / nombor di awal item senarai — paparan SP dah ada ikon sendiri
+const stripLead = v => (typeof v === 'string' ? v.replace(/^[\s✅✓✔️☑️•\-–*]+|^\d+[.)]\s*/u, '').trim() : v);
+function tidyLists(obj) {
+  for (const [k, v] of Object.entries(obj || {})) {
+    if (Array.isArray(v)) obj[k] = v.map(x => (typeof x === 'string' ? stripLead(x) : x));
+  }
+  return obj;
+}
+
 export async function POST(req, { params }) {
   const g = await spGuard();
   if (g.error) return g.error;
@@ -40,7 +49,7 @@ export async function POST(req, { params }) {
     if (step === 'brief') {
       const res = await callClaude({
         system: SYSTEM_PROMPT, prompt: briefPrompt(sp.product_key, sp.angle),
-        toolName: 'strategi_angle', schema: BRIEF_SCHEMA, maxTokens: 1500,
+        toolName: 'strategi_angle', schema: BRIEF_SCHEMA, maxTokens: 4000,
       });
       await logAi(g.admin, { userId: g.user.id, spId: sp.id, kind: 'brief', model: res.model, usage: res.usage });
       return NextResponse.json({ success: true, data: res.data });
@@ -60,10 +69,10 @@ export async function POST(req, { params }) {
         model: rewrite ? AI_MODEL_FAST : AI_MODEL_MAIN,
         system: SYSTEM_PROMPT,
         prompt: sectionPrompt(sp.product_key, sp.angle, brief, key, rewrite ? { current, instruction: String(body.instruction || '').slice(0, 400) } : {}),
-        toolName: `section_${key}`, schema: sectionJsonSchema(key), maxTokens: 1800,
+        toolName: `section_${key}`, schema: sectionJsonSchema(key), maxTokens: 4000,
       });
       await logAi(g.admin, { userId: g.user.id, spId: sp.id, kind: step, model: res.model, usage: res.usage });
-      const data = sanitizeContent({ [key]: res.data })[key];
+      const data = tidyLists(sanitizeContent({ [key]: res.data })[key]);
       delete data.image;   // gambar tidak diubah oleh AI
       return NextResponse.json({ success: true, data });
     }

@@ -19,7 +19,9 @@ PERATURAN WAJIB (patuh 100%):
 3. Bahasa IKHTIAR: "ikhtiar", "dengan izin Allah", "in shaa Allah", "bantu legakan". DILARANG: "dijamin sembuh", "sembuh 100%", "pasti", janji kesembuhan, dakwaan merawat penyakit kronik/kritikal (kanser, diabetes, dll), atau suruh berhenti ubat/rawatan doktor. Kesembuhan hanya daripada Allah.
 4. Tiada unsur syirik, khurafat atau menakut-nakutkan secara melampau. Fears = akibat realistik jika masalah dibiarkan.
 5. Semua copy MESTI selari dengan angle & audience marketer — setiap section sambung cerita yang sama.
-6. Patuhi had aksara setiap medan.`;
+6. Patuhi had aksara setiap medan.
+7. JANGAN mulakan item senarai dengan emoji, ✅, nombor atau simbol — paparan SP dah ada ikon sendiri.
+8. Isi SEMUA medan yang diminta dalam tool.`;
 
 const SECTION_RULES = {
   announcement: 'Satu ayat pendek untuk bar atas: kelebihan utama / tawaran yang BENAR dari fakta (COD, FPX, pos, pakej) + emoji.',

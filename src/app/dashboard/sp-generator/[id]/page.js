@@ -125,7 +125,8 @@ function SpEditor({ id }) {
     try {
       const j = await api(`/api/sp-generator/${id}`, { method: 'PATCH', body: JSON.stringify({ content: c }) });
       setSp(j.data);
-      setSaveState(s => (contentRef.current === c ? 'saved' : 'dirty'));
+      if (contentRef.current === c) setSaveState('saved');
+      else { setSaveState('dirty'); saveTimer.current = setTimeout(() => { saveNow().catch(() => {}); }, 400); }   // ada perubahan semasa menyimpan → simpan lagi
       return j.data;
     } catch (e) { setSaveState('error'); throw e; }
   }, [id]);
@@ -189,6 +190,7 @@ function SpEditor({ id }) {
           setGen(g => ({ ...g, sections: { ...g.sections, [key]: 'fail' }, err: e.message }));
         }
       });
+      await new Promise(r => setTimeout(r, 300));   // tunggu render supaya contentRef ada section terakhir
       await saveNow().catch(() => {});
     } catch (e) {
       setError(e.message);
