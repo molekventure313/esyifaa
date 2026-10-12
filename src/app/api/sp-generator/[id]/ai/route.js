@@ -14,6 +14,15 @@ import { SYSTEM_PROMPT, BRIEF_SCHEMA, briefPrompt, sectionPrompt } from '@/lib/s
 
 export const maxDuration = 26;
 
+// Medan wajib yang kosong / senarai kurang dari minimum
+function missingFields(key, data) {
+  return Object.entries(ANGLE_SECTIONS[key].fields).filter(([k, d]) => {
+    const v = data?.[k];
+    if (d.type === 'list') return !Array.isArray(v) || v.filter(x => (typeof x === 'string' ? x : x?.title)).length < d.min;
+    return !String(v || '').trim();
+  }).map(([k]) => k);
+}
+
 // Buang ✅ / • / nombor di awal item senarai — paparan SP dah ada ikon sendiri
 const stripLead = v => (typeof v === 'string' ? v.replace(/^[\s✅✓✔️☑️•\-–*]+|^\d+[.)]\s*/u, '').trim() : v);
 function tidyLists(obj) {
@@ -58,21 +67,25 @@ export async function POST(req, { params }) {
     if (step === 'section' || step === 'rewrite') {
       const key = body.section;
       if (!ANGLE_SECTIONS[key]) return NextResponse.json({ success: false, error: 'Section tidak sah.' }, { status: 400 });
-      const brief = body.brief && typeof body.brief === 'object' && JSON.stringify(body.brief).length <= 4000
+      const brief = body.brief && typeof body.brief === 'object' && JSON.stringify(body.brief).length <= 10000
         ? body.brief : sp.content?.brief;
       if (!brief) return NextResponse.json({ success: false, error: 'Jana strategi angle dahulu.' }, { status: 400 });
 
       const rewrite = step === 'rewrite';
       const current = rewrite ? sanitizeContent({ [key]: body.current })[key] : null;
       if (current) delete current.image;
-      const res = await callClaude({
+      const ask = () => callClaude({
         model: rewrite ? AI_MODEL_FAST : AI_MODEL_MAIN,
         system: SYSTEM_PROMPT,
         prompt: sectionPrompt(sp.product_key, sp.angle, brief, key, rewrite ? { current, instruction: String(body.instruction || '').slice(0, 400) } : {}),
         toolName: `section_${key}`, schema: sectionJsonSchema(key), maxTokens: 4000,
       });
-      await logAi(g.admin, { userId: g.user.id, spId: sp.id, kind: step, model: res.model, usage: res.usage });
+      const res = await ask();
       const data = tidyLists(sanitizeContent({ [key]: res.data })[key]);
+      await logAi(g.admin, { userId: g.user.id, spId: sp.id, kind: step, model: res.model, usage: res.usage });
+      const missing = missingFields(key, data);
+      // Model kadang tertinggal medan (tool tak dipaksa) → editor cuba semula sendiri
+      if (missing.length) return NextResponse.json({ success: false, error: `AI tak lengkapkan: ${missing.join(', ')} — cuba lagi.` }, { status: 502 });
       delete data.image;   // gambar tidak diubah oleh AI
       return NextResponse.json({ success: true, data });
     }

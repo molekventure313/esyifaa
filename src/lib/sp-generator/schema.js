@@ -193,7 +193,7 @@ export function sanitizeContent(raw, supabaseUrl) {
     description: typeof c.meta?.description === 'string' ? c.meta.description.slice(0, 220) : '',
   };
   // Ringkasan strategi angle dari AI (dipakai semula bila tulis semula section)
-  out.brief = c.brief && typeof c.brief === 'object' && JSON.stringify(c.brief).length <= 4000 ? c.brief : null;
+  out.brief = c.brief && typeof c.brief === 'object' && JSON.stringify(c.brief).length <= 10000 ? c.brief : null;
   return out;
 }
 

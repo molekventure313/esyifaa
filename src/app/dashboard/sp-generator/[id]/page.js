@@ -183,7 +183,10 @@ function SpEditor({ id }) {
       await pool(ANGLE_KEYS, 3, async key => {
         setGen(g => ({ ...g, sections: { ...g.sections, [key]: 'run' } }));
         try {
-          const r = await api(`/api/sp-generator/${id}/ai`, { method: 'POST', body: JSON.stringify({ step: 'section', section: key, brief }) });
+          const body = JSON.stringify({ step: 'section', section: key, brief });
+          // cuba semula sekali secara automatik (AI kadang tertinggal medan / timeout)
+          const r = await api(`/api/sp-generator/${id}/ai`, { method: 'POST', body })
+            .catch(() => api(`/api/sp-generator/${id}/ai`, { method: 'POST', body }));
           change(prev => ({ ...prev, [key]: { ...r.data, ...(ANGLE_SECTIONS[key].image ? { image: prev[key]?.image ?? null } : {}) } }), { snapshot: false });
           setGen(g => ({ ...g, sections: { ...g.sections, [key]: 'done' } }));
         } catch (e) {
