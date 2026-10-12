@@ -71,10 +71,11 @@ export async function callClaude({ model = AI_MODEL_MAIN, system, prompt, toolNa
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
-      system,
+      system: `${system}\n\nWAJIB: hantar jawapan dengan memanggil tool "${toolName}" (sekali sahaja). Jangan tulis jawapan sebagai teks biasa.`,
       messages: [{ role: 'user', content: prompt }],
       tools: [{ name: toolName, description: 'Hantar hasil copywriting dalam format berstruktur.', input_schema: schema }],
-      tool_choice: { type: 'tool', name: toolName },
+      // Model terkini tak sokong tool_choice 'tool'/'any' — guna 'auto' + arahan wajib di atas
+      tool_choice: { type: 'auto' },
     }),
   });
   const json = await res.json().catch(() => ({}));
@@ -82,9 +83,13 @@ export async function callClaude({ model = AI_MODEL_MAIN, system, prompt, toolNa
     const msg = json?.error?.message || `HTTP ${res.status}`;
     throw Object.assign(new Error(`AI gagal: ${msg}`), { status: res.status === 429 || res.status === 529 ? 503 : 502 });
   }
-  const block = (json.content || []).find(b => b.type === 'tool_use');
-  if (!block?.input) throw Object.assign(new Error('AI tidak pulangkan hasil — cuba lagi.'), { status: 502 });
-  return { data: block.input, usage: json.usage || {}, model };
+  const block = (json.content || []).find(b => b.type === 'tool_use' && b.name === toolName);
+  if (block?.input) return { data: block.input, usage: json.usage || {}, model };
+  // Sandaran: model jawab dengan teks JSON
+  const text = (json.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) { try { return { data: JSON.parse(m[0]), usage: json.usage || {}, model }; } catch (_) {} }
+  throw Object.assign(new Error('AI tidak pulangkan hasil — cuba lagi.'), { status: 502 });
 }
 
 export async function logAi(admin, { userId, spId, kind, model, usage }) {
