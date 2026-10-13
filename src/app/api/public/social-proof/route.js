@@ -7,7 +7,13 @@ import { SP_GROUPS } from "@/lib/social-proof";
 // negeri, kuantiti & masa order sebenar. Tiada data rekaan.
 export const dynamic = "force-dynamic";
 
-const CACHE = { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" };
+// Cache CDN 5 minit, BERASINGAN untuk setiap ?product= (Netlify-Vary). Jangan guna "Cache-Control: s-maxage" —
+// Netlify hantar ke Durable cache yang abaikan query → semua produk dapat respons produk pertama.
+const CACHE = {
+  "Cache-Control": "public, max-age=0, must-revalidate",
+  "Netlify-CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
+  "Netlify-Vary": "query=product",
+};
 
 export async function GET(req) {
   try {
@@ -31,7 +37,7 @@ export async function GET(req) {
     const entries = data
       .filter(row => row.full_name?.trim())
       .map(row => ({
-        name: row.full_name.trim().split(/\s+/)[0],
+        name: row.full_name.trim().split(/\s+/)[0].toLowerCase().replace(/^./, c => c.toUpperCase()),
         state: row.customers?.state || null,
         qty: parseInt(row.qty) || 1,
         at: row.created_at,
