@@ -1,131 +1,75 @@
-﻿"use client";
+"use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
+import { SP_GROUPS, groupOfPath, timeAgo } from "@/lib/social-proof";
 
-// ─── Fallback pool kalau DB kosong / error ─────────────────────────────────────
-const FALLBACK = [
-  { name: "Faridah",   state: "Selangor",       product: "Sabun Garam Himalaya",     qty: 3 },
-  { name: "Zulaikha",  state: "Johor Bahru",     product: "Sabun Garam Himalaya",     qty: 1 },
-  { name: "Rohani",    state: "Kedah",           product: "Sabun Garam Himalaya",     qty: 2 },
-  { name: "Hasnah",    state: "Pulau Pinang",    product: "Pengisian Air Tawar ESyifaa", qty: 1 },
-  { name: "Nurulhuda", state: "Kelantan",        product: "Sabun Garam Himalaya",     qty: 3 },
-  { name: "Aishah",    state: "Kuala Lumpur",    product: "Pakej Rawatan Ruqyah FSP", qty: 1 },
-  { name: "Salmah",    state: "Terengganu",      product: "Sabun Garam Himalaya",     qty: 2 },
-  { name: "Mariam",    state: "Melaka",          product: "Pengisian Air Tawar ESyifaa", qty: 1 },
-  { name: "Norzahra",  state: "Pahang",          product: "Sabun Garam Himalaya",     qty: 1 },
-  { name: "Khairiah",  state: "Perak",           product: "Sabun Garam Himalaya",     qty: 3 },
-  { name: "Ramlah",    state: "Negeri Sembilan", product: "Pakej Rawatan Ruqyah FSP", qty: 1 },
-  { name: "Siti",      state: "Selangor",        product: "Sabun Garam Himalaya",     qty: 2 },
-];
+// Popup "X baru menempah ..." — dipasang dalam root layout.
+// · Papar HANYA di SP produk berkenaan: SP Sabun → order sabun sahaja, SP Kasturi → order kasturi, dll.
+// · Laluan lain (dashboard, homepage, checkout, TQ) → tiada popup. Disemak semula setiap kali tukar halaman.
+// · Data SEBENAR sahaja (order dibayar 14 hari terakhir, masa order sebenar). Tiada order → tiada popup.
 
-const AGO_LABELS = [
-  "baru sahaja",
-  "2 minit lalu",
-  "4 minit lalu",
-  "7 minit lalu",
-  "11 minit lalu",
-  "15 minit lalu",
-  "18 minit lalu",
-  "23 minit lalu",
-];
-
-// Pages yang patut skip popup
-const SKIP_PREFIXES = [
-  "/dashboard",
-  "/fsp-checkout",
-  "/payment-success",
-  "/pengisian-item",
-  "/wa",
-];
-
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// Laluan SP yang sengaja tiada popup walaupun padan kumpulan produk
+const SKIP_PREFIXES = ["/fsp-checkout", "/pengisian-item"];
 
 export default function SocialProofToast() {
-  const [entries, setEntries]     = useState([]);
-  const [current, setCurrent]     = useState(null);
-  const [visible, setVisible]     = useState(false);
-  const [agoLabel, setAgoLabel]   = useState("baru sahaja");
-  const indexRef  = useRef(0);
-  const timerRef  = useRef(null);
-  const mounted   = useRef(true);
+  const pathname = usePathname();
+  const [group, setGroup]     = useState(null);
+  const [entries, setEntries] = useState([]);
+  const [current, setCurrent] = useState(null);
+  const [visible, setVisible] = useState(false);
+  const indexRef = useRef(0);
+  const timerRef = useRef(null);
 
-  // Check pathname — skip kalau bukan SP page
+  // Tentukan kumpulan produk setiap kali laluan berubah
   useEffect(() => {
-    const path = window.location.pathname;
-    if (SKIP_PREFIXES.some(p => path.startsWith(p))) return;
+    clearTimeout(timerRef.current);
+    setVisible(false); setCurrent(null); setEntries([]); indexRef.current = 0;
 
-    // Fetch real orders
-    fetch("/api/public/social-proof")
+    const path = pathname || "";
+    if (SKIP_PREFIXES.some(p => path.startsWith(p))) { setGroup(null); return; }
+    let key = groupOfPath(path);
+    // SP Generator (/s/<slug>) — produk ditanda oleh halaman (data-sp-product)
+    if (!key && path.startsWith("/s/")) key = document.querySelector("[data-sp-product]")?.getAttribute("data-sp-product") || null;
+    setGroup(SP_GROUPS[key] ? key : null);
+  }, [pathname]);
+
+  // Ambil order sebenar untuk produk ini
+  useEffect(() => {
+    if (!group) return;
+    let alive = true;
+    fetch(`/api/public/social-proof?product=${encodeURIComponent(group)}`)
       .then(r => r.json())
-      .then(data => {
-        if (!mounted.current) return;
-        const pool = data?.length >= 3 ? data : FALLBACK;
-        setEntries(shuffle(pool));
-      })
-      .catch(() => {
-        if (mounted.current) setEntries(shuffle(FALLBACK));
-      });
+      .then(data => { if (alive && Array.isArray(data)) setEntries(data); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [group]);
 
-    return () => { mounted.current = false; };
-  }, []);
-
-  const showNext = useCallback(() => {
-    if (!mounted.current || entries.length === 0) return;
-
-    const idx = indexRef.current % entries.length;
-    const entry = entries[idx];
-    indexRef.current += 1;
-
-    // Pilih ago label rawak
-    const ago = AGO_LABELS[Math.floor(Math.random() * AGO_LABELS.length)];
-    setAgoLabel(ago);
-    setCurrent(entry);
-    setVisible(true);
-
-    // Auto-hide selepas 5.5s
-    timerRef.current = setTimeout(() => {
-      if (!mounted.current) return;
-      setVisible(false);
-
-      // Next popup selepas 16–22s
-      const delay = 16000 + Math.random() * 6000;
-      timerRef.current = setTimeout(showNext, delay);
-    }, 5500);
-  }, [entries]);
-
-  // Mulakan cycle bila entries dah ada
+  // Kitaran popup
   useEffect(() => {
-    if (entries.length === 0) return;
-    // Delay pertama: 8–12s selepas page load
-    const initial = 8000 + Math.random() * 4000;
-    timerRef.current = setTimeout(showNext, initial);
+    if (!entries.length) return;
+    const showNext = () => {
+      const entry = entries[indexRef.current % entries.length];
+      indexRef.current += 1;
+      setCurrent(entry);
+      setVisible(true);
+      timerRef.current = setTimeout(() => {
+        setVisible(false);
+        timerRef.current = setTimeout(showNext, 16000 + Math.random() * 6000);   // seterusnya 16–22s
+      }, 5500);                                                                  // papar 5.5s
+    };
+    timerRef.current = setTimeout(showNext, 8000 + Math.random() * 4000);         // mula 8–12s
     return () => clearTimeout(timerRef.current);
-  }, [entries, showNext]);
+  }, [entries]);
 
   const handleDismiss = () => {
     clearTimeout(timerRef.current);
     setVisible(false);
-    // Next popup selepas 16s
-    timerRef.current = setTimeout(showNext, 16000);
   };
 
-  if (!current) return null;
-
-  const productIcon =
-    current.product.includes("Sabun")     ? "🧼" :
-    current.product.includes("Pengisian") ? "💧" :
-    current.product.includes("FSP")       ? "📿" :
-    current.product.includes("Video")     ? "🎬" :
-    current.product.includes("Tasbih")    ? "📿" : "🛒";
-
-  const qtyLabel = current.qty > 1 ? ` ${current.qty} Unit` : " 1 Unit";
+  const g = SP_GROUPS[group];
+  if (!current || !g) return null;
+  const qtyLabel = g.unit ? ` ${current.qty} ${g.unit}` : "";
 
   return (
     <div
@@ -155,44 +99,22 @@ export default function SocialProofToast() {
           fontFamily: "var(--font-inter), -apple-system, sans-serif",
         }}
       >
-        {/* Icon */}
-        <span style={{ fontSize: "1.5rem", lineHeight: 1, flexShrink: 0, marginTop: "2px" }}>
-          {productIcon}
-        </span>
+        <span style={{ fontSize: "1.5rem", lineHeight: 1, flexShrink: 0, marginTop: "2px" }}>{g.icon}</span>
 
-        {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: "0.82rem", fontWeight: 700, color: "#0F172A", lineHeight: 1.3 }}>
             {current.name}
-            {current.state ? (
-              <span style={{ fontWeight: 400, color: "#64748B" }}> dari {current.state}</span>
-            ) : null}
+            {current.state ? <span style={{ fontWeight: 400, color: "#64748B" }}> dari {current.state}</span> : null}
           </p>
           <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "#334155", lineHeight: 1.45 }}>
-            baru menempah{" "}
-            <strong style={{ color: "#047857" }}>
-              {current.product}{qtyLabel}
-            </strong>
+            menempah <strong style={{ color: "#047857" }}>{g.label}{qtyLabel}</strong>
           </p>
-          <p style={{ margin: "0.3rem 0 0", fontSize: "0.7rem", color: "#94A3B8" }}>
-            🕐 {agoLabel}
-          </p>
+          <p style={{ margin: "0.3rem 0 0", fontSize: "0.7rem", color: "#94A3B8" }}>🕐 {timeAgo(current.at)}</p>
         </div>
 
-        {/* Dismiss */}
         <button
           onClick={handleDismiss}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "#CBD5E1",
-            fontSize: "1rem",
-            lineHeight: 1,
-            padding: "0 0 0 0.25rem",
-            flexShrink: 0,
-            alignSelf: "flex-start",
-          }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "#CBD5E1", fontSize: "1rem", lineHeight: 1, padding: "0 0 0 0.25rem", flexShrink: 0, alignSelf: "flex-start" }}
           aria-label="Tutup"
         >
           ✕

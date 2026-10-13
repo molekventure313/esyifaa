@@ -1,72 +1,44 @@
-﻿import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { SP_GROUPS } from "@/lib/social-proof";
 
 // Public endpoint — no auth needed
-// Returns anonymized recent completed orders for social proof toast
-export const revalidate = 300; // cache 5 minit
+// GET /api/public/social-proof?product=<kumpulan>  (sabun | kasturi | garam | pengisian | ruqyah-harian | rawatan)
+// Pulangkan order SEBENAR yang dah dibayar (14 hari terakhir) untuk produk itu sahaja — nama pertama,
+// negeri, kuantiti & masa order sebenar. Tiada data rekaan.
+export const dynamic = "force-dynamic";
 
-export async function GET() {
+const CACHE = { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" };
+
+export async function GET(req) {
   try {
-    const supabase = createAdminClient();
+    const key = new URL(req.url).searchParams.get("product");
+    const group = SP_GROUPS[key];
+    if (!group) return Response.json([], { status: 200, headers: CACHE });
 
-    const { data, error } = await supabase
+    const since = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString();
+    const { data, error } = await createAdminClient()
       .from("submissions")
-      .select(`
-        full_name,
-        source,
-        qty,
-        notes,
-        customers!left ( state )
-      `)
+      .select("full_name, source, qty, created_at, returned_at, customers!left ( state )")
       .eq("payment_status", "completed")
+      .is("returned_at", null)
+      .gte("created_at", since)
+      .or(group.sources.map(s => `source.like.${s}%`).join(","))
       .order("created_at", { ascending: false })
-      .limit(40);
+      .limit(30);
 
-    if (error || !data) {
-      return Response.json([], { status: 200 });
-    }
-
-    const SOURCE_MAP = {
-      "sabun-garam":       "Sabun Garam Himalaya",
-      "sabun-garam-1":     "Sabun Garam Himalaya",
-      "sabun-garam-2":     "Sabun Garam Himalaya",
-      "sabun-garam-3":     "Sabun Garam Himalaya",
-      "sabun-garam-4":     "Sabun Garam Himalaya",
-      "sabun-garam-5":     "Sabun Garam Himalaya",
-      "fsp":               "Pakej Rawatan Ruqyah FSP",
-      "pengisian-esyifa":  "Pengisian Air Tawar ESyifaa",
-      "e-video":           "Video Panduan Ruqyah",
-      "sihir":             "Pakej Rawatan Jarak Jauh",
-      "saka":              "Pakej Rawatan Jarak Jauh",
-      "belum-zuriat":      "Pakej Rawatan Jarak Jauh",
-      "gangguan-berulang": "Pakej Rawatan Jarak Jauh",
-      "kedai-tutup":       "Pakej Rawatan Jarak Jauh",
-      "penyakit-misteri":  "Pakej Rawatan Jarak Jauh",
-      "tasbih-esyifa":     "Tasbih Zikir ESyifaa",
-    };
+    if (error || !data) return Response.json([], { status: 200 });
 
     const entries = data
       .filter(row => row.full_name?.trim())
-      .map(row => {
-        const firstName = row.full_name.trim().split(/\s+/)[0];
-
-        let product = SOURCE_MAP[row.source] || null;
-        if (!product && row.notes) {
-          const match = row.notes.match(/\[PRODUK:\s*([^\]]+)\]/i);
-          if (match) product = match[1].trim();
-        }
-        if (!product) product = "Produk ESyifaa";
-
-        const qty = parseInt(row.qty) || 1;
-        const state = row.customers?.state || null;
-
-        return { name: firstName, state, product, qty };
-      })
+      .map(row => ({
+        name: row.full_name.trim().split(/\s+/)[0],
+        state: row.customers?.state || null,
+        qty: parseInt(row.qty) || 1,
+        at: row.created_at,
+      }))
       .filter(e => e.name.length >= 2);
 
-    return Response.json(entries, {
-      status: 200,
-      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
-    });
+    return Response.json(entries, { status: 200, headers: CACHE });
   } catch (err) {
     console.error("social-proof API error:", err);
     return Response.json([], { status: 200 });

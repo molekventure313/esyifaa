@@ -2,6 +2,7 @@
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 import { SLOTS } from '@/lib/sp-generator/schema';
 import { SP_PRODUCTS } from '@/lib/sp-generator/products';
+import { SP_GENERATOR_GROUP } from '@/lib/social-proof';
 import {
   GenAnnouncement, GenHero, GenProblems, GenFears, GenSolution, GenBenefits, GenGoals, GenCta, GenClosing,
 } from '@/components/salespage/generated/AngleSections';
@@ -22,6 +23,8 @@ export default function GeneratedPage({ productKey, content }) {
   return (
     <main style={{ minHeight: '100vh', background: '#FFFFFF', color: '#0F172A' }}>
       <MarketerPixelProvider />
+      {/* Tanda produk untuk notifikasi social proof (SocialProofToast) */}
+      <div hidden data-sp-product={SP_GENERATOR_GROUP[productKey] || ''} />
       {SLOTS.map(slot => {
         if (hidden.has(slot.key)) return null;
         if (slot.type === 'angle') {

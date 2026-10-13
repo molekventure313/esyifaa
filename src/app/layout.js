@@ -131,8 +131,8 @@ export default async function RootLayout({ children }) {
         {/* ClientPixelProvider — fallback sahaja; skip bila fbq dah di-init inline dalam <head>.
             Skip bila ?m= (marketer) atau FPX pages */}
         <ClientPixelProvider hqPixelId={pixelIdRaw} />
-        {/* SocialProofToast — popup notifikasi pembeli terkini
-            Self-skips untuk dashboard / checkout pages */}
+        {/* SocialProofToast — popup order sebenar, HANYA di SP produk berkenaan
+            (SP Sabun → order sabun, dll). Laluan lain (dashboard, homepage, checkout) → tiada popup */}
         <SocialProofToast />
         <ToastProvider>
           {children}
