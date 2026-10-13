@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 
@@ -9,20 +9,25 @@ import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 const BASE_PACKAGES = [
   {
     units: 1, label: '1 Unit', price: 39, savings: null, badge: null,
-    pillLabel: 'PEK PERCUBAAN', originalPrice: null,
-    features: ['1 KETUL SABUN GARAM (200g)', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
+    pillLabel: 'PEK PERCUBAAN', originalPrice: null, airTawar: true,
+    features: ['1 KETUL SABUN GARAM (200g)', 'PERCUMA AIR TAWAR JARAK JAUH', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
   },
   {
     units: 2, label: '2 Unit', price: 70, savings: 8, badge: 'JIMAT RM8',
-    pillLabel: 'PAKEJ BERDUA', originalPrice: 78,
-    features: ['2 KETUL SABUN GARAM (200g)', 'JIMAT RM8', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
+    pillLabel: 'PAKEJ BERDUA', originalPrice: 78, airTawar: true,
+    features: ['2 KETUL SABUN GARAM (200g)', 'PERCUMA AIR TAWAR JARAK JAUH', 'JIMAT RM8', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
   },
   {
     units: 3, label: '3 Unit', price: 90, savings: 27, badge: 'Paling Jimat (Jimat RM27)', recommended: true,
-    pillLabel: 'PAKEJ PALING JIMAT', originalPrice: 117,
-    features: ['3 KETUL SABUN GARAM (200g)', 'JIMAT RM27', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
+    pillLabel: 'PAKEJ PALING JIMAT', originalPrice: 117, airTawar: true,
+    features: ['3 KETUL SABUN GARAM (200g)', 'PERCUMA AIR TAWAR JARAK JAUH', 'JIMAT RM27', 'POSTAGE RM5 (SEMENANJUNG)', 'COD TERSEDIA (SEMENANJUNG)'],
   },
 ];
+
+// Offer SEMUA pembeli: Air Tawar Jarak Jauh PERCUMA (pembersihan DALAMAN — sabun = LUARAN).
+// Bukan barang fizikal: pelanggan claim melalui WhatsApp di TQ page → perawat bacakan ruqyah pada air pelanggan.
+const AIR_TAWAR_NOTE  = ' | Free Gift: Air Tawar Jarak Jauh';
+const AIR_TAWAR_LABEL = '💧 Free Gift: Air Tawar Jarak Jauh';
 
 // Susunan kad: terbesar dahulu (kiri / atas) — sama gaya SP Garam
 const CARD_ORDER = [2, 1, 0];
@@ -86,6 +91,9 @@ const REQ = <span style={{ color: '#E11D48', marginLeft: '2px' }}>*</span>;
 function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
+  const pathname     = usePathname() || '';
+  // UJIAN: offer Air Tawar Jarak Jauh aktif di SP HQ sahaja — SP marketer (?m= / /m/) kekal offer lama
+  const airOn        = !marketerCode && !pathname.startsWith('/m/');
   
   const [selectedPkg,   setSelectedPkg]   = useState(2); // index 2 = 3 unit (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
@@ -110,6 +118,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   // Build packages with dynamic postage — semua pakej: RM5 Semenanjung / RM10 Sabah & Sarawak
   const PACKAGES = BASE_PACKAGES.map(p => ({
     ...p,
+    airTawar: airOn && !!p.airTawar,
+    features: airOn ? p.features : p.features.filter(f => !f.includes('AIR TAWAR')),
     postage: p.freePostage ? 0 : postage,
     total: p.price + (p.freePostage ? 0 : postage),
   }));
@@ -128,6 +138,9 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const addonPostagePerk         = pkgPostage > 0;                                // add-on Kasturi masih beri diskaun postage?
   const kasturiGivesFreePostage  = pkgPostage > 0 && pkgPostage <= KASTURI_POSTAGE_DISCOUNT; // sebelum tick: untuk badge/sub-text
   const grandTotal               = pkg.price + effectivePostage + (addKasturi ? KASTURI_PRICE : 0);
+  // Air Tawar Jarak Jauh PERCUMA: SEMUA pembeli (SP HQ sahaja semasa ujian)
+  const getsAirTawar             = airOn && (!!pkg.airTawar || addKasturi);
+  const kasturiAddsAirTawar      = airOn && !pkg.airTawar;                        // 1 Unit: Kasturi juga buka Air Tawar
 
   // If Sabah/Sarawak selected and COD was active, switch to FPX
   useEffect(() => {
@@ -191,7 +204,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
 
       const kasturiNote = addKasturi ? ` | Add-On: Kasturi Kijang E-Syifa' +RM${KASTURI_PRICE}` : '';
       const giftNote   = pkg.includesKasturi ? ' | Free Gift: Minyak Kasturi Kijang' : '';   // → stok Kasturi ditolak bila bayaran berjaya
-      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label}${giftNote} | Postage: RM${effectivePostage}${kasturiNote}`;
+      const airNote    = getsAirTawar ? AIR_TAWAR_NOTE : '';
+      const orderNotes = `Alamat: ${address} | Pakej: ${pkg.label}${giftNote}${airNote} | Postage: RM${effectivePostage}${kasturiNote}`;
 
       // Fire InitiateCheckout pixel
       try {
@@ -274,6 +288,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
           amount_total: grandTotal,
           addon_kasturi: addKasturi,
           free_gift_kasturi: !!pkg.includesKasturi,   // pakej 3 Unit: percuma 1 botol Kasturi (stok ditolak di route COD)
+          free_gift_air_tawar: getsAirTawar,          // semua pembeli (SP HQ): Air Tawar Jarak Jauh (claim melalui WhatsApp)
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,
@@ -313,7 +328,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
 
         // Redirect to TQ page
         const productLabel = encodeURIComponent(`Sabun Garam ${pkg.label}`);
-        window.location.href = `/payment-success?type=cod&amount=${grandTotal}&product=${productLabel}&order_id=${json.order_id || ''}${marketerCode ? `&m=${encodeURIComponent(marketerCode)}` : ''}`;
+        window.location.href = `/payment-success?type=cod&amount=${grandTotal}&product=${productLabel}&order_id=${json.order_id || ''}${getsAirTawar ? '&gift=airtawar' : ''}${marketerCode ? `&m=${encodeURIComponent(marketerCode)}` : ''}`;
       } else {
         throw new Error(json.error || 'Ralat berlaku. Sila cuba lagi.');
       }
@@ -375,9 +390,31 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
             Pilih Pakej &amp; Tempah
           </h2>
           <p style={{ color: '#64748B', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto' }}>
-            Postage RM5 Semenanjung / RM10 Sabah &amp; Sarawak · Tambah Minyak Kasturi untuk <strong style={{ color: '#047857' }}>diskaun postage RM5</strong>
+            {airOn
+              ? <>Tambah Minyak Kasturi untuk dapatkan <strong style={{ color: '#047857' }}>Free Postage</strong></>
+              : <>Tambah Minyak Kasturi untuk <strong style={{ color: '#047857' }}>diskaun postage RM5</strong></>}
           </p>
         </div>
+
+        {airOn && (<>
+        {/* ── Offer: Bonus Air Tawar Jarak Jauh — Clearing Luar & Dalam (semua pembeli) ── */}
+        <div style={{
+          maxWidth: '520px', margin: '0 auto 2.75rem', borderRadius: '18px', overflow: 'hidden',
+          border: '2px solid #A7F3D0', boxShadow: '0 12px 32px rgba(4, 120, 87, 0.15)', background: '#FFFFFF',
+        }}>
+          <Image
+            src="/images/sabun-garam/bonus-air-tawar-v2.jpg"
+            alt="Bonus percuma Air Tawar Jarak Jauh untuk semua pembeli — clearing luar (mandian sabun garam) dan dalam (air mineral anda sendiri yang dibacakan ruqyah dari jauh)"
+            width={896}
+            height={1200}
+            sizes="(max-width: 560px) 100vw, 520px"
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
+          <div style={{ background: '#ECFDF5', borderTop: '1px solid #A7F3D0', padding: '0.7rem 1rem', textAlign: 'center', fontSize: '0.82rem', fontWeight: 700, color: '#047857' }}>
+            ✅ Selepas tempah, tekan butang WhatsApp di halaman terima kasih untuk claim — tiada caj tambahan.
+          </div>
+        </div>
+        </>)}
 
         {/* ── 1. Kad Harga (gaya SP Garam) ── */}
         <div id="pilih-pakej" className="sabun-pricing-grid">
@@ -412,35 +449,47 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
 
                 {/* Visual ketul sabun */}
                 <div style={{ minHeight: '95px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    {Array.from({ length: p.units }).map((_, i) => (
-                      <div key={i} style={{
-                        width: '46px', height: '34px',
-                        background: 'linear-gradient(180deg, #FFE8DC 0%, #FCCDB4 55%, #F2A98B 100%)',
-                        borderRadius: '10px', border: '1.5px solid #E08D6D',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: '#7C2D12', fontWeight: 900, fontSize: '0.55rem',
-                        boxShadow: '0 2px 6px rgba(224, 141, 109, 0.3)',
-                      }}>
-                        200g
-                      </div>
-                    ))}
-                    {p.includesKasturi && (
-                      <div title="Free Minyak Kasturi Kijang" style={{
-                        width: '28px', height: '42px',
-                        background: 'linear-gradient(180deg, #34D399 0%, #059669 100%)',
-                        borderRadius: '4px 4px 6px 6px', border: '1.5px solid #047857',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        color: '#FFFFFF', fontWeight: 900, fontSize: '0.52rem',
-                        boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
-                      }}>
-                        <span>🎁</span>
-                        <span style={{ fontSize: '0.45rem' }}>FREE</span>
-                      </div>
-                    )}
-                  </div>
+                  {airOn ? (
+                    /* UJIAN HQ: gambar pakej (tunjuk bonus Air Tawar) */
+                    <Image
+                      src={`/images/sabun-garam/pakej-${p.units}unit-v2.jpg`}
+                      alt={`Pakej ${p.units} Unit Sabun Garam Himalaya${p.airTawar ? ' + percuma Air Tawar Jarak Jauh' : ''}`}
+                      width={210}
+                      height={210}
+                      style={{ width: '210px', maxWidth: '100%', height: 'auto', borderRadius: '14px', display: 'block' }}
+                    />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      {Array.from({ length: p.units }).map((_, i) => (
+                        <div key={i} style={{
+                          width: '46px', height: '34px',
+                          background: 'linear-gradient(180deg, #FFE8DC 0%, #FCCDB4 55%, #F2A98B 100%)',
+                          borderRadius: '10px', border: '1.5px solid #E08D6D',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#7C2D12', fontWeight: 900, fontSize: '0.55rem',
+                          boxShadow: '0 2px 6px rgba(224, 141, 109, 0.3)',
+                        }}>
+                          200g
+                        </div>
+                      ))}
+                      {p.includesKasturi && (
+                        <div title="Free Minyak Kasturi Kijang" style={{
+                          width: '28px', height: '42px',
+                          background: 'linear-gradient(180deg, #34D399 0%, #059669 100%)',
+                          borderRadius: '4px 4px 6px 6px', border: '1.5px solid #047857',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          color: '#FFFFFF', fontWeight: 900, fontSize: '0.52rem',
+                          boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                        }}>
+                          <span>🎁</span>
+                          <span style={{ fontSize: '0.45rem' }}>FREE</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#047857' }}>
                     {p.units}x Sabun Garam (200g){p.includesKasturi ? ' + Free Kasturi 🎁' : ''}
+                    {p.airTawar && <div style={{ color: '#0369A1', marginTop: '0.15rem' }}>+ FREE Air Tawar Jarak Jauh 💧</div>}
                   </div>
                 </div>
 
@@ -473,16 +522,17 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                     // Item PERCUMA (postage / Kasturi) ditonjolkan
                     const perk = feat.startsWith('PERCUMA');
                     const isGift = perk && feat.includes('KASTURI');
+                    const isAir  = perk && feat.includes('AIR TAWAR');
                     return (
                       <li key={fIdx} style={perk ? {
                         display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        background: isGift ? 'linear-gradient(90deg, #FEF3C7, #FFFBEB)' : 'linear-gradient(90deg, #D1FAE5, #ECFDF5)',
-                        border: isGift ? '1.5px solid #F59E0B' : '1.5px solid #34D399',
-                        color: isGift ? '#92400E' : '#065F46',
+                        background: isAir ? 'linear-gradient(90deg, #E0F2FE, #F0F9FF)' : isGift ? 'linear-gradient(90deg, #FEF3C7, #FFFBEB)' : 'linear-gradient(90deg, #D1FAE5, #ECFDF5)',
+                        border: isAir ? '1.5px solid #38BDF8' : isGift ? '1.5px solid #F59E0B' : '1.5px solid #34D399',
+                        color: isAir ? '#075985' : isGift ? '#92400E' : '#065F46',
                         borderRadius: '8px', padding: '0.4rem 0.55rem', fontWeight: 800,
                       } : { display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span style={{ color: perk ? 'inherit' : '#059669', fontWeight: 900, fontSize: '0.95rem', flexShrink: 0 }}>
-                          {isGift ? '🎁' : perk ? '🚚' : '✓'}
+                          {isAir ? '💧' : isGift ? '🎁' : perk ? '🚚' : '✓'}
                         </span>
                         <span>{feat}</span>
                       </li>
@@ -742,6 +792,14 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                     boxShadow: '0 2px 6px rgba(5,150,105,0.3)', whiteSpace: 'nowrap',
                   }}>{kasturiGivesFreePostage ? '🎁 POSTAGE FREE' : '🎁 DISKAUN POSTAGE RM5'}</div>
                 )}
+                {kasturiAddsAirTawar && (
+                  <div style={{
+                    background: '#0369A1', color: '#FFF',
+                    fontSize: '0.62rem', fontWeight: 800, padding: '0.18rem 0.65rem',
+                    borderRadius: '5px', textTransform: 'uppercase', letterSpacing: '0.05em',
+                    boxShadow: '0 2px 6px rgba(3,105,161,0.3)', whiteSpace: 'nowrap',
+                  }}>{'💧 FREE AIR TAWAR'}</div>
+                )}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
@@ -776,8 +834,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                   {addonPostagePerk ? (
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.65rem' }}>
                       {kasturiGivesFreePostage
-                        ? '\uD83D\uDE9A Tambah Kasturi ni, Kami belanja Free Postage'
-                        : '\uD83D\uDE9A Diskaun postage RM5 untuk Sabah/Sarawak'}
+                        ? `\uD83D\uDE9A Tambah Kasturi ni, Kami belanja Free Postage${kasturiAddsAirTawar ? ' & Free Air Tawar \uD83D\uDCA7' : ''}`
+                        : `\uD83D\uDE9A Diskaun postage RM5 untuk Sabah/Sarawak${kasturiAddsAirTawar ? ' + Free Air Tawar \uD83D\uDCA7' : ''}`}
                     </div>
                   ) : (
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.65rem' }}>
@@ -788,16 +846,16 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                   {/* Image + bullets */}
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     <div style={{
-                      width: '96px', height: '96px', flexShrink: 0,
+                      width: '96px', height: airOn ? '128px' : '96px', flexShrink: 0,
                       borderRadius: '10px', overflow: 'hidden',
                       border: '1.5px solid #E2E8F0',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
                     }}>
                       <Image
-                        src="/images/kasturi-kijang-opt.jpg"
+                        src={airOn ? '/images/sabun-garam/bump-kasturi.jpg' : '/images/kasturi-kijang-opt.jpg'}
                         alt="Kasturi Kijang E-Syifa'"
                         width={96}
-                        height={96}
+                        height={airOn ? 128 : 96}
                         style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
                         loading="lazy"
                       />
@@ -815,7 +873,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                   <div style={{ marginTop: '0.55rem', fontSize: '0.72rem', fontWeight: 700, color: addKasturi ? '#059669' : '#D97706', transition: 'color 0.2s' }}>
                     {addKasturi
                       ? (addonPostagePerk
-                          ? `\u2713 Kasturi ditambah — ${postageIsFree ? 'Postage percuma diaktifkan! \uD83C\uDF89' : 'Diskaun postage RM5 diaktifkan! \uD83C\uDF89'}`
+                          ? `\u2713 Kasturi ditambah — ${postageIsFree ? 'Postage percuma' : 'Diskaun postage RM5'}${kasturiAddsAirTawar ? ' & Air Tawar percuma' : ''} diaktifkan! \uD83C\uDF89`
                           : '\u2713 Kasturi ditambah ke order anda \uD83C\uDF89')
                       : '\u2610 Klik untuk tambahkan ke order anda \u2192'}
                   </div>
@@ -836,8 +894,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
               }}>
                 <span style={{ fontSize: '1rem' }}>🎉</span>
                 {postageIsFree
-                  ? 'Tahniah! Postage percuma diaktifkan kerana tambah Kasturi.'
-                  : 'Diskaun postage RM5 diaktifkan kerana tambah Kasturi.'}
+                  ? `Tahniah! Postage percuma${kasturiAddsAirTawar ? ' & Air Tawar Jarak Jauh percuma' : ''} diaktifkan kerana tambah Kasturi.`
+                  : `Diskaun postage RM5${kasturiAddsAirTawar ? ' & Air Tawar Jarak Jauh percuma' : ''} diaktifkan kerana tambah Kasturi.`}
               </div>
             )}
 
@@ -850,6 +908,12 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                 <span style={{ color: '#475569' }}>Sabun Garam — {pkg.label}</span>
                 <span style={{ fontWeight: 600, color: '#0F172A' }}>RM{pkg.price}</span>
               </div>
+              {getsAirTawar && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '0.4rem' }}>
+                  <span style={{ color: '#0369A1' }}>{AIR_TAWAR_LABEL}</span>
+                  <span style={{ fontWeight: 700, color: '#0369A1' }}>PERCUMA</span>
+                </div>
+              )}
               {pkg.includesKasturi && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '0.4rem' }}>
                   <span style={{ color: '#059669' }}>{'🎁 Free Gift: Minyak Kasturi Kijang'}</span>

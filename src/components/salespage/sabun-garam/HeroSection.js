@@ -30,30 +30,6 @@ export default function SabunHeroSection({ headline = DEFAULT_HEADLINE, subheadl
     }}>
       <div style={{ maxWidth: '840px', margin: '0 auto' }}>
 
-        {/* Ceria & Segar Pill Badge */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          background: '#FFFFFF',
-          border: '1px solid #A7F3D0',
-          padding: '0.4rem 1rem',
-          borderRadius: '9999px',
-          marginBottom: '1.75rem',
-          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)',
-        }}>
-          <span style={{ fontSize: '0.9rem' }}>🧼</span>
-          <span style={{
-            fontSize: '0.76rem',
-            fontWeight: 700,
-            color: '#047857',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}>
-            Sabun Garam Himalaya 200g · Pengisian Ruqyah Syar&apos;iyyah
-          </span>
-        </div>
-
         {/* H1 Headline */}
         <h1 style={{
           fontSize: 'clamp(1.8rem, 4.2vw, 2.85rem)',

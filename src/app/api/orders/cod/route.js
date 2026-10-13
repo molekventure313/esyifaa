@@ -16,6 +16,7 @@ export async function POST(req) {
       landing_page_url, referrer_url, fbclid, fbp, fbc,
       addon_kasturi, addon_sabun, addon_garam_masakan, marketer_code,
       free_gift_kasturi,   // hadiah percuma Kasturi (pakej Garam 6 pek)
+      free_gift_air_tawar, // hadiah Air Tawar Jarak Jauh (Sabun 2 Unit+) — bukan barang fizikal, claim melalui WhatsApp
     } = body;
 
     if (honeypot) {
@@ -43,7 +44,8 @@ export async function POST(req) {
     const sabunTag       = addon_sabun        ? ' | Add-On: Sabun Garam Pengisian +RM25' : '';
     const garamMasakanTag = addon_garam_masakan ? ' | Add-On: Garam Masakan Pengasihan +RM25' : '';
     // Format sama dgn FPX → addonsOf() kesan untuk COGS & label NinjaVan
-    const freeGiftTag     = free_gift_kasturi   ? ' | Free Gift: Minyak Kasturi Kijang' : '';
+    const freeGiftTag     = (free_gift_kasturi   ? ' | Free Gift: Minyak Kasturi Kijang' : '')
+                          + (free_gift_air_tawar ? ' | Free Gift: Air Tawar Jarak Jauh' : '');
     // Postage sebenar = jumlah − harga pakej − add-on (pakej free pos → RM0)
     const addonTotal  = (addon_kasturi ? 20 : 0) + (addon_sabun ? 25 : 0) + (addon_garam_masakan ? 25 : 0);
     const postageAmt  = Math.max(0, Math.round(((parseFloat(amount_total) || 0) - (parseFloat(amount_base) || 0) - addonTotal) * 100) / 100);
@@ -95,7 +97,7 @@ export async function POST(req) {
     let submissionId = `cod_${Date.now()}`;
     const kasturiNote = addon_kasturi ? ' [ADD-ON: Kasturi Kijang +RM20]' : '';
     const sabunNote   = addon_sabun   ? ' [ADD-ON: Sabun Garam +RM25]' : '';
-    const giftNote    = free_gift_kasturi ? ' [FREE GIFT: Kasturi Kijang]' : '';
+    const giftNote    = (free_gift_kasturi ? ' [FREE GIFT: Kasturi Kijang]' : '') + (free_gift_air_tawar ? ' [FREE GIFT: Air Tawar Jarak Jauh]' : '');
     const submissionData = {
       full_name: cleanName,
       phone: formattedPhone,

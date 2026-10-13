@@ -14,7 +14,7 @@ export async function GET(req) {
 
     const { data: submission, error } = await supabase
       .from('submissions')
-      .select('id, full_name, phone, notes, payment_status, marketer_id, amount_paid')
+      .select('id, full_name, phone, problem, notes, payment_status, marketer_id, amount_paid')
       .eq('id', submissionId)
       .single();
 
@@ -54,6 +54,8 @@ export async function GET(req) {
       payment_status:   paid ? 'completed' : failed ? 'failed' : 'pending',
       marketer_pixel_id: marketerPixelId, // null for HQ orders
       is_marketer_order: !!submission.marketer_id, // TQ: jangan fallback ke pixel HQ untuk order marketer
+      // Sabun 2 Unit+: layak claim Air Tawar Jarak Jauh (TQ page papar butang WhatsApp)
+      gift_air_tawar:   /Free Gift: Air Tawar Jarak Jauh|\[FREE GIFT: Air Tawar Jarak Jauh\]/i.test(`${submission.problem || ''} ${submission.notes || ''}`),
     });
 
   } catch (error) {

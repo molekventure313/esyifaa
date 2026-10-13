@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import AirTawarClaim from '@/components/salespage/AirTawarClaim';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -21,6 +22,7 @@ function PaymentSuccessContent() {
   const [marketerPixelId, setMarketerPixelId] = useState(null); // set dari status API kalau order marketer
   // Order marketer — dari ?m= (redirect checkout/CHIP) atau status API. Pixel HQ TAK BOLEH fire.
   const marketerParam = searchParams.get('m') || '';
+  const giftParam     = searchParams.get('gift');      // 'airtawar' — Sabun 2 Unit+ (COD); FPX dari status API
   const [isMarketerOrder, setIsMarketerOrder] = useState(!!marketerParam);
 
   // Amount & product — read from URL params first (most accurate)
@@ -189,6 +191,11 @@ function PaymentSuccessContent() {
           <p style={{ fontSize: '1rem', color: '#D1FAE5', lineHeight: 1.7, marginBottom: '2rem' }}>
             {displaySubtitle}
           </p>
+
+          {/* Bonus Sabun 2 Unit+ — claim Air Tawar Jarak Jauh melalui WhatsApp */}
+          {(giftParam === 'airtawar' || data?.gift_air_tawar) && (
+            <AirTawarClaim productName={productName} fullName={data?.full_name} orderId={submissionId} />
+          )}
 
           {/* Details Card */}
           <div style={{
