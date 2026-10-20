@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { guard, STAFF, OWNER } from '@/lib/auth';
 import { returnStock } from '@/lib/stock';
+import { BUCKET } from '@/lib/return-waybills';
 
 // Return Parcel — staff upload gambar waybill parcel yang dipulangkan; gambar dibaca & dipadankan dengan order.
-// GET    ?status=pending|processed|unmatched|all → senarai + signed URL gambar + order dipadankan (STAFF)
+// GET    ?status=pending|review|processed|unmatched|all → senarai + signed URL gambar + order dipadankan (STAFF)
+//        (proses automatik AI: POST /api/return-waybills/process — lib/return-waybills.js)
 // POST   multipart {file, notes?}                → upload satu gambar (STAFF)
-// PATCH  { id, action: 'process', submission_id } → tanda order return (stok dipulangkan) + gambar 'processed' (STAFF)
+// PATCH  { id, action: 'process', submission_id } → sahkan return (cth dari 'review') + gambar 'processed' (STAFF)
 //        { id, action: 'unmatched', note }        → gambar tak dapat dibaca / dipadan (STAFF)
 //        { id, action: 'reset' }                  → kembali 'pending' — TIDAK batalkan return order (super_admin)
 // DELETE ?id=                                     → padam (super_admin, atau pengupload selagi belum diproses)
 
-const BUCKET = 'return-waybills';
 const MAX_BYTES = 5 * 1024 * 1024;   // gambar dimampatkan di browser dulu (~300KB)
 const TABLE_MISSING = 'Jadual return parcel belum wujud — run migration 023.';
 
@@ -21,10 +22,11 @@ export async function GET(req) {
     const status = new URL(req.url).searchParams.get('status') || 'pending';
 
     let q = g.admin.from('return_waybills')
-      .select('id, image_path, notes, status, submission_id, process_note, uploaded_by, processed_by, processed_at, created_at')
+      .select('id, image_path, notes, status, submission_id, process_note, uploaded_by, processed_by, processed_at, created_at, extracted, candidates, image_deleted_at')
       .order('created_at', { ascending: false })
       .limit(300);
-    if (status !== 'all') q = q.eq('status', status);
+    if (status === 'pending') q = q.in('status', ['pending', 'processing']);
+    else if (status !== 'all') q = q.eq('status', status);
 
     const [{ data: rows, error }, { data: countRows }] = await Promise.all([
       q,
@@ -45,12 +47,12 @@ export async function GET(req) {
     const subOf = Object.fromEntries((subs || []).map(s => [s.id, s]));
 
     // Signed URL (1 jam) untuk gambar persendirian
-    const paths = (rows || []).map(r => r.image_path);
+    const paths = (rows || []).filter(r => !r.image_deleted_at).map(r => r.image_path);
     const { data: signed } = paths.length ? await g.admin.storage.from(BUCKET).createSignedUrls(paths, 3600) : { data: [] };
     const urlOf = Object.fromEntries((signed || []).map(s => [s.path, s.signedUrl]));
 
-    const counts = { pending: 0, processed: 0, unmatched: 0 };
-    for (const r of countRows || []) counts[r.status] = (counts[r.status] || 0) + 1;
+    const counts = { pending: 0, review: 0, processed: 0, unmatched: 0 };
+    for (const r of countRows || []) { const k = r.status === 'processing' ? 'pending' : r.status; counts[k] = (counts[k] || 0) + 1; }
 
     return NextResponse.json({
       success: true,
@@ -59,7 +61,7 @@ export async function GET(req) {
         const s = subOf[r.submission_id];
         return {
           ...r,
-          url: urlOf[r.image_path] || null,
+          url: r.image_deleted_at ? null : (urlOf[r.image_path] || null),
           uploaded_by_name: nameOf[r.uploaded_by] || null,
           processed_by_name: nameOf[r.processed_by] || null,
           order: s ? {
@@ -117,6 +119,7 @@ export async function PATCH(req) {
 
     if (action === 'process') {
       if (row.status === 'processed') return NextResponse.json({ success: false, error: 'Gambar ini dah diproses.' }, { status: 409 });
+      if (row.status === 'processing') return NextResponse.json({ success: false, error: 'Gambar ini sedang dibaca AI — cuba sebentar lagi.' }, { status: 409 });
       if (!submission_id) return NextResponse.json({ success: false, error: 'Pilih order.' }, { status: 400 });
 
       // Tanda order return — pulangkan stok & keluarkan dari sales. Order dah di-return → pautkan sahaja (stok tak dipulangkan dua kali).

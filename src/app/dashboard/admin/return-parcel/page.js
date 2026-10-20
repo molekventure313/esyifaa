@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Return Parcel — staff upload gambar waybill parcel yang dipulangkan (COD return).
-// Gambar dibaca & dipadankan dengan order → order ditanda return (stok dipulangkan, keluar dari sales/komisen).
+// Selepas upload, AI baca waybill & padankan order: padanan pasti → terus ditanda return (stok dipulangkan,
+// keluar dari sales/komisen); tak pasti → 'Perlu semakan' (pilih order, satu klik); tak dapat baca → snap semula.
 
 const STATUS = {
   pending:   { label: '⏳ Belum diproses',     color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
+  processing:{ label: '🤖 Sedang dibaca...',   color: '#8B5CF6', bg: 'rgba(139,92,246,0.15)' },
+  review:    { label: '🔎 Perlu semakan',      color: '#3B82F6', bg: 'rgba(59,130,246,0.15)' },
   processed: { label: '✅ Selesai',            color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
   unmatched: { label: '⚠️ Tak dapat dipadan', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
 };
@@ -87,24 +90,51 @@ export default function ReturnParcelPage() {
     setUpMsg(null);
     let ok = 0;
     const errors = [];
+    const ids = [];
     for (let i = 0; i < files.length; i++) {
-      setUploading(`${i + 1}/${files.length}`);
+      setUploading(`Menghantar ${i + 1}/${files.length}`);
       try {
         const fd = new FormData();
         fd.append('file', await compressImage(files[i]));
         if (notes) fd.append('notes', notes);
         const json = await (await fetch('/api/return-waybills', { method: 'POST', body: fd })).json();
         if (!json.success) throw new Error(json.error);
-        ok++;
+        ok++; ids.push(json.id);
       } catch (err) { errors.push(`${files[i].name}: ${err.message}`); }
     }
-    setUploading(null);
-    setUpMsg(errors.length ? { ok: false, text: `${ok} berjaya, ${errors.length} gagal — ${errors.join(' · ')}` } : { ok: true, text: `${ok} gambar waybill dihantar. Akan diproses dan ditanda return.` });
     if (ok) {
       setFiles([]); setNotes('');
       if (fileRef.current) fileRef.current.value = '';
       load();
     }
+    // AI baca & padankan setiap gambar (yang tertinggal diproses oleh tugas berjadual)
+    for (let i = 0; i < ids.length; i++) {
+      setUploading(`🤖 Membaca waybill ${i + 1}/${ids.length}`);
+      await processOne(ids[i], false);
+    }
+    setUploading(null);
+    setUpMsg(errors.length ? { ok: false, text: `${ok} berjaya, ${errors.length} gagal — ${errors.join(' · ')}` } : { ok: true, text: `${ok} gambar waybill dihantar & diproses. Semak tab 🔎 Perlu semakan / ⚠️ jika ada.` });
+    load();
+  };
+
+  const processOne = async (id, reload = true) => {
+    try {
+      await fetch('/api/return-waybills/process', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    } catch (_) {}
+    if (reload) load();
+  };
+
+  const patch = async (row, body, confirmText) => {
+    if (confirmText && !confirm(confirmText)) return;
+    setBusyId(row.id);
+    try {
+      const json = await (await fetch('/api/return-waybills', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: row.id, ...body }),
+      })).json();
+      if (!json.success) throw new Error(json.error);
+      await load();
+    } catch (e) { alert(e.message); }
+    finally { setBusyId(null); }
   };
 
   const reset = async row => {
@@ -142,8 +172,9 @@ export default function ReturnParcelPage() {
       <div style={{ padding: '1.25rem 1.5rem', borderRadius: '8px', marginBottom: '1.25rem', background: cardBg, border: cardBorder }}>
         <h1 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0 }}>↩️ Return Parcel</h1>
         <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: textSecondary, lineHeight: 1.55 }}>
-          Snap & upload gambar <strong>waybill</strong> setiap parcel COD yang dipulangkan. Pastikan nama, no. telefon, alamat &amp; nombor tracking jelas.
-          Selepas diproses, order ditanda return — stok dipulangkan &amp; order keluar dari sales / komisen.
+          Snap & upload gambar <strong>waybill</strong> setiap parcel COD yang dipulangkan — pastikan nama, no. telefon, alamat &amp; nombor tracking jelas.
+          AI akan baca &amp; padankan order: padanan pasti terus ditanda return (stok dipulangkan, order keluar dari sales / komisen);
+          yang tak pasti masuk <strong>🔎 Perlu semakan</strong>. Gambar dipadam 7 hari selepas selesai.
         </p>
       </div>
 
@@ -158,14 +189,14 @@ export default function ReturnParcelPage() {
           <input style={input} value={notes} onChange={e => setNotes(e.target.value)} placeholder="cth: parcel pulang 20/10, kotak B" maxLength={300} />
         </label>
         <button disabled={!!uploading} style={{ ...btn('#10B981'), padding: '0.65rem 1rem', opacity: uploading ? 0.6 : 1 }}>
-          {uploading ? `Menghantar ${uploading}...` : `📤 Hantar ${files.length ? `${files.length} gambar` : 'gambar'}`}
+          {uploading ? `${uploading}...` : `📤 Hantar ${files.length ? `${files.length} gambar` : 'gambar'}`}
         </button>
         {upMsg && <div style={{ gridColumn: '1 / -1', fontSize: '0.82rem', color: upMsg.ok ? '#10B981' : '#EF4444' }}>{upMsg.ok ? '✅' : '⚠️'} {upMsg.text}</div>}
       </form>
 
       {/* Status */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-        {[['pending', STATUS.pending.label], ['processed', STATUS.processed.label], ['unmatched', STATUS.unmatched.label], ['all', 'Semua']].map(([k, l]) => {
+        {[['pending', STATUS.pending.label], ['review', STATUS.review.label], ['processed', STATUS.processed.label], ['unmatched', STATUS.unmatched.label], ['all', 'Semua']].map(([k, l]) => {
           const on = status === k;
           const n = k === 'all' ? null : counts[k];
           return (
@@ -173,7 +204,7 @@ export default function ReturnParcelPage() {
               padding: '0.45rem 0.85rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: ff,
               border: on ? '1px solid #10B981' : cardBorder, background: on ? 'rgba(16,185,129,0.12)' : 'transparent', color: on ? '#10B981' : textSecondary,
             }}>
-              {l}{n ? <span style={{ marginLeft: '0.35rem', background: k === 'pending' ? '#F59E0B' : subCardBg, color: k === 'pending' ? '#111' : textSecondary, borderRadius: '999px', padding: '0 0.4rem', fontSize: '0.7rem', fontWeight: 800 }}>{n}</span> : null}
+              {l}{n ? <span style={{ marginLeft: '0.35rem', background: ['pending', 'review'].includes(k) ? '#F59E0B' : subCardBg, color: ['pending', 'review'].includes(k) ? '#111' : textSecondary, borderRadius: '999px', padding: '0 0.4rem', fontSize: '0.7rem', fontWeight: 800 }}>{n}</span> : null}
             </button>
           );
         })}
@@ -197,7 +228,7 @@ export default function ReturnParcelPage() {
                 <button onClick={() => r.url && setViewer(r.url)} style={{ display: 'block', width: '100%', padding: 0, border: 'none', background: subCardBg, cursor: 'zoom-in', aspectRatio: '3 / 4' }}>
                   {r.url
                     ? <img src={r.url} alt="Waybill return" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    : <span style={{ color: textMuted, fontSize: '0.8rem' }}>Gambar tiada</span>}
+                    : <span style={{ color: textMuted, fontSize: '0.8rem', padding: '1rem', display: 'block' }}>{r.image_deleted_at ? '🗑 Gambar dipadam (7 hari selepas selesai) — maklumat di bawah kekal' : 'Gambar tiada'}</span>}
                 </button>
                 <div style={{ padding: '0.75rem 0.85rem', display: 'grid', gap: '0.35rem' }}>
                   <span style={{ justifySelf: 'start', fontSize: '0.68rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: '999px', background: st.bg, color: st.color }}>{st.label}</span>
@@ -209,6 +240,21 @@ export default function ReturnParcelPage() {
                       </div>
                     </div>
                   )}
+                  {r.extracted && (
+                    <div style={{ fontSize: '0.72rem', color: textMuted, background: subCardBg, borderRadius: '6px', padding: '0.4rem 0.5rem', lineHeight: 1.5 }}>
+                      🤖 {r.extracted.name || '?'} · ***{r.extracted.phone_last4 || '?'} · {r.extracted.postcode || '?'}
+                      {r.extracted.cod_amount != null ? ` · RM${r.extracted.cod_amount}` : ''}{r.extracted.units ? ` · ${r.extracted.units} unit` : ''}
+                      {r.extracted.tracking && <><br />{r.extracted.tracking}</>}
+                    </div>
+                  )}
+                  {r.status === 'review' && Array.isArray(r.candidates) && r.candidates.map(c => (
+                    <div key={c.id} style={{ border: cardBorder, borderRadius: '8px', padding: '0.5rem 0.6rem', fontSize: '0.75rem', display: 'grid', gap: '0.3rem' }}>
+                      <div><strong>{c.full_name}</strong>{c.returned ? ' · (dah return)' : ''}</div>
+                      <div style={{ color: textSecondary }}>Order {fmtDate(c.created_at)}{c.pakej ? ` · ${c.pakej}` : ''}{c.amount ? ` · RM${c.amount}` : ''}</div>
+                      <button disabled={busyId === r.id} onClick={() => patch(r, { action: 'process', submission_id: c.id }, `Sahkan return untuk order ${c.full_name} (${fmtDate(c.created_at)})?\n\nStok dipulangkan & order keluar dari sales / komisen.`)}
+                        style={{ ...btn('#10B981'), padding: '0.35rem 0.6rem', fontSize: '0.74rem' }}>✅ Ini ordernya — tanda return</button>
+                    </div>
+                  ))}
                   {r.process_note && <div style={{ fontSize: '0.75rem', color: r.status === 'unmatched' ? '#EF4444' : textSecondary }}>{r.process_note}</div>}
                   {r.notes && <div style={{ fontSize: '0.75rem', color: textSecondary }}>📝 {r.notes}</div>}
                   <div style={{ fontSize: '0.7rem', color: textMuted }}>
@@ -216,7 +262,9 @@ export default function ReturnParcelPage() {
                     {r.processed_at && <><br />{r.status === 'processed' ? '✅' : '⚠️'} {r.processed_by_name || '—'} · {fmtTime(r.processed_at)}</>}
                   </div>
                   <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                    {isOwner && r.status !== 'pending' && <button disabled={busyId === r.id} onClick={() => reset(r)} style={btn(lm ? '#E2E8F0' : '#374151', textPrimary)}>↺ Set semula</button>}
+                    {r.status === 'pending' && <button disabled={busyId === r.id} onClick={() => { setBusyId(r.id); processOne(r.id).finally(() => setBusyId(null)); }} style={btn('#8B5CF6')}>🤖 Proses sekarang</button>}
+                    {r.status === 'review' && <button disabled={busyId === r.id} onClick={() => patch(r, { action: 'unmatched', note: 'Tiada order cadangan yang betul — semak manual.' }, 'Tandakan tiada order yang betul?')} style={btn('transparent', textSecondary)}>Tiada yang betul</button>}
+                    {isOwner && !['pending', 'processing'].includes(r.status) && <button disabled={busyId === r.id} onClick={() => reset(r)} style={btn(lm ? '#E2E8F0' : '#374151', textPrimary)}>↺ Set semula</button>}
                     {canDelete && <button disabled={busyId === r.id} onClick={() => remove(r)} style={btn('transparent', '#EF4444')}>🗑</button>}
                   </div>
                 </div>

@@ -48,6 +48,7 @@ export async function middleware(request) {
     '/api/track-visit',
     '/api/track-wa-click',
     '/api/public',
+    '/api/cron',          // tugas berjadual Netlify — dilindungi CRON_SECRET dalam route
     '/api/setup',
     '/api/register-perawat',
     '/api/register-marketer',
