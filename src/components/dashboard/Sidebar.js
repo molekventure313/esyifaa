@@ -115,6 +115,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '💬 Order WhatsApp',   href: '/dashboard/admin/order-wasap' },
     { label: '🏪 Stok Produk',      href: '/dashboard/admin/stok' },
     { label: '📸 Pengisian Stok',   href: '/dashboard/admin/pengisian-stok' },
+    { label: '↩️ Return Parcel',    href: '/dashboard/admin/return-parcel' },
     { section: 'PENGURUSAN' },
     { label: '👤 Pengguna', href: '/dashboard/admin/users' },
     { label: '🌙 Ruqyah Harian', href: '/dashboard/admin/ruqyah-harian' },

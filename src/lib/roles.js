@@ -1,6 +1,6 @@
 // Peranan — selamat untuk client & server (tiada import server).
 //  · super_admin = pemilik: akses penuh
-//  · admin       = staff order: Pengurusan Order, Order WhatsApp, Stok, Pengisian Stok
+//  · admin       = staff order: Pengurusan Order, Order WhatsApp, Stok, Pengisian Stok, Return Parcel
 
 export const OWNER = ['super_admin'];
 export const STAFF = ['admin', 'super_admin'];
@@ -11,6 +11,7 @@ export const STAFF_PATHS = [
   '/dashboard/admin/order-wasap',
   '/dashboard/admin/stok',
   '/dashboard/admin/pengisian-stok',
+  '/dashboard/admin/return-parcel',
 ];
 export const STAFF_HOME = '/dashboard/admin/pesakit-berbayar';
 
