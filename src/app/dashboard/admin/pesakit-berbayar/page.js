@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/Toast';
-import { isPhysicalOrder } from '@/lib/products';
+import { isPhysicalOrder, SP_FILTER_GROUPS, spFilterLabel } from '@/lib/products';
 
 // Tarikh + masa ringkas (MYT ikut browser), cth: "27 Sep, 3:45 PTG"
 const fmtDateTime = (d) => d
@@ -29,6 +29,8 @@ export default function PengurusanOrderPage() {
   const [searchTerm,          setSearchTerm]          = useState('');
   const [period,              setPeriod]              = useState('today'); // today | yesterday | month | year | all
   const [productFilter,       setProductFilter]       = useState('all');   // all | sabun-garam | garam-pengasihan | kasturi-kijang | digital
+  const [spFilter,            setSpFilter]            = useState('all');   // all | <source SP HQ> | s:<slug> (SP Generator)
+  const [spPages,             setSpPages]             = useState([]);      // SP Generator yang dipublish
   const [ownerFilter,         setOwnerFilter]         = useState('all');   // all | hq | <marketer id> (ketua termasuk teamsale)
   const [lastUpdated,         setLastUpdated]         = useState('');
   const [stats, setStats] = useState({
@@ -100,6 +102,7 @@ export default function PengurusanOrderPage() {
       if (notExportedOnly) params.set('not_exported', 'true');
       if (productFilter !== 'all') params.set('product', productFilter);
       if (ownerFilter !== 'all') params.set('owner', ownerFilter);
+      if (spFilter !== 'all') params.set('sp', spFilter);
       if (channel !== 'all') params.set('channel', channel);   // statistik ikut penapis
       params.set('period', period);
 
@@ -110,6 +113,7 @@ export default function PengurusanOrderPage() {
         setStats(json.stats || { total_completed: 0, total_pending: 0, total_failed: 0, total_cod: 0, total_fpx: 0, total_revenue_rm: 0 });
         setLastUpdated(new Date().toLocaleTimeString('ms-MY'));
         setLastExport(json.last_export || null);
+        setSpPages(json.sp_pages || []);
         setNotExportedCount(json.stats?.not_exported_physical ?? 0);
         setSelectedIds(prev => {
           const newIds = new Set((json.data || []).map(o => o.id));
@@ -121,7 +125,7 @@ export default function PengurusanOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter, channel, period]);
+  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter, spFilter, channel, period]);
 
   useEffect(() => {
     fetchOrders();
@@ -186,6 +190,7 @@ export default function PengurusanOrderPage() {
         if (notExportedOnly) params.set('not_exported', 'true'); // ← filter belum diexport
         if (productFilter !== 'all') params.set('product', productFilter);
         if (ownerFilter !== 'all') params.set('owner', ownerFilter);
+        if (spFilter !== 'all') params.set('sp', spFilter);
         if (channel !== 'all') params.set('channel', channel);
         params.set('period', period);
       }
@@ -403,11 +408,12 @@ export default function PengurusanOrderPage() {
               const m = marketers.find(x => x.id === ownerFilter);
               return m ? `📢 ${m.full_name || m.marketer_code}${m.team_size > 0 ? ' + team' : ''}` : 'Marketer';
             })(),
+            spFilterLabel(spFilter, spPages),
             channel !== 'all' && (channel === 'whatsapp' ? '💬 WhatsApp' : '🌐 Web'),
           ].filter(Boolean).map(t => (
             <span key={t} style={{ fontWeight: 700, padding: '0.15rem 0.55rem', borderRadius: '999px', background: subCardBg, border: cardBorder, color: textPrimary }}>{t}</span>
           ))}
-          {(productFilter !== 'all' || ownerFilter !== 'all' || channel !== 'all') && <button onClick={() => { setProductFilter('all'); setOwnerFilter('all'); setChannel('all'); }}
+          {(productFilter !== 'all' || ownerFilter !== 'all' || spFilter !== 'all' || channel !== 'all') && <button onClick={() => { setProductFilter('all'); setOwnerFilter('all'); setSpFilter('all'); setChannel('all'); }}
             style={{ border: 'none', background: 'none', cursor: 'pointer', color: isLightMode ? '#2563EB' : '#60A5FA', fontSize: '0.75rem', fontWeight: 600 }}>✕ Reset penapis</button>}
         </div>
       )}
@@ -524,6 +530,24 @@ export default function PengurusanOrderPage() {
           <option value="garam-pengasihan">🧂 Garam Pengasihan</option>
           <option value="kasturi-kijang">🌿 Kasturi Kijang</option>
           <option value="digital">✨ Pengisian / Rawatan</option>
+        </select>
+        <select value={spFilter} onChange={e => setSpFilter(e.target.value)} title="Tapis ikut salespage tempat order dibuat (order WhatsApp tidak termasuk)" style={{
+          padding: '0.45rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', maxWidth: '240px',
+          background: spFilter !== 'all' ? (isLightMode ? '#DBEAFE' : 'rgba(59,130,246,0.18)') : subCardBg,
+          color: spFilter !== 'all' ? (isLightMode ? '#1D4ED8' : '#93C5FD') : textSecondary,
+          border: isLightMode ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.12)',
+        }}>
+          <option value="all">🧭 Semua SP</option>
+          {SP_FILTER_GROUPS.map(g => (
+            <optgroup key={g.label} label={g.label}>
+              {g.items.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </optgroup>
+          ))}
+          {spPages.length > 0 && (
+            <optgroup label="🧩 SP Generator">
+              {spPages.map(p => <option key={p.slug} value={`s:${p.slug}`}>/s/{p.slug} — {p.title}</option>)}
+            </optgroup>
+          )}
         </select>
         <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} style={{
           padding: '0.45rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', maxWidth: '230px',

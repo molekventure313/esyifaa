@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { productOf, isPhysicalOrder, applyProductFilter, periodRange } from '@/lib/products';
+import { productOf, isPhysicalOrder, applyProductFilter, applySpFilter, periodRange } from '@/lib/products';
 import { resolveOwner, applyOwner } from '@/lib/team';
 import { addonsOf, orderQty } from '@/lib/marketer-calc';
 
@@ -179,6 +179,7 @@ export async function GET(req) {
     const dateTo        = searchParams.get('date_to') || '';
     const notExported   = searchParams.get('not_exported') === 'true';
     const product       = searchParams.get('product') || 'all';
+    const sp            = searchParams.get('sp') || 'all';
     const owner         = searchParams.get('owner') || 'all';
     const channel       = searchParams.get('channel') || 'all';
     const range         = notExported ? null : periodRange(searchParams.get('period') || 'all');   // belum export: semua tarikh
@@ -200,7 +201,7 @@ export async function GET(req) {
     if (dateTo)       query = query.lte('created_at', dateTo + 'T23:59:59Z');
     if (notExported)  query = query.is('ninjavan_exported_at', null);   // ← belum diexport
     if (!idsParam) {
-      query = applyProductFilter(query, product);                       // ikut penapis page Pengurusan Order
+      query = applySpFilter(applyProductFilter(query, product), sp);                       // ikut penapis page Pengurusan Order
       query = applyOwner(query, await resolveOwner(adminClient, owner));   // await pada resolveOwner sahaja, BUKAN query
       if (channel === 'whatsapp') query = query.eq('order_channel', 'whatsapp');
       else if (channel === 'web') query = query.neq('order_channel', 'whatsapp');

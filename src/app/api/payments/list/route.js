@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isPhysicalOrder, applyProductFilter, periodRange } from '@/lib/products';
+import { isPhysicalOrder, applyProductFilter, applySpFilter, periodRange } from '@/lib/products';
 import { resolveOwner, applyOwner } from '@/lib/team';
 import { formatOrder } from '@/lib/orders';
 
@@ -24,6 +24,7 @@ export async function GET(req) {
     const product       = searchParams.get('product') || 'all';         // sabun-garam | garam-pengasihan | kasturi-kijang | digital
     const owner         = searchParams.get('owner') || 'all';           // hq | <marketer id> (ketua termasuk teamsale)
     const channel       = searchParams.get('channel') || 'all';         // web | whatsapp
+    const sp            = searchParams.get('sp') || 'all';              // <source SP HQ> | s:<slug> (SP Generator)
     // Tempoh (MYT): today | yesterday | month | year | all. 'Belum Diexport' abaikan tempoh — order lama yang belum dihantar tak tercicir
     const range         = notExported ? null : periodRange(searchParams.get('period') || 'all');
     const search = searchParams.get('search') || '';
@@ -68,7 +69,7 @@ export async function GET(req) {
     // JANGAN jadikan async / await pada query (query Supabase "thenable" → terus dijalankan).
     const ownerIds = await resolveOwner(adminClient, owner);
     const scoped = q => {
-      q = applyOwner(applyProductFilter(q, product), ownerIds);
+      q = applySpFilter(applyOwner(applyProductFilter(q, product), ownerIds), sp);
       if (channel === 'whatsapp') q = q.eq('order_channel', 'whatsapp');
       else if (channel === 'web') q = q.neq('order_channel', 'whatsapp');
       return q;
@@ -165,6 +166,11 @@ export async function GET(req) {
 
     const formatted = filteredSubmissions.map(formatOrder);
 
+    // Senarai SP Generator (dipublish) untuk penapis SP
+    const { data: spPages } = await adminClient.from('ai_salespages')
+      .select('slug, title, product_key').eq('status', 'published').order('slug')
+      .then(r => r, () => ({ data: [] }));
+
     return NextResponse.json({
       success: true,
       data: formatted,
@@ -178,6 +184,7 @@ export async function GET(req) {
         not_exported_physical: notExportedCount,
       },
       last_export: lastExport,
+      sp_pages: spPages || [],
       meta: { total: count, page, limit, totalPages: Math.ceil((count || 0) / limit) },
     });
 

@@ -29,6 +29,53 @@ export function applyProductFilter(q, product) {
   return PRODUCT_KEYS.includes(product) ? q.like('source', `${product}%`) : q;
 }
 
+// ─── Penapis ikut SP (salespage) ─────────────────────────────────────────────
+// SP HQ dikenal pasti ikut `source` order. SP Generator (/s/<slug>) guna source sama dengan SP HQ produknya,
+// jadi dikenal pasti ikut landing_page_url — dan dikecualikan dari SP HQ. Order WhatsApp (bukan dari SP) dikecualikan.
+export const SP_FILTER_GROUPS = [
+  { label: '🧼 Sabun Garam', items: [
+    ['sabun-garam',   '/sabun-garam'],
+    ['sabun-garam-1', '/sabun-garam-1 — Saka/Sihir'],
+    ['sabun-garam-2', '/sabun-garam-2 — Lenguh Badan'],
+    ['sabun-garam-3', '/sabun-garam-3 — Sakit Misteri'],
+    ['sabun-garam-4', '/sabun-garam-4 — Emosi/Bisikan'],
+    ['sabun-garam-5', '/sabun-garam-5 — Anak Meracau'],
+  ] },
+  { label: '🧂 Garam & 🌿 Kasturi', items: [
+    ['garam-pengasihan', '/garam-pengasihan'],
+    ['kasturi-kijang',   '/kasturi-kijang'],
+  ] },
+  { label: '✨ Pengisian / Rawatan', items: [
+    ['pengisian-esyifa', '/pengisian-esyifa (+ Tasbih, Rawat Sendiri)'],
+    ['ruqyah-harian',    '/ruqyah-harian'],
+    ['fsp-checkout',     '/fsp-checkout — Rawatan RM50'],
+    ['e-video',          '/e-video'],
+  ] },
+];
+const SP_SOURCES = SP_FILTER_GROUPS.flatMap(g => g.items.map(([k]) => k));
+
+export function spFilterLabel(sp, spPages = []) {
+  if (!sp || sp === 'all') return null;
+  if (sp.startsWith('s:')) {
+    const slug = sp.slice(2);
+    return `🧩 /s/${slug}${spPages.find(p => p.slug === slug)?.title ? ` — ${spPages.find(p => p.slug === slug).title}` : ''}`;
+  }
+  return `🧭 ${SP_FILTER_GROUPS.flatMap(g => g.items).find(([k]) => k === sp)?.[1].split(' ')[0] || sp}`;
+}
+
+// Tapis query submissions ikut SP. sp: 'all' | <source SP HQ> | 's:<slug>' (SP Generator)
+export function applySpFilter(q, sp) {
+  if (!sp || sp === 'all') return q;
+  if (sp.startsWith('s:')) {
+    const slug = sp.slice(2).toLowerCase().replace(/[^a-z0-9-]/g, '');
+    return slug ? q.ilike('landing_page_url', `%/s/${slug}%`) : q;
+  }
+  if (!SP_SOURCES.includes(sp)) return q;
+  return q.eq('source', sp)
+    .neq('order_channel', 'whatsapp')
+    .or('landing_page_url.is.null,landing_page_url.not.ilike.*/s/*');
+}
+
 // Order produk fizikal (perlu dihantar / export NinjaVan): semua COD + FPX produk fizikal
 export const isPhysicalOrder = o => o.payment_type === 'cod' || (o.payment_type === 'fpx_payment' && !!productOf(o.source));
 
