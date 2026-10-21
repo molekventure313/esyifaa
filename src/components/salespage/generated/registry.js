@@ -1,9 +1,10 @@
 // Section HQ (dikunci) untuk setiap produk SP Generator — terus guna komponen SP HQ.
 // Testimoni, fakta, harga, borang checkout (stok & source order) kekal sama seperti SP HQ.
 // Slot tiada dalam senarai produk = tidak dipapar untuk produk itu.
+// Produk fizikal (Sabun / Kasturi / Garam): TIADA section order WhatsApp — order melalui borang sahaja.
 
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
-import { HQ_WHATSAPP_SABUN, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+import { HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
 
 // Sabun Garam
 import SabunTestimonialSection from '@/components/salespage/sabun-garam/TestimonialSection';
@@ -76,7 +77,6 @@ export const HQ_SLOTS = {
     comparison: () => <SabunComparisonSection />,
     guarantee:  () => <SabunGuaranteeSection />,
     checkout:   () => <SabunCheckoutForm source="sabun-garam" />,
-    whatsapp:   () => <WhatsAppOrderSection product="Sabun Garam Himalaya" background="#F8FAF9" hqNumber={HQ_WHATSAPP_SABUN} />,
     faq:        () => <SabunFAQSection />,
   },
   'kasturi-kijang': {
@@ -88,7 +88,6 @@ export const HQ_SLOTS = {
     comparison: () => <KasturiComparisonSection />,
     guarantee:  () => <KasturiGuaranteeSection />,
     checkout:   () => <KasturiCheckoutForm source="kasturi-kijang" />,
-    whatsapp:   () => <WhatsAppOrderSection product="Minyak Kasturi Kijang" background="#FFFFFF" />,
     faq:        () => <KasturiFAQSection />,
   },
   'garam-pengasihan': {
@@ -100,7 +99,6 @@ export const HQ_SLOTS = {
     comparison: () => <GaramComparisonSection />,
     guarantee:  () => <GaramGuaranteeSection />,
     checkout:   () => <GaramCheckoutForm source="garam-pengasihan" />,
-    whatsapp:   () => <WhatsAppOrderSection product="Garam Pengasihan Masakan" background="#FFF7ED" />,
     faq:        () => <GaramFAQSection />,
   },
   'pengisian-esyifa': {

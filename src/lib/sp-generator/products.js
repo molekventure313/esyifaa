@@ -109,9 +109,10 @@ export const SP_PRODUCT_KEYS = Object.keys(SP_PRODUCTS);
 // Slot HQ yang wujud untuk setiap produk (mesti selari dengan HQ_SLOTS dalam components/salespage/generated/registry.js)
 const HQ_ALL = ['testimoni1', 'authority', 'fungsi', 'howto', 'testimoni2', 'comparison', 'guarantee', 'checkout', 'whatsapp', 'faq'];
 export const HQ_SLOT_KEYS = {
-  'sabun-garam':      HQ_ALL.filter(k => k !== 'authority'),
-  'kasturi-kijang':   HQ_ALL,
-  'garam-pengasihan': HQ_ALL,
+  // Produk fizikal: tiada section order WhatsApp
+  'sabun-garam':      HQ_ALL.filter(k => k !== 'authority' && k !== 'whatsapp'),
+  'kasturi-kijang':   HQ_ALL.filter(k => k !== 'whatsapp'),
+  'garam-pengasihan': HQ_ALL.filter(k => k !== 'whatsapp'),
   'pengisian-esyifa': [...HQ_ALL, 'extra'],
   'ruqyah-harian':    HQ_ALL.filter(k => k !== 'comparison'),
   rawatan:            HQ_ALL.filter(k => k !== 'comparison'),

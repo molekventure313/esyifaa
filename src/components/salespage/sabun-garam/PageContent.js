@@ -12,8 +12,6 @@ import SabunCheckoutForm from '@/components/salespage/sabun-garam/SabunCheckoutF
 import SabunGuaranteeSection from '@/components/salespage/sabun-garam/GuaranteeSection';
 import SabunFAQSection from '@/components/salespage/sabun-garam/FAQSection';
 import SabunClosingSection from '@/components/salespage/sabun-garam/ClosingSection';
-import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
-import { HQ_WHATSAPP_SABUN } from '@/components/salespage/useSalesContact';
 
 /**
  * Shared page content for all Sabun Garam Himalaya variants (Bright & Fresh Theme).
@@ -85,9 +83,6 @@ export default function SabunGaramPageContent({
 
       {/* #11 — Borang Tempahan (source varies per variant) */}
       <SabunCheckoutForm source={source} />
-
-      {/* #11b — Order melalui WhatsApp (no. HQ / no. marketer; tersembunyi kalau marketer belum isi) */}
-      <WhatsAppOrderSection product="Sabun Garam Himalaya" background="#F8FAF9" hqNumber={HQ_WHATSAPP_SABUN} />
 
       {/* #12 — Jaminan */}
       <SabunGuaranteeSection />
