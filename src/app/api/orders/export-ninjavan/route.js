@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { productOf, isPhysicalOrder, applyProductFilter, applySpFilter, periodRange } from '@/lib/products';
 import { resolveOwner, applyOwner } from '@/lib/team';
-import { addonsOf, orderQty } from '@/lib/marketer-calc';
+import { addonQtyOf, orderQty } from '@/lib/marketer-calc';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,10 +64,10 @@ const ADDON_LINES = {
 /** Column UNIT: produk utama + qty + add-on (ikut produk sebenar order, bukan sentiasa sabun) */
 function unitCellOf(s) {
   const main = productOf(s.source) || 'sabun-garam';   // COD lama tanpa source → sabun
-  const addons = addonsOf(s);
+  const q = addonQtyOf(s);
   const lines = [UNIT_NAMES[main], `${parseQuantity(s)} ${UNIT_WORD[main]}`];
   for (const [flag, [key, line]] of Object.entries(ADDON_LINES)) {
-    if (addons[flag] && key !== main) lines.push(line);
+    if (q[flag] && key !== main) lines.push(q[flag] > 1 ? `${line} x${q[flag]}` : line);
   }
   return lines.join('\n');
 }

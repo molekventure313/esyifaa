@@ -57,6 +57,51 @@ export const ORDER_PRODUCTS = {
 
 export const addonInfo = key => ADDONS[key];
 
+// Unit produk utama (label pakej — mesti padan regex orderQty: "Pakej: 3 Unit|Pek|Botol")
+export const UNIT_WORDS = { 'sabun-garam': 'Unit', 'garam-pengasihan': 'Pek', 'kasturi-kijang': 'Botol' };
+
+/**
+ * Harga order CUSTOM (Order WhatsApp) — bilangan unit, harga produk, kuantiti add-on, hadiah Kasturi & postage bebas.
+ * @param units         bilangan unit produk utama
+ * @param productPrice  harga produk utama (RM, jumlah — bukan seunit)
+ * @param addonQty      { kasturi, sabun, garam } kuantiti
+ * @param addonPrice    { kasturi, sabun, garam } harga SEUNIT (lalai harga add-on biasa)
+ * @param giftKasturi   bilangan Kasturi percuma (hadiah)
+ * @param postageMode   'auto' (RM5 / RM10 Sabah & Sarawak) | 'free' | 'custom'
+ * @param postageCustom RM (untuk 'custom')
+ */
+export function priceCustom({ product, units, productPrice, addonQty = {}, addonPrice = {}, giftKasturi = 0, postageMode = 'auto', postageCustom = 0, state }) {
+  const def = ORDER_PRODUCTS[product];
+  if (!def) throw new Error('Produk tidak sah.');
+  const u = parseInt(units);
+  if (!(u >= 1 && u <= 200)) throw new Error('Bilangan unit tidak sah (1–200).');
+  const price = parseFloat(productPrice);
+  if (!Number.isFinite(price) || price < 0) throw new Error('Harga produk tidak sah.');
+
+  const addonLines = def.addons
+    .map(k => {
+      const qty = Math.max(0, Math.min(50, parseInt(addonQty[k]) || 0));
+      const each = addonPrice[k] === undefined || addonPrice[k] === '' ? ADDONS[k].price : parseFloat(addonPrice[k]);
+      if (!Number.isFinite(each) || each < 0) throw new Error(`Harga add-on ${ADDONS[k].label} tidak sah.`);
+      return { key: k, qty, each, total: parseFloat((qty * each).toFixed(2)) };
+    })
+    .filter(l => l.qty > 0);
+  const addonTotal = addonLines.reduce((t, l) => t + l.total, 0);
+
+  const gift = Math.max(0, Math.min(50, parseInt(giftKasturi) || 0));
+  const east = EAST_MALAYSIA.includes(state);
+  let postage;
+  if (postageMode === 'free') postage = 0;
+  else if (postageMode === 'custom') {
+    postage = parseFloat(postageCustom);
+    if (!Number.isFinite(postage) || postage < 0) throw new Error('Postage tidak sah.');
+  } else postage = east ? POSTAGE_EAST : POSTAGE_NORMAL;
+
+  const pkg = { units: u, label: `${u} ${UNIT_WORDS[product]} (Custom)`, price };
+  const total = parseFloat((price + addonTotal + postage).toFixed(2));
+  return { def, pkg, addonLines, addonTotal, gift, postage, total, east };
+}
+
 /**
  * Kira harga order. addons: { kasturi, sabun, garam } (boolean).
  * @returns { pkg, addonTotal, postage, total, addonKeys }

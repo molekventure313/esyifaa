@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
-import { priceOrder, addonInfo } from '@/lib/packages';
+import { priceOrder, priceCustom, addonInfo } from '@/lib/packages';
 import { deductOrderStock } from '@/lib/payments';
 
 /**
@@ -16,6 +16,8 @@ import { deductOrderStock } from '@/lib/payments';
  * Body: {
  *   full_name, phone, street, poskod, daerah, negeri,
  *   product, package_index, addons: { kasturi, sabun, garam },
+ *   custom?: { units, product_price, addon_qty: {kasturi,sabun,garam}, addon_price: {...}, gift_kasturi,
+ *              postage_mode: 'auto'|'free'|'custom', postage }   ← pakej custom (ganti package_index / addons)
  *   payment: 'paid' | 'cod', amount_total? (harga dilaraskan), origin: 'fb_ads' | 'repeat', reference?
  * }
  */
@@ -47,11 +49,24 @@ export async function POST(req) {
     const address = [street, poskod, daerah, negeri].join(', ');
 
     // ── Produk & harga ──
-    let priced;
+    // Seragamkan pakej biasa & custom → addonLines [{ key, qty, total }] + gift (bilangan Kasturi percuma)
+    const isCustom = !!b.custom;
+    let def, pkg, postage, autoTotal, addonLines, gift;
     try {
-      priced = priceOrder({ product: b.product, packageIndex: Number(b.package_index), addons: b.addons || {}, state: negeri });
+      if (isCustom) {
+        const c = b.custom;
+        ({ def, pkg, postage, total: autoTotal, addonLines, gift } = priceCustom({
+          product: b.product, units: c.units, productPrice: c.product_price,
+          addonQty: c.addon_qty || {}, addonPrice: c.addon_price || {}, giftKasturi: c.gift_kasturi,
+          postageMode: c.postage_mode, postageCustom: c.postage, state: negeri,
+        }));
+      } else {
+        const p = priceOrder({ product: b.product, packageIndex: Number(b.package_index), addons: b.addons || {}, state: negeri });
+        ({ def, pkg, postage, total: autoTotal } = p);
+        addonLines = p.addonKeys.map(k => ({ key: k, qty: 1, total: addonInfo(k).price }));
+        gift = pkg.includesKasturi ? 1 : 0;
+      }
     } catch (e) { return bad(e.message); }
-    const { def, pkg, addonKeys, postage, total: autoTotal } = priced;
 
     const payment = b.payment === 'cod' ? 'cod' : b.payment === 'paid' ? 'paid' : null;
     if (!payment) return bad('Sila pilih cara bayaran.');
@@ -70,14 +85,18 @@ export async function POST(req) {
     const actorName = clean(profile?.full_name || user.email);
 
     // ── Nota — format SAMA dgn order web (orderQty / addonsOf / label NinjaVan / formatOrder faham) ──
-    const addonProblem = addonKeys.map(k => ` | ${addonInfo(k).problem}`).join('');
-    const addonNotes   = addonKeys.map(k => ` ${addonInfo(k).notes}`).join('');
-    const giftProblem  = pkg.includesKasturi ? ' | Free Gift: Minyak Kasturi Kijang' : '';
-    const giftNotes    = pkg.includesKasturi ? ' [FREE GIFT: Kasturi Kijang]' : '';
+    //   Kuantiti > 1 ditulis "x3" selepas nama (addonQtyOf faham → stok, COGS & label ikut kuantiti)
+    const xq = n => (n > 1 ? ` x${n}` : '');
+    const tagWithQty = (tag, qty, amount) => tag.replace(/\s*\+RM\d+(\.\d+)?/, `${xq(qty)} +RM${amount}`);
+    const addonProblem = addonLines.map(l => ` | ${tagWithQty(addonInfo(l.key).problem, l.qty, l.total)}`).join('');
+    const addonNotes   = addonLines.map(l => ` ${tagWithQty(addonInfo(l.key).notes, l.qty, l.total)}`).join('');
+    const giftProblem  = gift ? ` | Free Gift: Minyak Kasturi Kijang${xq(gift)}` : '';
+    const giftNotes    = gift ? ` [FREE GIFT: Kasturi Kijang${xq(gift)}]` : '';
     const priceNote    = adjusted ? ` | Harga asal: RM${autoTotal} → dilaraskan RM${total}` : '';
+    const customNote   = isCustom ? ' [CUSTOM]' : '';
 
     const problem = `[WHATSAPP] Produk: ${def.name} | Pakej: ${pkg.label} | Harga: RM${pkg.price} + Postage RM${postage} = RM${autoTotal}${addonProblem}${giftProblem}${priceNote} | Alamat: ${address}`;
-    const notes = `[WHATSAPP ORDER] [STATUS: completed] [AMOUNT: RM${total}] [QTY: ${pkg.units} unit] [PRODUK: ${def.name}]${addonNotes}${giftNotes}`
+    const notes = `[WHATSAPP ORDER] [STATUS: completed] [AMOUNT: RM${total}] [QTY: ${pkg.units} unit] [PRODUK: ${def.name}]${addonNotes}${giftNotes}${customNote}`
       + ` [PAYMENT: ${payment === 'cod' ? 'COD' : 'PAID'}] [ORIGIN: ${origin}] [BY: ${actorName}]`
       + (adjusted ? ` [PRICE_ADJUSTED: RM${autoTotal} → RM${total}]` : '')
       + (reference ? ` [REF: ${reference}]` : '');
@@ -137,7 +156,7 @@ export async function POST(req) {
     try {
       const msg = buildOrderMessage({
         name: fullName, phone,
-        product: `${def.name} — ${pkg.label}${addonKeys.map(k => ` + ${addonInfo(k).label}`).join('')}${pkg.includesKasturi ? ' + Free Kasturi' : ''}`,
+        product: `${def.name} — ${pkg.label}${addonLines.map(l => ` + ${addonInfo(l.key).label}${xq(l.qty)}`).join('')}${gift ? ` + Free Kasturi${xq(gift)}` : ''}`,
         amount: `RM${total} (${payment === 'cod' ? 'COD — Bayar Masa Terima' : 'Dah bayar — transfer/QR'})`,
         address, source: `${b.product} (WhatsApp)`, paymentType: payment === 'cod' ? 'cod' : 'fpx',
       });

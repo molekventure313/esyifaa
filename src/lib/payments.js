@@ -4,7 +4,7 @@
 // Kes perawat TIDAK dicipta di sini — kes hanya untuk SP rawatan (borang lead, /api/submissions).
 
 import { deductStock } from '@/lib/stock';
-import { parseAmount, orderQty, addonsOf } from '@/lib/marketer-calc';
+import { parseAmount, orderQty, addonQtyOf } from '@/lib/marketer-calc';
 import { PRODUCTS, productOf } from '@/lib/products';
 import { logActivity } from '@/lib/utils/logger';
 import { isRuqyahHarian, RH_NAME } from '@/lib/ruqyah-harian';
@@ -25,15 +25,16 @@ export async function deductOrderStock(supabase, submission, label) {
   const ref = submission.id;
   await deductStock({ adminClient: supabase, source: submission.source, qty: orderQty(submission), referenceId: ref, notes: `${label} — RM${parseAmount(submission)}` });
 
-  const addons = addonsOf(submission);
+  // Add-on & hadiah ikut kuantiti (lalai 1; order WhatsApp custom boleh "x3")
+  const q = addonQtyOf(submission);
   const extra = [
-    [addons.kasturiGift, 'addon-kasturi',       'Free Gift — Kasturi Kijang'],
-    [addons.kasturi,     'addon-kasturi',       'Add-On — Kasturi Kijang'],
-    [addons.sabun,       'sabun-garam',         'Add-On — Sabun Garam'],
-    [addons.garam,       'addon-garam-masakan', 'Add-On — Garam Masakan Pengasihan'],
+    [q.kasturiGift, 'addon-kasturi',       'Free Gift — Kasturi Kijang'],
+    [q.kasturi,     'addon-kasturi',       'Add-On — Kasturi Kijang'],
+    [q.sabun,       'sabun-garam',         'Add-On — Sabun Garam'],
+    [q.garam,       'addon-garam-masakan', 'Add-On — Garam Masakan Pengasihan'],
   ];
-  for (const [on, source, note] of extra) {
-    if (on) await deductStock({ adminClient: supabase, source, qty: 1, referenceId: ref, notes: `${label} ${note}` });
+  for (const [qty, source, note] of extra) {
+    if (qty > 0) await deductStock({ adminClient: supabase, source, qty, referenceId: ref, notes: `${label} ${note}${qty > 1 ? ` x${qty}` : ''}` });
   }
 }
 

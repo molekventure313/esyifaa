@@ -1,5 +1,5 @@
 import { PRODUCTS, productOf } from '@/lib/products';
-import { orderQty, addonsOf } from '@/lib/marketer-calc';
+import { orderQty, addonQtyOf } from '@/lib/marketer-calc';
 
 const UNIT_WORD = { 'sabun-garam': 'Unit', 'garam-pengasihan': 'Pek', 'kasturi-kijang': 'Botol' };
 
@@ -40,12 +40,13 @@ export function formatOrder(s) {
   let produkLabel = null;
   const productKey = productOf(s.source) || (s.payment_type === 'cod' ? 'sabun-garam' : null);
   if (productKey) {
-    const addons = addonsOf(s);
+    const q = addonQtyOf(s);
+    const x = n => (n > 1 ? ` x${n}` : '');
     produkLabel = `${PRODUCTS.find(p => p.key === productKey).label} — ${orderQty(s)} ${UNIT_WORD[productKey]}`;
-    if (addons.kasturi && productKey !== 'kasturi-kijang') produkLabel += ' + Kasturi Kijang';
-    if (addons.sabun   && productKey !== 'sabun-garam')    produkLabel += ' + Sabun Garam';
-    if (addons.garam   && productKey !== 'garam-pengasihan') produkLabel += ' + Garam Masakan';
-    if (addons.kasturiGift) produkLabel += ' + 🎁 Kasturi (Free Gift)';
+    if (q.kasturi && productKey !== 'kasturi-kijang') produkLabel += ` + Kasturi Kijang${x(q.kasturi)}`;
+    if (q.sabun   && productKey !== 'sabun-garam')    produkLabel += ` + Sabun Garam${x(q.sabun)}`;
+    if (q.garam   && productKey !== 'garam-pengasihan') produkLabel += ` + Garam Masakan${x(q.garam)}`;
+    if (q.kasturiGift) produkLabel += ` + 🎁 Kasturi (Free Gift)${x(q.kasturiGift)}`;
   } else if (s.payment_type === 'fpx_payment') {
     produkLabel = (s.source || '').includes('pengisian') || (s.source || '').includes('fsp')
       ? 'Pengisian ESyifaa'

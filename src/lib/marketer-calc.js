@@ -45,14 +45,8 @@ export const FPX_FEE = 1;
 const isPhysical = s => ['sabun', 'garam-pengasihan', 'kasturi-kijang'].some(p => (s.source || '').includes(p));
 
 // Add-on disimpan sama ada dalam notes "[ADD-ON: X ...]" atau problem "Add-On: X ..."
+// Hadiah percuma Kasturi (kasturiGift) berasingan dari add-on — pelanggan boleh dapat kedua-duanya.
 const addonText = s => `${s.notes || ''} ${s.problem || ''}`;
-const ADDON = {
-  kasturi: /(\[ADD-ON:|Add-On:)\s*Kasturi Kijang/i,
-  // Hadiah percuma pakej Garam 6 pek — berasingan dari add-on (pelanggan boleh dapat kedua-duanya)
-  kasturiGift: /(Free Gift:\s*(Minyak )?Kasturi Kijang|\[FREE GIFT:\s*Kasturi Kijang)/i,
-  sabun:   /(\[ADD-ON:|Add-On:)\s*Sabun Garam/i,
-  garam:   /(\[ADD-ON:|Add-On:)\s*Garam (Masakan )?Pengasihan/i,
-};
 // Kuantiti produk utama satu order.
 // Teks dulu — column qty DEFAULT 1 dan order FPX tak isi column tu (FPX 3 unit tersimpan qty=1).
 //   COD notes: "[QTY: 3 unit]" · Pakej: "3 Unit" (sabun) / "6 Pek (...)" (garam) / "5 Botol (...)" (kasturi)
@@ -65,22 +59,39 @@ export function orderQty(s) {
 }
 
 const sumQty = (arr, match) => arr.filter(match).reduce((t, s) => t + orderQty(s), 0);
-const countAddon = (arr, re) => arr.filter(s => re.test(addonText(s))).length;
+
+// Kuantiti satu add-on dalam teks order. Order WhatsApp custom tulis "x3" selepas nama
+// (cth "[ADD-ON: Kasturi Kijang x3 +RM60]"); tiada "x" = 1 unit (semua order lama & borang SP).
+const ADDON_SEG = {
+  kasturi:     /(?:\[ADD-ON:|Add-On:)\s*Kasturi Kijang([^|\]]*)/i,
+  kasturiGift: /(?:Free Gift:\s*(?:Minyak )?Kasturi Kijang|\[FREE GIFT:\s*Kasturi Kijang)([^|\]]*)/i,
+  sabun:       /(?:\[ADD-ON:|Add-On:)\s*Sabun Garam([^|\]]*)/i,
+  garam:       /(?:\[ADD-ON:|Add-On:)\s*Garam (?:Masakan )?Pengasihan([^|\]]*)/i,
+};
+const segQty = (text, re) => {
+  const m = text.match(re);
+  if (!m) return 0;
+  const x = (m[1] || '').match(/\bx\s*(\d+)/i);
+  return x ? Math.max(1, parseInt(x[1])) : 1;
+};
+
+// Kuantiti add-on dalam SATU order → { sabun, kasturi, garam, kasturiGift } (0 = tiada)
+export const addonQtyOf = s => {
+  const t = addonText(s);
+  return Object.fromEntries(Object.entries(ADDON_SEG).map(([k, re]) => [k, segQty(t, re)]));
+};
 
 // Add-on dalam SATU order → { sabun, kasturi, garam, kasturiGift } (boolean)
-export const addonsOf = s => ({
-  sabun:   ADDON.sabun.test(addonText(s)),
-  kasturi: ADDON.kasturi.test(addonText(s)),
-  garam:   ADDON.garam.test(addonText(s)),
-  kasturiGift: ADDON.kasturiGift.test(addonText(s)),
-});
+export const addonsOf = s => Object.fromEntries(Object.entries(addonQtyOf(s)).map(([k, q]) => [k, q > 0]));
 
-// Unit produk (produk utama ikut qty + add-on 1 unit setiap order)
+const sumAddon = (arr, key) => arr.reduce((t, s) => t + addonQtyOf(s)[key], 0);
+
+// Unit produk (produk utama ikut qty + add-on ikut kuantiti — lalai 1 unit setiap order)
 export function productUnits(arr) {
   return {
-    sabun:   sumQty(arr, s => (s.source || '').includes('sabun'))            + countAddon(arr, ADDON.sabun),
-    kasturi: sumQty(arr, s => (s.source || '').startsWith('kasturi-kijang')) + countAddon(arr, ADDON.kasturi) + countAddon(arr, ADDON.kasturiGift),
-    garam:   sumQty(arr, s => (s.source || '').startsWith('garam-pengasihan')) + countAddon(arr, ADDON.garam),
+    sabun:   sumQty(arr, s => (s.source || '').includes('sabun'))            + sumAddon(arr, 'sabun'),
+    kasturi: sumQty(arr, s => (s.source || '').startsWith('kasturi-kijang')) + sumAddon(arr, 'kasturi') + sumAddon(arr, 'kasturiGift'),
+    garam:   sumQty(arr, s => (s.source || '').startsWith('garam-pengasihan')) + sumAddon(arr, 'garam'),
   };
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ORDER_PRODUCTS, MY_STATES, EAST_MALAYSIA, priceOrder, addonInfo } from '@/lib/packages';
+import { ORDER_PRODUCTS, MY_STATES, EAST_MALAYSIA, priceOrder, priceCustom, addonInfo, UNIT_WORDS } from '@/lib/packages';
 import { parseCustomerText } from '@/lib/parse-customer';
 
 // Borang Order WhatsApp — dipakai /dashboard/marketer/order-wasap & /dashboard/admin/order-wasap.
@@ -14,6 +14,16 @@ const PRODUCT_TABS = [
 ];
 
 const EMPTY = { full_name: '', phone: '', street: '', poskod: '', daerah: '', negeri: '', reference: '' };
+const EMPTY_CUSTOM = { units: '1', price: '', addonQty: {}, addonPrice: {}, gift: '0', postageMode: 'auto', postage: '' };
+
+// Harga cadangan pakej custom: pakej biasa dengan bilangan unit sama, atau harga seunit pakej terkecil × unit
+function suggestPrice(def, units) {
+  const u = parseInt(units) || 0;
+  const same = def.packages.find(p => p.units === u);
+  if (same) return same.price;
+  const base = def.packages[0];
+  return parseFloat(((base.price / base.units) * u).toFixed(2));
+}
 
 export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
   const [lm, setLm] = useState(false);
@@ -31,7 +41,8 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
   const [pasteText, setPasteText] = useState('');
   const [filled, setFilled]       = useState(null);   // { keys: [...], missing: [...] } selepas autofill
   const [product, setProduct] = useState('sabun-garam');
-  const [pkgIdx, setPkgIdx]   = useState(0);
+  const [pkgIdx, setPkgIdx]   = useState(0);          // nombor = pakej biasa · 'custom' = pakej custom
+  const [cus, setCus]         = useState(EMPTY_CUSTOM);
   const [addons, setAddons]   = useState({});
   const [payment, setPayment] = useState('paid');
   const [origin, setOrigin]   = useState('');
@@ -43,11 +54,34 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
 
   const def = ORDER_PRODUCTS[product];
   const east = EAST_MALAYSIA.includes(form.negeri);
-  const priced = useMemo(() => priceOrder({ product, packageIndex: pkgIdx, addons, state: form.negeri }), [product, pkgIdx, addons, form.negeri]);
+  const isCustom = pkgIdx === 'custom';
+  const unitWord = UNIT_WORDS[product];
+  const cusPrice = cus.price !== '' ? cus.price : String(suggestPrice(def, cus.units));
+
+  // Ringkasan seragam (pakej biasa / custom): { pkg, lines: [[label, amount]], gift, postage, total, error }
+  const priced = useMemo(() => {
+    try {
+      if (isCustom) {
+        const c = priceCustom({
+          product, units: cus.units, productPrice: cusPrice, addonQty: cus.addonQty, addonPrice: cus.addonPrice,
+          giftKasturi: cus.gift, postageMode: cus.postageMode, postageCustom: cus.postage || 0, state: form.negeri,
+        });
+        return { pkg: c.pkg, postage: c.postage, total: c.total, gift: c.gift,
+          lines: c.addonLines.map(l => [`Add-on: ${addonInfo(l.key).label}${l.qty > 1 ? ` x${l.qty}` : ''}`, l.total]) };
+      }
+      const p = priceOrder({ product, packageIndex: pkgIdx, addons, state: form.negeri });
+      return { pkg: p.pkg, postage: p.postage, total: p.total, gift: p.pkg.includesKasturi ? 1 : 0,
+        lines: p.addonKeys.map(k => [`Add-on: ${addonInfo(k).label}`, addonInfo(k).price]) };
+    } catch (e) {
+      return { error: e.message, pkg: { label: '—', price: 0 }, postage: 0, total: 0, gift: 0, lines: [] };
+    }
+  }, [product, pkgIdx, addons, form.negeri, isCustom, cus, cusPrice]);
   const finalTotal = adjust && customTotal !== '' ? parseFloat(customTotal) : priced.total;
 
   // Tukar produk → reset pakej & add-on
-  useEffect(() => { setPkgIdx(0); setAddons({}); }, [product]);
+  useEffect(() => { setPkgIdx(0); setAddons({}); setCus(EMPTY_CUSTOM); }, [product]);
+  const setC = (k, v) => setCus(c => ({ ...c, [k]: v }));
+  const setCMap = (map, k, v) => setCus(c => ({ ...c, [map]: { ...c[map], [k]: v } }));
   // Order WhatsApp: COD dibenarkan untuk semua negeri termasuk Sabah/Sarawak (staf sahkan sendiri dengan pelanggan)
 
   const set = (k) => (e) => {
@@ -70,20 +104,25 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
     setError('');
     if (!origin) { setError('Sila pilih sumber pelanggan (FB Ads / Repeat).'); return; }
     if (adjust && !(parseFloat(customTotal) > 0)) { setError('Sila isi jumlah yang dilaraskan.'); return; }
+    if (priced.error) { setError(priced.error); return; }
     setSaving(true);
     try {
       const res = await fetch('/api/orders/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form, product, package_index: pkgIdx, addons, payment, origin,
+          ...form, product, payment, origin,
+          ...(isCustom
+            ? { custom: { units: cus.units, product_price: cusPrice, addon_qty: cus.addonQty, addon_price: cus.addonPrice,
+                gift_kasturi: cus.gift, postage_mode: cus.postageMode, postage: cus.postage || 0 } }
+            : { package_index: pkgIdx, addons }),
           amount_total: adjust ? customTotal : null,
         }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Gagal simpan order');
       setDone({ name: form.full_name, phone: form.phone, product: def.name, pkg: priced.pkg.label, amount: json.amount, payment });
-      setForm(EMPTY); setPasteText(''); setFilled(null); setAddons({}); setPkgIdx(0); setOrigin(''); setAdjust(false); setCustomTotal(''); setPayment('paid');
+      setForm(EMPTY); setPasteText(''); setFilled(null); setAddons({}); setPkgIdx(0); setCus(EMPTY_CUSTOM); setOrigin(''); setAdjust(false); setCustomTotal(''); setPayment('paid');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(err.message);
@@ -207,8 +246,55 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
                 <span style={{ color: accent, whiteSpace: 'nowrap' }}>RM{p.price}</span>
               </button>
             ))}
+            <button type="button" onClick={() => setPkgIdx('custom')} style={{ ...pill(isCustom, '#8B5CF6'), display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+              <span>⚙️ Custom <span style={{ fontWeight: 500, color: textMuted }}>(unit, add-on, hadiah &amp; postage sendiri)</span></span>
+            </button>
           </div>
-          {def.addons.filter(k => !(priced.pkg.noAddons || []).includes(k)).length > 0 && (
+          {isCustom && (
+            <div style={{ display: 'grid', gap: '0.85rem', padding: '0.9rem', borderRadius: '10px', border: '1.5px dashed rgba(139,92,246,0.5)', background: lm ? '#FAF5FF' : 'rgba(139,92,246,0.06)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
+                <div><label style={label}>Bilangan {unitWord.toLowerCase()} *</label>
+                  <input style={input} type="number" inputMode="numeric" min="1" max="200" value={cus.units} onChange={e => setC('units', e.target.value)} />
+                </div>
+                <div><label style={label}>Harga produk (RM) *</label>
+                  <input style={input} type="number" inputMode="decimal" min="0" step="0.01" placeholder={String(suggestPrice(def, cus.units))} value={cus.price} onChange={e => setC('price', e.target.value)} />
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: textMuted }}>Kosong = cadangan RM{suggestPrice(def, cus.units)} (jumlah, bukan seunit)</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gap: '0.45rem' }}>
+                <span style={{ ...label, marginBottom: 0 }}>Add-on (kuantiti &amp; harga seunit)</span>
+                {def.addons.map(k => (
+                  <div key={k} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1fr) 80px 100px', gap: '0.5rem', alignItems: 'center', fontSize: '0.82rem', color: textSecondary }}>
+                    <span>{addonInfo(k).label}</span>
+                    <input style={{ ...input, padding: '0.45rem 0.55rem' }} type="number" inputMode="numeric" min="0" max="50" placeholder="0" title="Kuantiti"
+                      value={cus.addonQty[k] ?? ''} onChange={e => setCMap('addonQty', k, e.target.value)} />
+                    <input style={{ ...input, padding: '0.45rem 0.55rem' }} type="number" inputMode="decimal" min="0" step="0.01" placeholder={`RM${addonInfo(k).price}`} title="Harga seunit (RM)"
+                      value={cus.addonPrice[k] ?? ''} onChange={e => setCMap('addonPrice', k, e.target.value)} />
+                  </div>
+                ))}
+              </div>
+
+              <div><label style={label}>🎁 Hadiah: Minyak Kasturi Kijang percuma (botol)</label>
+                <input style={{ ...input, maxWidth: '140px' }} type="number" inputMode="numeric" min="0" max="50" value={cus.gift} onChange={e => setC('gift', e.target.value)} />
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: textMuted }}>Percuma kepada pelanggan — stok Kasturi tetap ditolak.</p>
+              </div>
+
+              <div style={{ display: 'grid', gap: '0.45rem' }}>
+                <span style={{ ...label, marginBottom: 0 }}>Postage</span>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                  {[['auto', `Ikut kadar (RM${east ? 10 : 5})`], ['free', '🚚 Percuma'], ['custom', 'Jumlah sendiri']].map(([v, l]) => (
+                    <button type="button" key={v} onClick={() => setC('postageMode', v)} style={{ ...pill(cus.postageMode === v, '#8B5CF6'), padding: '0.45rem 0.75rem' }}>{l}</button>
+                  ))}
+                </div>
+                {cus.postageMode === 'custom' && (
+                  <input style={{ ...input, maxWidth: '160px' }} type="number" inputMode="decimal" min="0" step="0.01" placeholder="RM" value={cus.postage} onChange={e => setC('postage', e.target.value)} />
+                )}
+              </div>
+              {priced.error && <div style={{ fontSize: '0.8rem', color: '#EF4444' }}>⚠️ {priced.error}</div>}
+            </div>
+          )}
+          {!isCustom && def.addons.filter(k => !(priced.pkg.noAddons || []).includes(k)).length > 0 && (
             <div style={{ display: 'grid', gap: '0.4rem' }}>
               <span style={{ ...label, marginBottom: 0 }}>Add-on</span>
               {def.addons.filter(k => !(priced.pkg.noAddons || []).includes(k)).map(k => (
@@ -249,8 +335,8 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
           <div style={{ display: 'grid', gap: '0.35rem', fontSize: '0.86rem' }}>
             {[
               [`${def.name} — ${priced.pkg.label}`, rm(priced.pkg.price)],
-              ...priced.addonKeys.map(k => [`Add-on: ${addonInfo(k).label}`, rm(addonInfo(k).price)]),
-              ...(priced.pkg.includesKasturi ? [['🎁 Free Gift: Minyak Kasturi Kijang', 'PERCUMA']] : []),
+              ...priced.lines.map(([k, v]) => [k, rm(v)]),
+              ...(priced.gift ? [[`🎁 Free Gift: Minyak Kasturi Kijang${priced.gift > 1 ? ` x${priced.gift}` : ''}`, 'PERCUMA']] : []),
               [`Postage${form.negeri ? ` (${east ? 'Sabah/Sarawak' : 'Semenanjung'})` : ''}`, priced.postage === 0 ? 'PERCUMA' : rm(priced.postage)],
             ].map(([k, v]) => (
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', color: textSecondary }}>
