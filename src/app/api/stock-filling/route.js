@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { guard, STAFF, OWNER } from '@/lib/auth';
+import { guardStockFilling } from '@/lib/stock-filling-access';
 import { PRODUCT_KEYS } from '@/lib/products';
 
 // Pengisian Stok — staff upload gambar stok; pemilik buat bacaan ruqyah jarak jauh & tanda selesai.
-// GET    ?product=&status=        → senarai + signed URL gambar (STAFF)
+// GET    ?product=&status=        → senarai + signed URL gambar (STAFF + perawat pembaca)
+//        ?access=1                 → semak akses sahaja (menu sidebar perawat)
 // POST   multipart {file, product, qty?, notes?} → upload satu gambar (STAFF)
-// PATCH  { id, status: 'done'|'pending' } → tanda selesai / belum (super_admin)
+// PATCH  { id, status: 'done'|'pending' } → tanda selesai / belum (super_admin + perawat pembaca)
+// Perawat pembaca: senarai dalam settings 'stock_filling_readers' (togol di halaman Pengguna).
 // DELETE ?id=                      → padam (super_admin, atau pengupload selagi belum selesai)
 
 const BUCKET = 'stock-filling';
@@ -13,10 +15,11 @@ const MAX_BYTES = 5 * 1024 * 1024;   // gambar dimampatkan di browser dulu (~300
 const PRODUCTS = [...PRODUCT_KEYS, 'pengisian-esyifa', 'lain'];
 
 export async function GET(req) {
-  const g = await guard(STAFF);
+  const g = await guardStockFilling();
   if (g.error) return g.error;
   try {
     const { searchParams } = new URL(req.url);
+    if (searchParams.get('access')) return NextResponse.json({ success: true, access: true });
     const product = searchParams.get('product');
     const status  = searchParams.get('status');
 
@@ -50,6 +53,7 @@ export async function GET(req) {
     return NextResponse.json({
       success: true,
       role: g.role, me: g.user.id,
+      can_mark: g.isOwner || g.isReader, can_upload: g.isStaff, can_delete_any: g.isOwner,
       pending, pending_total: Object.values(pending).reduce((a, b) => a + b, 0),
       data: (rows || []).map(r => ({
         ...r,
@@ -64,7 +68,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const g = await guard(STAFF);
+  const g = await guardStockFilling({ needStaff: true });
   if (g.error) return g.error;
   try {
     const form = await req.formData();
@@ -97,7 +101,7 @@ export async function POST(req) {
 }
 
 export async function PATCH(req) {
-  const g = await guard(OWNER);
+  const g = await guardStockFilling({ needMark: true });
   if (g.error) return g.error;
   try {
     const { id, status } = await req.json();
@@ -114,7 +118,7 @@ export async function PATCH(req) {
 }
 
 export async function DELETE(req) {
-  const g = await guard(STAFF);
+  const g = await guardStockFilling({ needStaff: true });
   if (g.error) return g.error;
   try {
     const id = new URL(req.url).searchParams.get('id');

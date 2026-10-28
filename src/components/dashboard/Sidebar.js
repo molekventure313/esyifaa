@@ -20,6 +20,13 @@ export default function Sidebar({ isOpen, onClose }) {
   const isAdminPath = pathname.startsWith('/dashboard/admin');
   const isPerawatPath = pathname.startsWith('/dashboard/perawat');
 
+  // Perawat yang diberi akses Pengisian Stok (halaman Pengguna) → menu tambahan
+  const [canFillStock, setCanFillStock] = useState(false);
+  useEffect(() => {
+    if (role !== 'practitioner') return;
+    fetch('/api/stock-filling?access=1').then(r => setCanFillStock(r.ok)).catch(() => {});
+  }, [role]);
+
   // Theme observer state
   const [isLightMode, setIsLightMode] = useState(false);
 
@@ -86,7 +93,8 @@ export default function Sidebar({ isOpen, onClose }) {
     { section: 'UTAMA' },
     { label: 'Dashboard', href: '/dashboard/perawat' },
     { label: 'Kes Saya', href: '/dashboard/perawat/kes-saya' },
-    { label: 'Follow-up', href: '/dashboard/perawat/follow-up' }
+    { label: 'Follow-up', href: '/dashboard/perawat/follow-up' },
+    ...(canFillStock ? [{ label: '📸 Pengisian Stok', href: '/dashboard/perawat/pengisian-stok' }] : []),
   ];
 
   const marketerNav = [
@@ -98,6 +106,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '💰 Gaji & Kos Ads', href: '/dashboard/marketer/gaji' },
     { label: '👥 Team Saya', href: '/dashboard/marketer/team' },
     { label: '📊 UTM Analytics', href: '/dashboard/marketer/utm-analytics' },
+    { label: '📈 Ads Hub', href: '/dashboard/marketer/ads-hub' },
     { section: 'SALESPAGE' },
     { label: '✨ SP Generator', href: '/dashboard/sp-generator' },
     { section: 'TETAPAN' },
@@ -110,6 +119,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { section: 'UTAMA' },
     { label: 'Dashboard', href: '/dashboard/admin' },
     { label: '📊 Laporan Marketer', href: '/dashboard/admin/marketers/report' },
+    { label: '📈 Ads Hub Marketer', href: '/dashboard/admin/ads-hub' },
     { section: 'ORDER & STOK' },
     { label: '📦 Pengurusan Order', href: '/dashboard/admin/pesakit-berbayar' },
     { label: '💬 Order WhatsApp',   href: '/dashboard/admin/order-wasap' },

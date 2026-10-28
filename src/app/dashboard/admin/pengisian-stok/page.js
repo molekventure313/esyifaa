@@ -84,6 +84,8 @@ export default function PengisianStokPage() {
   useEffect(() => { setLoading(true); load(); }, [load]);
 
   const isOwner = data?.role === 'super_admin';
+  const canMark = !!data?.can_mark;            // super_admin + perawat pembaca
+  const canUpload = data ? !!data.can_upload : true;
 
   const upload = async e => {
     e.preventDefault();
@@ -152,8 +154,8 @@ export default function PengisianStokPage() {
         </p>
       </div>
 
-      {/* Upload */}
-      <form onSubmit={upload} style={{ marginBottom: '1.25rem', padding: '1.1rem', borderRadius: '10px', background: cardBg, border: cardBorder, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem', alignItems: 'end' }}>
+      {/* Upload (staff sahaja) */}
+      {canUpload && <form onSubmit={upload} style={{ marginBottom: '1.25rem', padding: '1.1rem', borderRadius: '10px', background: cardBg, border: cardBorder, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem', alignItems: 'end' }}>
         <label style={{ display: 'grid', gap: '0.3rem', fontSize: '0.75rem', color: textSecondary, fontWeight: 600 }}>
           Produk
           <select style={input} value={upProduct} onChange={e => setUpProduct(e.target.value)}>
@@ -176,7 +178,7 @@ export default function PengisianStokPage() {
           {uploading ? `Menghantar ${uploading}...` : `📤 Hantar ${files.length ? `${files.length} gambar` : 'gambar'}`}
         </button>
         {upMsg && <div style={{ gridColumn: '1 / -1', fontSize: '0.82rem', color: upMsg.ok ? '#10B981' : '#EF4444' }}>{upMsg.ok ? '✅' : '⚠️'} {upMsg.text}</div>}
-      </form>
+      </form>}
 
       {/* Tab produk + status */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
@@ -214,7 +216,7 @@ export default function PengisianStokPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.9rem' }}>
           {data.data.map(r => {
             const done = r.status === 'done';
-            const canDelete = isOwner || (r.uploaded_by === data.me && !done);
+            const canDelete = isOwner || (canUpload && r.uploaded_by === data.me && !done);
             return (
               <div key={r.id} style={{ background: cardBg, border: done ? '1px solid rgba(16,185,129,0.4)' : cardBorder, borderRadius: '10px', overflow: 'hidden', opacity: busyId === r.id ? 0.55 : 1 }}>
                 <button onClick={() => r.url && setViewer(r.url)} style={{ display: 'block', width: '100%', padding: 0, border: 'none', background: subCardBg, cursor: 'zoom-in', aspectRatio: '4 / 3' }}>
@@ -235,7 +237,7 @@ export default function PengisianStokPage() {
                     {done && r.done_at && <><br />✅ {r.done_by_name || '—'} · {fmtTime(r.done_at)}</>}
                   </div>
                   <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                    {isOwner && (done
+                    {canMark && (done
                       ? <button disabled={busyId === r.id} onClick={() => setDone(r, false)} style={btn(lm ? '#E2E8F0' : '#374151', textPrimary)}>↩ Tandakan Belum</button>
                       : <button disabled={busyId === r.id} onClick={() => setDone(r, true)} style={btn('#10B981')}>✅ Tandakan Selesai</button>)}
                     {canDelete && <button disabled={busyId === r.id} onClick={() => remove(r)} style={btn('transparent', '#EF4444')}>🗑</button>}

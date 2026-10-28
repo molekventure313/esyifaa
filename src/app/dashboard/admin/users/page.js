@@ -102,6 +102,14 @@ export default function UserManagementPage() {
     call('PATCH', { id: u.id, is_active: !u.is_active }, u.id);
   };
 
+  const toggleFillStock = u => {
+    const on = !u.can_fill_stock;
+    if (!confirm(on
+      ? `Beri ${u.full_name} akses 📸 Pengisian Stok?\n\nDia boleh lihat gambar stok & tanda bacaan selesai (tak boleh upload / padam).`
+      : `Tarik akses 📸 Pengisian Stok daripada ${u.full_name}?`)) return;
+    call('PATCH', { id: u.id, can_fill_stock: on }, u.id);
+  };
+
   const resetPassword = u => {
     const pw = prompt(`Kata laluan baru untuk ${u.full_name} (min 6 aksara):`);
     if (pw === null) return;
@@ -245,6 +253,9 @@ export default function UserManagementPage() {
                             </div>
                             <div style={{ fontSize: '0.76rem', color: textSecondary, wordBreak: 'break-all' }}>{u.email || '—'}</div>
                             {u.phone && <div style={{ fontSize: '0.74rem', color: textMuted }}>{u.phone}</div>}
+                            {u.role === 'practitioner' && u.can_fill_stock && (
+                              <div style={{ fontSize: '0.7rem', marginTop: '0.15rem', color: '#10B981' }}>📸 Akses Pengisian Stok</div>
+                            )}
                             {u.role === 'marketer' && (
                               <div style={{ fontSize: '0.7rem', marginTop: '0.15rem', color: '#A78BFA' }}>
                                 {u.is_teamsale ? `↳ Teamsale · ketua: ${u.team_leader_name || '—'}` : <>Kod: {u.marketer_code || '—'}{u.team_size > 0 && ` · ${u.team_size} teamsale`}</>}
@@ -276,6 +287,11 @@ export default function UserManagementPage() {
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 0.75rem', minWidth: '170px' }}>
                             <button disabled={busy} onClick={() => setEditing({ id: u.id, full_name: u.full_name || '', phone: u.phone || '' })} style={linkBtn('#60A5FA')}>✏️ Edit</button>
                             <button disabled={busy} onClick={() => toggleActive(u)} style={linkBtn(u.is_active ? '#F59E0B' : '#10B981')}>{u.is_active ? '⏸ Nyahaktif' : '▶ Aktifkan'}</button>
+                            {u.role === 'practitioner' && isSuper && (
+                              <button disabled={busy} onClick={() => toggleFillStock(u)} style={linkBtn(u.can_fill_stock ? '#F59E0B' : '#10B981')}>
+                                {u.can_fill_stock ? '📸 Tarik akses pengisian' : '📸 Beri akses pengisian'}
+                              </button>
+                            )}
                             <button disabled={busy} onClick={() => resetPassword(u)} style={linkBtn(textSecondary)}>🔑 Kata laluan</button>
                             <button disabled={busy} onClick={() => remove(u)} style={linkBtn('#EF4444')}>🗑 Padam</button>
                           </div>

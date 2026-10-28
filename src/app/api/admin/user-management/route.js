@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getReaders, setReader } from '@/lib/stock-filling-access';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
@@ -72,6 +73,7 @@ export async function GET() {
     if (error) throw error;
 
     const authMap = Object.fromEntries((authRes?.data?.users || []).map(u => [u.id, u]));
+    const readers = new Set(await getReaders(admin));
     const nameOf = Object.fromEntries((profiles || []).map(p => [p.id, p.full_name]));
     const users = (profiles || []).map(p => {
       const a = authMap[p.id];
@@ -83,6 +85,7 @@ export async function GET() {
         is_teamsale: p.role === 'marketer' && !!p.team_leader_id,
         team_leader_name: p.team_leader_id ? nameOf[p.team_leader_id] || null : null,
         team_size: (profiles || []).filter(x => x.team_leader_id === p.id).length,
+        can_fill_stock: readers.has(p.id),   // perawat — boleh buat bacaan Pengisian Stok
       };
     });
 
@@ -155,6 +158,11 @@ export async function PATCH(req) {
       changes.push(b.is_active ? 'diaktifkan' : 'dinyahaktif');
     }
     if (b.full_name !== undefined && String(b.full_name).trim()) { update.full_name = String(b.full_name).trim(); changes.push('nama'); }
+    if (b.can_fill_stock !== undefined) {
+      if (normRole(target.role) !== 'practitioner') throw new HttpError('Akses Pengisian Stok hanya untuk perawat.');
+      await setReader(admin, target.id, !!b.can_fill_stock);
+      changes.push(b.can_fill_stock ? 'akses Pengisian Stok diberi' : 'akses Pengisian Stok ditarik');
+    }
     if (b.phone !== undefined) { update.phone = String(b.phone || '').trim() || null; changes.push('phone'); }
 
     if (b.password) {
