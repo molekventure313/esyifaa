@@ -57,8 +57,18 @@ export async function GET(req) {
       query = query.eq('payment_type', paymentType);
     }
 
+    // Carian: nama (ikut perkataan, tak kira jarak/huruf), no. telefon (abaikan sengkang/ruang) & alamat.
+    // Aksara yang merosakkan sintaks penapis (, ( ) % * \) dibuang.
     if (search) {
-      query = query.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%`);
+      const words = search.replace(/[,()%*\\:]/g, ' ').split(/\s+/).filter(Boolean);
+      const digits = search.replace(/\D/g, '');
+      const conds = [];
+      if (words.length) {
+        const pat = `%${words.join('%')}%`;
+        conds.push(`full_name.ilike.${pat}`, `address.ilike.${pat}`);
+      }
+      if (digits.length >= 4) conds.push(`phone.ilike.%${digits.replace(/^0/, '')}%`);
+      if (conds.length) query = query.or(conds.join(','));
     }
 
     if (notExported) {
@@ -74,9 +84,10 @@ export async function GET(req) {
       else if (channel === 'web') q = q.neq('order_channel', 'whatsapp');
       return q;
     };
-    // Tempoh — senarai & statistik (bukan bilangan 'belum export', itu amaran keseluruhan)
+    // Tempoh — senarai & statistik (bukan bilangan 'belum export', itu amaran keseluruhan).
+    // Ada carian → SENARAI cari semua tarikh (dulu terhad ke 'Hari Ini' lalai → pesakit lama tak dijumpai); statistik kekal ikut tempoh.
     const dated = q => (range ? q.gte('created_at', range.from).lte('created_at', range.to) : q);
-    query = dated(scoped(query));
+    query = search ? scoped(query) : dated(scoped(query));
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 

@@ -570,7 +570,7 @@ export default function PengurusanOrderPage() {
 
         <input
           type="text"
-          placeholder="Cari nama atau nombor telefon..."
+          placeholder="Cari nama, no. telefon atau alamat (semua tarikh)..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           style={{
@@ -581,6 +581,12 @@ export default function PengurusanOrderPage() {
           }}
         />
       </div>
+
+      {searchTerm.trim() && (
+        <div style={{ marginBottom: '0.75rem', fontSize: '0.78rem', color: textSecondary }}>
+          🔎 Carian merangkumi <strong>semua tarikh</strong> (penapis tempoh diabaikan untuk senarai). Penapis produk, pemilik &amp; SP masih dikenakan.
+        </div>
+      )}
 
       {/* ─── Export Hint ─── */}
       {paymentTypeFilter === 'physical' && paymentStatusFilter === 'completed' && (
