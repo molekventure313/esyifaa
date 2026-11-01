@@ -9,6 +9,7 @@ const ROLE_INFO = {
   admin:        { label: 'Admin (Staff Order)', color: '#F59E0B', desc: 'Pengurusan Order (print, return, mark paid, padam), Order WhatsApp, Stok & Pengisian Stok — TIADA laporan / PnL' },
   practitioner: { label: 'Perawat',     color: '#10B981', desc: 'Terima & urus kes rawatan' },
   marketer:     { label: 'Marketer',    color: '#3B82F6', desc: 'SP sendiri, order, ads & gaji' },
+  independent:  { label: 'Fighter',     color: '#A855F7', desc: 'Penjual bebas — order, CHIP & NinjaVan sendiri, stok dari HQ (urus di menu Fighter)' },
 };
 
 function useLightMode() {

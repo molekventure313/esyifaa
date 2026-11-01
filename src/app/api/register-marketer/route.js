@@ -2,7 +2,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request) {
   try {
-    const { fullName, email, password, phone, marketerCode } = await request.json();
+    const { fullName, email, password, phone, marketerCode, kind } = await request.json();
+    // kind 'fighter' → role 'independent' (penjual bebas: order, CHIP & NinjaVan sendiri; stok dari HQ)
+    const role = kind === 'fighter' ? 'independent' : 'marketer';
 
     if (!fullName || !email || !password || !marketerCode) {
       return Response.json(
@@ -59,7 +61,7 @@ export async function POST(request) {
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
-        role: 'marketer'
+        role
       }
     });
 
@@ -82,11 +84,10 @@ export async function POST(request) {
         full_name: fullName,
         email,
         phone: phone || null,
-        role: 'marketer',
+        role,
         is_active: false,           // pending admin approval
         marketer_code: marketerCode,
-        marketer_basic_salary: 1700.00,
-        marketer_commission_pct: 10.00,
+        ...(role === 'marketer' ? { marketer_basic_salary: 1700.00, marketer_commission_pct: 10.00 } : {}),
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' })
       .select('id, role, is_active')
@@ -100,13 +101,13 @@ export async function POST(request) {
       );
     }
 
-    // Verify the upsert actually set role = 'marketer'
-    if (profileData && profileData.role !== 'marketer') {
+    // Verify the upsert actually set the role
+    if (profileData && profileData.role !== role) {
       console.error('Profile role mismatch after upsert:', profileData);
       // Force-update role separately (handles trigger overwrite scenario)
       await supabaseAdmin
         .from('profiles')
-        .update({ role: 'marketer', is_active: false, updated_at: new Date().toISOString() })
+        .update({ role, is_active: false, updated_at: new Date().toISOString() })
         .eq('id', userId);
     }
 

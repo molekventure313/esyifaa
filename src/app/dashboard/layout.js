@@ -23,6 +23,17 @@ export default function DashboardLayout({ children }) {
       const role = profile?.role || user?.role || 'practitioner';
       const isAdmin = role === 'admin' || role === 'super_admin';
       const isMarketer = role === 'marketer';
+      const isFighter = role === 'independent';
+
+      // Fighter: /dashboard/fighter sahaja (terasing dari HQ & marketer)
+      if (isFighter) {
+        if (!pathname.startsWith('/dashboard/fighter')) router.replace('/dashboard/fighter');
+        return;
+      }
+      if (pathname.startsWith('/dashboard/fighter')) {
+        router.replace(isAdmin ? '/dashboard/admin' : isMarketer ? '/dashboard/marketer' : '/dashboard/perawat');
+        return;
+      }
 
       // Role Access Guard
       // admin = staff order: hanya Pengurusan Order, Order WhatsApp, Stok, Pengisian Stok
@@ -45,7 +56,7 @@ export default function DashboardLayout({ children }) {
         return;
       }
       // Teamsale: tiada team / SP / pixel / UTM sendiri (Profil dibenarkan — isi no. WhatsApp)
-      const TEAMSALE_BLOCKED = ['/dashboard/marketer/team', '/dashboard/marketer/links', '/dashboard/marketer/pixels', '/dashboard/marketer/utm-analytics', '/dashboard/sp-generator'];
+      const TEAMSALE_BLOCKED = ['/dashboard/marketer/team', '/dashboard/marketer/links', '/dashboard/marketer/pixels', '/dashboard/marketer/utm-analytics', '/dashboard/marketer/ads-hub', '/dashboard/sp-generator'];
       if (isMarketer && profile?.team_leader_id && TEAMSALE_BLOCKED.some(p => pathname.startsWith(p))) {
         router.replace('/dashboard/marketer');
       }

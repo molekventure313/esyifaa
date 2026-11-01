@@ -13,7 +13,7 @@ export async function middleware(request) {
   // ── PUBLIC ROUTES: SEMAK DULU — skip Supabase auth sepenuhnya ────────────
   // Setiap klik FB Ads ke /sabun-garam dll terus pass tanpa network call
   const PUBLIC_EXACT = new Set([
-    '/', '/login', '/setup', '/daftar-perawat', '/daftar-marketer',
+    '/', '/login', '/setup', '/daftar-perawat', '/daftar-marketer', '/daftar-fighter',
     '/terima-kasih', '/tasbih-esyifa',
   ]);
 

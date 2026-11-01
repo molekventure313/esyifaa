@@ -51,11 +51,19 @@ export default function LoginPage() {
           return;
         }
 
+        if (profile && profile.role === 'independent' && !profile.is_active) {
+          await supabase.auth.signOut({ scope: 'local' });
+          setError('Akaun fighter anda sedang MENUNGGU KELULUSAN oleh Admin. Sila hubungi pihak pentadbir.');
+          setLoading(false);
+          return;
+        }
+
         const role = profile?.role || 'practitioner';
         const isAdmin = role === 'admin' || role === 'super_admin';
         const isMarketer = role === 'marketer';
 
-        showToast(`Berjaya log masuk sebagai ${isAdmin ? 'Admin' : isMarketer ? 'Marketer' : 'Perawat'}!`, 'success');
+        const isFighter = role === 'independent';
+        showToast(`Berjaya log masuk sebagai ${isAdmin ? 'Admin' : isMarketer ? 'Marketer' : isFighter ? 'Fighter' : 'Perawat'}!`, 'success');
         
         if (role === 'admin') {
           router.push('/dashboard/admin/pesakit-berbayar');   // staff order
@@ -63,6 +71,8 @@ export default function LoginPage() {
           router.push('/dashboard/admin');
         } else if (isMarketer) {
           router.push('/dashboard/marketer');
+        } else if (isFighter) {
+          router.push('/dashboard/fighter');
         } else {
           router.push('/dashboard/perawat');
         }

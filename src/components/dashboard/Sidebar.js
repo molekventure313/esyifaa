@@ -115,6 +115,14 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '🔗 Link Marketing', href: '/dashboard/marketer/links' }
   ];
   
+  // Fighter (role 'independent') — penjual bebas; order & bayaran sendiri, stok dari HQ
+  const fighterNav = [
+    { section: 'UTAMA' },
+    { label: 'Dashboard', href: '/dashboard/fighter' },
+    { section: 'TETAPAN' },
+    { label: '⚙️ Tetapan Akaun', href: '/dashboard/fighter/tetapan' },
+  ];
+
   const adminNav = [
     { section: 'UTAMA' },
     { label: 'Dashboard', href: '/dashboard/admin' },
@@ -131,6 +139,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: '🌙 Ruqyah Harian', href: '/dashboard/admin/ruqyah-harian' },
     { label: 'Perawat', href: '/dashboard/admin/perawat' },
     { label: 'Marketers', href: '/dashboard/admin/marketers' },
+    { label: '🥊 Fighter', href: '/dashboard/admin/fighter' },
     { label: 'Pelanggan', href: '/dashboard/admin/pelanggan' },
     { section: 'TETAPAN' },
     { label: '📊 Kos Ads HQ', href: '/dashboard/admin/ads' },
@@ -171,7 +180,9 @@ export default function Sidebar({ isOpen, onClose }) {
   const isMarketerPath = pathname.startsWith('/dashboard/marketer');
   
   let navItems = adminMenu;
-  if (isPerawatPath) {
+  if (role === 'independent') {
+    navItems = fighterNav;
+  } else if (isPerawatPath) {
     navItems = practitionerNav;
   } else if (isMarketerPath) {
     navItems = marketerMenu;
@@ -234,7 +245,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 E-SYIFAA'
               </span>
               <small style={{ fontSize: '0.65rem', fontWeight: 600, color: isLightMode ? '#059669' : '#34D399', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {isAdminPath ? 'ADMIN CONTROL CENTER' : 'PORTAL PERAWAT'}
+                {isAdminPath ? 'ADMIN CONTROL CENTER' : role === 'independent' ? 'PORTAL FIGHTER' : 'PORTAL PERAWAT'}
               </small>
             </div>
           </div>
