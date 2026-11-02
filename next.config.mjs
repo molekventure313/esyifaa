@@ -7,6 +7,12 @@ const MARKETER_SLUGS = [
   'kasturi-kijang', 'ruqyah-harian',
 ];
 
+// SP produk fizikal yang boleh dijual fighter melalui /f/<slug>
+const FIGHTER_SLUGS = [
+  'sabun-garam', 'sabun-garam-1', 'sabun-garam-2', 'sabun-garam-3', 'sabun-garam-4', 'sabun-garam-5',
+  'garam-pengasihan', 'kasturi-kijang',
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -27,6 +33,11 @@ const nextConfig = {
   // Sebelum ni route /m/[slug] import semua 19 page → +140KB JS setiap klik.
   async rewrites() {
     return [
+      // SP fighter /f/<slug>?f=KOD → page statik asal (order & bayaran dihalakan ke fighter oleh borang)
+      {
+        source: `/f/:slug(${FIGHTER_SLUGS.join('|')})`,
+        destination: '/:slug',
+      },
       {
         source: `/m/:slug(${MARKETER_SLUGS.join('|')})`,
         destination: '/:slug',

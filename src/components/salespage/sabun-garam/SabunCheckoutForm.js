@@ -91,9 +91,10 @@ const REQ = <span style={{ color: '#E11D48', marginLeft: '2px' }}>*</span>;
 function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
+  const fighterCode  = searchParams?.get('f') || '';   // SP fighter → order & bayaran ke akaun fighter
   const pathname     = usePathname() || '';
   // UJIAN: offer Air Tawar Jarak Jauh aktif di SP HQ sahaja — SP marketer (?m= / /m/) kekal offer lama
-  const airOn        = !marketerCode && !pathname.startsWith('/m/');
+  const airOn        = !marketerCode && !fighterCode && !pathname.startsWith('/m/');
   
   const [selectedPkg,   setSelectedPkg]   = useState(2); // index 2 = 3 unit (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
@@ -153,7 +154,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
     // Marketer routes (/m/ atau ?m=) — jangan load HQ FPX pixel
     const isMarketerRoute =
       new URLSearchParams(window.location.search).has('m') ||
-      window.location.pathname.startsWith('/m/');
+      window.location.pathname.startsWith('/m/') ||
+      new URLSearchParams(window.location.search).has('f');
     if (isMarketerRoute) return;
 
     const script = document.createElement('script');
@@ -229,6 +231,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,
+          fighter_code: fighterCode || undefined,
           source_page: window.location.pathname,
           event_id: eventId,
           amount_in_myr: grandTotal,
@@ -292,6 +295,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,
+          fighter_code: fighterCode || undefined,
           landing_page_url: window.location.href,
           referrer_url: document.referrer,
           fbp: fbp || null,
@@ -307,6 +311,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
       catch { throw new Error('Respons daripada pelayan tidak sah. Sila hubungi admin atau cuba sebentar lagi.'); }
 
       if (res.ok && json.success) {
+        if (json.tq_url) { window.location.href = json.tq_url; return; }   // order fighter
         // Fire client-side Purchase pixel before redirect
         try {
           const pid = fpxPixelId || window.__fpxPixelId;

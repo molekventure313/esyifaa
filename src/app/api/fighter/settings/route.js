@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { fighterGuard, publicSettings, testChip, testClaude, markupsFor, tableMissing, MIGRATION_MSG } from '@/lib/fighter/server';
 import { encryptSecret, decryptSecret, last4 } from '@/lib/fighter/crypto';
 
 // Fighter — tetapan akaun sendiri
 // GET  → profil + tetapan (tanpa key rahsia) + harga stok (kos + markup)
 // PUT  { chip_brand_id?, chip_api_key?, claude_api_key?, meta_pixel_id?, whatsapp?, sender_name?, sender_phone? }
-//      key kosong = kekal yang lama. Key CHIP / Claude baru diuji dulu sebelum disimpan.
+//      ninjavan_shipper_no? · key kosong = kekal yang lama. Key CHIP / Claude baru diuji dulu sebelum disimpan.
 // POST { action: 'test_chip' | 'test_ai' | 'remove_ai' } → uji semula key tersimpan / buang key Claude
 
 const clean = (v, n = 200) => String(v ?? '').trim().slice(0, n);
@@ -62,6 +63,7 @@ export async function PUT(req) {
     }
     if (b.sender_name !== undefined) row.sender_name = clean(b.sender_name, 80) || null;
     if (b.sender_phone !== undefined) row.sender_phone = phoneOf(b.sender_phone) || null;
+    if (b.ninjavan_shipper_no !== undefined) row.ninjavan_shipper_no = clean(b.ninjavan_shipper_no, 30).replace(/[^\w-]/g, '') || null;
 
     // CHIP: brand / key berubah → uji dulu
     const brand = b.chip_brand_id !== undefined ? clean(b.chip_brand_id, 80) : s?.chip_brand_id;
@@ -89,6 +91,7 @@ export async function PUT(req) {
 
     const { data, error } = await g.admin.from('fighter_settings').upsert(row, { onConflict: 'fighter_id' }).select('*').single();
     if (error) throw new Error(tableMissing(error) ? MIGRATION_MSG : error.message);
+    if (row.meta_pixel_id !== undefined) { try { revalidateTag('pixels'); } catch (_) {} }   // pixel SP fighter terus live
     return NextResponse.json({ success: true, settings: publicSettings(data) });
   } catch (e) {
     return NextResponse.json({ success: false, error: e.message }, { status: 400 });

@@ -58,15 +58,20 @@ export default async function GeneratedSalesPage({ params, searchParams }) {
   if (!content) notFound();
 
   // Paksa ?m=<kod pemilik> (kekalkan utm/fbclid). Marketer tidak aktif → SP jadi milik HQ (tanpa ?m=).
-  const code = owner?.role === 'marketer' && owner.is_active !== false ? owner.marketer_code : null;
-  const current = typeof sp_?.m === 'string' ? sp_.m : '';
-  if ((code || '').toLowerCase() !== current.toLowerCase()) {
+  // SP milik FIGHTER → ?f=<kod> (order & bayaran ke akaun fighter); fighter tidak aktif → SP ditutup.
+  const isFighter = owner?.role === 'independent';
+  if (isFighter && owner.is_active === false) notFound();
+  const param = isFighter ? 'f' : 'm';
+  const code = isFighter || (owner?.role === 'marketer' && owner.is_active !== false) ? owner.marketer_code : null;
+  const current = typeof sp_?.[param] === 'string' ? sp_[param] : '';
+  const stray = typeof sp_?.[isFighter ? 'm' : 'f'] === 'string';
+  if ((code || '').toLowerCase() !== current.toLowerCase() || stray) {
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries(sp_ || {})) {
-      if (k === 'm') continue;
+      if (k === 'm' || k === 'f') continue;
       for (const val of [].concat(v)) qs.append(k, val);
     }
-    if (code) qs.set('m', code);
+    if (code) qs.set(param, code);
     const q = qs.toString();
     redirect(`/s/${slug}${q ? `?${q}` : ''}`);
   }

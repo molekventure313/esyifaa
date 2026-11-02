@@ -11,14 +11,16 @@ function PageViewTrackerInner({ slug }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams.get('m') || '';
 
+  const isFighter = searchParams.has('f');   // SP fighter — tak dikira dalam statistik HQ
+
   useEffect(() => {
-    if (!slug) return;
+    if (!slug || isFighter) return;
     fetch('/api/track-visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug, marketer_code: marketerCode }),
     }).catch(() => {}); // Silent fail
-  }, [slug, marketerCode]);
+  }, [slug, marketerCode, isFighter]);
 
   return null;
 }

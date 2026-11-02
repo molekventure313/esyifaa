@@ -28,6 +28,8 @@ export default function SocialProofToast() {
 
     const path = pathname || "";
     if (SKIP_PREFIXES.some(p => path.startsWith(p))) { setGroup(null); return; }
+    // SP fighter — order HQ tak dipaparkan
+    if (path.startsWith("/f/") || new URLSearchParams(window.location.search).has("f")) { setGroup(null); return; }
     let key = groupOfPath(path);
     // SP Generator (/s/<slug>) — produk ditanda oleh halaman (data-sp-product)
     if (!key && path.startsWith("/s/")) key = document.querySelector("[data-sp-product]")?.getAttribute("data-sp-product") || null;

@@ -5,10 +5,13 @@ import { logActivity } from '@/lib/utils/logger';
 import { sendAttributedCAPIEvent } from '@/lib/tracking/attributed';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 import { deductStock } from '@/lib/stock';
+import { createFighterOrder } from '@/lib/fighter/orders';
 
 export async function POST(req) {
   try {
     const body = await req.json();
+    // SP fighter (?f=) → order fighter (terasing dari HQ)
+    if (body.fighter_code) return createFighterOrder(req, body, 'cod');
     const {
       full_name, phone, address, quantity, units_label,
       product, amount_total, amount_base, honeypot, source,

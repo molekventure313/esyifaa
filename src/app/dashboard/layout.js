@@ -25,9 +25,9 @@ export default function DashboardLayout({ children }) {
       const isMarketer = role === 'marketer';
       const isFighter = role === 'independent';
 
-      // Fighter: /dashboard/fighter sahaja (terasing dari HQ & marketer)
+      // Fighter: /dashboard/fighter + SP Generator sahaja (terasing dari HQ & marketer)
       if (isFighter) {
-        if (!pathname.startsWith('/dashboard/fighter')) router.replace('/dashboard/fighter');
+        if (!pathname.startsWith('/dashboard/fighter') && !pathname.startsWith('/dashboard/sp-generator')) router.replace('/dashboard/fighter');
         return;
       }
       if (pathname.startsWith('/dashboard/fighter')) {

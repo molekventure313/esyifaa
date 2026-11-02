@@ -24,6 +24,16 @@ export default function useSalesContact({ hqNumber = HQ_WHATSAPP } = {}) {
   const [state, setState] = useState({ ready: false, number: null, isMarketer: false });
 
   useEffect(() => {
+    // SP fighter (?f=) → no. WhatsApp fighter (tiada → butang disembunyikan)
+    const fCode = (new URLSearchParams(window.location.search).get('f') || '').toLowerCase().trim();
+    if (fCode) {
+      const key = `f:${fCode}`;
+      pending[key] ??= fetch(`/api/public/fighter?f=${encodeURIComponent(fCode)}`)
+        .then(r => r.json()).then(j => j.whatsapp || null).catch(() => null);
+      let alive = true;
+      pending[key].then(number => { if (alive) setState({ ready: true, number, isMarketer: true }); });
+      return () => { alive = false; };
+    }
     const code = (new URLSearchParams(window.location.search).get('m') || '').toLowerCase().trim();
     const isMarketer = !!code || window.location.pathname.startsWith('/m/');
 
@@ -54,7 +64,9 @@ export default function useSalesContact({ hqNumber = HQ_WHATSAPP } = {}) {
 export function trackWaClick({ product } = {}) {
   const eventId = `lead_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
   const contentName = product ? `WhatsApp — ${product}` : 'WhatsApp';
-  try {
+  // SP fighter: tiada rekod klik / CAPI HQ — pixel fighter sahaja
+  const isFighter = new URLSearchParams(window.location.search).has('f');
+  if (!isFighter) try {
     const cookie = n => (document.cookie.match(new RegExp(`(?:^|; )${n}=([^;]*)`)) || [])[1] || null;
     const q = new URLSearchParams(window.location.search);
     const path = window.location.pathname.replace(/^\/m\//, '/');

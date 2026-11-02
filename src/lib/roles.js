@@ -1,6 +1,7 @@
 // Peranan — selamat untuk client & server (tiada import server).
 //  · super_admin = pemilik: akses penuh
-//  · admin       = staff order: Pengurusan Order, Order WhatsApp, Stok, Pengisian Stok, Return Parcel
+//  · admin       = staff order: Pengurusan Order, Order WhatsApp, Stok, Pengisian Stok, Return Parcel, Packing Fighter
+//  · independent = Fighter (penjual bebas): /dashboard/fighter + SP Generator sahaja
 
 export const OWNER = ['super_admin'];
 export const STAFF = ['admin', 'super_admin'];
@@ -12,6 +13,7 @@ export const STAFF_PATHS = [
   '/dashboard/admin/stok',
   '/dashboard/admin/pengisian-stok',
   '/dashboard/admin/return-parcel',
+  '/dashboard/admin/fighter-packing',
 ];
 export const STAFF_HOME = '/dashboard/admin/pesakit-berbayar';
 

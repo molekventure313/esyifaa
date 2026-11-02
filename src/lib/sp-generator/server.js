@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { decryptSecret } from '@/lib/fighter/crypto';
 
 export const AI_MODEL_MAIN = 'claude-sonnet-5-5';     // jana brief & section
 export const AI_MODEL_FAST = 'claude-haiku-5-5';      // tulis semula satu section
@@ -11,8 +12,9 @@ export const QUOTA_CALLS = 300;                       // jumlah panggilan AI (se
 const err = (msg, status) => ({ error: NextResponse.json({ success: false, error: msg }, { status }) });
 
 /**
- * Akses SP Generator: marketer (bukan teamsale) & super_admin.
- * Pulangkan { user, profile, admin, isOwner } atau { error }.
+ * Akses SP Generator: marketer (bukan teamsale), fighter & super_admin.
+ * Fighter guna Claude API key SENDIRI (Tetapan) → tiada had kuota HQ.
+ * Pulangkan { user, profile, admin, isOwner, isFighter?, apiKey? } atau { error }.
  */
 export async function spGuard() {
   const supabase = await createClient();
@@ -22,6 +24,13 @@ export async function spGuard() {
   const { data: profile } = await admin.from('profiles')
     .select('id, role, full_name, marketer_code, team_leader_id, is_active').eq('id', user.id).single();
   if (profile?.role === 'super_admin') return { user, profile, admin, isOwner: true };
+  if (profile?.role === 'independent') {
+    if (profile.is_active === false) return err('Akaun tidak aktif.', 403);
+    const { data: s } = await admin.from('fighter_settings').select('ai_key_enc').eq('fighter_id', user.id).maybeSingle();
+    let apiKey = null;
+    try { apiKey = s?.ai_key_enc ? decryptSecret(s.ai_key_enc) : null; } catch (_) { /* kunci env bertukar */ }
+    return { user, profile, admin, isOwner: false, isFighter: true, apiKey };
+  }
   if (profile?.role !== 'marketer') return err('Forbidden', 403);
   if (profile.team_leader_id) return err('Teamsale tidak boleh bina SP sendiri — guna SP ketua.', 403);
   if (profile.is_active === false) return err('Akaun tidak aktif.', 403);
@@ -50,6 +59,13 @@ export async function usageThisMonth(admin, userId) {
 
 export async function quotaInfo(g) {
   const used = await usageThisMonth(g.admin, g.user.id);
+  if (g.isFighter) {
+    return {
+      unlimited: true, full: { used: used.full, max: QUOTA_FULL }, calls: { used: used.calls, max: QUOTA_CALLS },
+      ai_enabled: !!g.apiKey,
+      ai_hint: g.apiKey ? null : 'Sambung Claude API Key anda di Tetapan Akaun untuk guna AI',
+    };
+  }
   return {
     unlimited: g.isOwner,
     full: { used: used.full, max: QUOTA_FULL },
@@ -61,8 +77,8 @@ export async function quotaInfo(g) {
 /**
  * Panggil Claude dengan output berstruktur (tool use dipaksa) → pulangkan { data, usage, model }.
  */
-export async function callClaude({ model = AI_MODEL_MAIN, system, prompt, toolName, schema, maxTokens = 2000 }) {
-  const key = process.env.ANTHROPIC_API_KEY;
+export async function callClaude({ model = AI_MODEL_MAIN, system, prompt, toolName, schema, maxTokens = 2000, apiKey = null }) {
+  const key = apiKey || process.env.ANTHROPIC_API_KEY;   // fighter: key sendiri
   if (!key) throw Object.assign(new Error('AI belum diaktifkan — tambah ANTHROPIC_API_KEY di Netlify env.'), { status: 503 });
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {

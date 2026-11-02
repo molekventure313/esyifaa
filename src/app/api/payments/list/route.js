@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isPhysicalOrder, applyProductFilter, applySpFilter, periodRange } from '@/lib/products';
 import { resolveOwner, applyOwner } from '@/lib/team';
 import { formatOrder } from '@/lib/orders';
+import { latestShipmentsFor, statusGroupOf } from '@/lib/ninjavan/shipments';
+import { errorMessageOf, NV_ENV } from '@/lib/ninjavan/api';
 
 export async function GET(req) {
   try {
@@ -177,6 +179,20 @@ export async function GET(req) {
 
     const formatted = filteredSubmissions.map(formatOrder);
 
+    // Parcel NinjaVan (API) terkini bagi setiap order — status dari webhook
+    try {
+      const nv = await latestShipmentsFor(adminClient, formatted.map(o => o.id));
+      formatted.forEach(o => {
+        const sh = nv[o.id];
+        if (!sh) return;
+        o.nv = {
+          tracking_number: sh.tracking_number, status: sh.status, event: sh.event, group: statusGroupOf(sh),
+          cod_amount: sh.cod_amount, last_event_at: sh.last_event_at || sh.created_at, has_waybill: !!sh.waybill_path,
+          error: sh.status === 'Failed' ? errorMessageOf(sh.response_payload, 'Gagal dihantar') : null,
+        };
+      });
+    } catch (_) { /* jadual NinjaVan belum wujud — senarai tetap dipaparkan */ }
+
     // Senarai SP Generator (dipublish) untuk penapis SP
     const { data: spPages } = await adminClient.from('ai_salespages')
       .select('slug, title, product_key').eq('status', 'published').order('slug')
@@ -195,6 +211,7 @@ export async function GET(req) {
         not_exported_physical: notExportedCount,
       },
       last_export: lastExport,
+      nv_env: NV_ENV,
       sp_pages: spPages || [],
       meta: { total: count, page, limit, totalPages: Math.ceil((count || 0) / limit) },
     });

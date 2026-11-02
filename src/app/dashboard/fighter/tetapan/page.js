@@ -38,6 +38,7 @@ export default function FighterSettingsPage() {
   const apply = s => setF({
     chip_brand_id: s.chip_brand_id, chip_api_key: '', claude_api_key: '',
     meta_pixel_id: s.meta_pixel_id, whatsapp: s.whatsapp, sender_name: s.sender_name, sender_phone: s.sender_phone,
+    ninjavan_shipper_no: s.ninjavan_shipper_no,
   });
 
   useEffect(() => {
@@ -135,9 +136,13 @@ export default function FighterSettingsPage() {
           <Field t={t} label="No. telefon pengirim">
             <input style={inp} value={f.sender_phone || ''} onChange={set('sender_phone')} placeholder="0123456789" />
           </Field>
+          <Field t={t} label="NinjaVan Shipper Order No" hint="Nombor shipper akaun NinjaVan anda — diisi dalam CSV bulk upload.">
+            <input style={inp} value={f.ninjavan_shipper_no || ''} onChange={set('ninjavan_shipper_no')} placeholder="cth: 10198183" />
+          </Field>
         </div>
         <button style={btnStyle()} disabled={!!busy} onClick={() => call('misc', 'PUT', {
           whatsapp: f.whatsapp, meta_pixel_id: f.meta_pixel_id, sender_name: f.sender_name, sender_phone: f.sender_phone,
+          ninjavan_shipper_no: f.ninjavan_shipper_no,
         })}>{busy === 'misc' ? 'Menyimpan...' : 'Simpan'}</button>
         <Msg section="misc" />
       </Card>

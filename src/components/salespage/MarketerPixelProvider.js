@@ -8,6 +8,16 @@ function PixelLogic() {
   const [pixelId, setPixelId] = useState(null);
 
   useEffect(() => {
+    // SP fighter (?f=) — pixel fighter
+    const fCode = (searchParams.get('f') || '').toLowerCase().trim();
+    if (fCode) {
+      if (window.__fkPixelCode === fCode) return;   // dah fire dari <head>
+      fetch(`/api/public/fighter?f=${encodeURIComponent(fCode)}`)
+        .then(res => res.json())
+        .then(data => { if (data.pixel_id) setPixelId(data.pixel_id); })
+        .catch(() => {});
+      return;
+    }
     const code = searchParams.get('m');
     if (!code) return;
     // Dah fire dari inline bootstrap dalam <head> (root layout) — skip

@@ -20,6 +20,8 @@ export async function middleware(request) {
   const PUBLIC_PREFIXES = [
     '/m/',
     '/s/',              // SP dijana marketer (SP Generator)
+    '/f/',              // SP fighter (penjual bebas) — /f/<slug>?f=<kod>
+    '/f-tq',            // TQ page order fighter
     '/wa',
     '/pengisian-esyifa',
     '/ruqyah-harian',
@@ -48,7 +50,10 @@ export async function middleware(request) {
     '/api/track-visit',
     '/api/track-wa-click',
     '/api/public',
+    '/api/fighter/chip',  // webhook CHIP fighter (disahkan dengan public key fighter)
     '/api/cron',          // tugas berjadual Netlify — dilindungi CRON_SECRET dalam route
+    '/api/webhooks',      // webhook NinjaVan — disahkan dengan HMAC X-Ninjavan-Hmac-Sha256
+    '/api/admin/ninjavan/audit',  // audit sandbox — super_admin ATAU x-cron-secret (disemak dalam route)
     '/api/setup',
     '/api/register-perawat',
     '/api/register-marketer',

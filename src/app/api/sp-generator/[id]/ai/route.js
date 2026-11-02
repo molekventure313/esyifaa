@@ -44,8 +44,12 @@ export async function POST(req, { params }) {
     const body = await req.json();
     const step = body.step;
 
-    // Kuota bulanan (super_admin tanpa had)
-    if (!g.isOwner) {
+    // Fighter: wajib key Claude sendiri (tiada had kuota HQ)
+    if (g.isFighter && !g.apiKey) {
+      return NextResponse.json({ success: false, error: 'Sambung Claude API Key anda di Tetapan Akaun dahulu.' }, { status: 400 });
+    }
+    // Kuota bulanan (super_admin & fighter tanpa had)
+    if (!g.isOwner && !g.isFighter) {
       const used = await usageThisMonth(g.admin, g.user.id);
       if (step === 'brief' && used.full >= QUOTA_FULL) {
         return NextResponse.json({ success: false, error: `Kuota jana penuh bulan ini dah habis (${QUOTA_FULL}/${QUOTA_FULL}). Anda masih boleh edit teks secara manual.` }, { status: 429 });
@@ -58,7 +62,7 @@ export async function POST(req, { params }) {
     if (step === 'brief') {
       const res = await callClaude({
         system: SYSTEM_PROMPT, prompt: briefPrompt(sp.product_key, sp.angle),
-        toolName: 'strategi_angle', schema: BRIEF_SCHEMA, maxTokens: 4000,
+        toolName: 'strategi_angle', schema: BRIEF_SCHEMA, maxTokens: 4000, apiKey: g.apiKey,
       });
       await logAi(g.admin, { userId: g.user.id, spId: sp.id, kind: 'brief', model: res.model, usage: res.usage });
       return NextResponse.json({ success: true, data: res.data });
@@ -78,7 +82,7 @@ export async function POST(req, { params }) {
         model: rewrite ? AI_MODEL_FAST : AI_MODEL_MAIN,
         system: SYSTEM_PROMPT,
         prompt: sectionPrompt(sp.product_key, sp.angle, brief, key, rewrite ? { current, instruction: String(body.instruction || '').slice(0, 400) } : {}),
-        toolName: `section_${key}`, schema: sectionJsonSchema(key), maxTokens: 4000,
+        toolName: `section_${key}`, schema: sectionJsonSchema(key), maxTokens: 4000, apiKey: g.apiKey,
       });
       const res = await ask();
       const data = tidyLists(sanitizeContent({ [key]: res.data })[key]);

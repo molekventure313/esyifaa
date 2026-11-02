@@ -83,7 +83,7 @@ export default function SpGeneratorPage() {
 
       {q && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '1.25rem' }}>
-          {!q.ai_enabled && <Pill color="#F59E0B" C={C}>⚠️ AI belum diaktifkan (ANTHROPIC_API_KEY) — boleh bina &amp; edit secara manual</Pill>}
+          {!q.ai_enabled && <Pill color="#F59E0B" C={C}>⚠️ {q.ai_hint || 'AI belum diaktifkan (ANTHROPIC_API_KEY)'} — boleh bina &amp; edit secara manual</Pill>}
           {q.ai_enabled && (q.unlimited
             ? <Pill color="#10B981" C={C}>✨ Kuota AI: tanpa had (super admin)</Pill>
             : <>

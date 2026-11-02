@@ -4,10 +4,13 @@ import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
 import { isRuqyahHarian, RH_PRICES, RH_MAX_SLOTS } from '@/lib/ruqyah-harian';
 import { countRhSlotsUsed } from '@/lib/ruqyah-harian-server';
+import { createFighterOrder } from '@/lib/fighter/orders';
 
 export async function POST(req) {
   try {
     const body = await req.json();
+    // SP fighter (?f=) → bil CHIP milik fighter, order fighter (terasing dari HQ)
+    if (body.fighter_code) return createFighterOrder(req, body, 'fpx');
     const {
       full_name, phone, problem, address, source, source_page, honeypot, event_id,
       amount_in_myr = 50.00,

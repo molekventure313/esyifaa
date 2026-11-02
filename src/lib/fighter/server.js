@@ -34,6 +34,7 @@ export function publicSettings(s) {
     whatsapp: s?.whatsapp || '',
     sender_name: s?.sender_name || '',
     sender_phone: s?.sender_phone || '',
+    ninjavan_shipper_no: s?.ninjavan_shipper_no || '',
   };
 }
 

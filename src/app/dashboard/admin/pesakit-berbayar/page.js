@@ -16,6 +16,19 @@ const PAYMENT_STATUS_LABELS = {
   cancelled: { label: 'Dibatal', color: '#94A3B8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.3)', icon: '🚫' },
 };
 
+// Status parcel NinjaVan (API + webhook) — kumpulan dari statusGroupOf (lib/ninjavan/shipments)
+const NV_GROUPS = {
+  pending_pickup: { label: 'Menunggu Pickup',  color: '#F59E0B', icon: '⏳' },
+  in_transit:     { label: 'Dalam Perjalanan', color: '#3B82F6', icon: '🚚' },
+  exception:      { label: 'Gagal Hantar',     color: '#EF4444', icon: '⚠️' },
+  delivered:      { label: 'Delivered',        color: '#10B981', icon: '✅' },
+  returned:       { label: 'Return',           color: '#8B5CF6', icon: '↩️' },
+  cancelled:      { label: 'Dibatal',          color: '#94A3B8', icon: '🚫' },
+  failed:         { label: 'Gagal Dihantar',   color: '#EF4444', icon: '❌' },
+};
+const NV_BATCH = 10;   // had /api/admin/ninjavan/push setiap panggilan
+const nvActive = o => o.nv && !['cancelled', 'failed'].includes(o.nv.group);
+
 const PAYMENT_TYPE_LABELS = {
   cod:         { label: 'COD', color: '#F97316', bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.3)', icon: '📦' },
   fpx_payment: { label: 'FPX', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.3)', icon: '💳' },
@@ -62,6 +75,11 @@ export default function PengurusanOrderPage() {
 
   // Return COD
   const [returningId, setReturningId] = useState(null);
+
+  // NinjaVan API (hantar terus, waybill, batal)
+  const [nvPushing, setNvPushing] = useState(false);
+  const [nvBusyId,  setNvBusyId]  = useState(null);
+  const [nvEnv,     setNvEnv]     = useState('sandbox');
 
   const { showToast } = useToast();
 
@@ -113,6 +131,7 @@ export default function PengurusanOrderPage() {
         setStats(json.stats || { total_completed: 0, total_pending: 0, total_failed: 0, total_cod: 0, total_fpx: 0, total_revenue_rm: 0 });
         setLastUpdated(new Date().toLocaleTimeString('ms-MY'));
         setLastExport(json.last_export || null);
+        setNvEnv(json.nv_env || 'sandbox');
         setSpPages(json.sp_pages || []);
         setNotExportedCount(json.stats?.not_exported_physical ?? 0);
         setSelectedIds(prev => {
@@ -220,6 +239,64 @@ export default function PengurusanOrderPage() {
       showToast(err.message || 'Export gagal', 'error');
     } finally {
       setExporting(false);
+    }
+  };
+
+  // ─── NinjaVan API ──────────────────────────────────────────────────────────
+  const canPushNv = o => o.payment_status === 'completed' && isPhysicalOrder(o) && !o.returned_at && !nvActive(o);
+
+  const handlePushNv = async (ids) => {
+    const list = ids.filter(id => { const o = orders.find(x => x.id === id); return o && canPushNv(o); });
+    if (!list.length) { showToast('Tiada order yang boleh dihantar (mesti fizikal, selesai & belum ada parcel aktif).', 'error'); return; }
+    if (!confirm(`Hantar ${list.length} order ke NinjaVan${nvEnv === 'sandbox' ? ' (SANDBOX — ujian)' : ''}?`)) return;
+    setNvPushing(true);
+    let sent = 0;
+    const errors = [];
+    try {
+      for (let i = 0; i < list.length; i += NV_BATCH) {
+        const res  = await fetch('/api/admin/ninjavan/push', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: list.slice(i, i + NV_BATCH) }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!json.results) { errors.push(json.error || `Ralat (${res.status})`); break; }
+        for (const r of json.results) {
+          if (r.ok) sent++;
+          else errors.push(`${orders.find(o => o.id === r.id)?.full_name || r.id}: ${r.error}`);
+        }
+      }
+      if (sent) showToast(`${sent} order dihantar ke NinjaVan.`, 'success');
+      if (errors.length) showToast(`${errors.length} gagal — ${errors.slice(0, 3).join(' | ')}`, 'error');
+      setSelectedIds(new Set());
+      await fetchOrders();
+    } catch {
+      showToast('Ralat rangkaian. Sila cuba lagi.', 'error');
+    } finally {
+      setNvPushing(false);
+    }
+  };
+
+  const handlePrintWaybill = (ids) => {
+    const list = ids.filter(id => { const o = orders.find(x => x.id === id); return o && nvActive(o); });
+    if (!list.length) { showToast('Tiada parcel NinjaVan untuk order dipilih.', 'error'); return; }
+    window.open(`/api/admin/ninjavan/waybill?ids=${list.slice(0, 30).join(',')}`, '_blank');
+    if (list.length > 30) showToast('Maksimum 30 waybill setiap kali — 30 pertama dibuka.', 'info');
+  };
+
+  const handleCancelNv = async (order) => {
+    if (!confirm(`Batal parcel NinjaVan ${order.nv?.tracking_number} (${order.full_name})?\n\nHanya parcel yang belum di-pickup boleh dibatalkan.`)) return;
+    setNvBusyId(order.id);
+    try {
+      const res  = await fetch('/api/admin/ninjavan/cancel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ submission_id: order.id }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Gagal membatalkan parcel');
+      showToast(`Parcel ${json.tracking_number} dibatalkan.`, 'success');
+      await fetchOrders();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setNvBusyId(null);
     }
   };
 
@@ -366,6 +443,23 @@ export default function PengurusanOrderPage() {
             }}
           >
             {exporting ? '⏳ Exporting...' : '📦 Export NinjaVan'}
+          </button>
+
+          {/* Hantar terus ke NinjaVan (API) — order fizikal selesai yang belum ada parcel aktif */}
+          <button
+            onClick={() => handlePushNv(displayOrders.filter(canPushNv).map(o => o.id))}
+            disabled={nvPushing}
+            title="Hantar terus ke sistem NinjaVan — tak perlu upload CSV"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.8rem',
+              fontWeight: 700, cursor: nvPushing ? 'not-allowed' : 'pointer',
+              background: '#DC2626', color: '#fff', border: 'none',
+              opacity: nvPushing ? 0.7 : 1,
+            }}
+          >
+            {nvPushing ? '⏳ Menghantar...' : `🚀 Hantar ke NinjaVan (${displayOrders.filter(canPushNv).length})`}
+            {nvEnv === 'sandbox' && <span style={{ fontSize: '0.6rem', fontWeight: 800, padding: '0.05rem 0.35rem', borderRadius: '4px', background: 'rgba(255,255,255,0.25)' }}>SANDBOX</span>}
           </button>
 
           {/* Export terakhir */}
@@ -633,6 +727,30 @@ export default function PengurusanOrderPage() {
               {exporting ? '⏳...' : `📦 Export ${selectedIds.size} ke NinjaVan`}
             </button>
 
+            {/* NinjaVan API — hantar & cetak waybill */}
+            <button
+              onClick={() => handlePushNv([...selectedIds])}
+              disabled={nvPushing}
+              style={{
+                padding: '0.45rem 1rem', borderRadius: '6px', fontSize: '0.78rem',
+                fontWeight: 700, cursor: nvPushing ? 'not-allowed' : 'pointer',
+                background: '#DC2626', border: 'none', color: '#fff',
+                opacity: nvPushing ? 0.7 : 1,
+              }}
+            >
+              {nvPushing ? '⏳...' : `🚀 Hantar ${selectedIds.size} ke NinjaVan`}
+            </button>
+            <button
+              onClick={() => handlePrintWaybill([...selectedIds])}
+              style={{
+                padding: '0.45rem 1rem', borderRadius: '6px', fontSize: '0.78rem',
+                fontWeight: 700, cursor: 'pointer',
+                background: subCardBg, border: cardBorder, color: textPrimary,
+              }}
+            >
+              🖨️ Cetak Waybill
+            </button>
+
             {/* Delete selected */}
             <button
               onClick={() => setConfirmDelete(true)}
@@ -689,7 +807,7 @@ export default function PengurusanOrderPage() {
                   <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
                     style={{ cursor: 'pointer', width: '15px', height: '15px', accentColor: '#3B82F6' }} />
                 </th>
-                {['Pelanggan', 'Telefon', 'Produk', 'Jumlah', 'Alamat', 'Bayaran', 'Export', 'Tindakan', 'Tarikh'].map(h => (
+                {['Pelanggan', 'Telefon', 'Produk', 'Jumlah', 'Alamat', 'Bayaran', 'NinjaVan', 'Tindakan', 'Tarikh'].map(h => (
                   <th key={h} style={{ padding: '0.7rem 0.5rem', color: textSecondary, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -787,9 +905,25 @@ export default function PengurusanOrderPage() {
                       )}
                     </td>
 
-                    {/* Export Status */}
+                    {/* Status NinjaVan — parcel API (webhook) dahulu, kemudian export CSV */}
                     <td style={{ padding: '0.85rem 0.5rem', whiteSpace: 'nowrap' }}>
-                      {isExported ? (
+                      {order.nv && NV_GROUPS[order.nv.group] ? (() => {
+                        const g = NV_GROUPS[order.nv.group];
+                        return (
+                          <div title={order.nv.error || order.nv.event || order.nv.status}>
+                            <span style={{
+                              fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderRadius: '8px',
+                              background: `${g.color}1A`, border: `1px solid ${g.color}55`, color: g.color, fontWeight: 700,
+                            }}>{g.icon} {g.label}</span>
+                            {order.nv.tracking_number && (
+                              <div style={{ fontSize: '0.62rem', color: textSecondary, marginTop: '0.25rem', fontFamily: 'monospace' }}>{order.nv.tracking_number}</div>
+                            )}
+                            <div style={{ fontSize: '0.6rem', color: textMuted, marginTop: '0.1rem', maxWidth: '170px', whiteSpace: 'normal' }}>
+                              {order.nv.error ? order.nv.error.slice(0, 90) : `${order.nv.event && order.nv.event !== order.nv.status ? `${order.nv.event} · ` : ''}${fmtDateTime(order.nv.last_event_at)}`}
+                            </div>
+                          </div>
+                        );
+                      })() : isExported ? (
                         <div>
                           <span style={{
                             fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderRadius: '8px',
@@ -846,6 +980,50 @@ export default function PengurusanOrderPage() {
                             WA
                           </a>
                         )}
+                        {canPushNv(order) && (
+                          <button
+                            onClick={() => handlePushNv([order.id])}
+                            disabled={nvPushing}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                              padding: '0.3rem 0.55rem', borderRadius: '6px',
+                              background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)',
+                              color: '#DC2626', fontWeight: 700, fontSize: '0.68rem',
+                              cursor: nvPushing ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            🚀 Hantar NV
+                          </button>
+                        )}
+                        {nvActive(order) && (
+                          <button
+                            onClick={() => handlePrintWaybill([order.id])}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                              padding: '0.3rem 0.55rem', borderRadius: '6px',
+                              background: subCardBg, border: cardBorder,
+                              color: textPrimary, fontWeight: 700, fontSize: '0.68rem',
+                              cursor: 'pointer', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            🖨️ Waybill
+                          </button>
+                        )}
+                        {order.nv?.group === 'pending_pickup' && (
+                          <button
+                            onClick={() => handleCancelNv(order)}
+                            disabled={nvBusyId === order.id}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                              padding: '0.3rem 0.55rem', borderRadius: '6px',
+                              background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.3)',
+                              color: '#94A3B8', fontWeight: 700, fontSize: '0.68rem',
+                              cursor: nvBusyId === order.id ? 'wait' : 'pointer', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {nvBusyId === order.id ? '...' : '✖ Batal NV'}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleExport([order.id])}
                           disabled={exporting}
@@ -857,7 +1035,7 @@ export default function PengurusanOrderPage() {
                             cursor: exporting ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
                           }}
                         >
-                          📦 Export
+                          📦 CSV
                         </button>
 
                         {/* Return button — COD + completed + not yet returned */}

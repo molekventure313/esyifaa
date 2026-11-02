@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 // FPX pages — HQ pixel skip, FPX pixel handled by checkout form
-const FPX_PATHS = ['/fsp-checkout', '/payment-success'];
+const FPX_PATHS = ['/fsp-checkout', '/payment-success', '/f-tq'];   // /f-tq = TQ fighter (pixel fighter)
 
 /**
  * ClientPixelProvider — fires HQ Meta Pixel client-side.
@@ -18,7 +18,9 @@ export default function ClientPixelProvider({ hqPixelId }) {
     const hasMarketer = new URLSearchParams(window.location.search).has('m');
     // /m/ routes = dedicated marketer SP — HQ pixel SENTIASA skip, tanpa syarat
     const isMarketerRoute = window.location.pathname.startsWith('/m/');
-    if (hasMarketer || isMarketerRoute) return;
+    // SP fighter (?f= / /f/) — pixel fighter sahaja (MarketerPixelProvider)
+    const isFighter = new URLSearchParams(window.location.search).has('f') || window.location.pathname.startsWith('/f/');
+    if (hasMarketer || isMarketerRoute || isFighter) return;
 
 
     // FPX pages — HQ pixel jangan fire, FPX pixel handled by FspChipCheckoutForm

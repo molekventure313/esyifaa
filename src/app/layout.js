@@ -91,20 +91,46 @@ const getCachedMarketerPixels = unstable_cache(
   PIXEL_CACHE
 );
 
+// Map kod fighter (lowercase) → meta_pixel_id — SP fighter (?f=) fire pixel fighter SAHAJA
+const getCachedFighterPixels = unstable_cache(
+  async () => {
+    try {
+      const adminClient = createAdminClient();
+      const { data } = await adminClient
+        .from('fighter_settings')
+        .select('meta_pixel_id, profiles!inner(marketer_code, role, is_active)')
+        .not('meta_pixel_id', 'is', null);
+      const map = {};
+      (data || []).forEach(r => {
+        const p = r.profiles;
+        const code = (p?.marketer_code || '').toLowerCase().trim();
+        if (code && p.role === 'independent' && p.is_active !== false) map[code] = String(r.meta_pixel_id).trim();
+      });
+      return map;
+    } catch (e) {
+      return {};
+    }
+  },
+  ['layout-fighter-pixels'],
+  PIXEL_CACHE
+);
+
 // Inline pixel bootstrap — jalan masa HTML di-parse, SEBELUM React hydrate.
 // PageView fire secepat mungkin supaya Landing Page View (Meta) tak tercicir.
 // Logik sama dgn ClientPixelProvider + MarketerPixelProvider:
 //  - ?m= atau /m/ → pixel marketer SAHAJA (HQ skip)
+//  - ?f= atau /f/ → pixel fighter SAHAJA (HQ skip)
 //  - /fsp-checkout, /payment-success → skip (FPX pixel handle)
 //  - lain-lain → HQ pixel
-function buildPixelBootstrap(hqPixelId, marketerPixels) {
+function buildPixelBootstrap(hqPixelId, marketerPixels, fighterPixels) {
   const json = (v) => JSON.stringify(v).replace(/</g, '\\u003c');
   return `(function(){try{
-var HQ=${json(hqPixelId || null)},MK=${json(marketerPixels || {})};
-var p=location.pathname,m=(new URLSearchParams(location.search).get('m')||'').toLowerCase().trim();
-var id=null,isMk=!!m||p.indexOf('/m/')===0;
-if(isMk){id=m?MK[m]||null:null;}
-else if(p.indexOf('/fsp-checkout')!==0&&p.indexOf('/payment-success')!==0){id=HQ;}
+var HQ=${json(hqPixelId || null)},MK=${json(marketerPixels || {})},FK=${json(fighterPixels || {})};
+var p=location.pathname,q=new URLSearchParams(location.search),m=(q.get('m')||'').toLowerCase().trim(),fc=(q.get('f')||'').toLowerCase().trim();
+var id=null,isMk=!!m||p.indexOf('/m/')===0,isF=!!fc||p.indexOf('/f/')===0;
+if(isF){id=fc?FK[fc]||null:null;if(id)window.__fkPixelCode=fc;}
+else if(isMk){id=m?MK[m]||null:null;}
+else if(p.indexOf('/fsp-checkout')!==0&&p.indexOf('/payment-success')!==0&&p.indexOf('/f-tq')!==0){id=HQ;}
 if(!id)return;
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
 fbq('init',id);fbq('track','PageView');
@@ -115,9 +141,10 @@ window.__pixelBooted=id;if(isMk)window.__mkPixelCode=m;
 
 export default async function RootLayout({ children }) {
   // Fetch HQ pixel ID + marketer pixel map (cached) — pixel di-init inline dalam <head>
-  const [pixelIdRaw, marketerPixels] = await Promise.all([
+  const [pixelIdRaw, marketerPixels, fighterPixels] = await Promise.all([
     getCachedPixelId(),
     getCachedMarketerPixels(),
+    getCachedFighterPixels(),
   ]);
 
   return (
@@ -125,7 +152,7 @@ export default async function RootLayout({ children }) {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="preconnect" href="https://connect.facebook.net" />
-        <script dangerouslySetInnerHTML={{ __html: buildPixelBootstrap(pixelIdRaw, marketerPixels) }} />
+        <script dangerouslySetInnerHTML={{ __html: buildPixelBootstrap(pixelIdRaw, marketerPixels, fighterPixels) }} />
       </head>
       <body>
         {/* ClientPixelProvider — fallback sahaja; skip bila fbq dah di-init inline dalam <head>.

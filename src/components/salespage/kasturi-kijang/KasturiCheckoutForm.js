@@ -123,6 +123,7 @@ const REQ = <span style={{ color: '#E11D48', marginLeft: '2px' }}>*</span>;
 function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
+  const fighterCode  = searchParams?.get('f') || '';   // SP fighter → order & bayaran ke akaun fighter
 
   const [selectedPkg, setSelectedPkg] = useState(0); // index 0 = 5 Botol (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
@@ -164,7 +165,8 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
   useEffect(() => {
     const isMarketerRoute =
       new URLSearchParams(window.location.search).has('m') ||
-      window.location.pathname.startsWith('/m/');
+      window.location.pathname.startsWith('/m/') ||
+      new URLSearchParams(window.location.search).has('f');
     if (isMarketerRoute) return;
 
     const script = document.createElement('script');
@@ -244,6 +246,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,
+          fighter_code: fighterCode || undefined,
           source_page: window.location.pathname,
           event_id: eventId,
           amount_in_myr: grandTotal,
@@ -307,6 +310,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
           honeypot: formData.honeypot,
           source,
           marketer_code: marketerCode,
+          fighter_code: fighterCode || undefined,
           landing_page_url: window.location.href,
           referrer_url: document.referrer,
           fbp: fbp || null,
@@ -322,6 +326,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
 
       const json = await res.json();
       if (res.ok && json.success) {
+        if (json.tq_url) { window.location.href = json.tq_url; return; }   // order fighter
         window.location.href = `/payment-success?order_id=${json.order_id}&amount=${grandTotal}&product=${encodeURIComponent(`Minyak Kasturi Kijang — ${pkg.label}`)}&type=cod${marketerCode ? `&m=${encodeURIComponent(marketerCode)}` : ''}`;
       } else {
         throw new Error(json.error || 'Gagal menghantar pesanan COD. Sila cuba lagi.');
