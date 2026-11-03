@@ -14,7 +14,7 @@ export async function middleware(request) {
   // Setiap klik FB Ads ke /sabun-garam dll terus pass tanpa network call
   const PUBLIC_EXACT = new Set([
     '/', '/login', '/setup', '/daftar-perawat', '/daftar-marketer', '/daftar-fighter',
-    '/terima-kasih', '/tasbih-esyifa',
+    '/terima-kasih', '/tasbih-esyifa', '/privacy-policy',
   ]);
 
   const PUBLIC_PREFIXES = [
