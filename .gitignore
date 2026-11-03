@@ -28,3 +28,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# autopilot HQ — fail kerja creative (video, VO)
+/autopilot/

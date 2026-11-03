@@ -167,7 +167,7 @@ export async function buildReport(admin, marketerId, { period, from, to, adId, p
     const angle = a.angle || a.adset_name || '(tiada angle)';
     rows.push({
       ad_id: a.ad_id, name: a.name, headline: a.headline, thumbnail_url: a.thumbnail_url,
-      campaign_name: a.campaign_name, adset_name: a.adset_name, adset_id: a.adset_id,
+      campaign_id: a.campaign_id, campaign_name: a.campaign_name, adset_name: a.adset_name, adset_id: a.adset_id,
       angle, angle_custom: !!a.angle,
       status: a.status, running, daily_budget: a.adset_daily_budget != null ? parseFloat(a.adset_daily_budget) : null,
       ...metrics(m || blank()),

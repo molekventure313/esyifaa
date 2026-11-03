@@ -155,7 +155,7 @@ export default function AdminAdsHubPage() {
               </>
             )}
             {tab === 'reports' && <ReportsTab marketerId={mid} />}
-            {tab === 'rules' && <RulesTab marketerId={mid} canEdit />}
+            {tab === 'rules' && <RulesTab marketerId={mid} canEdit autopilot={isHq} />}
             {tab === 'log' && <LogTab marketerId={mid} />}
             {tab === 'settings' && (
               <>

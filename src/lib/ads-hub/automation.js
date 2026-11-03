@@ -8,7 +8,7 @@ const mytDate = (ms = Date.now()) => new Date(ms + MYT_MS).toISOString().slice(0
 const r2 = n => Math.round(n * 100) / 100;
 
 export const METRIC_LABEL = { spend: 'Belanja', orders: 'Order', revenue: 'Jualan', roas: 'ROAS', cpa: 'CPA', ctr: 'CTR link (%)' };
-export const RULE_ACTION_LABEL = { pause: 'Pause ad', budget_up: 'Naikkan budget adset', budget_down: 'Turunkan budget adset', notify: 'Beri amaran sahaja' };
+export const RULE_ACTION_LABEL = { pause: 'Pause ad', pause_adset: 'Pause adset', budget_up: 'Naikkan budget adset', budget_down: 'Turunkan budget adset', notify: 'Beri amaran sahaja' };
 
 // ---------- Tindakan berjadual ----------
 
@@ -80,6 +80,7 @@ export function validateRule(r) {
   if (!RULE_ACTION_LABEL[r.action]) errs.push('tindakan');
   if (['budget_up', 'budget_down'].includes(r.action) && !(Number(r.action_value) > 0 && Number(r.action_value) <= 100)) errs.push('peratus budget (1–100)');
   if (!['suggest', 'auto'].includes(r.mode)) errs.push('mod');
+  if (r.scope && !['all', 'autopilot'].includes(r.scope)) errs.push('skop');
   return errs.length ? `Peraturan tidak lengkap: ${errs.join(', ')}.` : null;
 }
 
@@ -87,7 +88,8 @@ export function describeRule(r) {
   const act = r.action === 'budget_up' || r.action === 'budget_down' ? `${RULE_ACTION_LABEL[r.action]} ${Number(r.action_value)}%` : RULE_ACTION_LABEL[r.action];
   return `Jika ${METRIC_LABEL[r.metric]} ${r.operator} ${Number(r.value)} dalam ${r.window_days} hari`
     + `${Number(r.min_spend) > 0 ? ` (belanja ≥ RM${Number(r.min_spend)})` : ''} → ${act}`
-    + ` · ${r.mode === 'auto' ? 'AUTO' : 'cadang sahaja'}`;
+    + ` · ${r.mode === 'auto' ? 'AUTO' : 'cadang sahaja'}`
+    + (r.scope === 'autopilot' ? ' · kempen autopilot sahaja' : '');
 }
 
 export async function createRule(admin, marketerId, r) {
@@ -98,6 +100,7 @@ export async function createRule(admin, marketerId, r) {
     window_days: Number(r.window_days), min_spend: Number(r.min_spend) || 0, action: r.action,
     action_value: ['budget_up', 'budget_down'].includes(r.action) ? Number(r.action_value) : null, mode: r.mode, active: true,
   };
+  if (r.scope === 'autopilot') row.scope = 'autopilot';   // kolum dari migration 033 — hanya dihantar bila perlu
   const { data, error } = await admin.from('meta_rules').insert(row).select('id').single();
   if (error) return { ok: false, message: error.message };
   return { ok: true, id: data.id, message: `Peraturan #${data.id} "${row.name}" dicipta: ${describeRule(row)}.` };
@@ -136,7 +139,13 @@ export async function evaluateConnection(admin, conn) {
   for (const rule of rules || []) {
     const rep = await window(rule.window_days);
     const seenAdsets = new Set();
-    for (const ad of rep.ads.filter(a => a.running)) {
+    // Skop autopilot: hanya ads dalam kempen [AUTOPILOT]; bajet dihadkan oleh had harian kempen
+    const autopilot = rule.scope === 'autopilot';
+    if (autopilot && !conn.autopilot_campaign_id) continue;
+    const inScope = a => !autopilot || a.campaign_id === conn.autopilot_campaign_id;
+    const apBudgets = new Map();
+    if (autopilot) for (const a of rep.ads) if (a.running && inScope(a) && a.daily_budget != null) apBudgets.set(a.adset_id, a.daily_budget);
+    for (const ad of rep.ads.filter(a => a.running && inScope(a))) {
       if (ad.spend < Number(rule.min_spend)) continue;
       const v = ad[rule.metric];
       if (v == null || !cmp(v, rule.operator, Number(rule.value))) continue;
@@ -145,12 +154,24 @@ export async function evaluateConnection(admin, conn) {
       let objKey = `ad:${ad.ad_id}`;
       if (rule.action === 'pause') {
         action = { action: 'set_status', object_type: 'ad', object_id: ad.ad_id, object_name: ad.name, params: { status: 'PAUSED' } };
+      } else if (rule.action === 'pause_adset') {
+        if (!ad.adset_id || seenAdsets.has(ad.adset_id)) continue;
+        seenAdsets.add(ad.adset_id);
+        objKey = `adset:${ad.adset_id}`;
+        action = { action: 'set_status', object_type: 'adset', object_id: ad.adset_id, object_name: ad.adset_name, params: { status: 'PAUSED' } };
       } else if (rule.action === 'budget_up' || rule.action === 'budget_down') {
         if (!ad.adset_id || ad.daily_budget == null || seenAdsets.has(ad.adset_id)) continue;
         seenAdsets.add(ad.adset_id);
         objKey = `adset:${ad.adset_id}`;
         const f = rule.action === 'budget_up' ? 1 + rule.action_value / 100 : 1 - rule.action_value / 100;
-        const newRm = Math.max(1, Math.round(ad.daily_budget * f));
+        let newRm = Math.max(1, Math.round(ad.daily_budget * f));
+        if (autopilot && rule.action === 'budget_up') {
+          const used = [...apBudgets.values()].reduce((s, v) => s + v, 0);
+          const room = Number(conn.autopilot_daily_cap) - (used - ad.daily_budget);
+          newRm = Math.min(newRm, Math.floor(room));
+          if (newRm <= ad.daily_budget) continue;   // had harian kempen autopilot dah penuh
+          apBudgets.set(ad.adset_id, newRm);
+        }
         action = { action: 'set_budget', object_type: 'adset', object_id: ad.adset_id, object_name: ad.adset_name, params: { daily_budget_rm: newRm } };
       }
 

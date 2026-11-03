@@ -197,14 +197,14 @@ export function LogTab({ marketerId }) {
 
 // ---------- Peraturan & jadual ----------
 const METRICS = { roas: 'ROAS', cpa: 'CPA (RM)', spend: 'Belanja (RM)', orders: 'Order', revenue: 'Jualan (RM)', ctr: 'CTR link (%)' };
-const ACTIONS = { pause: 'Pause ad', budget_up: 'Naikkan budget adset %', budget_down: 'Turunkan budget adset %', notify: 'Amaran sahaja' };
+const ACTIONS = { pause: 'Pause ad', pause_adset: 'Pause adset', budget_up: 'Naikkan budget adset %', budget_down: 'Turunkan budget adset %', notify: 'Amaran sahaja' };
 const PRESETS = [
   { name: 'Pause ad rugi', metric: 'roas', operator: '<', value: 1, window_days: 3, min_spend: 60, action: 'pause', action_value: 0, mode: 'suggest' },
   { name: 'Scale ad menang', metric: 'roas', operator: '>=', value: 2.5, window_days: 3, min_spend: 80, action: 'budget_up', action_value: 20, mode: 'suggest' },
   { name: 'CPA terlalu tinggi', metric: 'cpa', operator: '>', value: 60, window_days: 3, min_spend: 60, action: 'notify', action_value: 0, mode: 'suggest' },
 ];
 
-export function RulesTab({ marketerId, canEdit }) {
+export function RulesTab({ marketerId, canEdit, autopilot }) {
   const t = theme(useLightMode());
   const [rules, setRules] = useState(null);
   const [sched, setSched] = useState(null);
@@ -256,6 +256,11 @@ export function RulesTab({ marketerId, canEdit }) {
               <select id="rule-action" value={form.action} onChange={e => set('action', e.target.value)} style={field}>{Object.entries(ACTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
               {['budget_up', 'budget_down'].includes(form.action) && (
                 <><input id="rule-pct" type="number" min="1" max="100" value={form.action_value} onChange={e => set('action_value', e.target.value)} style={{ ...field, width: 60 }} />%</>
+              )}
+              {autopilot && (
+                <select id="rule-scope" value={form.scope || 'all'} onChange={e => set('scope', e.target.value)} style={field}>
+                  <option value="all">Semua kempen</option><option value="autopilot">Kempen autopilot sahaja</option>
+                </select>
               )}
               <select id="rule-mode" value={form.mode} onChange={e => set('mode', e.target.value)} style={field}>
                 <option value="suggest">Cadang sahaja</option><option value="auto">Auto laksana</option>
