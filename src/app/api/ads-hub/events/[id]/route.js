@@ -7,14 +7,14 @@ import { executeAction } from '@/lib/ads-hub/actions';
 export const maxDuration = 26;
 
 export async function POST(req, { params }) {
-  const g = await marketerConn();
+  const g = await marketerConn(req);
   if (g.error) return g.error;
   const { id } = await params;
   const { decision } = await req.json().catch(() => ({}));
   try {
     // Kunci: hanya event 'open' boleh diproses, sekali sahaja
     const { data: ev } = await g.admin.from('meta_events').update({ status: decision === 'approve' ? 'executed' : 'dismissed', resolved_at: new Date().toISOString() })
-      .eq('id', id).eq('marketer_id', g.user.id).eq('status', 'open').select('*').maybeSingle();
+      .eq('id', id).eq('marketer_id', g.mid).eq('status', 'open').select('*').maybeSingle();
     if (!ev) return NextResponse.json({ success: false, error: 'Item ini dah diproses.' }, { status: 409 });
     if (decision !== 'approve' || !ev.action) return NextResponse.json({ success: true, message: decision === 'approve' ? 'Ditanda selesai.' : 'Diabaikan.' });
 

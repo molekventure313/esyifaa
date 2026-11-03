@@ -20,7 +20,7 @@ export const TOOLS = [
   {
     name: 'get_performance',
     description: 'Prestasi akaun untuk satu tempoh: ringkasan, trend harian, prestasi ikut angle, dan setiap ad (status, budget adset, belanja, order sebenar, jualan, ROAS sebenar, CPA, CTR, ROAS pixel). Order sebenar = order dalam sistem E-Syifa yang dipadankan dengan ID ad melalui UTM.',
-    input_schema: obj({ period: enm(PERIOD_ENUM, 'today, yesterday, 7d, 30d atau month (bulan ini)') }),
+    input_schema: obj({ period: enm(PERIOD_ENUM, 'today, yesterday, 7d, 30d, month (bulan ini) atau last_month (bulan lepas)') }),
   },
   {
     name: 'get_ad_history',
@@ -104,7 +104,7 @@ function systemPrompt(conn, profile) {
 Ad account: ${conn.ad_account_name || conn.ad_account_id} (${conn.currency || 'MYR'}).
 
 Data:
-- "Order sebenar" dan "ROAS sebenar" datang dari order dalam sistem E-Syifa (completed, bukan return) yang dipadankan dengan ID ad melalui UTM. Ini sumber kebenaran. ROAS pixel hanya rujukan.
+- "Order sebenar" datang dari order dalam sistem E-Syifa (completed, bukan return). Ini sumber kebenaran; ROAS pixel hanya rujukan. Ringkasan & trend harian kira SEMUA order akaun (organik/WhatsApp pun datang kesan ads); summary.ad_* = order yang dipadankan terus dengan ad melalui UTM. Prestasi setiap ad/angle/kempen guna order yang dipadankan dengan ID ad sahaja.
 - Belanja dan metrik iklan datang dari Meta, disync setiap jam. Tarikh ikut waktu Malaysia.
 - Sampel kecil (1–3 order) tidak cukup untuk kesimpulan kukuh; nyatakan bila data nipis.
 
@@ -123,7 +123,7 @@ Cara bekerja:
 const pick = (o, keys) => Object.fromEntries(keys.map(k => [k, o[k]]));
 const AD_KEYS = ['ad_id', 'name', 'status', 'adset_id', 'adset_name', 'campaign_name', 'angle', 'daily_budget', 'spend', 'orders', 'revenue', 'roas', 'cpa', 'aov', 'ctr', 'cpm', 'pixel_roas'];
 
-async function runReadTool(admin, conn, name, input) {
+export async function runReadTool(admin, conn, name, input) {
   const id = conn.marketer_id;
   if (name === 'get_performance') {
     const r = await buildOverview(admin, id, PERIOD_ENUM.includes(input.period) ? input.period : '7d');

@@ -16,9 +16,9 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const g = await marketerConn();
+  const g = await marketerConn(req);
   if (g.error) return g.error;
   const body = await req.json().catch(() => ({}));
-  const r = await createRule(g.admin, g.user.id, body);
+  const r = await createRule(g.admin, g.mid, body);
   return NextResponse.json({ success: r.ok, ...r }, { status: r.ok ? 200 : 400 });
 }

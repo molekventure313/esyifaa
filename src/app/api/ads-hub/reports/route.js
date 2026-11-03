@@ -17,8 +17,8 @@ export async function GET(req) {
   return NextResponse.json({ success: true, reports: data || [] });
 }
 
-export async function POST() {
-  const g = await marketerConn();
+export async function POST(req) {
+  const g = await marketerConn(req);
   if (g.error) return g.error;
   try {
     const r = await generateMorningReport(g.admin, g.conn, { force: true });

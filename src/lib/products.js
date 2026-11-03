@@ -11,6 +11,13 @@ export const PRODUCTS = [
 
 export const PRODUCT_KEYS = PRODUCTS.map(p => p.key);
 
+// Kategori ads sahaja (bukan produk fizikal): belanja iklan Pengisian / rawatan / produk digital.
+// Sales-nya = order bukan fizikal (productOf null).
+export const DIGITAL_AD = { key: 'pengisian', label: 'Pengisian / Digital', short: 'Pengisian' };
+export const AD_PRODUCT_KEYS = [...PRODUCT_KEYS, DIGITAL_AD.key];
+// ads_spend.product → kunci produk fizikal, atau 'pengisian'. Nilai lama/tak dikenali → sabun-garam.
+const adKey = p => AD_PRODUCT_KEYS.includes(p) ? p : 'sabun-garam';
+
 // source order → key produk (null = bukan produk fizikal)
 export function productOf(source) {
   const s = source || '';
@@ -87,19 +94,17 @@ const round2 = n => parseFloat((n || 0).toFixed(2));
  * @param ads   ads_spend rows — perlu product, amount
  * @returns [{ key, label, short, orders, sales, ads, roas }]
  */
+// Baris Pengisian / Digital hanya muncul bila ada ads kategori itu.
 export function summarizeByProduct(subs, ads) {
-  const map = Object.fromEntries(PRODUCTS.map(p => [p.key, { ...p, orders: 0, sales: 0, ads: 0 }]));
+  const all = [...PRODUCTS, DIGITAL_AD];
+  const map = Object.fromEntries(all.map(p => [p.key, { ...p, orders: 0, sales: 0, ads: 0 }]));
   for (const s of subs) {
-    const k = productOf(s.source);
-    if (!k) continue;
+    const k = productOf(s.source) || DIGITAL_AD.key;
     map[k].orders += 1;
     map[k].sales  += parseAmount(s);
   }
-  for (const a of ads) {
-    const k = PRODUCT_KEYS.includes(a.product) ? a.product : 'sabun-garam';
-    map[k].ads += parseFloat(a.amount) || 0;
-  }
-  return PRODUCTS.map(p => {
+  for (const a of ads) map[adKey(a.product)].ads += parseFloat(a.amount) || 0;
+  return all.filter(p => p !== DIGITAL_AD || map[p.key].ads > 0).map(p => {
     const r = map[p.key];
     return { ...r, sales: round2(r.sales), ads: round2(r.ads), roas: r.ads > 0 ? round2(r.sales / r.ads) : null };
   });
@@ -192,7 +197,8 @@ export async function fetchProductCosts(adminClient) {
   return { sabunCost: map['SGH-200G'] || 0, kasturiCost: map['KKE-01'] || 0, garamCost: map['GPM-500G'] || 0 };
 }
 
-const OTHER = { key: 'lain-lain', label: 'Lain-lain', short: 'Lain', editable: false };
+// Order bukan fizikal + ads kategori Pengisian / Digital (ads diisi dari Ads Hub, bukan borang harian)
+const OTHER = { key: 'lain-lain', label: 'Pengisian / Lain-lain', short: 'Lain', editable: false };
 
 // Stat satu kumpulan order + ads → { orders, sales, ads, cogs, profit, roas }
 function groupStats(subs, adsAmount, costs) {
@@ -212,12 +218,12 @@ function groupStats(subs, adsAmount, costs) {
 function productBreakdown(subs, ads, costs) {
   const rows = PRODUCTS.map(p => {
     const pSubs = subs.filter(s => productOf(s.source) === p.key);
-    const pAds  = ads.filter(a => (PRODUCT_KEYS.includes(a.product) ? a.product : 'sabun-garam') === p.key)
-                     .reduce((t, a) => t + (parseFloat(a.amount) || 0), 0);
+    const pAds  = ads.filter(a => adKey(a.product) === p.key).reduce((t, a) => t + (parseFloat(a.amount) || 0), 0);
     return { ...p, editable: true, ...groupStats(pSubs, pAds, costs) };
   });
   const others = subs.filter(s => !productOf(s.source));
-  if (others.length) rows.push({ ...OTHER, ...groupStats(others, 0, costs) });
+  const otherAds = ads.filter(a => adKey(a.product) === DIGITAL_AD.key).reduce((t, a) => t + (parseFloat(a.amount) || 0), 0);
+  if (others.length || otherAds) rows.push({ ...OTHER, ...groupStats(others, otherAds, costs) });
   return rows;
 }
 

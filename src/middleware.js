@@ -54,6 +54,7 @@ export async function middleware(request) {
     '/api/cron',          // tugas berjadual Netlify — dilindungi CRON_SECRET dalam route
     '/api/webhooks',      // webhook NinjaVan — disahkan dengan HMAC X-Ninjavan-Hmac-Sha256
     '/api/admin/ninjavan/audit',  // audit sandbox — super_admin ATAU x-cron-secret (disemak dalam route)
+    '/api/mcp',           // MCP E-Syifa — dilindungi API key (Bearer esk_…) dalam route
     '/api/setup',
     '/api/register-perawat',
     '/api/register-marketer',

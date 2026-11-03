@@ -1,6 +1,7 @@
 // Ads Hub — sync data Meta (ads + prestasi harian) ke Supabase (server sahaja).
 import { decryptToken } from './crypto';
 import { metaGetAll, isTokenError } from './meta';
+import { fillAdsSpend } from './spend';
 
 const MYT_MS = 8 * 3600 * 1000;
 const DAY = 86400000;
@@ -74,7 +75,11 @@ export async function syncConnection(admin, conn, { days = 3 } = {}) {
     await admin.from('meta_connections').update({
       status: 'ok', status_message: null, checked_at: now, last_synced_at: now, updated_at: now,
     }).eq('marketer_id', conn.marketer_id);
-    return { ok: true, ads: adRows.size, insight_rows: insightRows.length };
+    // Ads spend automatik (jika dihidupkan) — ralat di sini tidak gagalkan sync
+    let spend;
+    try { spend = await fillAdsSpend(admin, conn, { from: mytDate(days - 1), to: mytDate(0) }); }
+    catch (e) { spend = { ok: false, error: e.message }; }
+    return { ok: true, ads: adRows.size, insight_rows: insightRows.length, spend };
   } catch (e) {
     const message = isTokenError(e)
       ? `Token tidak sah atau tiada akses lagi (${e.message}). Tampal token baru di tab Tetapan.`

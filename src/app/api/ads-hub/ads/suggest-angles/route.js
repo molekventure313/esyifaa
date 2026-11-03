@@ -5,8 +5,8 @@ import { suggestAngles } from '@/lib/ads-hub/angles';
 // AI tag angle untuk ads yang belum ditag (marketer boleh ubah selepas itu)
 export const maxDuration = 26;
 
-export async function POST() {
-  const g = await marketerConn();
+export async function POST(req) {
+  const g = await marketerConn(req);
   if (g.error) return g.error;
   try {
     const r = await suggestAngles(g.admin, g.conn);

@@ -1,13 +1,16 @@
 'use client';
 // Ads Hub — dashboard prestasi iklan Meta (ROAS dari order sebenar) + tetapan sambungan Meta.
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { PRODUCTS, DIGITAL_AD } from '@/lib/products';
+
+const AD_PRODUCTS = [...PRODUCTS, DIGITAL_AD];
 
 const PERIODS = [
   { id: 'today', label: 'Hari Ini' },
   { id: 'yesterday', label: 'Semalam' },
   { id: '7d', label: '7 Hari' },
-  { id: '30d', label: '30 Hari' },
   { id: 'month', label: 'Bulan Ini' },
+  { id: 'last_month', label: 'Bulan Lepas' },
 ];
 
 const STATUS = {
@@ -71,6 +74,9 @@ export function theme(lm) {
 }
 
 const roasColor = (t, v) => (v == null ? t.muted : v >= 2 ? t.good : v >= 1 ? t.warn : t.bad);
+// ROI (profit lepas ads ÷ kos ads): ≥1 bagus, 0–1 untung nipis, <0 rugi
+const roiColor = (t, v) => (v == null ? t.muted : v >= 1 ? t.good : v >= 0 ? t.warn : t.bad);
+const profitColor = (t, v) => (v == null ? t.muted : v >= 0 ? t.good : t.bad);
 
 export function Spinner({ t, text }) {
   return (
@@ -161,7 +167,7 @@ function TrendChart({ t, daily }) {
   );
 }
 
-function AngleCell({ t, row, canEdit, onSaved }) {
+function AngleCell({ t, row, canEdit, onSaved, marketerId }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(row.angle_custom ? row.angle : '');
   const [busy, setBusy] = useState(false);
@@ -177,7 +183,7 @@ function AngleCell({ t, row, canEdit, onSaved }) {
   }
   const save = async () => {
     setBusy(true);
-    const res = await fetch(`/api/ads-hub/ads/${row.ad_id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ angle: val }) });
+    const res = await fetch(`/api/ads-hub/ads/${row.ad_id}${marketerId ? `?marketer=${marketerId}` : ''}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ angle: val }) });
     setBusy(false);
     if (res.ok) { setEditing(false); onSaved(); }
   };
@@ -194,6 +200,7 @@ function AngleCell({ t, row, canEdit, onSaved }) {
 export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
   const t = theme(useLightMode());
   const [period, setPeriod] = useState('7d');
+  const [product, setProduct] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -202,7 +209,7 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
   const [showAll, setShowAll] = useState(false);
   const [sort, setSort] = useState({ col: 'spend', dir: 'desc' });
 
-  const qs = marketerId ? `&marketer=${marketerId}` : '';
+  const qs = `${marketerId ? `&marketer=${marketerId}` : ''}${product ? `&product=${product}` : ''}`;
   const load = useCallback(async (quiet) => {
     if (!quiet) setLoading(true);
     setError('');
@@ -227,7 +234,7 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
   const tagAngles = async () => {
     setTagging(true); setSyncMsg('');
     try {
-      const json = await fetch('/api/ads-hub/ads/suggest-angles', { method: 'POST' }).then(r => r.json());
+      const json = await fetch(`/api/ads-hub/ads/suggest-angles${marketerId ? `?marketer=${marketerId}` : ''}`, { method: 'POST' }).then(r => r.json());
       setSyncMsg(json.success ? `${json.tagged} ads ditag oleh AI. Klik ✎ pada ad untuk ubah.` : (json.error || 'Gagal tag angle.'));
       await load(true);
     } finally { setTagging(false); }
@@ -278,7 +285,12 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
             }}>{p.label}</button>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: t.text2, flexWrap: 'wrap' }}>
+        <select id="ads-hub-product" value={product} onChange={e => setProduct(e.target.value)} title="Produk ikut tetapan kempen dalam kad Ads Spend (Tetapan)"
+          style={{ padding: '0.42rem 0.7rem', borderRadius: 8, border: t.border, background: t.cardBg, color: t.text, fontSize: '0.8rem', fontFamily: t.ff }}>
+          <option value="">Semua produk</option>
+          {AD_PRODUCTS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+        </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: t.text2, flexWrap: 'wrap', marginLeft: 'auto' }}>
           <span><b style={{ color: t.text }}>{c.ad_account_name || c.ad_account_id}</b> · sync {ago(c.last_synced_at)}</span>
           <button onClick={syncNow} disabled={syncing} style={btn(t)}>{syncing ? 'Sync...' : '🔄 Sync sekarang'}</button>
         </div>
@@ -295,9 +307,11 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.85rem', marginBottom: '0.6rem' }}>
         {[
           { label: 'Belanja', val: rm(s.spend) },
-          { label: 'Order dari ads', val: s.orders },
-          { label: 'Jualan dari ads', val: rm(s.revenue), color: t.accent },
+          { label: 'Order', val: s.orders },
+          { label: 'Jualan', val: rm(s.revenue), color: t.accent },
           { label: 'ROAS sebenar', val: x2(s.roas), color: roasColor(t, s.roas), hl: true },
+          { label: 'Profit lepas ads', val: rm(s.profit), color: profitColor(t, s.profit), hl: true },
+          { label: 'ROI', val: x2(s.roi), color: roiColor(t, s.roi), hl: true },
           { label: 'CPA', val: rm(s.cpa) },
           { label: 'Purata order', val: rm(s.aov) },
           { label: 'Ads berjalan', val: s.running_ads },
@@ -309,15 +323,43 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
         ))}
       </div>
       <div style={{ fontSize: '0.74rem', color: t.muted, marginBottom: '1.5rem' }}>
-        ROAS pixel: {x2(s.pixel_roas)} ({s.pixel_purchases} purchase pixel) ·
-        Order tidak dipadankan dengan ad: {s.unmatched_orders} ({rm(s.unmatched_revenue)}), contohnya organik, tiada UTM, atau dari ad account lain.
+        Kad di atas kira SEMUA order dalam sistem (termasuk organik, WhatsApp & tiada UTM), bukan pixel.
+        Profit lepas ads = jualan {rm(s.revenue)} − kos produk & postage {rm(s.cogs)} − kos ads {rm(s.ads_cost)} (belanja + SST 8%). ROI = profit lepas ads ÷ kos ads.<br />
+        Dipadankan terus dengan ad (UTM): {s.ad_orders} order, {rm(s.ad_revenue)}, ROAS {x2(s.ad_roas)}, ROI {x2(s.ad_roi)} · tidak dipadankan: {s.unmatched_orders} order ({rm(s.unmatched_revenue)}). Jadual kempen, angle & ads di bawah guna order yang dipadankan sahaja.<br />
+        ROAS pixel: {x2(s.pixel_roas)} ({s.pixel_purchases} purchase pixel).
       </div>
 
       {data.daily.length > 1 && (
-        <Card t={t} title="Trend harian" sub={`${data.from} hingga ${data.to} · jualan = order sebenar yang dipadankan dengan ad`}>
+        <Card t={t} title="Trend harian" sub={`${data.from} hingga ${data.to} · jualan = semua order sebenar dalam sistem`}>
           <TrendChart t={t} daily={data.daily} />
         </Card>
       )}
+
+      <Card t={t} title="Prestasi ikut kempen" sub="Jualan & profit dari order sebenar yang dipadankan dengan ad dalam kempen" pad={false}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+            <thead><tr style={{ background: t.headBg }}>
+              {['Kempen', 'Ads', 'Belanja', 'Order', 'Jualan', 'ROAS', 'Profit lepas ads', 'ROI', 'CPA'].map((h, i) => <th key={h} style={{ ...th(t), textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {(data.campaigns || []).map(c => (
+                <tr key={c.campaign_id} style={{ borderBottom: t.rowBorder }}>
+                  <td style={td(t, 'left')}><b>{c.campaign_name}</b></td>
+                  <td style={td(t)}>{c.ads}{c.running ? <span style={{ color: t.good }}> ({c.running} 🟢)</span> : ''}</td>
+                  <td style={td(t)}>{rm(c.spend)}</td>
+                  <td style={td(t)}>{c.orders}</td>
+                  <td style={{ ...td(t), color: t.accent, fontWeight: 700 }}>{rm(c.revenue)}</td>
+                  <td style={td(t)}><RoasChip t={t} v={c.roas} /></td>
+                  <td style={{ ...td(t), color: profitColor(t, c.profit), fontWeight: 700 }}>{rm(c.profit)}</td>
+                  <td style={{ ...td(t), color: roiColor(t, c.roi), fontWeight: 700 }}>{x2(c.roi)}</td>
+                  <td style={td(t)}>{rm(c.cpa)}</td>
+                </tr>
+              ))}
+              {!(data.campaigns || []).length && <tr><td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: t.muted }}>Tiada data untuk tempoh ini.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       <Card t={t} title="Prestasi ikut angle" sub="Angle = tag anda pada ad, atau nama adset jika belum ditag" pad={false}
         right={canEdit && (
@@ -328,7 +370,7 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead><tr style={{ background: t.headBg }}>
-              {['Angle', 'Ads', 'Belanja', 'Order', 'Jualan', 'ROAS', 'CPA', 'Purata order'].map((h, i) => <th key={h} style={{ ...th(t), textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>)}
+              {['Angle', 'Ads', 'Belanja', 'Order', 'Jualan', 'ROAS', 'Profit lepas ads', 'ROI', 'CPA', 'Purata order'].map((h, i) => <th key={h} style={{ ...th(t), textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {data.angles.map(a => (
@@ -339,11 +381,13 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
                   <td style={td(t)}>{a.orders}</td>
                   <td style={{ ...td(t), color: t.accent, fontWeight: 700 }}>{rm(a.revenue)}</td>
                   <td style={td(t)}><RoasChip t={t} v={a.roas} /></td>
+                  <td style={{ ...td(t), color: profitColor(t, a.profit), fontWeight: 700 }}>{rm(a.profit)}</td>
+                  <td style={{ ...td(t), color: roiColor(t, a.roi), fontWeight: 700 }}>{x2(a.roi)}</td>
                   <td style={td(t)}>{rm(a.cpa)}</td>
                   <td style={td(t)}>{rm(a.aov)}</td>
                 </tr>
               ))}
-              {!data.angles.length && <tr><td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: t.muted }}>Tiada data untuk tempoh ini.</td></tr>}
+              {!data.angles.length && <tr><td colSpan={10} style={{ padding: '2rem', textAlign: 'center', color: t.muted }}>Tiada data untuk tempoh ini.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -366,6 +410,8 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
               <SortTh col="orders" label="Order" />
               <SortTh col="revenue" label="Jualan" />
               <SortTh col="roas" label="ROAS" />
+              <SortTh col="profit" label="Profit lepas ads" />
+              <SortTh col="roi" label="ROI" />
               <SortTh col="cpa" label="CPA" />
               <SortTh col="ctr" label="CTR link" />
               <SortTh col="cpm" label="CPM" />
@@ -387,12 +433,14 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
                       </div>
                     </div>
                   </td>
-                  <td style={td(t, 'left')}><AngleCell t={t} row={r} canEdit={canEdit} onSaved={() => load(true)} /></td>
+                  <td style={td(t, 'left')}><AngleCell t={t} row={r} canEdit={canEdit} marketerId={marketerId} onSaved={() => load(true)} /></td>
                   <td style={td(t)}>{r.daily_budget != null ? rm0(r.daily_budget) : '—'}</td>
                   <td style={td(t)}>{rm(r.spend)}</td>
                   <td style={td(t)}>{r.orders}</td>
                   <td style={{ ...td(t), color: t.accent, fontWeight: 700 }}>{rm(r.revenue)}</td>
                   <td style={td(t)}><RoasChip t={t} v={r.roas} /></td>
+                  <td style={{ ...td(t), color: profitColor(t, r.profit), fontWeight: 700 }}>{rm(r.profit)}</td>
+                  <td style={{ ...td(t), color: roiColor(t, r.roi), fontWeight: 700 }}>{x2(r.roi)}</td>
                   <td style={td(t)}>{rm(r.cpa)}</td>
                   <td style={td(t)}>{pct(r.ctr)}</td>
                   <td style={td(t)}>{rm(r.cpm)}</td>
@@ -400,7 +448,7 @@ export function AdsHubDashboard({ marketerId, canEdit, onOpenSettings }) {
                 </tr>
               ))}
               {!rows.length && (
-                <tr><td colSpan={12} style={{ padding: '2.5rem', textAlign: 'center', color: t.muted }}>
+                <tr><td colSpan={14} style={{ padding: '2.5rem', textAlign: 'center', color: t.muted }}>
                   {showAll ? 'Tiada ads dengan belanja dalam tempoh ini.' : 'Tiada ads sedang berjalan. Tekan butang di atas untuk lihat semua.'}
                 </td></tr>
               )}
@@ -427,7 +475,7 @@ const GUIDE = [
   ['Tampal di sini', 'Salin token (hanya dipaparkan sekali) dan tampal dalam kotak di bawah. Token disulitkan dan tidak dipaparkan semula.'],
 ];
 
-export function AdsHubSettings({ onChanged }) {
+export function AdsHubSettings({ marketerId, onChanged }) {
   const t = theme(useLightMode());
   const [conn, setConn] = useState(undefined);
   const [error, setError] = useState('');
@@ -438,14 +486,15 @@ export function AdsHubSettings({ onChanged }) {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const mq = marketerId ? `?marketer=${marketerId}` : '';
 
   const load = useCallback(async () => {
-    const json = await fetch('/api/ads-hub/connection').then(r => r.json()).catch(() => ({}));
+    const json = await fetch(`/api/ads-hub/connection${mq}`).then(r => r.json()).catch(() => ({}));
     if (json.success) { setConn(json.connection); setEditing(!json.connection); } else { setError(json.error || 'Gagal muatkan tetapan.'); setConn(null); }
-  }, []);
+  }, [mq]);
   useEffect(() => { load(); }, [load]);
 
-  const post = body => fetch('/api/ads-hub/connection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+  const post = body => fetch(`/api/ads-hub/connection${mq}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
 
   const test = async () => {
     setBusy('test'); setError(''); setInfo(null); setMsg('');
@@ -469,7 +518,7 @@ export function AdsHubSettings({ onChanged }) {
 
   const disconnect = async () => {
     setBusy('delete');
-    const json = await fetch('/api/ads-hub/connection', { method: 'DELETE' }).then(r => r.json());
+    const json = await fetch(`/api/ads-hub/connection${mq}`, { method: 'DELETE' }).then(r => r.json());
     setBusy(''); setConfirmDisconnect(false);
     if (!json.success) return setError(json.error);
     setConn(null); setEditing(true); setMsg('Sambungan diputuskan dan data cache dibuang.');

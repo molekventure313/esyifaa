@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { theme, useLightMode, Card, Spinner, btn, th, td, ago } from './AdsHub';
 
+// marketerId kosong = akaun pemanggil sendiri (marketer, atau HQ bagi super_admin)
 const q = marketerId => (marketerId ? `?marketer=${marketerId}` : '');
+const qa = marketerId => (marketerId ? `&marketer=${marketerId}` : '');
 const getJson = url => fetch(url).then(r => r.json()).catch(() => ({ success: false, error: 'Gagal hubungi server.' }));
 const sendJson = (url, method, body) => fetch(url, {
   method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined,
@@ -46,7 +48,7 @@ export function AlertsPanel({ marketerId, canEdit, onChanged }) {
 
   const decide = async (ev, decision) => {
     setBusy(ev.id); setMsg('');
-    const j = await sendJson(`/api/ads-hub/events/${ev.id}`, 'POST', { decision });
+    const j = await sendJson(`/api/ads-hub/events/${ev.id}${q(marketerId)}`, 'POST', { decision });
     setBusy(null);
     setMsg(j.message || j.error || '');
     await load();
@@ -95,7 +97,7 @@ export function LatestReport({ marketerId, canEdit }) {
 
   const generate = async () => {
     setBusy(true); setErr('');
-    const j = await sendJson('/api/ads-hub/reports', 'POST');
+    const j = await sendJson(`/api/ads-hub/reports${q(marketerId)}`, 'POST');
     setBusy(false);
     if (!j.success) setErr(j.error || 'Gagal jana laporan.');
     await load();
@@ -214,11 +216,11 @@ export function RulesTab({ marketerId, canEdit }) {
   }, [marketerId]);
   useEffect(() => { load(); }, [load]);
 
-  const patch = async (id, body) => { const j = await sendJson(`/api/ads-hub/rules/${id}`, 'PATCH', body); if (!j.success) setMsg(j.error); await load(); };
-  const remove = async id => { await sendJson(`/api/ads-hub/rules/${id}`, 'DELETE'); await load(); };
-  const cancel = async id => { const j = await sendJson(`/api/ads-hub/schedules/${id}`, 'DELETE'); setMsg(j.message || j.error || ''); await load(); };
+  const patch = async (id, body) => { const j = await sendJson(`/api/ads-hub/rules/${id}${q(marketerId)}`, 'PATCH', body); if (!j.success) setMsg(j.error); await load(); };
+  const remove = async id => { await sendJson(`/api/ads-hub/rules/${id}${q(marketerId)}`, 'DELETE'); await load(); };
+  const cancel = async id => { const j = await sendJson(`/api/ads-hub/schedules/${id}${q(marketerId)}`, 'DELETE'); setMsg(j.message || j.error || ''); await load(); };
   const save = async () => {
-    const j = await sendJson('/api/ads-hub/rules', 'POST', form);
+    const j = await sendJson(`/api/ads-hub/rules${q(marketerId)}`, 'POST', form);
     setMsg(j.message || j.error || '');
     if (j.success) { setForm(null); await load(); }
   };
@@ -307,14 +309,14 @@ export function RulesTab({ marketerId, canEdit }) {
 }
 
 // ---------- Had keselamatan (tab Tetapan) ----------
-export function LimitsCard() {
+export function LimitsCard({ marketerId }) {
   const t = theme(useLightMode());
   const [c, setC] = useState(null);
   const [msg, setMsg] = useState('');
-  useEffect(() => { getJson('/api/ads-hub/connection').then(j => j.success && j.connection && setC(j.connection)); }, []);
+  useEffect(() => { getJson(`/api/ads-hub/connection${q(marketerId)}`).then(j => j.success && j.connection && setC(j.connection)); }, [marketerId]);
   if (!c) return null;
   const save = async () => {
-    const j = await sendJson('/api/ads-hub/connection', 'PATCH', {
+    const j = await sendJson(`/api/ads-hub/connection${q(marketerId)}`, 'PATCH', {
       limit_max_budget: c.limit_max_budget, limit_max_increase_pct: c.limit_max_increase_pct,
       limit_auto_actions_per_day: c.limit_auto_actions_per_day, report_enabled: c.report_enabled,
     });
@@ -354,7 +356,7 @@ const STARTERS = [
   'Cipta peraturan: pause ad yang ROAS bawah 1 selepas belanja RM60 dalam 3 hari',
 ];
 
-export function ChatPanel({ open, onClose, onChanged }) {
+export function ChatPanel({ marketerId, open, onClose, onChanged }) {
   const t = theme(useLightMode());
   const [threads, setThreads] = useState([]);
   const [thread, setThread] = useState(null);
@@ -366,10 +368,10 @@ export function ChatPanel({ open, onClose, onChanged }) {
   const endRef = useRef(null);
 
   const loadThreads = useCallback(async () => {
-    const j = await getJson('/api/ads-hub/chat');
+    const j = await getJson(`/api/ads-hub/chat${q(marketerId)}`);
     if (j.success) setThreads(j.threads);
     else setError(j.error);
-  }, []);
+  }, [marketerId]);
   useEffect(() => { if (open) loadThreads(); }, [open, loadThreads]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [thread, busy]);
   useEffect(() => {
@@ -378,7 +380,7 @@ export function ChatPanel({ open, onClose, onChanged }) {
 
   const openThread = async id => {
     setError('');
-    const j = await getJson(`/api/ads-hub/chat?thread_id=${id}`);
+    const j = await getJson(`/api/ads-hub/chat?thread_id=${id}${qa(marketerId)}`);
     if (j.success) setThread(j.thread); else setError(j.error);
   };
 
@@ -393,7 +395,7 @@ export function ChatPanel({ open, onClose, onChanged }) {
       if (j.status === 'error') { setError(j.error); break; }
       if (j.status !== 'continue') break;
       setStatus('AI sedang semak data...');
-      j = await sendJson('/api/ads-hub/chat/step', 'POST', { thread_id: j.thread.id });
+      j = await sendJson(`/api/ads-hub/chat/step${q(marketerId)}`, 'POST', { thread_id: j.thread.id });
     }
     setStatus('');
     if (changed) onChanged?.();
@@ -405,7 +407,7 @@ export function ChatPanel({ open, onClose, onChanged }) {
     if (!msg || busy) return;
     setBusy(true); setError(''); setInput(''); setStatus('AI sedang berfikir...');
     setThread(th => (th ? { ...th, items: [...th.items, { type: 'user', text: msg }] } : { id: null, items: [{ type: 'user', text: msg }], pending: null }));
-    const j = await sendJson('/api/ads-hub/chat', 'POST', { thread_id: thread?.id || undefined, message: msg });
+    const j = await sendJson(`/api/ads-hub/chat${q(marketerId)}`, 'POST', { thread_id: thread?.id || undefined, message: msg });
     await drive(j);
     setBusy(false);
   };
@@ -413,7 +415,7 @@ export function ChatPanel({ open, onClose, onChanged }) {
   const decide = async all => {
     setBusy(true); setError(''); setStatus('Melaksanakan...');
     const decisions = Object.fromEntries(thread.pending.map(p => [p.tool_use_id, all === false ? 'reject' : approve[p.tool_use_id] ? 'approve' : 'reject']));
-    const j = await sendJson('/api/ads-hub/chat/confirm', 'POST', { thread_id: thread.id, decisions });
+    const j = await sendJson(`/api/ads-hub/chat/confirm${q(marketerId)}`, 'POST', { thread_id: thread.id, decisions });
     await drive(j);
     setBusy(false);
   };
@@ -484,3 +486,217 @@ export function ChatPanel({ open, onClose, onChanged }) {
   );
 }
 
+
+// ---------- Ads spend automatik (tab Tetapan) ----------
+const PRODUCT_SOURCE = { manual: 'ditetapkan', teka: 'teka dari nama', default: 'produk default' };
+
+export function SpendCard({ marketerId, isAgent }) {
+  const t = theme(useLightMode());
+  const [c, setC] = useState(null);
+  const [camps, setCamps] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const loadCamps = useCallback(async () => {
+    const j = await getJson(`/api/ads-hub/campaign-products${q(marketerId)}`);
+    if (j.success) { setCamps(j.campaigns); setProducts(j.products); } else setMsg(j.error);
+  }, [marketerId]);
+  useEffect(() => {
+    getJson(`/api/ads-hub/connection${q(marketerId)}`).then(j => j.success && j.connection && setC(j.connection));
+    loadCamps();
+  }, [marketerId, loadCamps]);
+  if (!c) return null;
+
+  const spendMsg = j => (j.spend && !j.spend.skipped
+    ? (j.spend.ok ? `Ads spend dikemas kini (${j.spend.inserted} baru, ${j.spend.updated} dikemas kini, ${j.spend.deleted} dibuang).` : `Ads spend gagal dikemas kini: ${j.spend.error}`)
+    : 'Disimpan.');
+  const patch = async body => {
+    setBusy('conn'); setMsg('');
+    const j = await sendJson(`/api/ads-hub/connection${q(marketerId)}`, 'PATCH', body);
+    setBusy('');
+    if (!j.success) return setMsg(j.error);
+    setC(j.connection); setMsg(spendMsg(j)); loadCamps();
+  };
+  const setProduct = async (campaign_id, product) => {
+    setBusy(campaign_id); setMsg('');
+    const j = await sendJson(`/api/ads-hub/campaign-products${q(marketerId)}`, 'PUT', { campaign_id, product });
+    setBusy('');
+    setMsg(j.success ? spendMsg(j) : j.error);
+    loadCamps();
+  };
+  const field = { padding: '0.4rem 0.55rem', borderRadius: 6, border: t.border, background: t.headBg, color: t.text, fontSize: '0.8rem', fontFamily: t.ff };
+
+  return (
+    <Card t={t} title="Ads spend automatik" sub="Belanja Meta + SST 8% ditulis ke rekod ads spend setiap jam, ikut produk. Untung harian & bulanan keluar di Laporan Marketer dan P&L.">
+      <label htmlFor="auto-spend" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', padding: '0.4rem 0 0.7rem', borderBottom: t.rowBorder, flexWrap: 'wrap' }}>
+        <span>
+          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Isi ads spend automatik dari Meta</span><br />
+          <span style={{ fontSize: '0.75rem', color: t.muted }}>
+            {isAgent ? 'Sentiasa hidup untuk ejen AI.' : 'Bila hidup, rekod ads spend dari 1 Nov 2026 (hingga 35 hari terakhir) digantikan dengan angka Meta. Isian manual untuk tarikh itu akan ditimpa; rekod sebelum 1 Nov tidak disentuh.'}
+          </span>
+        </span>
+        <input id="auto-spend" type="checkbox" checked={!!c.auto_ads_spend} disabled={busy === 'conn' || (isAgent && c.auto_ads_spend)}
+          onChange={e => patch({ auto_ads_spend: e.target.checked })} style={{ width: 18, height: 18 }} />
+      </label>
+      <label htmlFor="default-product" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', padding: '0.7rem 0', borderBottom: t.rowBorder, flexWrap: 'wrap' }}>
+        <span>
+          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Produk default</span><br />
+          <span style={{ fontSize: '0.75rem', color: t.muted }}>Untuk campaign yang namanya tak sebut produk.</span>
+        </span>
+        <select id="default-product" value={c.default_product || 'sabun-garam'} disabled={busy === 'conn'} onChange={e => patch({ default_product: e.target.value })} style={field}>
+          {products.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+        </select>
+      </label>
+      {msg && <div style={{ fontSize: '0.8rem', color: t.text2, padding: '0.6rem 0' }}>{msg}</div>}
+      <div style={{ fontWeight: 700, fontSize: '0.82rem', margin: '0.9rem 0 0.4rem' }}>Produk setiap campaign</div>
+      {!camps ? <Spinner t={t} text="Memuatkan campaign..." />
+        : !camps.length ? <div style={{ fontSize: '0.8rem', color: t.muted }}>Belum ada campaign. Sync dulu.</div>
+          : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                <thead><tr style={{ background: t.headBg }}>
+                  <th style={{ ...th(t), textAlign: 'left' }}>Campaign</th><th style={{ ...th(t), textAlign: 'left' }}>Status</th>
+                  <th style={{ ...th(t), textAlign: 'left' }}>Produk</th><th style={{ ...th(t), textAlign: 'left' }}>Sumber</th>
+                </tr></thead>
+                <tbody>
+                  {camps.map(x => (
+                    <tr key={x.campaign_id} style={{ borderBottom: t.rowBorder }}>
+                      <td style={td(t, 'left')}>{x.campaign_name || x.campaign_id}</td>
+                      <td style={{ ...td(t, 'left'), color: x.status === 'ACTIVE' ? t.good : t.muted, fontSize: '0.72rem' }}>{x.status === 'ACTIVE' ? '● Aktif' : (x.status || '—').toLowerCase()}</td>
+                      <td style={td(t, 'left')}>
+                        <select aria-label={`Produk ${x.campaign_name}`} value={x.product} disabled={busy === x.campaign_id}
+                          onChange={e => setProduct(x.campaign_id, e.target.value)} style={field}>
+                          {products.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+                        </select>
+                      </td>
+                      <td style={{ ...td(t, 'left'), color: t.muted, fontSize: '0.72rem' }}>
+                        {PRODUCT_SOURCE[x.source]}
+                        {x.source === 'manual' && <button onClick={() => setProduct(x.campaign_id, '')} style={{ marginLeft: 6, border: 'none', background: 'none', color: t.accent, cursor: 'pointer', fontSize: '0.72rem' }}>teka semula</button>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+    </Card>
+  );
+}
+
+// ---------- Maklumat ejen AI: kod SP & pixel (tab Tetapan, super_admin) ----------
+export function AgentCard({ marketerId }) {
+  const t = theme(useLightMode());
+  const [a, setA] = useState(null);
+  const [pixel, setPixel] = useState('');
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  useEffect(() => {
+    getJson(`/api/ads-hub/agents${q(marketerId)}`).then(j => {
+      if (!j.success) return setMsg(j.error);
+      setA(j.agent); setPixel(j.agent.meta_pixel_id);
+    });
+  }, [marketerId]);
+  if (!a) return msg ? <div style={{ color: t.bad, fontSize: '0.8rem' }}>{msg}</div> : null;
+
+  const save = async body => {
+    setBusy(true); setMsg('');
+    const j = await sendJson(`/api/ads-hub/agents${q(marketerId)}`, 'PATCH', body);
+    setBusy(false);
+    if (!j.success) return setMsg(j.error);
+    setA(j.agent); setPixel(j.agent.meta_pixel_id); setToken(''); setMsg('Disimpan.');
+  };
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const field = { padding: '0.45rem 0.6rem', borderRadius: 6, border: t.border, background: t.headBg, color: t.text, fontSize: '0.85rem', fontFamily: t.ff };
+  const row = { display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', padding: '0.6rem 0', borderBottom: t.rowBorder, flexWrap: 'wrap' };
+
+  return (
+    <Card t={t} title={`🤖 ${a.name}`} sub="Ejen tiada login. Pixel dan link SP ejen diurus di sini.">
+      <div style={row}>
+        <span><span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Kod ejen</span><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>Order dari link dengan kod ini dikira milik ejen.</span></span>
+        <code style={{ fontWeight: 700 }}>{a.code}</code>
+      </div>
+      <div style={row}>
+        <span><span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Contoh link SP</span><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>Guna link SP mana-mana produk, tambah <code>?m={a.code}</code>.</span></span>
+        <code style={{ fontSize: '0.78rem', wordBreak: 'break-all' }}>{origin}/sabun-garam?m={a.code}</code>
+      </div>
+      <label htmlFor="agent-pixel" style={row}>
+        <span><span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Meta Pixel ID</span><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>Pixel ejen sendiri, dipasang pada SP bila link ada kod ejen.</span></span>
+        <input id="agent-pixel" value={pixel} onChange={e => setPixel(e.target.value.replace(/\D/g, ''))} placeholder="cth: 1234567890" style={{ ...field, width: 190 }} />
+      </label>
+      <label htmlFor="agent-capi" style={row}>
+        <span><span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Token Conversions API</span><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>{a.has_capi_token ? 'Dah tersimpan. Isi untuk ganti.' : 'Pilihan. Untuk hantar event purchase dari server.'}</span></span>
+        <input id="agent-capi" type="password" value={token} onChange={e => setToken(e.target.value.trim())} placeholder={a.has_capi_token ? '•••••••• tersimpan' : 'Tampal token'} style={{ ...field, width: 190 }} />
+      </label>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: '0.9rem', flexWrap: 'wrap' }}>
+        <button onClick={() => save({ meta_pixel_id: pixel, ...(token ? { meta_access_token: token } : {}) })} disabled={busy} style={btn(t, true)}>{busy ? 'Menyimpan...' : 'Simpan pixel'}</button>
+        {a.has_capi_token && <button onClick={() => save({ meta_access_token: '-' })} disabled={busy} style={btn(t)}>Buang token CAPI</button>}
+        {msg && <span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span>}
+      </div>
+    </Card>
+  );
+}
+
+// ---------- Sambung Claude (MCP E-Syifa, baca sahaja) ----------
+export function ClaudeKeyCard({ marketerId }) {
+  const t = theme(useLightMode());
+  const [keys, setKeys] = useState(null);
+  const [fresh, setFresh] = useState(null);   // key penuh — ditunjuk sekali sahaja
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const load = useCallback(async () => {
+    const j = await getJson(`/api/ads-hub/mcp-keys${q(marketerId)}`);
+    if (j.success) setKeys(j.keys); else { setKeys([]); setMsg(j.error); }
+  }, [marketerId]);
+  useEffect(() => { load(); }, [load]);
+
+  const create = async () => {
+    setBusy(true); setMsg(''); setCopied(false);
+    const j = await sendJson(`/api/ads-hub/mcp-keys${q(marketerId)}`, 'POST', { name: 'Claude' });
+    setBusy(false);
+    if (!j.success) return setMsg(j.error);
+    setFresh(j.key); load();
+  };
+  const revoke = async id => {
+    if (!confirm('Batalkan key ini? Claude yang guna key ini tak boleh baca data lagi.')) return;
+    const j = await sendJson(`/api/ads-hub/mcp-keys?id=${id}${qa(marketerId)}`, 'DELETE');
+    if (!j.success) setMsg(j.error);
+    load();
+  };
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const cmd = fresh ? `claude mcp add --transport http esyifa ${origin}/api/mcp --header "Authorization: Bearer ${fresh}"` : '';
+  const copy = async () => { try { await navigator.clipboard.writeText(cmd); setCopied(true); } catch { setMsg('Gagal salin — salin secara manual.'); } };
+  const code = { display: 'block', padding: '0.7rem 0.8rem', borderRadius: 8, background: t.headBg, border: t.border, fontSize: '0.75rem', fontFamily: 'ui-monospace, Consolas, monospace', wordBreak: 'break-all', color: t.text };
+
+  return (
+    <Card t={t} title="Sambung Claude (MCP E-Syifa)" sub="Claude Code di PC anda boleh baca prestasi ads & order sebenar akaun ini (baca sahaja, tiada data pelanggan). Cipta ads tetap guna Meta API anda sendiri.">
+      {fresh && (
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 6 }}>Jalankan arahan ini sekali di terminal PC anda (key hanya ditunjuk SEKALI ini):</div>
+          <code style={code}>{cmd}</code>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
+            <button onClick={copy} style={btn(t, true)}>{copied ? 'Disalin ✓' : 'Salin arahan'}</button>
+            <button onClick={() => setFresh(null)} style={btn(t)}>Tutup</button>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: t.muted, marginTop: 8, lineHeight: 1.6 }}>
+            Lepas itu buka Claude Code dan tanya, contohnya: "guna esyifa, analisis ads 7 hari — angle mana menang ikut order sebenar?". Jangan kongsi key ini dengan sesiapa.
+          </div>
+        </div>
+      )}
+      {keys == null ? <Spinner t={t} text="Memuatkan…" /> : keys.length === 0 ? (
+        <div style={{ fontSize: '0.8rem', color: t.muted, padding: '0.3rem 0 0.6rem' }}>Belum ada key.</div>
+      ) : keys.map(k => (
+        <div key={k.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.55rem 0', borderBottom: t.rowBorder, fontSize: '0.8rem', flexWrap: 'wrap' }}>
+          <span><strong>{k.name}</strong> · esk_…{k.key_last4}<br />
+            <span style={{ color: t.muted, fontSize: '0.72rem' }}>Dijana {fmtMyt(k.created_at)} · Guna terakhir {k.last_used_at ? ago(k.last_used_at) : 'belum pernah'}</span></span>
+          <button onClick={() => revoke(k.id)} style={btn(t)}>Batalkan</button>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: '0.9rem' }}>
+        <button onClick={create} disabled={busy} style={btn(t, true)}>{busy ? 'Menjana…' : 'Jana key baru'}</button>
+        {msg && <span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span>}
+      </div>
+    </Card>
+  );
+}

@@ -10,7 +10,7 @@ const AD_KEYS = ['name', 'status', 'adset_name', 'angle', 'daily_budget', 'spend
 const SYSTEM = [{
   type: 'text',
   text: `Anda menulis laporan pagi iklan Meta untuk marketer E-Syifa, dalam Bahasa Melayu yang santai dan jelas.
-"Order sebenar" dan "ROAS sebenar" = order dalam sistem E-Syifa yang dipadankan dengan ad melalui UTM. Ini sumber kebenaran; ROAS pixel hanya rujukan.
+"Order sebenar" = order dalam sistem E-Syifa (sumber kebenaran; ROAS pixel hanya rujukan). Ringkasan (summary) & trend harian kira SEMUA order akaun, sebab order organik/WhatsApp pun datang kesan ads; summary.ad_* = order yang dipadankan terus dengan ad melalui UTM. Prestasi setiap ad/angle guna order yang dipadankan sahaja.
 
 Format (teks biasa, tiada jadual markdown, maksimum ±250 patah perkataan):
 1. Satu baris ringkasan semalam: belanja, order, jualan, ROAS sebenar, dibanding purata 7 hari.
