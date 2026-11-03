@@ -148,7 +148,7 @@ export function ReportsTab({ marketerId }) {
 }
 
 // ---------- Log tindakan ----------
-const SOURCE_LABEL = { chat: '💬 Chat', jadual: '⏰ Jadual', auto: '🤖 Auto', cadangan: '💡 Cadangan' };
+const SOURCE_LABEL = { chat: '💬 Chat', jadual: '⏰ Jadual', auto: '🤖 Auto', cadangan: '💡 Cadangan', autopilot: '🚀 Autopilot' };
 const STATUS_STYLE = { ok: ['Berjaya', 'good'], failed: ['Gagal', 'bad'], rejected: ['Ditolak had', 'warn'] };
 const changeText = (a, b) => {
   if (!a && !b) return '';
@@ -695,6 +695,77 @@ export function ClaudeKeyCard({ marketerId }) {
       ))}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: '0.9rem' }}>
         <button onClick={create} disabled={busy} style={btn(t, true)}>{busy ? 'Menjana…' : 'Jana key baru'}</button>
+        {msg && <span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span>}
+      </div>
+    </Card>
+  );
+}
+
+// ---------- Autopilot HQ (tetapan + suis kecemasan) ----------
+export function AutopilotCard() {
+  const t = theme(useLightMode());
+  const [s, setS] = useState(null);
+  const [opts, setOpts] = useState(null);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    getJson('/api/ads-hub/autopilot').then(j => {
+      if (j.success) { setS(j.settings); setOpts(j.options); } else setMsg(j.error);
+    });
+  }, []);
+  const patch = async body => {
+    setBusy(true); setMsg('');
+    const j = await sendJson('/api/ads-hub/autopilot', 'PATCH', body);
+    setBusy(false);
+    if (!j.success) return setMsg(j.error);
+    setS(j.settings); setMsg('Disimpan.');
+  };
+  if (!s) return msg ? <Card t={t} title="🚀 Autopilot HQ"><span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span></Card> : null;
+
+  const field = { padding: '0.45rem 0.6rem', borderRadius: 6, border: t.border, background: t.headBg, color: t.text, fontSize: '0.82rem', fontFamily: t.ff };
+  const row = (id, label, hint, input) => (
+    <label htmlFor={id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', padding: '0.6rem 0', borderBottom: t.rowBorder, flexWrap: 'wrap' }}>
+      <span><span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{label}</span><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>{hint}</span></span>
+      {input}
+    </label>
+  );
+  const select = (id, key, list, empty) => (
+    <select id={id} value={s[key] || ''} onChange={e => setS({ ...s, [key]: e.target.value || null })} style={{ ...field, maxWidth: 320 }}>
+      <option value="">{empty}</option>
+      {list.map(o => <option key={o.id} value={o.id}>{o.name}{o.status ? ` · ${o.status}` : ''}{o.campaign ? ` (${o.campaign})` : ''}</option>)}
+      {s[key] && !list.some(o => o.id === s[key]) && <option value={s[key]}>{s[key]}</option>}
+    </select>
+  );
+  const save = () => patch({
+    autopilot_adset_budget: s.autopilot_adset_budget, autopilot_max_adsets: s.autopilot_max_adsets, autopilot_daily_cap: s.autopilot_daily_cap,
+    autopilot_page_id: s.autopilot_page_id, autopilot_ig_id: s.autopilot_ig_id, autopilot_template_adset_id: s.autopilot_template_adset_id,
+  });
+  const on = s.autopilot_enabled;
+
+  return (
+    <Card t={t} title="🚀 Autopilot HQ" sub="Claude di PC launch ad baru melalui MCP selepas anda luluskan draf. Ad masuk kempen [AUTOPILOT] dan dijadual mula 06:00 pagi esok.">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.4rem 0 0.8rem', borderBottom: t.rowBorder, flexWrap: 'wrap' }}>
+        <span>
+          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: on ? t.good : t.bad }}>{on ? '● Autopilot HIDUP' : '● Autopilot MATI'}</span><br />
+          <span style={{ fontSize: '0.75rem', color: t.muted }}>Suis kecemasan: bila MATI, semua launch baru ditolak serta-merta. Ads yang dah berjalan tidak disentuh.</span>
+        </span>
+        <button disabled={busy} onClick={() => patch({ autopilot_enabled: !on })} style={btn(t, !on)}>{on ? 'Matikan autopilot' : 'Hidupkan autopilot'}</button>
+      </div>
+      {row('ap-budget', 'Bajet setiap adset baru (RM/hari)', `Mesti ≤ had adset di kad Had keselamatan (RM${Number(s.limit_max_budget)}).`,
+        <input id="ap-budget" type="number" min="1" value={s.autopilot_adset_budget} onChange={e => setS({ ...s, autopilot_adset_budget: e.target.value })} style={{ ...field, width: 110 }} />)}
+      {row('ap-max', 'Adset aktif maksimum', 'Dalam kempen [AUTOPILOT]. Draf baru hanya bila ada slot kosong.',
+        <input id="ap-max" type="number" min="1" max="50" value={s.autopilot_max_adsets} onChange={e => setS({ ...s, autopilot_max_adsets: e.target.value })} style={{ ...field, width: 110 }} />)}
+      {row('ap-cap', 'Had bajet harian kempen (RM)', 'Jumlah bajet semua adset aktif autopilot (termasuk selepas scale).',
+        <input id="ap-cap" type="number" min="1" value={s.autopilot_daily_cap} onChange={e => setS({ ...s, autopilot_daily_cap: e.target.value })} style={{ ...field, width: 110 }} />)}
+      {row('ap-page', 'Facebook Page', 'Page yang menjalankan ads.', select('ap-page', 'autopilot_page_id', opts?.pages || [], '— Pilih Page —'))}
+      {row('ap-ig', 'Akaun Instagram (pilihan)', 'Kosong = guna Page sahaja.', select('ap-ig', 'autopilot_ig_id', opts?.instagram || [], '— Tiada —'))}
+      {row('ap-tpl', 'Adset contoh', 'Targeting, pixel & optimization adset baru disalin dari adset ini.', select('ap-tpl', 'autopilot_template_adset_id', opts?.adsets || [], '— Pilih adset —'))}
+      <div style={{ fontSize: '0.75rem', color: t.muted, marginTop: '0.7rem' }}>
+        Kempen autopilot: {s.autopilot_campaign_id || 'belum dicipta (dicipta automatik semasa launch pertama)'}
+        {opts?.warning ? ` · ${opts.warning}` : ''}
+      </div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: '0.9rem' }}>
+        <button onClick={save} disabled={busy} style={btn(t, true)}>Simpan tetapan</button>
         {msg && <span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span>}
       </div>
     </Card>

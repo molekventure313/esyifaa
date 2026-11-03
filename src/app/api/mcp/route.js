@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { authKey, callTool, TOOLS, INSTRUCTIONS, SERVER_INFO, PROTOCOL_VERSIONS } from '@/lib/ads-hub/mcp';
+import { authKey, callTool, toolsFor, INSTRUCTIONS, SERVER_INFO, PROTOCOL_VERSIONS } from '@/lib/ads-hub/mcp';
 
-// MCP E-Syifa (Streamable HTTP, tanpa sesi, JSON sahaja). Baca sahaja.
+// MCP E-Syifa (Streamable HTTP, tanpa sesi, JSON sahaja). Marketer: baca sahaja · HQ: + alat autopilot.
 // Claude Code: claude mcp add --transport http esyifa https://<domain>/api/mcp --header "Authorization: Bearer esk_…"
 // Auth dengan API key (Ads Hub → Tetapan), bukan cookie — route ini public dalam middleware.
 export const dynamic = 'force-dynamic';
@@ -28,10 +28,10 @@ async function handle(admin, auth, msg) {
     };
   }
   if (method === 'ping') return { jsonrpc: '2.0', id, result: {} };
-  if (method === 'tools/list') return { jsonrpc: '2.0', id, result: { tools: TOOLS } };
+  if (method === 'tools/list') return { jsonrpc: '2.0', id, result: { tools: toolsFor(auth.profile) } };
   if (method === 'tools/call') {
     const name = params?.name;
-    if (!TOOLS.some(t => t.name === name)) return rpcError(id, -32602, `Unknown tool: ${name}`);
+    if (!toolsFor(auth.profile).some(t => t.name === name)) return rpcError(id, -32602, `Unknown tool: ${name}`);
     try {
       const out = await callTool(admin, auth.profile, name, params?.arguments || {});
       return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(out) }], structuredContent: out } };

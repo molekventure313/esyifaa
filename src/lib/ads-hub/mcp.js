@@ -1,4 +1,4 @@
-// MCP E-Syifa — Claude Code/Desktop marketer baca data Ads Hub & order sendiri (BACA sahaja). Server sahaja.
+// MCP E-Syifa — Claude Code/Desktop baca data Ads Hub & order sendiri; akaun HQ juga ada alat autopilot (launch ad). Server sahaja.
 // Auth: header "Authorization: Bearer esk_…" (jadual mcp_api_keys, hash SHA-256). Skop = akaun Ads Hub pemilik key.
 // Tiada data pelanggan (nama/telefon/alamat) didedahkan — hanya agregat & prestasi ads.
 import crypto from 'node:crypto';
@@ -7,6 +7,7 @@ import { fetchProductCosts, productOf, PRODUCTS, DIGITAL_AD, AD_PRODUCT_KEYS } f
 import { resolveOwner, applyOwner } from '@/lib/team';
 import { buildReport, periodRange, fetchAll, PERIODS, SST_RATE } from './report';
 import { runReadTool } from './chat';
+import * as autopilot from './autopilot';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 export const SERVER_INFO = { name: 'esyifa', title: 'E-Syifa Ads Hub', version: '1.0.0' };
@@ -90,6 +91,53 @@ export const TOOLS = [
   },
 ];
 
+// Alat tulis autopilot — hanya untuk key akaun HQ (super_admin). Had dikuatkuasa di server (lib/ads-hub/autopilot).
+export const AUTOPILOT_TOOLS = [
+  {
+    name: 'autopilot_status',
+    description: 'Status autopilot HQ: suis ON/OFF, tetapan (bajet setiap adset, maks adset, had bajet harian, Page, adset contoh), adset dalam kempen [AUTOPILOT] (live dari Meta), slot kosong, masa mula seterusnya (06:00 esok) dan launch terkini. Panggil dahulu — buat draf hanya jika free_slots > 0.',
+    inputSchema: obj({}),
+  },
+  {
+    name: 'request_upload',
+    description: 'Dapatkan URL upload bertandatangan (sah 2 jam) untuk video MP4 atau thumbnail. Upload fail dengan HTTP PUT (lihat medan "how"), kemudian guna "path" dalam upload_video / launch_ad.',
+    inputSchema: obj({ kind: { type: 'string', enum: ['video', 'image'], description: 'video (mp4) atau image (thumbnail jpg/png)' }, filename: str('Nama fail asal') }, ['kind']),
+  },
+  {
+    name: 'upload_video',
+    description: 'Hantar video yang dah diupload (path dari request_upload) ke ad account Meta. Pulangkan video_id. Meta proses video secara async — semak video_status sehingga "ready".',
+    inputSchema: obj({ path: str('path dari request_upload'), name: str('Nama video di Meta') }, ['path']),
+  },
+  {
+    name: 'video_status',
+    description: 'Status pemprosesan video di Meta: processing / ready / error.',
+    inputSchema: obj({ video_id: str('ID video Meta') }, ['video_id']),
+  },
+  {
+    name: 'launch_ad',
+    description: `HANYA selepas draf (angle, ad copy, skrip VO, storyboard) diluluskan oleh pengguna. Cipta adset baru dalam kempen [AUTOPILOT] (bajet ikut tetapan, targeting/pixel disalin dari adset contoh) + ad video dengan UTM automatik, dijadual mula 06:00 pagi esok (MYT). Server tolak jika autopilot OFF, slot penuh atau melebihi had bajet harian. Resumable: jika status "launching", panggil semula dengan client_ref & parameter yang SAMA sehingga "scheduled".`,
+    inputSchema: obj({
+      client_ref: str('ID unik draf ini (cth "2026-11-04-saka-1") — elak launch berganda'),
+      product: { type: 'string', enum: AD_PRODUCT_KEYS, description: 'Produk' },
+      angle: str('Nama angle (jadi nama adset & ad)'),
+      headline: str('Headline ad'),
+      primary_text: str('Primary text / ad copy'),
+      description: str('Penerangan link (pilihan)'),
+      link: str('Halaman jualan https://e-syifa.com/... tanpa utm_'),
+      cta: { type: 'string', enum: autopilot.CTA_TYPES, description: 'Butang CTA (lalai LEARN_MORE)' },
+      video_id: str('video_id dari upload_video (status ready)'),
+      thumbnail_path: str('path thumbnail dari request_upload (pilihan; lalai thumbnail Meta)'),
+    }, ['client_ref', 'product', 'angle', 'headline', 'primary_text', 'link', 'video_id']),
+  },
+  {
+    name: 'cancel_launch',
+    description: 'Batal launch autopilot: pause adsetnya (boleh sebelum atau selepas 06:00).',
+    inputSchema: obj({ launch_id: int('launch_id dari launch_ad / autopilot_status') }, ['launch_id']),
+  },
+];
+const AUTOPILOT_NAMES = new Set(AUTOPILOT_TOOLS.map(t => t.name));
+export const toolsFor = profile => (profile.role === 'super_admin' ? [...TOOLS, ...AUTOPILOT_TOOLS] : TOOLS);
+
 const fail = msg => Object.assign(new Error(msg), { toolError: true });
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -124,6 +172,15 @@ async function connectionOf(admin, mid) {
 
 export async function callTool(admin, profile, name, input = {}) {
   const mid = profile.id;
+  if (AUTOPILOT_NAMES.has(name)) {
+    if (profile.role !== 'super_admin') throw fail('Alat autopilot hanya untuk akaun HQ.');
+    if (name === 'autopilot_status') return autopilot.status(admin, mid);
+    if (name === 'request_upload') return autopilot.requestUpload(admin, mid, input);
+    if (name === 'upload_video') return autopilot.uploadVideo(admin, mid, input);
+    if (name === 'video_status') return autopilot.videoStatus(admin, mid, input);
+    if (name === 'launch_ad') return autopilot.launchAd(admin, mid, mid, input);
+    if (name === 'cancel_launch') return autopilot.cancelLaunch(admin, mid, mid, input);
+  }
   const needConn = async () => {
     const c = await connectionOf(admin, mid);
     if (!c) throw fail('Akaun Meta belum disambung di Ads Hub → Tetapan.');
@@ -230,6 +287,7 @@ async function ordersSummary(admin, profile, { period, from, to }, product) {
   };
 }
 
-export const INSTRUCTIONS = `Pelayan MCP E-Syifa (baca sahaja): data Ads Hub & order sebenar akaun anda. ${BASIS}
+export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar akaun anda. ${BASIS}
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
-Cipta ads baru melalui Meta Marketing API dengan token anda sendiri, dan pastikan url_tags mengandungi utm_content={{ad.id}}.`;
+Marketer: alat baca sahaja — cipta ads melalui Meta Marketing API sendiri dengan url_tags mengandungi utm_content={{ad.id}}.
+Akaun HQ: ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, cancel_launch). launch_ad HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard.`;
