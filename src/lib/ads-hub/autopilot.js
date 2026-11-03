@@ -61,8 +61,9 @@ export async function status(admin, marketerId) {
   const token = decryptToken(conn.token_encrypted);
   const adsets = await liveAdsets(conn, token);
   const active = adsets.filter(a => a.status === 'ACTIVE');
-  const used = active.reduce((s, a) => s + a.daily_budget, 0);
   const budget = Number(conn.autopilot_adset_budget);
+  const pending = await pendingLaunches(admin, marketerId, active.map(a => a.adset_id));
+  const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || budget), 0);
   const { data: launches } = await admin.from('autopilot_launches')
     .select('id, client_ref, product, angle, status, adset_id, ad_id, start_time, error, created_at')
     .eq('marketer_id', marketerId).order('created_at', { ascending: false }).limit(10);
@@ -77,8 +78,9 @@ export async function status(admin, marketerId) {
       template_adset_id: conn.autopilot_template_adset_id,
     },
     active_adsets: active.length,
+    pending_launches: pending.length,
     daily_budget_used: Math.round(used * 100) / 100,
-    free_slots: Math.max(0, Math.min(conn.autopilot_max_adsets - active.length, Math.floor((Number(conn.autopilot_daily_cap) - used + 1e-9) / budget))),
+    free_slots: Math.max(0, Math.min(conn.autopilot_max_adsets - active.length - pending.length,Math.floor((Number(conn.autopilot_daily_cap) - used + 1e-9) / budget))),
     adsets,
     next_start_time: nextStart(),
     recent_launches: launches || [],
@@ -189,6 +191,47 @@ async function templateOf(conn, token) {
   return out;
 }
 
+// Launch yang adsetnya dah dicipta (PAUSED) tapi ad belum siap — dikira sebagai slot supaya prepare_launch tak melepasi had.
+async function pendingLaunches(admin, marketerId, excludeAdsetIds = []) {
+  const { data } = await admin.from('autopilot_launches').select('adset_id, daily_budget')
+    .eq('marketer_id', marketerId).eq('status', 'launching').not('adset_id', 'is', null).is('ad_id', null);
+  return (data || []).filter(r => !excludeAdsetIds.includes(r.adset_id));
+}
+
+// Had keselamatan — disemak sebelum adset dicipta / diaktifkan. skipAdsetId = adset launch ini sendiri.
+async function checkLimits(admin, conn, token, marketerId, skipAdsetId = null) {
+  const budget = Number(conn.autopilot_adset_budget);
+  if (budget > Number(conn.limit_max_budget)) throw fail(`Bajet adset autopilot ${rm(budget)} melebihi had adset ${rm(conn.limit_max_budget)} (Tetapan → Had keselamatan).`);
+  const active = (await liveAdsets(conn, token)).filter(a => a.status === 'ACTIVE' && a.adset_id !== skipAdsetId);
+  const pending = await pendingLaunches(admin, marketerId, [...active.map(a => a.adset_id), skipAdsetId]);
+  const count = active.length + pending.length;
+  const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || budget), 0);
+  if (count >= conn.autopilot_max_adsets) throw fail(`Slot penuh: ${count}/${conn.autopilot_max_adsets} adset aktif/menunggu dalam kempen autopilot.`);
+  if (used + budget > Number(conn.autopilot_daily_cap) + 1e-9) throw fail(`Melebihi had bajet harian: ${rm(used)} + ${rm(budget)} > ${rm(conn.autopilot_daily_cap)}.`);
+}
+
+async function insertRow(admin, marketerId, p, budget) {
+  const { data, error } = await admin.from('autopilot_launches').insert({
+    marketer_id: marketerId, client_ref: p.client_ref, product: p.product, angle: p.angle, headline: p.headline,
+    primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: budget, start_time: nextStart(),
+  }).select('*').single();
+  if (error) throw fail(error.message);
+  return data;
+}
+
+async function createAdset(admin, conn, token, row, p, status, save, actorId) {
+  const budget = Number(row.daily_budget);
+  const campaignId = await ensureCampaign(admin, conn, token);
+  const tpl = await templateOf(conn, token);
+  const day = new Date(Date.now() + MYT_MS).toISOString().slice(5, 10).replace('-', '/');
+  const name = `${p.product ? `${p.product} | ` : ''}${p.angle} | ${day}`.slice(0, 200);
+  const adset = await metaPost(`${conn.ad_account_id}/adsets`, {
+    ...tpl, name, campaign_id: campaignId, daily_budget: Math.round(budget * 100), status, start_time: row.start_time,
+  }, token);
+  await save({ campaign_id: campaignId, adset_id: adset.id });
+  await log(admin, row.marketer_id, actorId, 'create_adset', 'adset', adset.id, name, 'ok', `Adset ${rm(budget)}/hari (${status}), mula ${row.start_time}`, { daily_budget_rm: budget, start_time: row.start_time, status });
+}
+
 /**
  * Launch satu ad (resumable). p = { client_ref, product?, angle, headline, primary_text, description?, link, cta?, video_id, thumbnail_path? }
  * Pulangkan { status: 'scheduled'|'launching'|'failed', launch_id, ... }.
@@ -214,31 +257,9 @@ export async function launchAd(admin, marketerId, actorId, input) {
 
   try {
     if (!row?.adset_id) {
-      // Had keselamatan — disemak sebelum adset dicipta
-      const budget = Number(conn.autopilot_adset_budget);
-      if (budget > Number(conn.limit_max_budget)) throw fail(`Bajet adset autopilot ${rm(budget)} melebihi had adset ${rm(conn.limit_max_budget)} (Tetapan → Had keselamatan).`);
-      const active = (await liveAdsets(conn, token)).filter(a => a.status === 'ACTIVE');
-      const used = active.reduce((s, a) => s + a.daily_budget, 0);
-      if (active.length >= conn.autopilot_max_adsets) throw fail(`Slot penuh: ${active.length}/${conn.autopilot_max_adsets} adset aktif dalam kempen autopilot.`);
-      if (used + budget > Number(conn.autopilot_daily_cap) + 1e-9) throw fail(`Melebihi had bajet harian: ${rm(used)} + ${rm(budget)} > ${rm(conn.autopilot_daily_cap)}.`);
-
-      if (!row) {
-        const { data, error } = await admin.from('autopilot_launches').insert({
-          marketer_id: marketerId, client_ref: p.client_ref, product: p.product, angle: p.angle, headline: p.headline,
-          primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: budget, start_time: nextStart(),
-        }).select('*').single();
-        if (error) throw fail(error.message);
-        row = data;
-      }
-      const campaignId = await ensureCampaign(admin, conn, token);
-      const tpl = await templateOf(conn, token);
-      const day = new Date(Date.now() + MYT_MS).toISOString().slice(5, 10).replace('-', '/');
-      const name = `${p.product ? `${p.product} | ` : ''}${p.angle} | ${day}`.slice(0, 200);
-      const adset = await metaPost(`${conn.ad_account_id}/adsets`, {
-        ...tpl, name, campaign_id: campaignId, daily_budget: Math.round(budget * 100), status: 'ACTIVE', start_time: row.start_time,
-      }, token);
-      await save({ campaign_id: campaignId, adset_id: adset.id });
-      await log(admin, marketerId, actorId, 'create_adset', 'adset', adset.id, name, 'ok', `Adset ${rm(budget)}/hari, mula ${row.start_time}`, { daily_budget_rm: budget, start_time: row.start_time });
+      await checkLimits(admin, conn, token, marketerId);
+      row = row || await insertRow(admin, marketerId, p, Number(conn.autopilot_adset_budget));
+      await createAdset(admin, conn, token, row, p, 'ACTIVE', save, actorId);
       if (timeUp()) return summary(row, 'Adset dicipta. Panggil launch_ad sekali lagi dengan client_ref sama untuk sambung.', true);
     }
 
@@ -286,6 +307,82 @@ export async function launchAd(admin, marketerId, actorId, input) {
       await log(admin, marketerId, actorId, 'launch_ad', 'adset', row.adset_id || null, p.angle, e.toolError ? 'rejected' : 'failed', msg);
     }
     throw fail(msg);
+  }
+}
+
+// ---------- Launch hibrid: adset oleh E-Syifa, ad oleh MCP Meta Ads rasmi ----------
+// App Meta E-Syifa (mod Development) boleh cipta adset tapi Meta tolak creative/post daripadanya. prepare_launch cipta
+// adset PAUSED dengan had yang sama; Claude cipta ad melalui MCP Meta (mcp.facebook.com/ads) ikut ad_spec; complete_launch
+// sahkan ad (adset & UTM) dan aktifkan adset — dijadual mula 06:00 macam launch_ad.
+
+export async function prepareLaunch(admin, marketerId, actorId, input) {
+  const p = validateLaunch(input);
+  const conn = await loadHqConn(admin, marketerId);
+  if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
+  if (!conn.autopilot_page_id || !conn.autopilot_template_adset_id) throw fail('Tetapan autopilot belum lengkap: Facebook Page & adset contoh (Ads Hub → Tetapan).');
+  const token = decryptToken(conn.token_encrypted);
+
+  let { data: row } = await admin.from('autopilot_launches').select('*').eq('marketer_id', marketerId).eq('client_ref', p.client_ref).maybeSingle();
+  if (row && ['scheduled', 'cancelled'].includes(row.status)) return summary(row, `Launch ini dah ${row.status === 'scheduled' ? 'dijadualkan' : 'dibatalkan'}.`);
+  if (row?.status === 'failed') return summary(row, 'Launch ini gagal sebelum ini. Guna client_ref baru untuk cuba semula.');
+  const save = async patch => {
+    const { data } = await admin.from('autopilot_launches').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', row.id).select('*').single();
+    row = data;
+  };
+
+  try {
+    if (!row?.adset_id) {
+      await checkLimits(admin, conn, token, marketerId);
+      row = row || await insertRow(admin, marketerId, p, Number(conn.autopilot_adset_budget));
+      await createAdset(admin, conn, token, row, p, 'PAUSED', save, actorId);
+    }
+  } catch (e) {
+    const msg = e.toolError ? e.message : metaMsg(e);
+    if (row?.id) await save({ status: 'failed', error: msg }).catch(() => {});
+    throw fail(msg);
+  }
+
+  const thumbnail_url = p.thumbnail_path ? (await admin.storage.from(BUCKET).createSignedUrl(ownPath(marketerId, p.thumbnail_path), 86400)).data?.signedUrl : null;
+  return {
+    ...summary(row, 'Adset dicipta (PAUSED). Cipta ad melalui MCP Meta Ads ikut ad_spec, kemudian panggil complete_launch dengan launch_id & ad_id.', true),
+    ad_spec: {
+      ad_account_id: conn.ad_account_id, adset_id: row.adset_id, page_id: conn.autopilot_page_id,
+      instagram_user_id: conn.autopilot_ig_id || null, video_id: row.video_id, thumbnail_url,
+      headline: p.headline, primary_text: p.primary_text, description: p.description, link: p.link, cta: p.cta,
+      url_tags: UTM_TAGS, ad_name: p.angle.slice(0, 100), ad_status: 'ACTIVE',
+      note: 'url_tags WAJIB tepat (utm_content={{ad.id}}) — tanpanya order tak dipadankan dan complete_launch akan tolak.',
+    },
+  };
+}
+
+export async function completeLaunch(admin, marketerId, actorId, { launch_id, ad_id }) {
+  if (!ad_id) throw fail('ad_id diperlukan.');
+  const { data: row0 } = await admin.from('autopilot_launches').select('*').eq('marketer_id', marketerId).eq('id', launch_id).maybeSingle();
+  if (!row0) throw fail('Launch tidak dijumpai.');
+  let row = row0;
+  if (row.status === 'scheduled') return summary(row, 'Launch ini dah dijadualkan.');
+  if (row.status !== 'launching' || !row.adset_id) throw fail(`Launch berstatus "${row.status}" — tak boleh dilengkapkan.`);
+  const conn = await loadHqConn(admin, marketerId);
+  if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
+  const token = decryptToken(conn.token_encrypted);
+
+  try {
+    const ad = await metaGet(String(ad_id), { fields: 'id,adset_id,status,creative{id,url_tags}' }, token);
+    if (ad.adset_id !== row.adset_id) throw fail(`Ad ${ad_id} bukan dalam adset launch ini (${row.adset_id}).`);
+    if (!String(ad.creative?.url_tags || '').includes('utm_content={{ad.id}}')) {
+      throw fail(`Creative ad ${ad_id} tiada url_tags dengan utm_content={{ad.id}}. Padam ad itu dan cipta semula dengan url_tags dari ad_spec.`);
+    }
+    await checkLimits(admin, conn, token, marketerId, row.adset_id);
+    if (ad.status !== 'ACTIVE') await metaPost(ad.id, { status: 'ACTIVE' }, token);
+    await metaPost(row.adset_id, { status: 'ACTIVE' }, token);
+    const { data } = await admin.from('autopilot_launches').update({
+      ad_id: ad.id, creative_id: ad.creative?.id || null, status: 'scheduled', error: null, updated_at: new Date().toISOString(),
+    }).eq('id', row.id).select('*').single();
+    row = data;
+    await log(admin, marketerId, actorId, 'launch_ad', 'ad', ad.id, row.angle, 'ok', `Dijadual mula ${row.start_time} (ad melalui MCP Meta)`, { adset_id: row.adset_id, link: row.link });
+    return summary(row, `Ad dijadualkan: mula ${fmtMyt(row.start_time)} MYT, ${rm(row.daily_budget)}/hari.`);
+  } catch (e) {
+    throw fail(e.toolError ? e.message : metaMsg(e));
   }
 }
 

@@ -130,6 +130,27 @@ export const AUTOPILOT_TOOLS = [
     }, ['client_ref', 'product', 'angle', 'headline', 'primary_text', 'link', 'video_id']),
   },
   {
+    name: 'prepare_launch',
+    description: `Launch HIBRID (guna bila launch_ad ditolak kerana app Meta E-Syifa dalam mod Development). HANYA selepas draf diluluskan pengguna. Semak had yang sama, cipta adset PAUSED dalam kempen [AUTOPILOT] (mula 06:00 esok) dan pulangkan ad_spec. Kemudian cipta ad video dalam adset itu melalui MCP Meta Ads rasmi ikut ad_spec (url_tags WAJIB tepat), dan panggil complete_launch.`,
+    inputSchema: obj({
+      client_ref: str('ID unik draf ini — elak launch berganda'),
+      product: { type: 'string', enum: AD_PRODUCT_KEYS, description: 'Produk' },
+      angle: str('Nama angle (jadi nama adset & ad)'),
+      headline: str('Headline ad'),
+      primary_text: str('Primary text / ad copy'),
+      description: str('Penerangan link (pilihan)'),
+      link: str('Halaman jualan https://e-syifa.com/... tanpa utm_'),
+      cta: { type: 'string', enum: autopilot.CTA_TYPES, description: 'Butang CTA (lalai LEARN_MORE)' },
+      video_id: str('video_id dari upload_video (status ready)'),
+      thumbnail_path: str('path thumbnail dari request_upload (pilihan)'),
+    }, ['client_ref', 'product', 'angle', 'headline', 'primary_text', 'link', 'video_id']),
+  },
+  {
+    name: 'complete_launch',
+    description: 'Lengkapkan launch hibrid selepas ad dicipta melalui MCP Meta Ads: sahkan ad berada dalam adset launch ini & creative ada url_tags utm_content={{ad.id}}, semak had sekali lagi, kemudian aktifkan adset (dijadual 06:00). Status jadi "scheduled".',
+    inputSchema: obj({ launch_id: int('launch_id dari prepare_launch'), ad_id: str('ID ad yang dicipta melalui MCP Meta Ads') }, ['launch_id', 'ad_id']),
+  },
+  {
     name: 'cancel_launch',
     description: 'Batal launch autopilot: pause adsetnya (boleh sebelum atau selepas 06:00).',
     inputSchema: obj({ launch_id: int('launch_id dari launch_ad / autopilot_status') }, ['launch_id']),
@@ -179,6 +200,8 @@ export async function callTool(admin, profile, name, input = {}) {
     if (name === 'upload_video') return autopilot.uploadVideo(admin, mid, input);
     if (name === 'video_status') return autopilot.videoStatus(admin, mid, input);
     if (name === 'launch_ad') return autopilot.launchAd(admin, mid, mid, input);
+    if (name === 'prepare_launch') return autopilot.prepareLaunch(admin, mid, mid, input);
+    if (name === 'complete_launch') return autopilot.completeLaunch(admin, mid, mid, input);
     if (name === 'cancel_launch') return autopilot.cancelLaunch(admin, mid, mid, input);
   }
   const needConn = async () => {
@@ -290,4 +313,4 @@ async function ordersSummary(admin, profile, { period, from, to }, product) {
 export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar akaun anda. ${BASIS}
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Marketer: alat baca sahaja — cipta ads melalui Meta Marketing API sendiri dengan url_tags mengandungi utm_content={{ad.id}}.
-Akaun HQ: ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, cancel_launch). launch_ad HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard.`;
+Akaun HQ: ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
