@@ -75,7 +75,7 @@ export function buildOrderPayload(o) {
         pickup_service_type: 'Scheduled',
         pickup_service_level: 'Standard',
         pickup_date: today,
-        pickup_timeslot: { start_time: '09:00', end_time: '18:00', timezone: TZ },
+        pickup_timeslot: { start_time: '09:00', end_time: '22:00', timezone: TZ },
       } : {}),
       delivery_start_date: today,
       delivery_timeslot: { start_time: '09:00', end_time: '22:00', timezone: TZ },
