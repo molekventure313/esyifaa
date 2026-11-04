@@ -5,7 +5,7 @@
 // dalam autopilot_launches, dan pulangkan status 'launching' jika masa hampir tamat (had masa Netlify).
 import { decryptToken } from './crypto';
 import { metaGet, metaPost, MetaError } from './meta';
-import { AD_PRODUCT_KEYS } from '@/lib/products';
+import { AD_PRODUCT_KEYS, PRODUCTS, DIGITAL_AD } from '@/lib/products';
 
 export const BUCKET = 'ads-creatives';
 export const CTA_TYPES = ['LEARN_MORE', 'SHOP_NOW', 'ORDER_NOW', 'BUY_NOW', 'GET_OFFER'];
@@ -22,6 +22,15 @@ const metaMsg = e => (e instanceof MetaError ? `Meta tolak: ${e.message}${e.info
 export function nextStart(now = Date.now()) {
   const tomorrow = new Date(now + MYT_MS + 86400000).toISOString().slice(0, 10);
   return new Date(`${tomorrow}T06:00:00+08:00`).toISOString();
+}
+
+/** start 'today' = 06:00 pagi ini (MYT) jika belum lepas; lalai = 06:00 esok. */
+function startFor(start, now = Date.now()) {
+  if (start !== 'today') return nextStart(now);
+  const today = new Date(now + MYT_MS).toISOString().slice(0, 10);
+  const iso = new Date(`${today}T06:00:00+08:00`).toISOString();
+  if (Date.parse(iso) <= now) throw fail('06:00 pagi ini dah lepas — guna start "tomorrow".');
+  return iso;
 }
 
 /** Link mesti halaman e-syifa.com (https), tanpa UTM sedia ada — UTM ditambah oleh url_tags. */
@@ -41,25 +50,34 @@ export async function loadHqConn(admin, marketerId) {
   return data;
 }
 
+// Kempen autopilot: "[AUTOPILOT] HQ" (conn.autopilot_campaign_id, Sabun Garam/lalai) + satu kempen setiap produk lain,
+// dikesan dari autopilot_launches. Had slot & bajet dikira merentas semua kempen ini.
+async function autopilotCampaignIds(admin, conn) {
+  const { data } = await admin.from('autopilot_launches').select('campaign_id').eq('marketer_id', conn.marketer_id).not('campaign_id', 'is', null);
+  return [...new Set([conn.autopilot_campaign_id, ...(data || []).map(r => r.campaign_id)].filter(Boolean))];
+}
+
 // Adset dalam kempen autopilot (live dari Meta). Aktif = status ACTIVE (termasuk yang dijadual).
-async function liveAdsets(conn, token) {
-  if (!conn.autopilot_campaign_id) return [];
-  try {
-    const r = await metaGet(`${conn.autopilot_campaign_id}/adsets`, { fields: 'id,name,status,effective_status,daily_budget,start_time', limit: 100 }, token);
-    return (r.data || []).map(a => ({
-      adset_id: a.id, name: a.name, status: a.status, effective_status: a.effective_status,
-      daily_budget: a.daily_budget ? parseInt(a.daily_budget, 10) / 100 : 0, start_time: a.start_time,
-    }));
-  } catch (e) {
-    if (e instanceof MetaError && e.code === 100) return [];   // kempen dipadam → akan dicipta semula
-    throw e;
+async function liveAdsets(admin, conn, token) {
+  const out = [];
+  for (const cid of await autopilotCampaignIds(admin, conn)) {
+    try {
+      const r = await metaGet(`${cid}/adsets`, { fields: 'id,name,status,effective_status,daily_budget,start_time', limit: 100 }, token);
+      out.push(...(r.data || []).map(a => ({
+        adset_id: a.id, name: a.name, status: a.status, effective_status: a.effective_status, campaign_id: cid,
+        daily_budget: a.daily_budget ? parseInt(a.daily_budget, 10) / 100 : 0, start_time: a.start_time,
+      })));
+    } catch (e) {
+      if (!(e instanceof MetaError && e.code === 100)) throw e;   // kempen dipadam → akan dicipta semula
+    }
   }
+  return out;
 }
 
 export async function status(admin, marketerId) {
   const conn = await loadHqConn(admin, marketerId);
   const token = decryptToken(conn.token_encrypted);
-  const adsets = await liveAdsets(conn, token);
+  const adsets = await liveAdsets(admin, conn, token);
   const active = adsets.filter(a => a.status === 'ACTIVE');
   const budget = Number(conn.autopilot_adset_budget);
   const pending = await pendingLaunches(admin, marketerId, active.map(a => a.adset_id));
@@ -148,6 +166,7 @@ function validateLaunch(p) {
     headline: String(p.headline).trim().slice(0, 255), primary_text: String(p.primary_text).trim().slice(0, 5000),
     description: p.description ? String(p.description).trim().slice(0, 255) : null,
     link: checkLink(p.link), video_id: String(p.video_id), thumbnail_path: p.thumbnail_path || null, cta,
+    start: p.start === 'today' ? 'today' : 'tomorrow',
   };
 }
 
@@ -158,7 +177,26 @@ async function log(admin, marketerId, actorId, action, objectType, objectId, obj
   }).then(() => {}, () => {});
 }
 
-async function ensureCampaign(admin, conn, token) {
+const aliveCampaign = async (id, token) => {
+  try {
+    const c = await metaGet(id, { fields: 'id,effective_status' }, token);
+    return c.effective_status !== 'DELETED' && c.effective_status !== 'ARCHIVED';
+  } catch (e) { if (e instanceof MetaError && e.code === 100) return false; throw e; }
+};
+
+// Sabun Garam (dan launch tanpa produk) guna "[AUTOPILOT] HQ"; produk lain dapat kempen sendiri "[AUTOPILOT] <Produk>".
+async function ensureCampaign(admin, conn, token, product) {
+  if (product && product !== 'sabun-garam') {
+    const { data } = await admin.from('autopilot_launches').select('campaign_id').eq('marketer_id', conn.marketer_id)
+      .eq('product', product).not('campaign_id', 'is', null).order('created_at', { ascending: false }).limit(1);
+    if (data?.[0] && await aliveCampaign(data[0].campaign_id, token)) return data[0].campaign_id;
+    const label = [...PRODUCTS, DIGITAL_AD].find(x => x.key === product)?.label || product;
+    const c = await metaPost(`${conn.ad_account_id}/campaigns`, {
+      name: `[AUTOPILOT] ${label}`, objective: 'OUTCOME_SALES', status: 'ACTIVE', buying_type: 'AUCTION',
+      special_ad_categories: [], is_adset_budget_sharing_enabled: false,
+    }, token);
+    return c.id;
+  }
   if (conn.autopilot_campaign_id) {
     try {
       const c = await metaGet(conn.autopilot_campaign_id, { fields: 'id,status,effective_status' }, token);
@@ -202,7 +240,7 @@ async function pendingLaunches(admin, marketerId, excludeAdsetIds = []) {
 async function checkLimits(admin, conn, token, marketerId, skipAdsetId = null) {
   const budget = Number(conn.autopilot_adset_budget);
   if (budget > Number(conn.limit_max_budget)) throw fail(`Bajet adset autopilot ${rm(budget)} melebihi had adset ${rm(conn.limit_max_budget)} (Tetapan → Had keselamatan).`);
-  const active = (await liveAdsets(conn, token)).filter(a => a.status === 'ACTIVE' && a.adset_id !== skipAdsetId);
+  const active = (await liveAdsets(admin, conn, token)).filter(a => a.status === 'ACTIVE' && a.adset_id !== skipAdsetId);
   const pending = await pendingLaunches(admin, marketerId, [...active.map(a => a.adset_id), skipAdsetId]);
   const count = active.length + pending.length;
   const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || budget), 0);
@@ -213,7 +251,7 @@ async function checkLimits(admin, conn, token, marketerId, skipAdsetId = null) {
 async function insertRow(admin, marketerId, p, budget) {
   const { data, error } = await admin.from('autopilot_launches').insert({
     marketer_id: marketerId, client_ref: p.client_ref, product: p.product, angle: p.angle, headline: p.headline,
-    primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: budget, start_time: nextStart(),
+    primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: budget, start_time: startFor(p.start),
   }).select('*').single();
   if (error) throw fail(error.message);
   return data;
@@ -221,7 +259,7 @@ async function insertRow(admin, marketerId, p, budget) {
 
 async function createAdset(admin, conn, token, row, p, status, save, actorId) {
   const budget = Number(row.daily_budget);
-  const campaignId = await ensureCampaign(admin, conn, token);
+  const campaignId = await ensureCampaign(admin, conn, token, p.product);
   const tpl = await templateOf(conn, token);
   const day = new Date(Date.now() + MYT_MS).toISOString().slice(5, 10).replace('-', '/');
   const name = `${p.product ? `${p.product} | ` : ''}${p.angle} | ${day}`.slice(0, 200);

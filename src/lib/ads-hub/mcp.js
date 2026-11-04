@@ -115,7 +115,7 @@ export const AUTOPILOT_TOOLS = [
   },
   {
     name: 'launch_ad',
-    description: `HANYA selepas draf (angle, ad copy, skrip VO, storyboard) diluluskan oleh pengguna. Cipta adset baru dalam kempen [AUTOPILOT] (bajet ikut tetapan, targeting/pixel disalin dari adset contoh) + ad video dengan UTM automatik, dijadual mula 06:00 pagi esok (MYT). Server tolak jika autopilot OFF, slot penuh atau melebihi had bajet harian. Resumable: jika status "launching", panggil semula dengan client_ref & parameter yang SAMA sehingga "scheduled".`,
+    description: `HANYA selepas draf (angle, ad copy, skrip VO, storyboard) diluluskan oleh pengguna. Cipta adset baru dalam kempen [AUTOPILOT] (Sabun Garam: "[AUTOPILOT] HQ"; produk lain: kempen "[AUTOPILOT] <Produk>" sendiri) (bajet ikut tetapan, targeting/pixel disalin dari adset contoh) + ad video dengan UTM automatik, dijadual mula 06:00 pagi esok (MYT), atau 06:00 pagi ini dengan start="today". Server tolak jika autopilot OFF, slot penuh atau melebihi had bajet harian. Resumable: jika status "launching", panggil semula dengan client_ref & parameter yang SAMA sehingga "scheduled".`,
     inputSchema: obj({
       client_ref: str('ID unik draf ini (cth "2026-11-04-saka-1") — elak launch berganda'),
       product: { type: 'string', enum: AD_PRODUCT_KEYS, description: 'Produk' },
@@ -127,6 +127,7 @@ export const AUTOPILOT_TOOLS = [
       cta: { type: 'string', enum: autopilot.CTA_TYPES, description: 'Butang CTA (lalai LEARN_MORE)' },
       video_id: str('video_id dari upload_video (status ready)'),
       thumbnail_path: str('path thumbnail dari request_upload (pilihan; lalai thumbnail Meta)'),
+      start: { type: 'string', enum: ['tomorrow', 'today'], description: 'Bila mula: "tomorrow" = 06:00 esok (lalai), "today" = 06:00 pagi ini jika belum lepas' },
     }, ['client_ref', 'product', 'angle', 'headline', 'primary_text', 'link', 'video_id']),
   },
   {
@@ -143,6 +144,7 @@ export const AUTOPILOT_TOOLS = [
       cta: { type: 'string', enum: autopilot.CTA_TYPES, description: 'Butang CTA (lalai LEARN_MORE)' },
       video_id: str('video_id dari upload_video (status ready)'),
       thumbnail_path: str('path thumbnail dari request_upload (pilihan)'),
+      start: { type: 'string', enum: ['tomorrow', 'today'], description: 'Bila mula: "tomorrow" = 06:00 esok (lalai), "today" = 06:00 pagi ini jika belum lepas' },
     }, ['client_ref', 'product', 'angle', 'headline', 'primary_text', 'link', 'video_id']),
   },
   {
