@@ -1,5 +1,5 @@
 // Netlify Scheduled Function — setiap 10 minit panggil /api/cron/ads-scheduled:
-// laksana tindakan Ads Hub berjadual yang dah sampai masa.
+// laksana tindakan Ads Hub berjadual yang dah sampai masa + peraturan auto ikut jam.
 // Perlu env CRON_SECRET (sama nilai di Netlify untuk site ini).
 export default async () => {
   const base = process.env.URL;   // URL utama site (disediakan Netlify)

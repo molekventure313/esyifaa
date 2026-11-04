@@ -106,7 +106,7 @@ export async function PATCH(req) {
     upd.limit_max_increase_pct = Math.round(n(body.limit_max_increase_pct));
   }
   if (body.limit_auto_actions_per_day !== undefined) {
-    if (!(n(body.limit_auto_actions_per_day) >= 0 && n(body.limit_auto_actions_per_day) <= 100)) return bad('Had tindakan auto mesti 0–100.');
+    if (!(n(body.limit_auto_actions_per_day) >= 0 && n(body.limit_auto_actions_per_day) <= 1000)) return bad('Had tindakan auto mesti 0–1000.');
     upd.limit_auto_actions_per_day = Math.round(n(body.limit_auto_actions_per_day));
   }
   if (typeof body.report_enabled === 'boolean') upd.report_enabled = body.report_enabled;

@@ -1,6 +1,6 @@
 // Ads Hub — tindakan berjadual, peraturan auto & amaran (server sahaja).
 import { executeAction, describeAction } from './actions';
-import { buildReport } from './report';
+import { buildReport, fetchAll } from './report';
 
 const MYT_MS = 8 * 3600 * 1000;
 const DAY = 86400000;
@@ -8,7 +8,7 @@ const mytDate = (ms = Date.now()) => new Date(ms + MYT_MS).toISOString().slice(0
 const r2 = n => Math.round(n * 100) / 100;
 
 export const METRIC_LABEL = { spend: 'Belanja', orders: 'Order', revenue: 'Jualan', roas: 'ROAS', cpa: 'CPA', ctr: 'CTR link (%)' };
-export const RULE_ACTION_LABEL = { pause: 'Pause ad', pause_adset: 'Pause adset', budget_up: 'Naikkan budget adset', budget_down: 'Turunkan budget adset', notify: 'Beri amaran sahaja' };
+export const RULE_ACTION_LABEL = { pause: 'Pause ad', pause_adset: 'Pause adset', activate_adset: 'Hidupkan adset', budget_up: 'Naikkan budget adset', budget_down: 'Turunkan budget adset', budget_set: 'Set budget adset', notify: 'Beri amaran sahaja' };
 
 // ---------- Tindakan berjadual ----------
 
@@ -69,50 +69,221 @@ export async function runDueSchedules(admin, { budgetMs = 20000 } = {}) {
 }
 
 // ---------- Peraturan auto ----------
+// level 'ad'    = metrik setiap ad (asal). level 'adset' = metrik dijumlahkan ikut adset, hanya kempen ACTIVE.
+// run_at_time   = peraturan ikut jam (runTimeRules, cron 10 minit) pada semua adset dalam kempen aktif.
+
+const OPERATORS = ['>', '>=', '<', '<=', '='];
+const ADSET_ONLY = ['activate_adset', 'budget_set'];
+const TIME_ACTIONS = ['pause_adset', 'activate_adset', 'budget_set'];
+const isBudgetPct = a => a === 'budget_up' || a === 'budget_down';
 
 export function validateRule(r) {
   const errs = [];
   if (!r.name?.trim()) errs.push('nama');
-  if (!METRIC_LABEL[r.metric]) errs.push('metrik');
-  if (!['>', '>=', '<', '<='].includes(r.operator)) errs.push('operator');
-  if (!Number.isFinite(Number(r.value))) errs.push('nilai');
-  if (!(Number(r.window_days) >= 1 && Number(r.window_days) <= 30)) errs.push('tempoh (1–30 hari)');
   if (!RULE_ACTION_LABEL[r.action]) errs.push('tindakan');
-  if (['budget_up', 'budget_down'].includes(r.action) && !(Number(r.action_value) > 0 && Number(r.action_value) <= 100)) errs.push('peratus budget (1–100)');
   if (!['suggest', 'auto'].includes(r.mode)) errs.push('mod');
   if (r.scope && !['all', 'autopilot'].includes(r.scope)) errs.push('skop');
+  if (r.action === 'budget_set' && !(Number(r.action_value) >= 1 && Number(r.action_value) <= 100000)) errs.push('budget baru (RM)');
+  if (r.action_max != null && r.action_max !== '' && !(Number(r.action_max) >= 1)) errs.push('had budget maksimum');
+  if (r.run_at_time) {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.run_at_time)) errs.push('masa (HH:mm)');
+    if (!TIME_ACTIONS.includes(r.action)) errs.push('tindakan ikut jam (pause / hidupkan / set budget adset sahaja)');
+    return errs.length ? `Peraturan tidak lengkap: ${errs.join(', ')}.` : null;
+  }
+  const conds = [{ metric: r.metric, operator: r.operator, value: r.value }, ...(r.conditions || [])];
+  if (conds.length > 4) errs.push('syarat (maksimum 4)');
+  conds.forEach((c, i) => {
+    const n = i ? ` ${i + 1}` : '';
+    if (!METRIC_LABEL[c.metric]) errs.push(`metrik${n}`);
+    if (!OPERATORS.includes(c.operator)) errs.push(`operator${n}`);
+    if (c.value === '' || c.value == null || !Number.isFinite(Number(c.value))) errs.push(`nilai${n}`);
+  });
+  if (!(Number(r.window_days) >= 1 && Number(r.window_days) <= 30)) errs.push('tempoh (1–30 hari)');
+  if (r.level && !['ad', 'adset'].includes(r.level)) errs.push('peringkat');
+  if (ADSET_ONLY.includes(r.action) && r.level !== 'adset') errs.push('tindakan ini perlukan peringkat adset');
+  if (r.frequency && !['daily', 'hourly'].includes(r.frequency)) errs.push('kekerapan');
+  if (isBudgetPct(r.action) && !(Number(r.action_value) > 0 && Number(r.action_value) <= 100)) errs.push('peratus budget (1–100)');
   return errs.length ? `Peraturan tidak lengkap: ${errs.join(', ')}.` : null;
 }
 
+const condText = c => `${METRIC_LABEL[c.metric]} ${c.operator} ${Number(c.value)}`;
+function actionText(r) {
+  if (isBudgetPct(r.action)) return `${RULE_ACTION_LABEL[r.action]} ${Number(r.action_value)}%${Number(r.action_max) > 0 ? ` (maks RM${Number(r.action_max)})` : ''}`;
+  if (r.action === 'budget_set') return `Set budget adset RM${Number(r.action_value)}`;
+  return RULE_ACTION_LABEL[r.action];
+}
+
 export function describeRule(r) {
-  const act = r.action === 'budget_up' || r.action === 'budget_down' ? `${RULE_ACTION_LABEL[r.action]} ${Number(r.action_value)}%` : RULE_ACTION_LABEL[r.action];
-  return `Jika ${METRIC_LABEL[r.metric]} ${r.operator} ${Number(r.value)} dalam ${r.window_days} hari`
-    + `${Number(r.min_spend) > 0 ? ` (belanja ≥ RM${Number(r.min_spend)})` : ''} → ${act}`
-    + ` · ${r.mode === 'auto' ? 'AUTO' : 'cadang sahaja'}`
-    + (r.scope === 'autopilot' ? ' · kempen autopilot sahaja' : '');
+  const tail = ` · ${r.mode === 'auto' ? 'AUTO' : 'cadang sahaja'}` + (r.scope === 'autopilot' ? ' · kempen autopilot sahaja' : '');
+  if (r.run_at_time) return `Setiap hari ${r.run_at_time} → ${actionText(r)} (semua adset dalam kempen aktif)${tail}`;
+  const conds = [{ metric: r.metric, operator: r.operator, value: r.value }, ...(r.conditions || [])].map(condText).join(' dan ');
+  const win = Number(r.window_days) === 1 ? 'hari ini' : `dalam ${r.window_days} hari`;
+  return `Jika ${conds} ${win}${Number(r.min_spend) > 0 ? ` (belanja ≥ RM${Number(r.min_spend)})` : ''}`
+    + `${r.level === 'adset' ? ', ikut adset (kempen aktif)' : ''} → ${actionText(r)}`
+    + `${r.frequency === 'hourly' ? ' · boleh berulang setiap jam' : ''}${tail}`;
 }
 
 export async function createRule(admin, marketerId, r) {
   const err = validateRule(r);
   if (err) return { ok: false, message: err };
+  const timed = !!r.run_at_time;
   const row = {
-    marketer_id: marketerId, name: r.name.trim().slice(0, 80), metric: r.metric, operator: r.operator, value: Number(r.value),
-    window_days: Number(r.window_days), min_spend: Number(r.min_spend) || 0, action: r.action,
-    action_value: ['budget_up', 'budget_down'].includes(r.action) ? Number(r.action_value) : null, mode: r.mode, active: true,
+    marketer_id: marketerId, name: r.name.trim().slice(0, 80),
+    metric: timed ? 'spend' : r.metric, operator: timed ? '>=' : r.operator, value: timed ? 0 : Number(r.value),
+    window_days: timed ? 1 : Number(r.window_days), min_spend: timed ? 0 : Number(r.min_spend) || 0, action: r.action,
+    action_value: isBudgetPct(r.action) || r.action === 'budget_set' ? Number(r.action_value) : null, mode: r.mode, active: true,
   };
-  if (r.scope === 'autopilot') row.scope = 'autopilot';   // kolum dari migration 033 — hanya dihantar bila perlu
+  // Kolum migration 033/034 — hanya dihantar bila bukan nilai lalai
+  if (r.scope === 'autopilot') row.scope = 'autopilot';
+  if (timed) { row.run_at_time = r.run_at_time; row.level = 'adset'; }
+  if (!timed && r.level === 'adset') row.level = 'adset';
+  if (!timed && r.conditions?.length) row.conditions = r.conditions.map(c => ({ metric: c.metric, operator: c.operator, value: Number(c.value) }));
+  if (!timed && r.frequency === 'hourly') row.frequency = 'hourly';
+  if (r.action === 'budget_up' && Number(r.action_max) > 0) row.action_max = Number(r.action_max);
   const { data, error } = await admin.from('meta_rules').insert(row).select('id').single();
   if (error) return { ok: false, message: error.message };
   return { ok: true, id: data.id, message: `Peraturan #${data.id} "${row.name}" dicipta: ${describeRule(row)}.` };
 }
 
-const cmp = (v, op, x) => (op === '>' ? v > x : op === '>=' ? v >= x : op === '<' ? v < x : v <= x);
+const cmp = (v, op, x) => (op === '>' ? v > x : op === '>=' ? v >= x : op === '<' ? v < x : op === '=' ? v === x : v <= x);
 
 async function addEvent(admin, ev) {
   // dedupe_key unik → abaikan jika dah wujud
   const { data, error } = await admin.from('meta_events').insert(ev).select('id').maybeSingle();
   if (error) return null;
   return data;
+}
+
+/** Cipta cadangan (dedupe) dan, untuk mod auto, terus laksana. */
+async function fireRule(admin, conn, rule, ev, action, out) {
+  const created = await addEvent(admin, ev);
+  if (!created) return;
+  if (rule.mode === 'auto' && action) {
+    // Peraturan setiap jam boleh naikkan budget berulang (langkau had sekali/20 jam);
+    // reset budget ikut jam juga langkau had % kenaikan.
+    const r = await executeAction(admin, conn, action, {
+      source: 'auto', actorId: null, repeatRaise: rule.frequency === 'hourly' || !!rule.run_at_time, anyIncrease: !!rule.run_at_time,
+    });
+    await admin.from('meta_events').update({
+      status: r.ok ? 'executed' : 'failed', resolved_at: new Date().toISOString(), detail: `${ev.detail} → ${r.message}`,
+    }).eq('id', created.id);
+    if (r.ok) out.executed++;
+  } else {
+    out.suggestions++;
+  }
+}
+
+/** Adset akaun (dari cache meta_ads): status adset & kempen, budget harian. */
+async function adsetIndex(admin, marketerId) {
+  const rows = await fetchAll(() => admin.from('meta_ads')
+    .select('adset_id, adset_name, adset_status, adset_daily_budget, campaign_id, campaign_status')
+    .eq('marketer_id', marketerId).not('adset_id', 'is', null).order('ad_id'));
+  const map = new Map();
+  for (const a of rows) {
+    if (map.has(a.adset_id)) continue;
+    map.set(a.adset_id, { ...a, daily_budget: a.adset_daily_budget != null ? parseFloat(a.adset_daily_budget) : null });
+  }
+  return map;
+}
+
+/** Adset autopilot yang belum siap / dibatalkan — jangan dihidupkan oleh peraturan. */
+async function blockedAdsets(admin, marketerId) {
+  const { data } = await admin.from('autopilot_launches').select('adset_id')
+    .eq('marketer_id', marketerId).in('status', ['launching', 'failed', 'cancelled']).not('adset_id', 'is', null);
+  return new Set((data || []).map(r => r.adset_id));
+}
+
+const inScope = (rule, conn, s) => s.campaign_status === 'ACTIVE'
+  && (rule.scope !== 'autopilot' || (conn.autopilot_campaign_id && s.campaign_id === conn.autopilot_campaign_id));
+
+/** Tindakan Meta untuk satu adset, atau null jika tiada perubahan diperlukan. */
+function adsetAction(rule, s) {
+  const base = { object_type: 'adset', object_id: s.adset_id, object_name: s.adset_name };
+  if (rule.action === 'pause_adset') return s.adset_status === 'ACTIVE' ? { ...base, action: 'set_status', params: { status: 'PAUSED' } } : null;
+  if (rule.action === 'activate_adset') return s.adset_status === 'PAUSED' ? { ...base, action: 'set_status', params: { status: 'ACTIVE' } } : null;
+  if (s.daily_budget == null) return null;   // budget di peringkat kempen
+  let newRm = null;
+  if (rule.action === 'budget_set') newRm = Number(rule.action_value);
+  if (isBudgetPct(rule.action)) {
+    const up = rule.action === 'budget_up';
+    newRm = Math.max(1, Math.round(s.daily_budget * (up ? 1 + rule.action_value / 100 : 1 - rule.action_value / 100)));
+    if (up && Number(rule.action_max) > 0) newRm = Math.min(newRm, Number(rule.action_max));
+    if (up ? newRm <= s.daily_budget : newRm >= s.daily_budget) return null;
+  }
+  if (newRm == null || newRm === s.daily_budget) return null;
+  return { ...base, action: 'set_budget', params: { daily_budget_rm: newRm } };
+}
+
+const fmtMetric = (metric, v) => (v == null ? '—' : metric === 'roas' ? v.toFixed(2) : metric === 'ctr' ? `${v}%` : ['spend', 'revenue', 'cpa'].includes(metric) ? `RM${r2(v)}` : v);
+
+/** Peraturan peringkat adset: jumlahkan metrik ad ikut adset, semua syarat mesti benar. */
+async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
+  const agg = new Map();
+  for (const a of rep.ads) {
+    if (!a.adset_id) continue;
+    const g = agg.get(a.adset_id) || { spend: 0, orders: 0, revenue: 0, impressions: 0, link_clicks: 0 };
+    g.spend += a.spend || 0; g.orders += a.orders || 0; g.revenue += a.revenue || 0;
+    g.impressions += a.impressions || 0; g.link_clicks += a.link_clicks || 0;
+    agg.set(a.adset_id, g);
+  }
+  const conds = [{ metric: rule.metric, operator: rule.operator, value: rule.value }, ...(rule.conditions || [])];
+  const stamp = rule.frequency === 'hourly' ? `${ctx.today}:${ctx.hour}` : ctx.today;
+  for (const [id, g] of agg) {
+    const s = ctx.adsets.get(id);
+    if (!s || !inScope(rule, conn, s)) continue;
+    if (rule.action === 'activate_adset' ? s.adset_status !== 'PAUSED' || ctx.blocked.has(id) : s.adset_status !== 'ACTIVE') continue;
+    if (g.spend < Number(rule.min_spend)) continue;
+    const m = {
+      spend: r2(g.spend), orders: g.orders, revenue: r2(g.revenue),
+      roas: g.spend > 0 ? r2(g.revenue / g.spend) : null, cpa: g.orders ? r2(g.spend / g.orders) : null,
+      ctr: g.impressions ? r2((g.link_clicks / g.impressions) * 100) : null,
+    };
+    if (!conds.every(c => m[c.metric] != null && cmp(m[c.metric], c.operator, Number(c.value)))) continue;
+    const action = rule.action === 'notify' ? null : adsetAction(rule, s);
+    if (rule.action !== 'notify' && !action) continue;
+    const win = Number(rule.window_days) === 1 ? 'hari ini' : `${rule.window_days} hari`;
+    await fireRule(admin, conn, rule, {
+      marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: action ? 'info' : 'warn',
+      object_type: 'adset', object_id: id, object_name: s.adset_name,
+      title: action ? describeAction(action) : `${s.adset_name}: ${conds.map(c => `${METRIC_LABEL[c.metric]} ${fmtMetric(c.metric, m[c.metric])}`).join(', ')}`,
+      detail: `Peraturan "${rule.name}" (${win}): belanja RM${m.spend}, ${m.orders} order, jualan RM${m.revenue}, ROAS ${fmtMetric('roas', m.roas)}.`,
+      action, dedupe_key: `rule:${rule.id}:adset:${id}:${stamp}`,
+    }, action, out);
+  }
+}
+
+/** Cron 10 minit: peraturan ikut jam (run_at_time) — sekali sehari, dalam 2 jam selepas masa jadual. */
+export async function runTimeRules(admin, { budgetMs = 15000 } = {}) {
+  const started = Date.now();
+  const { data: rules } = await admin.from('meta_rules').select('*').eq('active', true).not('run_at_time', 'is', null);
+  const today = mytDate();
+  const results = [];
+  for (const rule of rules || []) {
+    const at = new Date(`${today}T${rule.run_at_time}:00+08:00`).getTime();
+    if (Date.now() < at || Date.now() > at + 2 * 3600 * 1000) continue;
+    if (rule.last_run_at && new Date(rule.last_run_at).getTime() >= at) continue;   // dah selesai hari ini
+    if (Date.now() - started > budgetMs) break;
+    const { data: conn } = await admin.from('meta_connections').select('*').eq('marketer_id', rule.marketer_id).maybeSingle();
+    if (!conn || conn.status === 'error') continue;
+    const [adsets, blocked] = await Promise.all([adsetIndex(admin, rule.marketer_id), blockedAdsets(admin, rule.marketer_id)]);
+    const out = { suggestions: 0, executed: 0 };
+    let done = true;
+    for (const s of adsets.values()) {
+      if (Date.now() - started > budgetMs) { done = false; break; }   // sambung pada cron seterusnya (dedupe elak ulang)
+      if (!inScope(rule, conn, s) || (rule.action === 'activate_adset' && blocked.has(s.adset_id))) continue;
+      const action = adsetAction(rule, s);
+      if (!action) continue;
+      await fireRule(admin, conn, rule, {
+        marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: 'info',
+        object_type: 'adset', object_id: s.adset_id, object_name: s.adset_name, title: describeAction(action),
+        detail: `Peraturan "${rule.name}" (setiap hari ${rule.run_at_time}).`, action,
+        dedupe_key: `rule:${rule.id}:adset:${s.adset_id}:${today}`,
+      }, action, out);
+    }
+    if (done) await admin.from('meta_rules').update({ last_run_at: new Date().toISOString() }).eq('id', rule.id);
+    results.push({ rule_id: rule.id, done, ...out });
+  }
+  return { rules: results };
 }
 
 /** Nilai semua peraturan + amaran sistem untuk satu marketer. */
@@ -136,19 +307,31 @@ export async function evaluateConnection(admin, conn) {
   }
 
   const { data: rules } = await admin.from('meta_rules').select('*').eq('marketer_id', conn.marketer_id).eq('active', true);
+  let adsetCtx = null;
   for (const rule of rules || []) {
+    if (rule.run_at_time) continue;   // dijalankan oleh runTimeRules
     const rep = await window(rule.window_days);
+    if (rule.level === 'adset') {
+      if (!adsetCtx) {
+        const [adsets, blocked] = await Promise.all([adsetIndex(admin, conn.marketer_id), blockedAdsets(admin, conn.marketer_id)]);
+        adsetCtx = { adsets, blocked, today, hour: new Date(Date.now() + MYT_MS).getUTCHours() };
+      }
+      await evaluateAdsetRule(admin, conn, rule, rep, adsetCtx, out);
+      await admin.from('meta_rules').update({ last_run_at: new Date().toISOString() }).eq('id', rule.id);
+      continue;
+    }
     const seenAdsets = new Set();
     // Skop autopilot: hanya ads dalam kempen [AUTOPILOT]; bajet dihadkan oleh had harian kempen
     const autopilot = rule.scope === 'autopilot';
     if (autopilot && !conn.autopilot_campaign_id) continue;
-    const inScope = a => !autopilot || a.campaign_id === conn.autopilot_campaign_id;
+    const inRuleScope = a => !autopilot || a.campaign_id === conn.autopilot_campaign_id;
     const apBudgets = new Map();
-    if (autopilot) for (const a of rep.ads) if (a.running && inScope(a) && a.daily_budget != null) apBudgets.set(a.adset_id, a.daily_budget);
-    for (const ad of rep.ads.filter(a => a.running && inScope(a))) {
+    if (autopilot) for (const a of rep.ads) if (a.running && inRuleScope(a) && a.daily_budget != null) apBudgets.set(a.adset_id, a.daily_budget);
+    for (const ad of rep.ads.filter(a => a.running && inRuleScope(a))) {
       if (ad.spend < Number(rule.min_spend)) continue;
       const v = ad[rule.metric];
       if (v == null || !cmp(v, rule.operator, Number(rule.value))) continue;
+      if (!(rule.conditions || []).every(c => ad[c.metric] != null && cmp(ad[c.metric], c.operator, Number(c.value)))) continue;
 
       let action = null;
       let objKey = `ad:${ad.ad_id}`;
@@ -159,12 +342,13 @@ export async function evaluateConnection(admin, conn) {
         seenAdsets.add(ad.adset_id);
         objKey = `adset:${ad.adset_id}`;
         action = { action: 'set_status', object_type: 'adset', object_id: ad.adset_id, object_name: ad.adset_name, params: { status: 'PAUSED' } };
-      } else if (rule.action === 'budget_up' || rule.action === 'budget_down') {
+      } else if (isBudgetPct(rule.action)) {
         if (!ad.adset_id || ad.daily_budget == null || seenAdsets.has(ad.adset_id)) continue;
         seenAdsets.add(ad.adset_id);
         objKey = `adset:${ad.adset_id}`;
         const f = rule.action === 'budget_up' ? 1 + rule.action_value / 100 : 1 - rule.action_value / 100;
         let newRm = Math.max(1, Math.round(ad.daily_budget * f));
+        if (rule.action === 'budget_up' && Number(rule.action_max) > 0) newRm = Math.min(newRm, Number(rule.action_max));
         if (autopilot && rule.action === 'budget_up') {
           const used = [...apBudgets.values()].reduce((s, v) => s + v, 0);
           const room = Number(conn.autopilot_daily_cap) - (used - ad.daily_budget);
@@ -172,28 +356,18 @@ export async function evaluateConnection(admin, conn) {
           if (newRm <= ad.daily_budget) continue;   // had harian kempen autopilot dah penuh
           apBudgets.set(ad.adset_id, newRm);
         }
+        if (rule.action === 'budget_up' && newRm <= ad.daily_budget) continue;   // had budget maksimum dah dicapai
         action = { action: 'set_budget', object_type: 'adset', object_id: ad.adset_id, object_name: ad.adset_name, params: { daily_budget_rm: newRm } };
       }
 
-      const metricTxt = rule.metric === 'roas' ? (v ?? 0).toFixed(2) : rule.metric === 'ctr' ? `${v}%` : ['spend', 'revenue', 'cpa'].includes(rule.metric) ? `RM${r2(v)}` : v;
-      const ev = {
+      const stamp = rule.frequency === 'hourly' ? `${today}:${new Date(Date.now() + MYT_MS).getUTCHours()}` : today;
+      await fireRule(admin, conn, rule, {
         marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: rule.action === 'notify' ? 'warn' : 'info',
         object_type: action?.object_type || 'ad', object_id: action?.object_id || ad.ad_id, object_name: action?.object_name || ad.name,
-        title: action ? describeAction(action) : `${ad.name}: ${METRIC_LABEL[rule.metric]} ${metricTxt}`,
-        detail: `Peraturan "${rule.name}": ${METRIC_LABEL[rule.metric]} ${metricTxt} (${rule.window_days} hari, belanja RM${r2(ad.spend)}, ${ad.orders} order).`,
-        action, dedupe_key: `rule:${rule.id}:${objKey}:${today}`,
-      };
-      const created = await addEvent(admin, ev);
-      if (!created) continue;
-      if (rule.mode === 'auto' && action) {
-        const r = await executeAction(admin, conn, action, { source: 'auto', actorId: null });
-        await admin.from('meta_events').update({
-          status: r.ok ? 'executed' : 'failed', resolved_at: new Date().toISOString(), detail: `${ev.detail} → ${r.message}`,
-        }).eq('id', created.id);
-        if (r.ok) out.executed++;
-      } else {
-        out.suggestions++;
-      }
+        title: action ? describeAction(action) : `${ad.name}: ${METRIC_LABEL[rule.metric]} ${fmtMetric(rule.metric, v)}`,
+        detail: `Peraturan "${rule.name}": ${METRIC_LABEL[rule.metric]} ${fmtMetric(rule.metric, v)} (${rule.window_days} hari, belanja RM${r2(ad.spend)}, ${ad.orders} order).`,
+        action, dedupe_key: `rule:${rule.id}:${objKey}:${stamp}`,
+      }, action, out);
     }
     await admin.from('meta_rules').update({ last_run_at: new Date().toISOString() }).eq('id', rule.id);
   }

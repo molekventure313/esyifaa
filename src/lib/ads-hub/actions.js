@@ -38,16 +38,19 @@ async function checkAutoQuota(admin, conn, source) {
   }
 }
 
-async function checkBudget(admin, conn, adsetId, oldRm, newRm) {
+// opts.repeatRaise = peraturan setiap jam / ikut jam (langkau had sekali naik dalam 20 jam)
+// opts.anyIncrease = reset budget ikut jam (langkau had % kenaikan)
+async function checkBudget(admin, conn, adsetId, oldRm, newRm, opts = {}) {
   const max = parseFloat(conn.limit_max_budget);
   if (!(newRm > 0)) throw reject('Budget mesti lebih dari RM0.');
   if (newRm > max) throw reject(`Budget ${rmFmt(newRm)} melebihi had ${rmFmt(max)} sehari. Ubah had di tab Tetapan jika perlu.`);
-  if (oldRm != null && newRm > oldRm) {
+  if (oldRm != null && newRm > oldRm && !opts.anyIncrease) {
     const pct = ((newRm - oldRm) / oldRm) * 100;
     if (pct > conn.limit_max_increase_pct + 0.01) {
       throw reject(`Kenaikan ${pct.toFixed(0)}% melebihi had ${conn.limit_max_increase_pct}% sekali naik (maksimum ${rmFmt(oldRm * (1 + conn.limit_max_increase_pct / 100))}).`);
     }
     // Budget naik hanya sekali dalam 20 jam untuk adset yang sama (beri masa Meta belajar)
+    if (opts.repeatRaise) return;
     const since = new Date(Date.now() - 20 * 3600 * 1000).toISOString();
     const { data } = await admin.from('meta_actions_log').select('after, before')
       .eq('marketer_id', conn.marketer_id).eq('action', 'set_budget').eq('object_id', adsetId).eq('status', 'ok').gte('created_at', since);
@@ -90,7 +93,11 @@ export async function executeAction(admin, conn, a, ctx) {
       if (!cur.daily_budget) throw reject(`Adset "${cur.name}" tiada budget harian sendiri (budget di peringkat kempen / lifetime). Ubah di Ads Manager.`);
       const oldRm = parseInt(cur.daily_budget, 10) / 100;
       before = { name: cur.name, daily_budget_rm: oldRm };
-      await checkBudget(admin, conn, a.object_id, oldRm, newRm);
+      if (oldRm === newRm) {
+        await log(admin, conn, a, ctx, 'ok', 'Tiada perubahan — budget dah sama.', before, before);
+        return { ok: true, message: `Budget "${cur.name}" memang dah ${rmFmt(newRm)}.`, before, after: before };
+      }
+      await checkBudget(admin, conn, a.object_id, oldRm, newRm, ctx.source === 'auto' ? ctx : {});
       await metaPost(a.object_id, { daily_budget: Math.round(newRm * 100) }, token);
       const after = { name: cur.name, daily_budget_rm: newRm };
       await admin.from('meta_ads').update({ adset_daily_budget: newRm }).eq('marketer_id', conn.marketer_id).eq('adset_id', a.object_id);

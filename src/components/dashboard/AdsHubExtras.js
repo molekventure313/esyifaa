@@ -197,7 +197,9 @@ export function LogTab({ marketerId }) {
 
 // ---------- Peraturan & jadual ----------
 const METRICS = { roas: 'ROAS', cpa: 'CPA (RM)', spend: 'Belanja (RM)', orders: 'Order', revenue: 'Jualan (RM)', ctr: 'CTR link (%)' };
-const ACTIONS = { pause: 'Pause ad', pause_adset: 'Pause adset', budget_up: 'Naikkan budget adset %', budget_down: 'Turunkan budget adset %', notify: 'Amaran sahaja' };
+const ACTIONS = { pause: 'Pause ad', pause_adset: 'Pause adset', activate_adset: 'Hidupkan adset', budget_up: 'Naikkan budget adset %', budget_down: 'Turunkan budget adset %', budget_set: 'Set budget adset (RM)', notify: 'Amaran sahaja' };
+const TIME_ACTIONS = ['pause_adset', 'activate_adset', 'budget_set'];
+const OPS = ['<', '<=', '>', '>=', '='];
 const PRESETS = [
   { name: 'Pause ad rugi', metric: 'roas', operator: '<', value: 1, window_days: 3, min_spend: 60, action: 'pause', action_value: 0, mode: 'suggest' },
   { name: 'Scale ad menang', metric: 'roas', operator: '>=', value: 2.5, window_days: 3, min_spend: 80, action: 'budget_up', action_value: 20, mode: 'suggest' },
@@ -228,12 +230,13 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
   if (!rules || !sched) return <Spinner t={t} text="Memuatkan peraturan..." />;
   const field = { padding: '0.4rem 0.55rem', borderRadius: 6, border: t.border, background: t.cardBg, color: t.text, fontSize: '0.8rem', fontFamily: t.ff };
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setCond = (i, k, v) => setForm(f => ({ ...f, conditions: f.conditions.map((c, j) => (j === i ? { ...c, [k]: v } : c)) }));
 
   return (
     <div style={{ fontFamily: t.ff, color: t.text }}>
       {msg && <div style={{ padding: '0.7rem 1rem', borderRadius: 8, border: t.border, fontSize: '0.82rem', marginBottom: '1rem', color: t.text2 }}>{msg}</div>}
 
-      <Card t={t} title="Peraturan auto" sub="Dinilai setiap jam pada ads yang sedang berjalan, guna order sebenar. Mod cadang = muncul di dashboard untuk anda Laksana; mod auto = terus dilaksana (tertakluk had di Tetapan)."
+      <Card t={t} title="Peraturan auto" sub="Peraturan ikut syarat dinilai setiap jam guna order sebenar (peringkat adset: kempen aktif sahaja); peraturan ikut jam dijalankan sekali sehari pada masa ditetapkan. Mod cadang = muncul di dashboard untuk anda Laksana; mod auto = terus dilaksana (tertakluk had di Tetapan)."
         right={canEdit && !form && <button onClick={() => setForm({ ...PRESETS[0] })} style={btn(t, true)}>+ Peraturan baru</button>} pad={false}>
         {form && (
           <div style={{ padding: '1rem 1.25rem', borderBottom: t.border, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -242,20 +245,51 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: '0.82rem' }}>
               <input id="rule-name" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nama peraturan" style={{ ...field, minWidth: 180 }} />
+              <select id="rule-kind" value={form.run_at_time ? 'time' : 'cond'} onChange={e => setForm(f => ({ ...f, run_at_time: e.target.value === 'time' ? '06:00' : '', action: e.target.value === 'time' ? 'pause_adset' : f.action }))} style={field}>
+                <option value="cond">Ikut syarat</option><option value="time">Ikut jam (setiap hari)</option>
+              </select>
+              {form.run_at_time && <>pada <input id="rule-time" type="time" value={form.run_at_time} onChange={e => set('run_at_time', e.target.value)} style={field} /> waktu Malaysia, semua adset dalam kempen aktif</>}
+            </div>
+            {!form.run_at_time && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: '0.82rem' }}>
               Jika
               <select id="rule-metric" value={form.metric} onChange={e => set('metric', e.target.value)} style={field}>{Object.entries(METRICS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-              <select id="rule-op" value={form.operator} onChange={e => set('operator', e.target.value)} style={field}>{['<', '<=', '>', '>='].map(o => <option key={o}>{o}</option>)}</select>
+              <select id="rule-op" value={form.operator} onChange={e => set('operator', e.target.value)} style={field}>{OPS.map(o => <option key={o}>{o}</option>)}</select>
               <input id="rule-value" type="number" step="0.1" value={form.value} onChange={e => set('value', e.target.value)} style={{ ...field, width: 80 }} />
+              {(form.conditions || []).map((c, i) => (
+                <span key={i} style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                  dan
+                  <select aria-label={`Metrik syarat ${i + 2}`} value={c.metric} onChange={e => setCond(i, 'metric', e.target.value)} style={field}>{Object.entries(METRICS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+                  <select aria-label={`Operator syarat ${i + 2}`} value={c.operator} onChange={e => setCond(i, 'operator', e.target.value)} style={field}>{OPS.map(o => <option key={o}>{o}</option>)}</select>
+                  <input aria-label={`Nilai syarat ${i + 2}`} type="number" step="0.1" value={c.value} onChange={e => setCond(i, 'value', e.target.value)} style={{ ...field, width: 70 }} />
+                  <button onClick={() => set('conditions', form.conditions.filter((_, j) => j !== i))} style={btn(t)} aria-label="Buang syarat">✕</button>
+                </span>
+              ))}
+              {(form.conditions || []).length < 3 && <button onClick={() => set('conditions', [...(form.conditions || []), { metric: 'orders', operator: '>', value: 0 }])} style={btn(t)}>+ syarat</button>}
               dalam
-              <input id="rule-window" type="number" min="1" max="30" value={form.window_days} onChange={e => set('window_days', e.target.value)} style={{ ...field, width: 60 }} /> hari,
+              <input id="rule-window" type="number" min="1" max="30" value={form.window_days} onChange={e => set('window_days', e.target.value)} style={{ ...field, width: 60 }} /> hari{Number(form.window_days) === 1 ? ' (hari ini)' : ''},
               belanja ≥ RM
               <input id="rule-minspend" type="number" min="0" value={form.min_spend} onChange={e => set('min_spend', e.target.value)} style={{ ...field, width: 70 }} />
-            </div>
+              <select id="rule-level" value={form.level || 'ad'} onChange={e => set('level', e.target.value)} style={field}>
+                <option value="ad">Nilai setiap ad</option><option value="adset">Nilai ikut adset (kempen aktif)</option>
+              </select>
+            </div>)}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: '0.82rem' }}>
               →
-              <select id="rule-action" value={form.action} onChange={e => set('action', e.target.value)} style={field}>{Object.entries(ACTIONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+              <select id="rule-action" value={form.action} onChange={e => set('action', e.target.value)} style={field}>{Object.entries(ACTIONS).filter(([k]) => !form.run_at_time || TIME_ACTIONS.includes(k)).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
               {['budget_up', 'budget_down'].includes(form.action) && (
                 <><input id="rule-pct" type="number" min="1" max="100" value={form.action_value} onChange={e => set('action_value', e.target.value)} style={{ ...field, width: 60 }} />%</>
+              )}
+              {form.action === 'budget_up' && (
+                <>maks RM<input id="rule-max" type="number" min="1" value={form.action_max ?? ''} onChange={e => set('action_max', e.target.value)} placeholder="tiada" style={{ ...field, width: 80 }} /></>
+              )}
+              {form.action === 'budget_set' && (
+                <>RM<input id="rule-setrm" type="number" min="1" value={form.action_value} onChange={e => set('action_value', e.target.value)} style={{ ...field, width: 80 }} /></>
+              )}
+              {!form.run_at_time && (
+                <label htmlFor="rule-hourly" style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+                  <input id="rule-hourly" type="checkbox" checked={form.frequency === 'hourly'} onChange={e => set('frequency', e.target.checked ? 'hourly' : 'daily')} /> berulang setiap jam
+                </label>
               )}
               {autopilot && (
                 <select id="rule-scope" value={form.scope || 'all'} onChange={e => set('scope', e.target.value)} style={field}>
@@ -342,7 +376,7 @@ export function LimitsCard({ marketerId }) {
       {row('lim-pct', 'Kenaikan budget maksimum sekali naik (%)', 'Budget juga hanya boleh naik sekali dalam 20 jam bagi setiap adset.',
         <input id="lim-pct" type="number" min="1" max="100" value={c.limit_max_increase_pct} onChange={e => setC({ ...c, limit_max_increase_pct: e.target.value })} style={field} />)}
       {row('lim-auto', 'Tindakan auto maksimum sehari', 'Untuk peraturan mod auto. 0 = matikan semua tindakan auto.',
-        <input id="lim-auto" type="number" min="0" max="100" value={c.limit_auto_actions_per_day} onChange={e => setC({ ...c, limit_auto_actions_per_day: e.target.value })} style={field} />)}
+        <input id="lim-auto" type="number" min="0" max="1000" value={c.limit_auto_actions_per_day} onChange={e => setC({ ...c, limit_auto_actions_per_day: e.target.value })} style={field} />)}
       {row('lim-report', 'Laporan pagi automatik', 'AI tulis laporan setiap pagi pukul 9.',
         <input id="lim-report" type="checkbox" checked={!!c.report_enabled} onChange={e => setC({ ...c, report_enabled: e.target.checked })} style={{ width: 18, height: 18 }} />)}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: '0.9rem' }}>
