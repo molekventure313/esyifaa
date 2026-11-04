@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { guard, OWNER } from '@/lib/auth';
 import { NV_ENV } from '@/lib/ninjavan/api';
-import { createShipment, getWaybill } from '@/lib/ninjavan/shipments';
+import { createShipment, getWaybill, cancelShipment } from '@/lib/ninjavan/shipments';
 
 // Audit integrasi NinjaVan (SANDBOX sahaja): cipta 3 order ujian melalui integrasi kita (bukan Postman),
 // kemudian jana waybill. Tracking number yang dipulangkan dihantar ke pautan audit dalam e-mel NinjaVan.
@@ -72,7 +72,31 @@ export async function POST(req) {
   }
   const db = createAdminClient();
   // prepaid: true → semua senario tanpa COD (akaun yang belum diaktifkan COD)
-  const { action, prepaid = false } = await req.json().catch(() => ({}));
+  const { action, prepaid = false, tracking_number } = await req.json().catch(() => ({}));
+
+  // Uji webhook hujung-ke-hujung: cipta 1 order ujian (→ Pending Pickup), kemudian 'cancel' (→ Cancelled)
+  if (action === 'create-one') {
+    const run = Date.now().toString(36).toUpperCase().slice(-7);
+    const sc = SCENARIOS[1];
+    try {
+      const { shipment } = await createShipment(db, { ...sc, requestedTrackingNumber: `W${run}1`, merchantRef: `WEBHOOK-TEST-${run}` }, { isTest: true, userId: auth.userId });
+      return NextResponse.json({ success: true, tracking_number: shipment.tracking_number });
+    } catch (e) {
+      return NextResponse.json({ success: false, error: e.message, details: e.body ?? null }, { status: 502 });
+    }
+  }
+
+  if (action === 'cancel') {
+    const { data: shipment } = await db.from('ninjavan_shipments').select('*')
+      .eq('tracking_number', tracking_number || '').eq('is_test', true).eq('env', 'sandbox').maybeSingle();
+    if (!shipment) return NextResponse.json({ success: false, error: 'Parcel ujian tidak dijumpai.' }, { status: 404 });
+    try {
+      await cancelShipment(db, shipment);
+      return NextResponse.json({ success: true, tracking_number });
+    } catch (e) {
+      return NextResponse.json({ success: false, error: e.message, details: e.body ?? null }, { status: 502 });
+    }
+  }
 
   if (action === 'create') {
     const run = Date.now().toString(36).toUpperCase().slice(-7);  // tracking unik bagi setiap pusingan audit
@@ -112,5 +136,5 @@ export async function POST(req) {
     return NextResponse.json({ success: results.every(r => r.ok), results });
   }
 
-  return NextResponse.json({ success: false, error: "action mesti 'create' atau 'waybill'" }, { status: 400 });
+  return NextResponse.json({ success: false, error: "action mesti 'create', 'create-one', 'cancel' atau 'waybill'" }, { status: 400 });
 }
