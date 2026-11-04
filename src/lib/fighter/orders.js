@@ -10,6 +10,7 @@ import { productOf } from '@/lib/products';
 import { SOURCE_TO_SKU, getProductBySku } from '@/lib/stock';
 import { decryptSecret } from '@/lib/fighter/crypto';
 import { markupsFor, tableMissing } from '@/lib/fighter/server';
+import { damageState, recordDamage, clearDamage } from '@/lib/stock-damage';
 
 export const APP_URL = 'https://e-syifa.com';
 const SITE = () => {
@@ -225,8 +226,11 @@ export async function packOrder(admin, orderId, actor) {
   }
 }
 
-/** Parcel dipulangkan ke HQ → stok masuk semula + kredit caj (harga sama seperti dicaj). */
-export async function returnOrder(admin, orderId, actor) {
+/**
+ * Parcel dipulangkan ke HQ → stok masuk semula + kredit caj (harga sama seperti dicaj).
+ * damaged: [{ product_id, qty }] — unit rosak: stok ditolak semula & FIGHTER tanggung (caj dikenakan semula).
+ */
+export async function returnOrder(admin, orderId, actor, { damaged = [], reason = '' } = {}) {
   const now = new Date().toISOString();
   const { data: claimed } = await admin.from('fighter_orders')
     .update({ ship_status: 'returned', returned_at: now, returned_by: actor.id, updated_at: now })
@@ -250,7 +254,68 @@ export async function returnOrder(admin, orderId, actor) {
       amount: -Number(c.amount), notes: `Return — ${order.full_name}`, created_by: actor.id,
     })));
   }
-  return { credited: round2((charges || []).reduce((t, c) => t + Number(c.amount), 0)) };
+  const credited = round2((charges || []).reduce((t, c) => t + Number(c.amount), 0));
+  let damage = null;
+  const dmg = [];
+  for (const d of damaged || []) {
+    if (!(parseInt(d.qty, 10) > 0)) continue;
+    const pid = d.product_id || (d.sku ? (await getProductBySku(admin, d.sku))?.id : null);
+    if (pid) dmg.push({ product_id: pid, qty: d.qty });
+  }
+  if (dmg.length) {
+    try { damage = await recordFighterDamage(admin, order.id, dmg, reason, actor); }
+    catch (e) { damage = { error: e.message, units: 0, charged: 0 }; }   // return tetap sah; rosak boleh direkod semula
+  }
+  return { credited: round2(credited - (damage?.charged || 0)), damage };
+}
+
+/** Senarai unit dipulangkan + rosak bagi order fighter: { [orderId]: [...] } */
+export async function fighterDamageState(admin, orderIds) {
+  const st = await damageState(admin, (orderIds || []).map(refOf));
+  return Object.fromEntries(Object.entries(st).map(([k, v]) => [k.replace(/^fighter:/, ''), v]));
+}
+
+/**
+ * Rekod unit rosak order fighter yang dah di-return → stok HQ ditolak + fighter dicaj semula
+ * (harga sama seperti caj asal: kos + markup).
+ */
+export async function recordFighterDamage(admin, orderId, items, reason, actor) {
+  const { data: order } = await admin.from('fighter_orders').select('id, fighter_id, full_name, ship_status').eq('id', orderId).maybeSingle();
+  if (!order) throw new Error('Order tidak dijumpai.');
+  if (order.ship_status !== 'returned') throw new Error('Order ini belum ditanda return.');
+  const r = await recordDamage(admin, { refId: refOf(order.id), items, reason, label: `Fighter — ${order.full_name}`, actorId: actor.id });
+  const { data: charges } = await admin.from('fighter_ledger').select('sku, qty, cost_price, markup, amount').eq('order_id', order.id).eq('kind', 'charge').not('notes', 'like', 'Rosak%');
+  const rows = [];
+  for (const it of r.items) {
+    const c = (charges || []).find(x => x.sku === it.sku);
+    const cost = Number(c?.cost_price || 0), markup = Number(c?.markup || 0);
+    rows.push({ fighter_id: order.fighter_id, order_id: order.id, kind: 'charge', sku: it.sku, qty: it.qty, cost_price: cost, markup,
+      amount: round2(it.qty * (cost + markup)), notes: `Rosak (return) — ${it.sku} x${it.qty} — ${order.full_name}${reason ? ` · ${String(reason).slice(0, 120)}` : ''}`, created_by: actor.id });
+  }
+  if (rows.length) {
+    const { error } = await admin.from('fighter_ledger').insert(rows);
+    if (error) { await clearDamage(admin, refOf(order.id)); throw new Error(`Gagal caj rosak: ${error.message}`); }
+  }
+  return { units: r.units, charged: round2(rows.reduce((t, x) => t + x.amount, 0)) };
+}
+
+/** Batal rekod rosak order fighter (pembetulan): stok dipulangkan + caj rosak dikreditkan. */
+export async function clearFighterDamage(admin, orderId, actor) {
+  const removed = await clearDamage(admin, refOf(orderId));
+  if (!removed.length) return { units: 0, credited: 0 };
+  const { data: order } = await admin.from('fighter_orders').select('id, fighter_id, full_name').eq('id', orderId).single();
+  const { data: dmg } = await admin.from('fighter_ledger').select('sku, qty, cost_price, markup, amount').eq('order_id', orderId).eq('kind', 'charge').like('notes', 'Rosak%');
+  const { data: undone } = await admin.from('fighter_ledger').select('sku, qty, amount').eq('order_id', orderId).eq('kind', 'credit').like('notes', 'Batal rosak%');
+  const rows = [];
+  for (const sku of [...new Set((dmg || []).map(d => d.sku))]) {
+    const ch = (dmg || []).filter(d => d.sku === sku), un = (undone || []).filter(d => d.sku === sku);
+    const qty = ch.reduce((t, d) => t + d.qty, 0) - un.reduce((t, d) => t + d.qty, 0);
+    const amt = round2(ch.reduce((t, d) => t + Number(d.amount), 0) + un.reduce((t, d) => t + Number(d.amount), 0));
+    if (qty > 0 && amt > 0) rows.push({ fighter_id: order.fighter_id, order_id: orderId, kind: 'credit', sku, qty, cost_price: ch[0].cost_price, markup: ch[0].markup,
+      amount: -amt, notes: `Batal rosak — ${sku} x${qty} — ${order.full_name}`, created_by: actor.id });
+  }
+  if (rows.length) await admin.from('fighter_ledger').insert(rows);
+  return { units: removed.reduce((t, d) => t + d.qty, 0), credited: round2(-rows.reduce((t, x) => t + x.amount, 0)) };
 }
 
 // Ringkasan lejar: { charges, credits, net, markup, units } (markup bersih = override HQ)

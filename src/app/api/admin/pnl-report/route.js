@@ -99,7 +99,8 @@ async function fetchMovements(adminClient, fromUTC, toUTC, marketer_id) {
 
   const { data: raw, error } = await q;
   if (error) throw error;
-  const movements = raw || [];
+  // Stok rosak dari return (reference_type 'adjustment') bukan jualan — abaikan
+  const movements = (raw || []).filter(m => m.reference_type !== 'adjustment');
 
   // Split: order-linked vs manual/other movements
   const orderMvs = movements.filter(m => m.reference_type === 'order' && m.reference_id);
@@ -134,7 +135,7 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
 
   let q = adminClient
     .from('stock_movements')
-    .select('id, reference_id')
+    .select('id, reference_id, reference_type')
     .eq('movement_type', 'out')
     .eq('product_id', prod.id);
 
@@ -142,7 +143,7 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
   if (toUTC)   q = q.lte('created_at', toUTC);
 
   const { data: raw } = await q;
-  const movements = raw || [];
+  const movements = (raw || []).filter(m => m.reference_type !== 'adjustment');   // abaikan stok rosak
   if (movements.length === 0) return 0;
 
   // Cross-check — exclude orphaned movements (deleted orders)

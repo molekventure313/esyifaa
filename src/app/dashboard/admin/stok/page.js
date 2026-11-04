@@ -14,7 +14,9 @@ const MOVE_TYPE_CONFIG = {
   out:        { label: '📦 Keluar',  color: '#F59E0B', bg: 'rgba(245,158,11,0.1)',   sign: '-' },
   return:     { label: '🔄 Return',  color: '#60A5FA', bg: 'rgba(96,165,250,0.1)',   sign: '+' },
   adjustment: { label: '⚙️ Adjust', color: '#A78BFA', bg: 'rgba(167,139,250,0.1)',  sign: '±' },
+  damage:     { label: '🧨 Rosak',   color: '#EF4444', bg: 'rgba(239,68,68,0.1)',    sign: '-' },
 };
+const moveKind = m => (m.movement_type === 'out' && m.reference_type === 'adjustment' ? 'damage' : m.movement_type);
 
 function Toast({ msg, type, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
@@ -241,7 +243,8 @@ export default function StokPage() {
   const [editForm,       setEditForm]       = useState({});
   const [saving,         setSaving]         = useState(false);
   const [editingMovement, setEditingMovement] = useState(null);
-  const [moveFilter,     setMoveFilter]     = useState('all'); // 'all'|'in'|'out'|'return'
+  const [moveFilter,     setMoveFilter]     = useState('all'); // 'all'|'in'|'out'|'return'|'damage'
+  const [damage,         setDamage]         = useState(null);  // ringkasan stok rosak 90 hari
 
   const showToast = useCallback((msg, type = 'success') => setToast({ msg, type }), []);
 
@@ -256,6 +259,7 @@ export default function StokPage() {
         fetch('/api/stock/products').then(r => r.json()),
         fetch(moveUrl).then(r => r.json()),
       ]);
+      fetch('/api/admin/return-damage?list=1&days=90').then(r => r.json()).then(j => j.success && setDamage(j)).catch(() => {});
       if (sumRes.success)  setSummary(sumRes.data);
       if (prodRes.success) setProducts(prodRes.data || []);
       if (moveRes.success) { setMovements(moveRes.data || []); setTotalMoves(moveRes.total || 0); }
@@ -368,6 +372,34 @@ export default function StokPage() {
             </div>
           </div>
 
+          {/* Stok rosak dari return */}
+          {damage?.rows?.length > 0 && (
+            <div style={{ background: CARD, border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>🧨 Stok Rosak dari Return <span style={{ fontSize: '0.75rem', color: MUTED, fontWeight: 500 }}>({damage.days} hari lepas)</span></h2>
+                <div style={{ fontSize: '0.85rem' }}>Kerugian HQ (kos): <strong style={{ color: '#EF4444' }}>{formatRM(damage.total_loss)}</strong></div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', margin: '0.75rem 0' }}>
+                {damage.by_sku.map(b => (
+                  <div key={b.sku} style={{ background: '#090A0F', border: `1px solid ${BORDER}`, borderRadius: '8px', padding: '0.5rem 0.8rem', fontSize: '0.8rem' }}>
+                    <strong>{b.sku}</strong> · {b.units} unit · <span style={{ color: '#EF4444' }}>{formatRM(b.loss)}</span>
+                    {b.fighter_units > 0 && <span style={{ color: MUTED }}> ({b.fighter_units} unit fighter — dicaj ke fighter)</span>}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gap: '0.25rem', maxHeight: 220, overflowY: 'auto' }}>
+                {damage.rows.slice(0, 50).map(r => (
+                  <div key={r.id} style={{ fontSize: '0.76rem', color: MUTED, display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <span style={{ minWidth: 120 }}>{formatDate(r.created_at)}</span>
+                    <span style={{ color: TEXT, fontWeight: 700 }}>{r.sku} −{r.qty}</span>
+                    <span style={{ flex: 1 }}>{(r.notes || '').replace(/^ROSAK \(return\) — /, '')}</span>
+                    <span>{r.by || ''}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Movement history */}
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: '10px', padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -382,6 +414,7 @@ export default function StokPage() {
                   { key: 'in',     label: '✅ Masuk' },
                   { key: 'out',    label: '📦 Keluar' },
                   { key: 'return', label: '🔄 Return' },
+                  { key: 'damage', label: '🧨 Rosak' },
                 ].map(f => (
                   <button key={f.key} onClick={() => setMoveFilter(f.key)} style={{
                     padding: '0.3rem 0.75rem', border: 'none', borderRadius: '5px', cursor: 'pointer',
@@ -407,7 +440,7 @@ export default function StokPage() {
                   </thead>
                   <tbody>
                     {movements.map(m => {
-                      const cfg = MOVE_TYPE_CONFIG[m.movement_type] || MOVE_TYPE_CONFIG.in;
+                      const cfg = MOVE_TYPE_CONFIG[moveKind(m)] || MOVE_TYPE_CONFIG.in;
                       const canEdit = m.movement_type === 'in' || m.movement_type === 'adjustment';
                       return (
                         <tr key={m.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
@@ -421,7 +454,7 @@ export default function StokPage() {
                           </td>
                           <td style={{ padding: '0.65rem 0.75rem', color: MUTED }}>{m.cost_per_unit ? formatRM(m.cost_per_unit) : '—'}</td>
                           <td style={{ padding: '0.65rem 0.75rem', color: MUTED, fontSize: '0.72rem' }}>
-                            {m.reference_type === 'order' ? `📦 ${m.reference_id?.slice(0, 8)}...` : m.reference_type || '—'}
+                            {m.reference_type === 'order' ? `📦 ${m.reference_id?.slice(0, 8)}...` : moveKind(m) === 'damage' ? `↩️ ${String(m.reference_id || '').replace('fighter:', '🥊 ').slice(0, 11)}...` : m.reference_type || '—'}
                           </td>
                           <td style={{ padding: '0.65rem 0.75rem', color: MUTED, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.notes || '—'}</td>
                           <td style={{ padding: '0.65rem 0.5rem', whiteSpace: 'nowrap' }}>

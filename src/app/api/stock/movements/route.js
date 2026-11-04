@@ -39,7 +39,9 @@ export async function GET(req) {
       .range(offset, offset + limit - 1);
 
     if (product_id)    query = query.eq('product_id', product_id);
-    if (movement_type) query = query.eq('movement_type', movement_type);
+    // 'damage' = stok rosak dari return (out + reference_type adjustment)
+    if (movement_type === 'damage') query = query.eq('movement_type', 'out').eq('reference_type', 'adjustment');
+    else if (movement_type) query = query.eq('movement_type', movement_type);
 
     const { data, error, count } = await query;
     if (error) throw error;

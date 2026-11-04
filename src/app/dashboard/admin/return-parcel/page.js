@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import DamageBox from '@/components/DamageBox';
 
 // Return Parcel — staff upload gambar waybill parcel yang dipulangkan (COD return).
 // Selepas upload, AI baca waybill & padankan order: padanan pasti → terus ditanda return (stok dipulangkan,
@@ -161,6 +162,31 @@ export default function ReturnParcelPage() {
     finally { setBusyId(null); }
   };
 
+  const saveDamage = async (row, items, reason) => {
+    setBusyId(row.id);
+    try {
+      const json = await (await fetch('/api/admin/return-damage', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ submission_id: row.order.id, items, reason }),
+      })).json();
+      if (!json.success) throw new Error(json.error);
+      await load();
+      return true;
+    } catch (e) { alert(e.message); return false; }
+    finally { setBusyId(null); }
+  };
+  const clearDamageOf = async row => {
+    if (!confirm('Batalkan SEMUA rekod rosak order ini? Unit tersebut akan dikira semula dalam stok.')) return;
+    setBusyId(row.id);
+    try {
+      const json = await (await fetch('/api/admin/return-damage', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ submission_id: row.order.id }),
+      })).json();
+      if (!json.success) throw new Error(json.error);
+      await load();
+    } catch (e) { alert(e.message); }
+    finally { setBusyId(null); }
+  };
+
   const input = {
     padding: '0.55rem 0.7rem', borderRadius: '6px', fontSize: '0.85rem', fontFamily: ff, minWidth: 0,
     border: lm ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.15)', background: lm ? '#fff' : '#0B0D13', color: textPrimary,
@@ -239,6 +265,11 @@ export default function ReturnParcelPage() {
                         Order {fmtDate(r.order.created_at)}{r.order.pakej ? ` · ${r.order.pakej}` : ''}{r.order.amount ? ` · RM${r.order.amount}` : ''}
                       </div>
                     </div>
+                  )}
+                  {r.status === 'processed' && r.order?.damage && (
+                    <DamageBox items={r.order.damage} busy={busyId === r.id} canClear={isOwner}
+                      onSave={(items, reason) => saveDamage(r, items, reason)} onClear={() => clearDamageOf(r)}
+                      colors={{ text2: textSecondary, muted: textMuted, sub: subCardBg, border: cardBorder, ff }} />
                   )}
                   {r.extracted && (
                     <div style={{ fontSize: '0.72rem', color: textMuted, background: subCardBg, borderRadius: '6px', padding: '0.4rem 0.5rem', lineHeight: 1.5 }}>

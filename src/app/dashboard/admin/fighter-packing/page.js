@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useFighterTheme, Card, Badge, btnStyle, inputStyle, fmtTime } from '@/components/fighter/ui';
+import DamageBox from '@/components/DamageBox';
 
 // HQ — Packing Fighter (staff + super_admin). Fighter upload waybill NinjaVan sendiri → staff cetak & pack.
 // "Dah pack" = stok HQ ditolak + caj ke akaun fighter. Parcel pulang → "Return" = stok masuk semula + kredit.
@@ -22,6 +23,7 @@ export default function FighterPackingPage() {
   const [sel, setSel] = useState(new Set());
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState(null);
+  const [ret, setRet] = useState(null);   // { id, qty: {sku: n}, reason } — borang return + unit rosak
 
   const load = useCallback(async () => {
     try {
@@ -40,6 +42,27 @@ export default function FighterPackingPage() {
       setMsg({ ok: true, text: note(j) });
     } catch (e) { setMsg({ ok: false, text: e.message }); }
     finally { setBusy(''); load(); }
+  };
+
+  const damageCall = async (method, body, note) => {
+    setBusy('damage'); setMsg(null);
+    try {
+      const j = await (await fetch('/api/admin/return-damage', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+      if (!j.success) throw new Error(j.error);
+      setMsg({ ok: true, text: note(j) }); load(); return true;
+    } catch (e) { setMsg({ ok: false, text: e.message }); return false; }
+    finally { setBusy(''); }
+  };
+  const submitReturn = o => {
+    const damaged = Object.entries(ret.qty).map(([sku, q]) => ({ sku, qty: parseInt(q, 10) || 0 })).filter(x => x.qty > 0);
+    const over = damaged.find(d => d.qty > ((o.items || []).find(i => i.sku === d.sku)?.qty || 0));
+    if (over) return alert(`Unit rosak ${over.sku} melebihi kuantiti order.`);
+    const dTxt = damaged.length ? `
+
+Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari stok & FIGHTER dicaj.` : '';
+    if (!confirm(`Parcel ${o.full_name} dah pulang ke HQ? Stok masuk semula & caj fighter dikreditkan.${dTxt}`)) return;
+    act({ action: 'return', id: o.id, damaged, reason: ret.reason }, j => `Return direkod — kredit bersih RM${Number(j.credited).toFixed(2)} ke fighter${j.damage?.units ? ` (${j.damage.units} unit rosak dicaj RM${Number(j.damage.charged).toFixed(2)})` : ''}${j.damage?.error ? ` · ⚠️ rosak gagal: ${j.damage.error}` : ''}.`);
+    setRet(null);
   };
 
   const rows = data?.data || [];
@@ -107,10 +130,38 @@ export default function FighterPackingPage() {
                   </div>
                   <div style={{ fontSize: '0.74rem', color: t.muted }}>{pakejOf(o)} · {o.address}</div>
                   {o.packed_at && <div style={{ fontSize: '0.72rem', color: t.muted }}>Dipack {fmtTime(o.packed_at)}{o.returned_at ? ` · Return ${fmtTime(o.returned_at)}` : ''}</div>}
+                  {tab === 'packed' && ret?.id === o.id && (
+                    <div style={{ marginTop: '0.45rem', background: t.subBg, border: t.border, borderRadius: 7, padding: '0.55rem 0.65rem', display: 'grid', gap: '0.35rem', fontSize: '0.78rem' }}>
+                      <div style={{ fontWeight: 700 }}>↩️ Return parcel — ada unit rosak? <span style={{ fontWeight: 400, color: t.muted }}>(biar kosong jika semua elok · rosak ditanggung fighter)</span></div>
+                      {(o.items || []).map(i => (
+                        <label key={i.sku} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span style={{ flex: 1 }}>{i.label}</span>
+                          <input type="number" min="0" max={i.qty} placeholder="0" value={ret.qty[i.sku] ?? ''}
+                            onChange={e => setRet(r => ({ ...r, qty: { ...r.qty, [i.sku]: e.target.value } }))}
+                            style={{ ...inputStyle(t), width: 64, padding: '0.25rem 0.4rem' }} />
+                          <span style={{ color: t.muted }}>rosak / {i.qty}</span>
+                        </label>
+                      ))}
+                      <input style={{ ...inputStyle(t), padding: '0.3rem 0.45rem' }} placeholder="Sebab rosak (pilihan)" value={ret.reason}
+                        onChange={e => setRet(r => ({ ...r, reason: e.target.value }))} />
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button style={{ ...btnStyle(t.warn), padding: '0.3rem 0.7rem', fontSize: '0.76rem' }} disabled={!!busy} onClick={() => submitReturn(o)}>✅ Sahkan return</button>
+                        <button style={{ ...btnStyle(t.muted, false), padding: '0.3rem 0.7rem', fontSize: '0.76rem' }} onClick={() => setRet(null)}>Batal</button>
+                      </div>
+                    </div>
+                  )}
+                  {tab === 'returned' && o.damage && (
+                    <div style={{ marginTop: '0.35rem' }}>
+                      <DamageBox items={o.damage} busy={!!busy} canClear={data?.role === 'super_admin'}
+                        onSave={(items, reason) => damageCall('POST', { fighter_order_id: o.id, items, reason }, j => `${j.units} unit rosak direkod — fighter dicaj RM${Number(j.charged).toFixed(2)}.`)}
+                        onClear={() => confirm('Batal rekod rosak order ini? Stok dipulangkan & caj rosak fighter dikreditkan.') && damageCall('DELETE', { fighter_order_id: o.id }, j => `Rekod rosak dibatalkan — kredit RM${Number(j.credited).toFixed(2)} ke fighter.`)}
+                        colors={{ text2: t.text2, muted: t.muted, sub: t.subBg, border: t.border, ff: t.ff }} />
+                    </div>
+                  )}
                 </div>
-                {tab === 'packed' && (
+                {tab === 'packed' && ret?.id !== o.id && (
                   <button style={{ ...btnStyle(t.warn, false), padding: '0.3rem 0.6rem', fontSize: '0.74rem' }} disabled={!!busy}
-                    onClick={() => confirm(`Parcel ${o.full_name} dah pulang ke HQ? Stok masuk semula & caj fighter dikreditkan.`) && act({ action: 'return', id: o.id }, j => `Return direkod — kredit RM${Number(j.credited).toFixed(2)} ke fighter.`)}>
+                    onClick={() => setRet({ id: o.id, qty: {}, reason: '' })}>
                     ↩️ Return
                   </button>
                 )}

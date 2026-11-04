@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { guard, STAFF } from '@/lib/auth';
-import { packOrder, returnOrder } from '@/lib/fighter/orders';
+import { packOrder, returnOrder, fighterDamageState } from '@/lib/fighter/orders';
 import { tableMissing } from '@/lib/fighter/server';
 
 // HQ — Packing Fighter (staff + super_admin). Maklumat penghantaran sahaja (tiada statistik jualan fighter).
 // GET   ?status=ready|packed|returned&q= → order + waybill (signed URL)
 // PATCH { ids, action: 'pack' }   → tolak stok HQ + caj lejar fighter (kos + markup)
-// PATCH { id, action: 'return' }  → parcel pulang ke HQ: stok masuk semula + kredit caj
+// PATCH { id, action: 'return', damaged?: [{sku, qty}], reason? } → parcel pulang ke HQ: stok masuk semula + kredit caj;
+//        unit rosak ditolak semula dari stok & fighter tanggung (dicaj semula)
 
 const BUCKET = 'fighter-files';
 const MIGRATION_MSG = 'Jadual order fighter belum wujud — run migration 028 di Supabase.';
@@ -37,10 +38,13 @@ export async function GET(req) {
     const { data: signed } = paths.length ? await g.admin.storage.from(BUCKET).createSignedUrls(paths, 3600) : { data: [] };
     const urlOf = Object.fromEntries((signed || []).map(s => [s.path, s.signedUrl]));
 
+    const dmgOf = status === 'returned' ? await fighterDamageState(g.admin, (rows || []).map(r => r.id)) : {};
+
     return NextResponse.json({
       success: true,
+      role: g.role,
       ready_count: (counts || []).length,
-      data: (rows || []).map(r => ({ ...r, amount: Number(r.amount), fighter_name: nameOf[r.fighter_id] || '—', waybill_url: urlOf[r.waybill_path] || null })),
+      data: (rows || []).map(r => ({ ...r, amount: Number(r.amount), fighter_name: nameOf[r.fighter_id] || '—', waybill_url: urlOf[r.waybill_path] || null, damage: dmgOf[r.id] || null })),
     });
   } catch (e) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });
@@ -65,7 +69,7 @@ export async function PATCH(req) {
       return NextResponse.json({ success: failed.length === 0, results, error: failed.length ? `${failed.length} order gagal: ${failed[0].error}` : undefined });
     }
     if (b.action === 'return') {
-      const r = await returnOrder(g.admin, b.id, actor);
+      const r = await returnOrder(g.admin, b.id, actor, { damaged: b.damaged, reason: b.reason });
       return NextResponse.json({ success: true, ...r });
     }
     throw new Error('Tindakan tidak sah.');

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { guard, STAFF, OWNER } from '@/lib/auth';
 import { returnStock } from '@/lib/stock';
 import { BUCKET } from '@/lib/return-waybills';
+import { damageState, recordDamage } from '@/lib/stock-damage';
 
 // Return Parcel — staff upload gambar waybill parcel yang dipulangkan; gambar dibaca & dipadankan dengan order.
 // GET    ?status=pending|review|processed|unmatched|all → senarai + signed URL gambar + order dipadankan (STAFF)
@@ -45,6 +46,8 @@ export async function GET(req) {
       ? await g.admin.from('submissions').select('id, full_name, phone, created_at, amount_paid, problem, returned_at').in('id', subIds)
       : { data: [] };
     const subOf = Object.fromEntries((subs || []).map(s => [s.id, s]));
+    // Unit dipulangkan / rosak bagi order yang dah return
+    const dmgOf = await damageState(g.admin, (subs || []).filter(s => s.returned_at).map(s => s.id));
 
     // Signed URL (1 jam) untuk gambar persendirian
     const paths = (rows || []).filter(r => !r.image_deleted_at).map(r => r.image_path);
@@ -66,7 +69,7 @@ export async function GET(req) {
           processed_by_name: nameOf[r.processed_by] || null,
           order: s ? {
             id: s.id, full_name: s.full_name, phone: s.phone, created_at: s.created_at,
-            amount: s.amount_paid, returned_at: s.returned_at,
+            amount: s.amount_paid, returned_at: s.returned_at, damage: dmgOf[s.id] || null,
             pakej: (s.problem || '').match(/Pakej:\s*([^|]+)/i)?.[1]?.trim() || null,
           } : null,
         };
@@ -112,7 +115,7 @@ export async function PATCH(req) {
   const g = await guard(STAFF);
   if (g.error) return g.error;
   try {
-    const { id, action, submission_id, note } = await req.json();
+    const { id, action, submission_id, note, damaged, reason } = await req.json();
     const { data: row } = await g.admin.from('return_waybills').select('id, status, submission_id').eq('id', id).maybeSingle();
     if (!row) return NextResponse.json({ success: false, error: 'Gambar tidak dijumpai.' }, { status: 404 });
     const now = new Date().toISOString();
@@ -136,7 +139,14 @@ export async function PATCH(req) {
         status: 'processed', submission_id, process_note: processNote, processed_by: g.user.id, processed_at: now,
       }).eq('id', id);
       if (error) throw error;
-      return NextResponse.json({ success: true, qty_returned: qtyReturned, note: processNote });
+      // Unit rosak (pilihan) — dicatat selepas stok dipulangkan
+      let damage = null;
+      if (Array.isArray(damaged) && damaged.some(d => parseInt(d.qty, 10) > 0)) {
+        const { data: s } = await g.admin.from('submissions').select('full_name').eq('id', submission_id).maybeSingle();
+        try { damage = await recordDamage(g.admin, { refId: submission_id, items: damaged, reason, label: s?.full_name, actorId: g.user.id }); }
+        catch (e) { damage = { error: e.message }; }
+      }
+      return NextResponse.json({ success: true, qty_returned: qtyReturned, note: processNote, damage });
     }
 
     if (action === 'unmatched') {
