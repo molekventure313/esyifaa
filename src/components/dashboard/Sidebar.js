@@ -20,10 +20,10 @@ export default function Sidebar({ isOpen, onClose }) {
   const isAdminPath = pathname.startsWith('/dashboard/admin');
   const isPerawatPath = pathname.startsWith('/dashboard/perawat');
 
-  // Perawat yang diberi akses Pengisian Stok (halaman Pengguna) → menu tambahan
+  // Perawat / marketer yang diberi akses Pengisian Stok (halaman Pengguna) → menu tambahan
   const [canFillStock, setCanFillStock] = useState(false);
   useEffect(() => {
-    if (role !== 'practitioner') return;
+    if (role !== 'practitioner' && role !== 'marketer') return;
     fetch('/api/stock-filling?access=1').then(r => setCanFillStock(r.ok)).catch(() => {});
   }, [role]);
 
@@ -102,6 +102,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Dashboard', href: '/dashboard/marketer' },
     { label: '📦 Orders Saya', href: '/dashboard/marketer/orders' },
     { label: '💬 Order WhatsApp', href: '/dashboard/marketer/order-wasap' },
+    ...(canFillStock ? [{ label: '📸 Pengisian Stok', href: '/dashboard/marketer/pengisian-stok' }] : []),
     { section: 'LAPORAN' },
     { label: '💰 Gaji & Kos Ads', href: '/dashboard/marketer/gaji' },
     { label: '👥 Team Saya', href: '/dashboard/marketer/team' },
@@ -165,6 +166,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Dashboard', href: '/dashboard/marketer' },
     { label: '📦 Orders Saya', href: '/dashboard/marketer/orders' },
     { label: '💬 Order WhatsApp', href: '/dashboard/marketer/order-wasap' },
+    ...(canFillStock ? [{ label: '📸 Pengisian Stok', href: '/dashboard/marketer/pengisian-stok' }] : []),
     { section: 'LAPORAN' },
     { label: '💰 Komisen Saya', href: '/dashboard/marketer/gaji' },
     { section: 'TETAPAN' },

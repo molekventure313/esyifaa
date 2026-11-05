@@ -254,7 +254,7 @@ export default function UserManagementPage() {
                             </div>
                             <div style={{ fontSize: '0.76rem', color: textSecondary, wordBreak: 'break-all' }}>{u.email || '—'}</div>
                             {u.phone && <div style={{ fontSize: '0.74rem', color: textMuted }}>{u.phone}</div>}
-                            {u.role === 'practitioner' && u.can_fill_stock && (
+                            {['practitioner', 'marketer'].includes(u.role) && u.can_fill_stock && (
                               <div style={{ fontSize: '0.7rem', marginTop: '0.15rem', color: '#10B981' }}>📸 Akses Pengisian Stok</div>
                             )}
                             {u.role === 'marketer' && (
@@ -288,7 +288,7 @@ export default function UserManagementPage() {
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 0.75rem', minWidth: '170px' }}>
                             <button disabled={busy} onClick={() => setEditing({ id: u.id, full_name: u.full_name || '', phone: u.phone || '' })} style={linkBtn('#60A5FA')}>✏️ Edit</button>
                             <button disabled={busy} onClick={() => toggleActive(u)} style={linkBtn(u.is_active ? '#F59E0B' : '#10B981')}>{u.is_active ? '⏸ Nyahaktif' : '▶ Aktifkan'}</button>
-                            {u.role === 'practitioner' && isSuper && (
+                            {['practitioner', 'marketer'].includes(u.role) && isSuper && (
                               <button disabled={busy} onClick={() => toggleFillStock(u)} style={linkBtn(u.can_fill_stock ? '#F59E0B' : '#10B981')}>
                                 {u.can_fill_stock ? '📸 Tarik akses pengisian' : '📸 Beri akses pengisian'}
                               </button>

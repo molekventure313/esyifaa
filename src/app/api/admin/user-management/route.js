@@ -159,7 +159,7 @@ export async function PATCH(req) {
     }
     if (b.full_name !== undefined && String(b.full_name).trim()) { update.full_name = String(b.full_name).trim(); changes.push('nama'); }
     if (b.can_fill_stock !== undefined) {
-      if (normRole(target.role) !== 'practitioner') throw new HttpError('Akses Pengisian Stok hanya untuk perawat.');
+      if (!['practitioner', 'marketer'].includes(normRole(target.role))) throw new HttpError('Akses Pengisian Stok hanya untuk perawat / marketer.');
       await setReader(admin, target.id, !!b.can_fill_stock);
       changes.push(b.can_fill_stock ? 'akses Pengisian Stok diberi' : 'akses Pengisian Stok ditarik');
     }
