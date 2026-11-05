@@ -1,4 +1,5 @@
 // Ads Hub — laporan pagi oleh Claude (server sahaja). Satu laporan sehari setiap marketer, tentang semalam.
+import { aiKeyFor } from './fighter';
 import { callClaude, textOf } from './ai';
 import { buildOverview } from './report';
 
@@ -27,6 +28,7 @@ export async function generateMorningReport(admin, conn, { force = false } = {})
     if (existing) return { ok: true, skipped: true };
   }
 
+  const apiKey = await aiKeyFor(admin, conn.marketer_id);   // fighter tanpa key → gagal awal (sebelum bina laporan)
   const [y, w] = await Promise.all([
     buildOverview(admin, conn.marketer_id, 'yesterday'),
     buildOverview(admin, conn.marketer_id, '7d'),
@@ -43,6 +45,7 @@ export async function generateMorningReport(admin, conn, { force = false } = {})
   };
 
   const res = await callClaude({
+    apiKey,
     system: SYSTEM,
     messages: [{ role: 'user', content: `Data akaun ${conn.ad_account_name || conn.ad_account_id}:\n${JSON.stringify(data)}` }],
     maxTokens: 4000,

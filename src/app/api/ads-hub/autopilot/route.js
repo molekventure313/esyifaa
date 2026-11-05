@@ -32,11 +32,15 @@ export async function GET(req) {
   const opts = { pages: [], instagram: [], adsets: [], warning: null };
   try {
     const token = decryptToken(token_encrypted);
-    const [pages, ig] = await Promise.all([
+    // Page: yang pernah dipromosi oleh ad account + semua Page yang token (System User) ada akses
+    const [pages, own, ig] = await Promise.all([
       metaGet(`${ad_account_id}/promote_pages`, { fields: 'id,name', limit: 100 }, token).catch(() => ({ data: [] })),
+      metaGet('me/accounts', { fields: 'id,name', limit: 100 }, token).catch(() => ({ data: [] })),
       metaGet(`${ad_account_id}/instagram_accounts`, { fields: 'id,username', limit: 100 }, token).catch(() => ({ data: [] })),
     ]);
-    opts.pages = (pages.data || []).map(p => ({ id: p.id, name: p.name }));
+    const pageMap = new Map();
+    for (const p of [...(pages.data || []), ...(own.data || [])]) if (!pageMap.has(p.id)) pageMap.set(p.id, { id: p.id, name: p.name });
+    opts.pages = [...pageMap.values()];
     opts.instagram = (ig.data || []).map(a => ({ id: a.id, name: a.username }));
   } catch (e) { opts.warning = e.message; }
   const { data: ads } = await g.admin.from('meta_ads').select('adset_id, adset_name, adset_status, campaign_name')

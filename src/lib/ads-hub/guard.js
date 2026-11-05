@@ -15,6 +15,11 @@ export async function adsHubGuard() {
   const { data: profile } = await admin.from('profiles')
     .select('id, role, full_name, team_leader_id, is_active').eq('id', user.id).single();
   if (profile?.role === 'super_admin') return { user, profile, admin, isOwner: true };
+  // Fighter (penjual bebas) — akaun Meta & data sendiri; laporan dari fighter_orders (lib/ads-hub/fighter.js)
+  if (profile?.role === 'independent') {
+    if (profile.is_active === false) return err('Akaun tidak aktif.', 403);
+    return { user, profile, admin, isOwner: false, isFighter: true };
+  }
   if (profile?.role !== 'marketer') return err('Forbidden', 403);
   if (profile.team_leader_id) return err('Ads Hub diurus oleh ketua team.', 403);
   if (profile.is_active === false) return err('Akaun tidak aktif.', 403);

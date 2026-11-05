@@ -2,6 +2,7 @@
 // Setiap permintaan HTTP = SATU panggilan Claude (had masa Netlify). Browser sambung langkah seterusnya.
 // Alat baca dijalankan terus; alat tulis menunggu marketer tekan Sahkan/Batal.
 // Mesej disimpan persis seperti dihantar/diterima (append-only) — jangan ubah mesej lama.
+import { aiKeyFor } from './fighter';
 import { callClaude, nowMyt, CHAT_QUOTA_MONTH } from './ai';
 import { buildOverview, buildReport, PERIODS } from './report';
 import { executeAction, describeAction } from './actions';
@@ -267,11 +268,12 @@ export async function step(admin, conn, profile, threadId) {
   if (messages.length > MAX_THREAD_MESSAGES) {
     throw Object.assign(new Error('Perbualan ini dah terlalu panjang. Mulakan perbualan baru.'), { status: 409 });
   }
-  if (await quotaUsed(admin, conn.marketer_id) >= CHAT_QUOTA_MONTH) {
+  const apiKey = await aiKeyFor(admin, conn.marketer_id);   // fighter: key sendiri (tiada kuota HQ)
+  if (!apiKey && await quotaUsed(admin, conn.marketer_id) >= CHAT_QUOTA_MONTH) {
     throw Object.assign(new Error(`Kuota chat bulan ini (${CHAT_QUOTA_MONTH} langkah) dah habis.`), { status: 429 });
   }
-
   const res = await callClaude({
+    apiKey,
     system: systemPrompt(conn, profile),
     messages: messages.map(m => ({ role: m.role, content: m.content })),
     tools: TOOLS,

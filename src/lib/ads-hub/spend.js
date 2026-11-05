@@ -53,6 +53,9 @@ export async function campaignProducts(admin, conn) {
  */
 export async function fillAdsSpend(admin, conn, { from, to }) {
   if (!conn.auto_ads_spend) return { ok: true, skipped: true };
+  // Fighter berniaga sendiri — belanja ads tidak masuk ads_spend HQ / laporan marketer
+  const { data: who } = await admin.from('profiles').select('role').eq('id', conn.marketer_id).maybeSingle();
+  if (who?.role === 'independent') return { ok: true, skipped: true, note: 'Fighter — ads spend tidak direkod ke HQ.' };
   if (from < AUTO_SPEND_START) from = AUTO_SPEND_START;
   if (from > to) return { ok: true, skipped: true };
   const owner = await spendOwner(admin, conn.marketer_id);

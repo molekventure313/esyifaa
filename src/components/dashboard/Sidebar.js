@@ -122,6 +122,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Dashboard', href: '/dashboard/fighter' },
     { label: '📦 Order Saya', href: '/dashboard/fighter/orders' },
     { label: '💵 Stok & Bil', href: '/dashboard/fighter/stok' },
+    { label: '📈 Ads Hub', href: '/dashboard/fighter/ads-hub' },
     { section: 'SALESPAGE' },
     { label: '✨ SP Generator', href: '/dashboard/sp-generator' },
     { section: 'TETAPAN' },

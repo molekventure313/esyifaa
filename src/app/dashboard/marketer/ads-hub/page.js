@@ -11,7 +11,8 @@ const TABS = [
   { id: 'settings', label: '⚙️ Tetapan' },
 ];
 
-export default function MarketerAdsHubPage() {
+// fighter = true → dipakai juga oleh Portal Fighter (/dashboard/fighter/ads-hub): tiada kad Ads Spend (tak masuk HQ)
+export default function MarketerAdsHubPage({ fighter = false }) {
   const t = theme(useLightMode());
   const [tab, setTab] = useState('dashboard');
   const [version, setVersion] = useState(0);
@@ -31,7 +32,7 @@ export default function MarketerAdsHubPage() {
     <div style={{ fontFamily: t.ff, color: t.text }}>
       <div style={{ padding: '1.2rem 1.5rem', borderRadius: 8, marginBottom: '1.25rem', background: t.cardBg, border: t.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: t.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.15rem' }}>MARKETER · IKLAN META</div>
+          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: t.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.15rem' }}>{fighter ? 'FIGHTER · IKLAN META' : 'MARKETER · IKLAN META'}</div>
           <h1 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>📈 Ads Hub</h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: t.text2 }}>Prestasi setiap ad dengan ROAS dari order sebenar, bukan pixel</p>
         </div>
@@ -58,7 +59,7 @@ export default function MarketerAdsHubPage() {
       {tab === 'settings' && (
         <>
           <AdsHubSettings onChanged={bump} />
-          {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><SpendCard /></div>}
+          {connected && !fighter && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><SpendCard /></div>}
           {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><LimitsCard /></div>}
           {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><AutopilotCard /></div>}
           {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><ClaudeKeyCard /></div>}

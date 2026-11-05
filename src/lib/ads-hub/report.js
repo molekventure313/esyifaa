@@ -3,6 +3,7 @@ import { parseAmount, calcCOGS } from '@/lib/marketer-calc';
 import { fetchProductCosts, productOf, DIGITAL_AD } from '@/lib/products';
 import { resolveOwner, applyOwner } from '@/lib/team';
 import { campaignProducts } from './spend';
+import { fighterOrderRows, fighterCosts } from './fighter';
 
 // SST 8% atas belanja Meta — kos ads sebenar (sama dengan rekod ads_spend)
 export const SST_RATE = 0.08;
@@ -91,7 +92,8 @@ const orderProduct = s => productOf(s.source) || DIGITAL_AD.key;
 // product (pilihan) → hanya ads dalam kempen produk itu (tetapan kad Ads Spend) + order tak padan produk itu.
 export async function buildReport(admin, marketerId, { period, from, to, adId, product }) {
   const { data: who } = await admin.from('profiles').select('role').eq('id', marketerId).maybeSingle();
-  const owner = await resolveOwner(admin, who?.role === 'super_admin' ? 'hq' : marketerId);
+  const isFighter = who?.role === 'independent';   // fighter: order = fighter_orders, kos = harga stok HQ kepada fighter
+  const owner = isFighter ? null : await resolveOwner(admin, who?.role === 'super_admin' ? 'hq' : marketerId);
   const oneAd = q => (adId ? q.eq('ad_id', adId) : q);
   const oneAdOrders = q => (adId ? q.eq('utm_content', adId) : q);
 
@@ -102,7 +104,7 @@ export async function buildReport(admin, marketerId, { period, from, to, adId, p
     fetchAll(() => oneAd(admin.from('meta_ads').select('*').eq('marketer_id', marketerId)).order('ad_id')),
     fetchAll(() => oneAd(admin.from('meta_insights_daily').select('*').eq('marketer_id', marketerId))
       .gte('date', from).lte('date', to).order('ad_id').order('date')),
-    fetchAll(() => applyOwner(oneAdOrders(admin.from('submissions')
+    isFighter ? fighterOrderRows(admin, marketerId, { from, to, adId }) : fetchAll(() => applyOwner(oneAdOrders(admin.from('submissions')
       .select('id, amount_paid, notes, problem, source, qty, created_at, utm_content, payment_type')), owner)
       .eq('payment_status', 'completed')
       .is('returned_at', null)
@@ -110,7 +112,7 @@ export async function buildReport(admin, marketerId, { period, from, to, adId, p
       .gte('created_at', `${from}T00:00:00+08:00`)
       .lte('created_at', `${to}T23:59:59+08:00`)
       .order('created_at')),
-    fetchProductCosts(admin),
+    isFighter ? fighterCosts(admin, marketerId) : fetchProductCosts(admin),
   ]);
   if (connErr) throw new Error(connErr.message);
 

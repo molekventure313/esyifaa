@@ -18,9 +18,11 @@ function getClient() {
  * Satu panggilan Messages API. Fallback server-side ("default") aktif: jika model menolak atas sebab
  * polisi, API cuba semula pada model fallback yang disyorkan dalam panggilan yang sama.
  */
-export async function callClaude({ system, messages, tools, maxTokens = 8000, effort = 'low', format }) {
+// apiKey (pilihan) — fighter guna Claude API key sendiri (lib/ads-hub/fighter.js → aiKeyFor)
+export async function callClaude({ system, messages, tools, maxTokens = 8000, effort = 'low', format, apiKey = null }) {
   try {
-    return await getClient().beta.messages.create({
+    const c = apiKey ? new Anthropic({ apiKey, timeout: 22000, maxRetries: 0 }) : getClient();
+    return await c.beta.messages.create({
       model: AI_MODEL,
       max_tokens: maxTokens,
       system,
@@ -34,7 +36,7 @@ export async function callClaude({ system, messages, tools, maxTokens = 8000, ef
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) throw Object.assign(new Error('AI sibuk sekarang — cuba lagi sebentar.'), { status: 503 });
     if (e instanceof Anthropic.APIConnectionTimeoutError) throw Object.assign(new Error('AI ambil masa terlalu lama — cuba lagi.'), { status: 504 });
-    if (e instanceof Anthropic.AuthenticationError) throw Object.assign(new Error('ANTHROPIC_API_KEY tidak sah.'), { status: 503 });
+    if (e instanceof Anthropic.AuthenticationError) throw Object.assign(new Error(apiKey ? 'Claude API Key anda tidak sah — kemas kini di Tetapan Akaun.' : 'ANTHROPIC_API_KEY tidak sah.'), { status: 503 });
     if (e instanceof Anthropic.APIError) throw Object.assign(new Error(`AI gagal (${e.status ?? 'rangkaian'}): ${e.message}`), { status: 502 });
     throw e;
   }

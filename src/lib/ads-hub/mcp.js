@@ -9,6 +9,7 @@ import { buildReport, periodRange, fetchAll, PERIODS, SST_RATE } from './report'
 import { runReadTool } from './chat';
 import * as autopilot from './autopilot';
 import { syncFromMcp } from './mcp-sync';
+import { fighterOrderRows, fighterCosts, FIGHTER_SLUGS } from './fighter';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 export const SERVER_INFO = { name: 'esyifa', title: 'E-Syifa Ads Hub', version: '1.0.0' };
@@ -29,8 +30,8 @@ export async function authKey(admin, header) {
   const { data: k } = await admin.from('mcp_api_keys').select('id, marketer_id, revoked_at, last_used_at')
     .eq('key_hash', hashKey(m[1])).maybeSingle();
   if (!k || k.revoked_at) return null;
-  const { data: p } = await admin.from('profiles').select('id, role, full_name, team_leader_id, is_active').eq('id', k.marketer_id).maybeSingle();
-  if (!p || p.is_active === false || !['marketer', 'super_admin'].includes(p.role) || p.team_leader_id) return null;
+  const { data: p } = await admin.from('profiles').select('id, role, full_name, team_leader_id, is_active, marketer_code').eq('id', k.marketer_id).maybeSingle();
+  if (!p || p.is_active === false || !['marketer', 'super_admin', 'independent'].includes(p.role) || p.team_leader_id) return null;
   if (!k.last_used_at || Date.now() - new Date(k.last_used_at).getTime() > 5 * 60000) {
     await admin.from('mcp_api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', k.id);
   }
@@ -240,6 +241,14 @@ export async function callTool(admin, profile, name, input = {}) {
     const c = await connectionOf(admin, mid);
     return {
       account: profile.role === 'super_admin' ? 'HQ' : profile.full_name,
+      ...(profile.role === 'independent' ? {
+        account_type: 'fighter',
+        fighter_links: {
+          rule: `Akaun FIGHTER (penjual bebas): link setiap ad MESTI SP fighter sendiri supaya order & bayaran masuk ke akaun fighter — https://e-syifa.com/f/<slug>?f=${profile.marketer_code} atau SP Generator milik fighter (/s/<slug>). Link HQ (/<slug>) ditukar automatik ke /f/<slug>?f=${profile.marketer_code} oleh launch_ad / prepare_launch.`,
+          slugs: FIGHTER_SLUGS,
+          example: `https://e-syifa.com/f/sabun-garam?f=${profile.marketer_code}`,
+        },
+      } : {}),
       meta: c ? pick(c, ['ad_account_id', 'ad_account_name', 'currency', 'status', 'status_message', 'last_synced_at', 'default_product', 'source']) : null,
       products: [...PRODUCTS, DIGITAL_AD].map(p => ({ key: p.key, label: p.label })),
       sst_rate: SST_RATE,
@@ -290,9 +299,10 @@ export async function callTool(admin, profile, name, input = {}) {
 }
 
 async function ordersSummary(admin, profile, { period, from, to }, product) {
-  const owner = await resolveOwner(admin, profile.role === 'super_admin' ? 'hq' : profile.id);
+  const isFighter = profile.role === 'independent';   // fighter: fighter_orders + harga stok HQ kepada fighter
+  const owner = isFighter ? null : await resolveOwner(admin, profile.role === 'super_admin' ? 'hq' : profile.id);
   const [subs, costs] = await Promise.all([
-    fetchAll(() => applyOwner(admin.from('submissions')
+    isFighter ? fighterOrderRows(admin, profile.id, { from, to }) : fetchAll(() => applyOwner(admin.from('submissions')
       .select('id, amount_paid, notes, problem, source, qty, created_at, utm_content, payment_type'), owner)
       .eq('payment_status', 'completed')
       .is('returned_at', null)
@@ -300,7 +310,7 @@ async function ordersSummary(admin, profile, { period, from, to }, product) {
       .gte('created_at', `${from}T00:00:00+08:00`)
       .lte('created_at', `${to}T23:59:59+08:00`)
       .order('created_at')),
-    fetchProductCosts(admin),
+    isFighter ? fighterCosts(admin, profile.id) : fetchProductCosts(admin),
   ]);
 
   const groups = { by_day: {}, by_product: {}, by_payment: {}, by_source: {}, by_utm: {} };

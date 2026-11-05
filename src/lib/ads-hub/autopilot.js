@@ -6,6 +6,7 @@
 import { decryptToken } from './crypto';
 import { metaGet, metaPost, MetaError } from './meta';
 import { AD_PRODUCT_KEYS, PRODUCTS, DIGITAL_AD } from '@/lib/products';
+import { ownerProfile, isFighterProfile, fighterAdLink } from './fighter';
 
 export const BUCKET = 'ads-creatives';
 export const CTA_TYPES = ['LEARN_MORE', 'SHOP_NOW', 'ORDER_NOW', 'BUY_NOW', 'GET_OFFER'];
@@ -155,6 +156,13 @@ export async function videoStatus(admin, marketerId, { video_id }) {
 
 // ---------- Launch ----------
 
+// Fighter: link dipaksa ke SP fighter (/f/<slug>?f=<kod> / SP Generator sendiri) supaya order tak masuk HQ
+async function ownerLink(admin, marketerId, link) {
+  const p = await ownerProfile(admin, marketerId);
+  if (!isFighterProfile(p)) return link;
+  try { return await fighterAdLink(admin, p, link); } catch (e) { throw fail(e.message); }
+}
+
 function validateLaunch(p) {
   const need = ['client_ref', 'angle', 'headline', 'primary_text', 'link', 'video_id'];
   const miss = need.filter(k => !String(p[k] ?? '').trim());
@@ -281,6 +289,7 @@ async function createAdset(admin, conn, token, row, p, status, save, actorId) {
 export async function launchAd(admin, marketerId, actorId, input) {
   const started = Date.now();
   const p = validateLaunch(input);
+  p.link = await ownerLink(admin, marketerId, p.link);
   const conn = await loadHqConn(admin, marketerId);
   if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
   if (!conn.autopilot_page_id || !conn.autopilot_template_adset_id) throw fail('Tetapan autopilot belum lengkap: Facebook Page & adset contoh (Ads Hub → Tetapan).');
@@ -359,6 +368,7 @@ export async function launchAd(admin, marketerId, actorId, input) {
 
 export async function prepareLaunch(admin, marketerId, actorId, input) {
   const p = validateLaunch(input);
+  p.link = await ownerLink(admin, marketerId, p.link);
   const conn = await loadHqConn(admin, marketerId);
   if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
   if (!conn.autopilot_page_id || !conn.autopilot_template_adset_id) throw fail('Tetapan autopilot belum lengkap: Facebook Page & adset contoh (Ads Hub → Tetapan).');

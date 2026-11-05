@@ -1,4 +1,5 @@
 // Ads Hub — cadangan tag angle oleh Claude untuk ads yang belum ditag (server sahaja).
+import { aiKeyFor } from './fighter';
 import { callClaude, textOf } from './ai';
 
 const SCHEMA = {
@@ -26,7 +27,9 @@ export async function suggestAngles(admin, conn) {
   const { data: tagged } = await admin.from('meta_ads').select('angle').eq('marketer_id', conn.marketer_id).not('angle', 'is', null);
   const existing = [...new Set((tagged || []).map(t => t.angle))];
 
+  const apiKey = await aiKeyFor(admin, conn.marketer_id);
   const res = await callClaude({
+    apiKey,
     system: [{ type: 'text', text: 'Anda tag angle iklan E-Syifa (produk rawatan Islam). Angle = masalah/emosi utama yang ad sasarkan, 1–3 perkataan Bahasa Melayu (contoh: Lebam, Gatal Malam, Gangguan Rumah, Rezeki Niaga, Emosi). Ads dengan masalah sama mesti dapat angle yang sama. Guna semula angle sedia ada jika sesuai.' }],
     messages: [{ role: 'user', content: `Angle sedia ada: ${JSON.stringify(existing)}\nAds:\n${JSON.stringify(ads)}` }],
     maxTokens: 4000,
