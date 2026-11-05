@@ -1,6 +1,7 @@
 // Ads Hub — tindakan berjadual, peraturan auto & amaran (server sahaja).
 import { executeAction, describeAction } from './actions';
 import { buildReport, fetchAll } from './report';
+import { autopilotCampaignIds } from './autopilot';
 
 const MYT_MS = 8 * 3600 * 1000;
 const DAY = 86400000;
@@ -193,8 +194,13 @@ async function blockedAdsets(admin, marketerId) {
   return new Set((data || []).map(r => r.adset_id));
 }
 
+// Skop autopilot = semua kempen [AUTOPILOT] akaun ini (kempen utama + kempen setiap produk); conn.apCampaigns diisi oleh withApCampaigns
 const inScope = (rule, conn, s) => s.campaign_status === 'ACTIVE'
-  && (rule.scope !== 'autopilot' || (conn.autopilot_campaign_id && s.campaign_id === conn.autopilot_campaign_id));
+  && (rule.scope !== 'autopilot' || !!conn.apCampaigns?.has(s.campaign_id));
+async function withApCampaigns(admin, conn) {
+  if (!conn.apCampaigns) conn.apCampaigns = new Set(await autopilotCampaignIds(admin, conn));
+  return conn;
+}
 
 /** Tindakan Meta untuk satu adset, atau null jika tiada perubahan diperlukan. */
 function adsetAction(rule, s) {
@@ -323,8 +329,9 @@ export async function evaluateConnection(admin, conn) {
     const seenAdsets = new Set();
     // Skop autopilot: hanya ads dalam kempen [AUTOPILOT]; bajet dihadkan oleh had harian kempen
     const autopilot = rule.scope === 'autopilot';
-    if (autopilot && !conn.autopilot_campaign_id) continue;
-    const inRuleScope = a => !autopilot || a.campaign_id === conn.autopilot_campaign_id;
+    if (autopilot) await withApCampaigns(admin, conn);
+    if (autopilot && !conn.apCampaigns.size) continue;
+    const inRuleScope = a => !autopilot || conn.apCampaigns.has(a.campaign_id);
     const apBudgets = new Map();
     if (autopilot) for (const a of rep.ads) if (a.running && inRuleScope(a) && a.daily_budget != null) apBudgets.set(a.adset_id, a.daily_budget);
     for (const ad of rep.ads.filter(a => a.running && inRuleScope(a))) {

@@ -740,26 +740,27 @@ export function ClaudeKeyCard({ marketerId }) {
   );
 }
 
-// ---------- Autopilot HQ (tetapan + suis kecemasan) ----------
-export function AutopilotCard() {
+// ---------- Autopilot (tetapan + suis kecemasan; setiap akaun Meta sendiri) ----------
+export function AutopilotCard({ marketerId } = {}) {
   const t = theme(useLightMode());
   const [s, setS] = useState(null);
   const [opts, setOpts] = useState(null);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    getJson('/api/ads-hub/autopilot').then(j => {
+    setS(null); setMsg('');
+    getJson(`/api/ads-hub/autopilot${q(marketerId)}`).then(j => {
       if (j.success) { setS(j.settings); setOpts(j.options); } else setMsg(j.error);
     });
-  }, []);
+  }, [marketerId]);
   const patch = async body => {
     setBusy(true); setMsg('');
-    const j = await sendJson('/api/ads-hub/autopilot', 'PATCH', body);
+    const j = await sendJson(`/api/ads-hub/autopilot${q(marketerId)}`, 'PATCH', body);
     setBusy(false);
     if (!j.success) return setMsg(j.error);
     setS(j.settings); setMsg('Disimpan.');
   };
-  if (!s) return msg ? <Card t={t} title="🚀 Autopilot HQ"><span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span></Card> : null;
+  if (!s) return msg ? <Card t={t} title="🚀 Autopilot"><span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span></Card> : null;
 
   const field = { padding: '0.45rem 0.6rem', borderRadius: 6, border: t.border, background: t.headBg, color: t.text, fontSize: '0.82rem', fontFamily: t.ff };
   const row = (id, label, hint, input) => (
@@ -782,7 +783,7 @@ export function AutopilotCard() {
   const on = s.autopilot_enabled;
 
   return (
-    <Card t={t} title="🚀 Autopilot HQ" sub="Claude di PC launch ad baru melalui MCP selepas anda luluskan draf. Ad masuk kempen [AUTOPILOT] dan dijadual mula 06:00 pagi esok.">
+    <Card t={t} title="🚀 Autopilot" sub="Claude di PC launch ad baru melalui MCP selepas anda luluskan draf. Ad masuk kempen [AUTOPILOT] &lt;Produk&gt; dalam akaun Meta ini dan dijadual mula 06:00 pagi.">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '0.4rem 0 0.8rem', borderBottom: t.rowBorder, flexWrap: 'wrap' }}>
         <span>
           <span style={{ fontWeight: 700, fontSize: '0.9rem', color: on ? t.good : t.bad }}>{on ? '● Autopilot HIDUP' : '● Autopilot MATI'}</span><br />

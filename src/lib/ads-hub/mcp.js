@@ -1,4 +1,4 @@
-// MCP E-Syifa — Claude Code/Desktop baca data Ads Hub & order sendiri; akaun HQ juga ada alat autopilot (launch ad). Server sahaja.
+// MCP E-Syifa — Claude Code/Desktop baca data Ads Hub & order sendiri, dan launch ad autopilot ke akaun Meta sendiri. Server sahaja.
 // Auth: header "Authorization: Bearer esk_…" (jadual mcp_api_keys, hash SHA-256). Skop = akaun Ads Hub pemilik key.
 // Tiada data pelanggan (nama/telefon/alamat) didedahkan — hanya agregat & prestasi ads.
 import crypto from 'node:crypto';
@@ -91,11 +91,11 @@ export const TOOLS = [
   },
 ];
 
-// Alat tulis autopilot — hanya untuk key akaun HQ (super_admin). Had dikuatkuasa di server (lib/ads-hub/autopilot).
+// Alat tulis autopilot — setiap key (HQ atau marketer) hanya ke akaun Meta pemilik key. Had dikuatkuasa di server (lib/ads-hub/autopilot).
 export const AUTOPILOT_TOOLS = [
   {
     name: 'autopilot_status',
-    description: 'Status autopilot HQ: suis ON/OFF, tetapan (bajet setiap adset, maks adset, had bajet harian, Page, adset contoh), adset dalam kempen [AUTOPILOT] (live dari Meta), slot kosong, masa mula seterusnya (06:00 esok) dan launch terkini. Panggil dahulu — buat draf hanya jika free_slots > 0.',
+    description: 'Status autopilot akaun anda: suis ON/OFF, tetapan (bajet setiap adset, maks adset, had bajet harian, Page, adset contoh), adset dalam kempen [AUTOPILOT] (live dari Meta), slot kosong, masa mula seterusnya (06:00 esok) dan launch terkini. Panggil dahulu — buat draf hanya jika free_slots > 0.',
     inputSchema: obj({}),
   },
   {
@@ -115,7 +115,7 @@ export const AUTOPILOT_TOOLS = [
   },
   {
     name: 'launch_ad',
-    description: `HANYA selepas draf (angle, ad copy, skrip VO, storyboard) diluluskan oleh pengguna. Cipta adset baru dalam kempen [AUTOPILOT] (Sabun Garam: "[AUTOPILOT] HQ"; produk lain: kempen "[AUTOPILOT] <Produk>" sendiri) (bajet ikut tetapan, targeting/pixel disalin dari adset contoh) + ad video dengan UTM automatik, dijadual mula 06:00 pagi esok (MYT), atau 06:00 pagi ini dengan start="today". Server tolak jika autopilot OFF, slot penuh atau melebihi had bajet harian. Resumable: jika status "launching", panggil semula dengan client_ref & parameter yang SAMA sehingga "scheduled".`,
+    description: `HANYA selepas draf (angle, ad copy, skrip VO, storyboard) diluluskan oleh pengguna. Cipta adset baru dalam kempen [AUTOPILOT] (satu kempen "[AUTOPILOT] <Produk>" setiap produk; HQ Sabun Garam: "[AUTOPILOT] HQ") (bajet ikut tetapan, targeting/pixel disalin dari adset contoh) + ad video dengan UTM automatik, dijadual mula 06:00 pagi esok (MYT), atau 06:00 pagi ini dengan start="today". Server tolak jika autopilot OFF, slot penuh atau melebihi had bajet harian. Resumable: jika status "launching", panggil semula dengan client_ref & parameter yang SAMA sehingga "scheduled".`,
     inputSchema: obj({
       client_ref: str('ID unik draf ini (cth "2026-11-04-saka-1") — elak launch berganda'),
       product: { type: 'string', enum: AD_PRODUCT_KEYS, description: 'Produk' },
@@ -159,7 +159,7 @@ export const AUTOPILOT_TOOLS = [
   },
 ];
 const AUTOPILOT_NAMES = new Set(AUTOPILOT_TOOLS.map(t => t.name));
-export const toolsFor = profile => (profile.role === 'super_admin' ? [...TOOLS, ...AUTOPILOT_TOOLS] : TOOLS);
+export const toolsFor = () => [...TOOLS, ...AUTOPILOT_TOOLS];
 
 const fail = msg => Object.assign(new Error(msg), { toolError: true });
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -196,7 +196,6 @@ async function connectionOf(admin, mid) {
 export async function callTool(admin, profile, name, input = {}) {
   const mid = profile.id;
   if (AUTOPILOT_NAMES.has(name)) {
-    if (profile.role !== 'super_admin') throw fail('Alat autopilot hanya untuk akaun HQ.');
     if (name === 'autopilot_status') return autopilot.status(admin, mid);
     if (name === 'request_upload') return autopilot.requestUpload(admin, mid, input);
     if (name === 'upload_video') return autopilot.uploadVideo(admin, mid, input);
@@ -224,7 +223,7 @@ export async function callTool(admin, profile, name, input = {}) {
         rule: 'Order dipadankan dengan ad melalui utm_content = ID ad Meta. Setiap ad baru MESTI ada URL parameters (url_tags) ini, jika tidak order tak akan dipadankan dengan ad itu.',
         url_tags: 'utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.id}}',
       },
-      note: 'MCP ini baca sahaja. Cipta/ubah ads dibuat terus melalui Meta Marketing API dengan token anda sendiri. Data Ads Hub disync setiap jam.',
+      note: 'Alat get_* baca data. Alat autopilot (autopilot_status, launch_ad, …) launch ad ke akaun Meta anda sendiri, ikut suis & had di Ads Hub → Tetapan → Autopilot. Data Ads Hub disync setiap jam.',
     };
   }
 
@@ -314,5 +313,4 @@ async function ordersSummary(admin, profile, { period, from, to }, product) {
 
 export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar akaun anda. ${BASIS}
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
-Marketer: alat baca sahaja — cipta ads melalui Meta Marketing API sendiri dengan url_tags mengandungi utm_content={{ad.id}}.
-Akaun HQ: ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
+Setiap akaun (HQ & marketer) ada alat autopilot ke akaun Meta sendiri (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;

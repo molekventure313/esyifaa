@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { authKey, callTool, toolsFor, INSTRUCTIONS, SERVER_INFO, PROTOCOL_VERSIONS } from '@/lib/ads-hub/mcp';
 
-// MCP E-Syifa (Streamable HTTP, tanpa sesi, JSON sahaja). Marketer: baca sahaja · HQ: + alat autopilot.
+// MCP E-Syifa (Streamable HTTP, tanpa sesi, JSON sahaja). Setiap akaun: alat baca + alat autopilot ke akaun Meta sendiri.
 // Claude Code: claude mcp add --transport http esyifa https://<domain>/api/mcp --header "Authorization: Bearer esk_…"
 // Auth dengan API key (Ads Hub → Tetapan), bukan cookie — route ini public dalam middleware.
 export const dynamic = 'force-dynamic';

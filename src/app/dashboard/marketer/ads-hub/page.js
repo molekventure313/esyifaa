@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { AdsHubDashboard, AdsHubSettings, useLightMode, theme } from '@/components/dashboard/AdsHub';
-import { AlertsPanel, LatestReport, ReportsTab, LogTab, RulesTab, LimitsCard, SpendCard, ChatPanel, ClaudeKeyCard } from '@/components/dashboard/AdsHubExtras';
+import { AlertsPanel, LatestReport, ReportsTab, LogTab, RulesTab, LimitsCard, SpendCard, ChatPanel, ClaudeKeyCard, AutopilotCard } from '@/components/dashboard/AdsHubExtras';
 
 const TABS = [
   { id: 'dashboard', label: '📈 Dashboard' },
@@ -53,13 +53,14 @@ export default function MarketerAdsHubPage() {
         </div>
       )}
       {tab === 'reports' && <ReportsTab />}
-      {tab === 'rules' && <RulesTab canEdit />}
+      {tab === 'rules' && <RulesTab canEdit autopilot />}
       {tab === 'log' && <LogTab key={version} />}
       {tab === 'settings' && (
         <>
           <AdsHubSettings onChanged={bump} />
           {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><SpendCard /></div>}
           {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><LimitsCard /></div>}
+          {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><AutopilotCard /></div>}
           {connected && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><ClaudeKeyCard /></div>}
         </>
       )}

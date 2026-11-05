@@ -155,7 +155,7 @@ export default function AdminAdsHubPage() {
               </>
             )}
             {tab === 'reports' && <ReportsTab marketerId={mid} />}
-            {tab === 'rules' && <RulesTab marketerId={mid} canEdit autopilot={isHq} />}
+            {tab === 'rules' && <RulesTab marketerId={mid} canEdit autopilot />}
             {tab === 'log' && <LogTab marketerId={mid} />}
             {tab === 'settings' && (
               <>
@@ -163,7 +163,7 @@ export default function AdminAdsHubPage() {
                 <AdsHubSettings marketerId={mid} onChanged={bump} />
                 {conn && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><SpendCard marketerId={mid} isAgent={!!current?.is_ai_agent} /></div>}
                 {conn && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><LimitsCard marketerId={mid} /></div>}
-                {conn && isHq && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><AutopilotCard /></div>}
+                {conn && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><AutopilotCard key={mid || 'hq'} marketerId={mid} /></div>}
                 {conn && !current?.is_ai_agent && <div style={{ maxWidth: 820, marginTop: '1.5rem' }}><ClaudeKeyCard marketerId={mid} /></div>}
               </>
             )}

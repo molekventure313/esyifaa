@@ -1,4 +1,4 @@
-// Ads Hub — Autopilot HQ: upload creative & launch ad baru dalam kempen "[AUTOPILOT]" (server sahaja).
+// Ads Hub — Autopilot (HQ & marketer, akaun Meta sendiri): upload creative & launch ad baru dalam kempen "[AUTOPILOT]" (server sahaja).
 // Dipanggil melalui MCP E-Syifa oleh Claude di PC SELEPAS draf diluluskan dalam sesi Claude.
 // Had dikuatkuasa di sini: suis autopilot, bajet setiap adset, bilangan adset aktif & jumlah bajet harian.
 // Launch boleh disambung (resumable): setiap panggilan buat langkah yang belum siap, simpan kemajuan
@@ -52,7 +52,7 @@ export async function loadHqConn(admin, marketerId) {
 
 // Kempen autopilot: "[AUTOPILOT] HQ" (conn.autopilot_campaign_id, Sabun Garam/lalai) + satu kempen setiap produk lain,
 // dikesan dari autopilot_launches. Had slot & bajet dikira merentas semua kempen ini.
-async function autopilotCampaignIds(admin, conn) {
+export async function autopilotCampaignIds(admin, conn) {
   const { data } = await admin.from('autopilot_launches').select('campaign_id').eq('marketer_id', conn.marketer_id).not('campaign_id', 'is', null);
   return [...new Set([conn.autopilot_campaign_id, ...(data || []).map(r => r.campaign_id)].filter(Boolean))];
 }
@@ -184,7 +184,7 @@ const aliveCampaign = async (id, token) => {
   } catch (e) { if (e instanceof MetaError && e.code === 100) return false; throw e; }
 };
 
-// Sabun Garam (dan launch tanpa produk) guna "[AUTOPILOT] HQ"; produk lain dapat kempen sendiri "[AUTOPILOT] <Produk>".
+// Sabun Garam (dan launch tanpa produk) guna kempen utama (conn.autopilot_campaign_id); produk lain dapat kempen sendiri "[AUTOPILOT] <Produk>".
 async function ensureCampaign(admin, conn, token, product) {
   if (product && product !== 'sabun-garam') {
     const { data } = await admin.from('autopilot_launches').select('campaign_id').eq('marketer_id', conn.marketer_id)
@@ -203,8 +203,11 @@ async function ensureCampaign(admin, conn, token, product) {
       if (c.effective_status !== 'DELETED' && c.effective_status !== 'ARCHIVED') return c.id;
     } catch (e) { if (!(e instanceof MetaError && e.code === 100)) throw e; }
   }
+  // HQ kekal "[AUTOPILOT] HQ"; marketer: "[AUTOPILOT] Sabun Garam" dalam akaun Meta sendiri
+  const { data: owner } = await admin.from('profiles').select('role').eq('id', conn.marketer_id).maybeSingle();
+  const sabun = PRODUCTS.find(x => x.key === 'sabun-garam')?.label || 'Sabun Garam';
   const c = await metaPost(`${conn.ad_account_id}/campaigns`, {
-    name: CAMPAIGN_NAME, objective: 'OUTCOME_SALES', status: 'ACTIVE', buying_type: 'AUCTION',
+    name: owner?.role === 'super_admin' ? CAMPAIGN_NAME : `[AUTOPILOT] ${sabun}`, objective: 'OUTCOME_SALES', status: 'ACTIVE', buying_type: 'AUCTION',
     special_ad_categories: [], is_adset_budget_sharing_enabled: false,   // ABO: bajet di setiap adset
   }, token);
   await admin.from('meta_connections').update({ autopilot_campaign_id: c.id }).eq('marketer_id', conn.marketer_id);
