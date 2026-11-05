@@ -22,6 +22,8 @@ async function upsertChunks(admin, table, rows, onConflict) {
  */
 export async function syncConnection(admin, conn, { days = 3 } = {}) {
   const now = new Date().toISOString();
+  // Akaun tanpa token: data dihantar oleh Claude melalui alat MCP sync_meta_data
+  if (!conn.token_encrypted) return { ok: false, error: 'Akaun ini tanpa token — data Meta dihantar oleh Claude melalui MCP (sync_meta_data).' };
   let token;
   try {
     token = decryptToken(conn.token_encrypted);
@@ -95,7 +97,7 @@ export async function syncConnection(admin, conn, { days = 3 } = {}) {
 export async function syncDue(admin, { budgetMs = 20000 } = {}) {
   const started = Date.now();
   const { data: conns, error } = await admin.from('meta_connections')
-    .select('*').order('last_synced_at', { ascending: true, nullsFirst: true });
+    .select('*').not('token_encrypted', 'is', null).order('last_synced_at', { ascending: true, nullsFirst: true });
   if (error) throw new Error(error.message);
   const results = [];
   for (const conn of conns || []) {

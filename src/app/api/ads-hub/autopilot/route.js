@@ -26,6 +26,7 @@ export async function GET(req) {
   if (error) return NextResponse.json({ success: false, error: missing(error) ? MISSING : error.message }, { status: 500 });
   if (!conn) return NextResponse.json({ success: false, error: 'Sambung akaun Meta dulu.' }, { status: 400 });
   const { token_encrypted, ad_account_id, ...settings } = conn;
+  if (!token_encrypted) return NextResponse.json({ success: false, error: 'Akaun ini disambung melalui MCP Meta Ads (tanpa token). Launch ads terus melalui MCP Meta Ads dalam Claude — tetapan autopilot E-Syifa tidak digunakan.' });
 
   // Pilihan: Page & Instagram yang boleh dipromosi oleh ad account; adset contoh dari cache
   const opts = { pages: [], instagram: [], adsets: [], warning: null };

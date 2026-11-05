@@ -8,6 +8,7 @@ import { resolveOwner, applyOwner } from '@/lib/team';
 import { buildReport, periodRange, fetchAll, PERIODS, SST_RATE } from './report';
 import { runReadTool } from './chat';
 import * as autopilot from './autopilot';
+import { syncFromMcp } from './mcp-sync';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 export const SERVER_INFO = { name: 'esyifa', title: 'E-Syifa Ads Hub', version: '1.0.0' };
@@ -88,6 +89,28 @@ export const TOOLS = [
     name: 'get_activity',
     description: 'Aktiviti Ads Hub terkini: log tindakan, tindakan berjadual, peraturan auto, dan amaran/cadangan yang masih terbuka.',
     inputSchema: obj({}),
+  },
+  {
+    name: 'sync_meta_data',
+    description: 'Untuk akaun TANPA token (marketer yang guna MCP Meta Ads rasmi): hantar data Meta ke E-Syifa supaya Ads Hub, get_ads/get_overview dan ads spend automatik (belanja × 1.08 SST, ikut produk kempen) terisi. Ambil dahulu dari MCP Meta Ads: insights level ad, time_increment 1 (satu baris setiap ad setiap hari, termasuk ad yang dah dipause/padam yang ada belanja) dan senarai ads (status, adset, budget). Hantar SEMUA ads akaun untuk setiap tarikh dalam julat — ads spend untuk julat itu diganti sepenuhnya. Maksimum 35 hari ke belakang. Cadangan: jalankan setiap pagi untuk semalam & hari ini.',
+    inputSchema: obj({
+      ad_account_id: str('ID ad account Meta, contoh act_1234567890'),
+      ad_account_name: str('Nama ad account (pilihan)'),
+      currency: str('Mata wang ad account, lalai MYR'),
+      insights: { type: 'array', description: 'Belanja harian setiap ad', items: obj({
+        ad_id: str('ID ad'), date: str('YYYY-MM-DD (date_start)'), spend: { type: 'number', description: 'Belanja (tanpa SST)' },
+        impressions: int('Impressions'), reach: int('Reach'), link_clicks: int('inline_link_clicks'),
+        purchases: int('Purchase pixel (pilihan)'), purchase_value: { type: 'number', description: 'Nilai purchase pixel (pilihan)' },
+        ad_name: str('Nama ad'), adset_id: str('ID adset'), adset_name: str('Nama adset'), campaign_id: str('ID kempen'), campaign_name: str('Nama kempen'),
+      }, ['ad_id', 'date', 'spend']) },
+      ads: { type: 'array', description: 'Senarai ads semasa akaun (status & budget)', items: obj({
+        ad_id: str('ID ad'), ad_name: str('Nama ad'), status: str('effective_status ad, cth ACTIVE / PAUSED'),
+        adset_id: str('ID adset'), adset_name: str('Nama adset'), adset_status: str('effective_status adset'),
+        adset_daily_budget: { type: 'number', description: 'Budget harian adset dalam RM (bukan sen)' },
+        campaign_id: str('ID kempen'), campaign_name: str('Nama kempen'), campaign_status: str('effective_status kempen'),
+        headline: str('Headline creative'), created_time: str('Masa cipta ad (ISO)'),
+      }, ['ad_id']) },
+    }, ['ad_account_id']),
   },
 ];
 
@@ -188,7 +211,7 @@ const METRIC_KEYS = ['spend', 'ads_cost', 'orders', 'revenue', 'cogs', 'profit',
 
 async function connectionOf(admin, mid) {
   const { data } = await admin.from('meta_connections')
-    .select('marketer_id, ad_account_id, ad_account_name, currency, status, status_message, last_synced_at, default_product')
+    .select('marketer_id, ad_account_id, ad_account_name, currency, status, status_message, last_synced_at, default_product, source')
     .eq('marketer_id', mid).maybeSingle();
   return data;
 }
@@ -207,15 +230,17 @@ export async function callTool(admin, profile, name, input = {}) {
   }
   const needConn = async () => {
     const c = await connectionOf(admin, mid);
-    if (!c) throw fail('Akaun Meta belum disambung di Ads Hub → Tetapan.');
+    if (!c) throw fail('Akaun Meta belum disambung. Sambung token di Ads Hub → Tetapan, atau hantar data dari MCP Meta Ads dengan sync_meta_data.');
     return c;
   };
+
+  if (name === 'sync_meta_data') return syncFromMcp(admin, mid, input);
 
   if (name === 'get_account_info') {
     const c = await connectionOf(admin, mid);
     return {
       account: profile.role === 'super_admin' ? 'HQ' : profile.full_name,
-      meta: c ? pick(c, ['ad_account_id', 'ad_account_name', 'currency', 'status', 'status_message', 'last_synced_at', 'default_product']) : null,
+      meta: c ? pick(c, ['ad_account_id', 'ad_account_name', 'currency', 'status', 'status_message', 'last_synced_at', 'default_product', 'source']) : null,
       products: [...PRODUCTS, DIGITAL_AD].map(p => ({ key: p.key, label: p.label })),
       sst_rate: SST_RATE,
       basis: BASIS,
@@ -223,7 +248,7 @@ export async function callTool(admin, profile, name, input = {}) {
         rule: 'Order dipadankan dengan ad melalui utm_content = ID ad Meta. Setiap ad baru MESTI ada URL parameters (url_tags) ini, jika tidak order tak akan dipadankan dengan ad itu.',
         url_tags: 'utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.id}}',
       },
-      note: 'Alat get_* baca data. Alat autopilot (autopilot_status, launch_ad, …) launch ad ke akaun Meta anda sendiri, ikut suis & had di Ads Hub → Tetapan → Autopilot. Data Ads Hub disync setiap jam.',
+      note: c?.source === 'token' || (c && !c.source) ? 'Akaun disambung dengan token: data Meta disync automatik setiap jam. Alat autopilot (autopilot_status, launch_ad, …) launch ad ke akaun Meta ini ikut suis & had di Ads Hub → Tetapan → Autopilot.' : 'Akaun tanpa token: cipta & urus ads melalui MCP Meta Ads rasmi (url_tags di atas WAJIB), dan hantar belanja harian dengan sync_meta_data (cadangan setiap pagi) supaya Ads Hub & ads spend terisi automatik. Alat launch autopilot E-Syifa tidak digunakan untuk akaun tanpa token.',
     };
   }
 
@@ -313,4 +338,5 @@ async function ordersSummary(admin, profile, { period, from, to }, product) {
 
 export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar akaun anda. ${BASIS}
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
-Setiap akaun (HQ & marketer) ada alat autopilot ke akaun Meta sendiri (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
+Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
+Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;

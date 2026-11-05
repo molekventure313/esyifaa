@@ -15,7 +15,7 @@ import { AD_PRODUCT_KEYS } from '@/lib/products';
 export const maxDuration = 26;
 export const dynamic = 'force-dynamic';
 
-const PUBLIC_FIELDS = 'marketer_id, token_last4, ad_account_id, ad_account_name, currency, status, status_message, checked_at, last_synced_at, limit_max_budget, limit_max_increase_pct, limit_auto_actions_per_day, report_enabled, auto_ads_spend, default_product';
+const PUBLIC_FIELDS = 'marketer_id, token_last4, ad_account_id, ad_account_name, currency, status, status_message, checked_at, last_synced_at, limit_max_budget, limit_max_increase_pct, limit_auto_actions_per_day, report_enabled, auto_ads_spend, default_product, source';
 const bad = (msg, status = 400) => NextResponse.json({ success: false, error: msg }, { status });
 
 export async function GET(req) {
@@ -60,7 +60,7 @@ export async function POST(req) {
   let row;
   try {
     row = {
-      marketer_id: t.id, token_encrypted: encryptToken(token), token_last4: token.slice(-4),
+      marketer_id: t.id, token_encrypted: encryptToken(token), token_last4: token.slice(-4), source: 'token',
       ad_account_id: acct.id, ad_account_name: acct.name, currency: acct.currency,
       status: 'ok', status_message: null, checked_at: now, updated_at: now,
       // Ejen AI: ads spend sentiasa automatik dari Meta

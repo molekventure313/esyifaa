@@ -68,6 +68,7 @@ async function checkBudget(admin, conn, adsetId, oldRm, newRm, opts = {}) {
 export async function executeAction(admin, conn, a, ctx) {
   let token, before = null;
   try {
+    if (!conn.token_encrypted) throw reject('Akaun ini disambung melalui MCP Meta Ads (tanpa token) — buat perubahan ads terus dalam Meta / Claude.');
     token = decryptToken(conn.token_encrypted);
     await checkAutoQuota(admin, conn, ctx.source);
 

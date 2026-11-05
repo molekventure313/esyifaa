@@ -537,7 +537,7 @@ export function AdsHubSettings({ marketerId, onChanged }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.9rem', fontSize: '0.84rem' }}>
             {[
               ['Ad account', `${conn.ad_account_name || '—'} (${conn.ad_account_id})`],
-              ['Token', `EAA••••${conn.token_last4}`],
+              conn.token_last4 ? ['Token', `EAA••••${conn.token_last4}`] : ['Sambungan', 'MCP Meta Ads (data dihantar oleh Claude)'],
               ['Status', conn.status === 'ok' ? '✅ Berfungsi' : `⚠️ ${conn.status_message || 'Bermasalah'}`],
               ['Sync terakhir', ago(conn.last_synced_at)],
             ].map(([k, v]) => (

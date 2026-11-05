@@ -47,6 +47,7 @@ export async function loadHqConn(admin, marketerId) {
   if (error) throw fail(/autopilot_/.test(error.message) ? 'Run migration 032 dalam Supabase dulu.' : error.message);
   if (!data) throw fail('Akaun Meta belum disambung.');
   if (data.status === 'error') throw fail(`Sambungan Meta bermasalah: ${data.status_message}`);
+  if (!data.token_encrypted) throw fail('Akaun ini tanpa token Meta. Cipta ad terus melalui MCP Meta Ads rasmi (url_tags dari get_account_info WAJIB), kemudian hantar belanja dengan sync_meta_data.');
   return data;
 }
 
