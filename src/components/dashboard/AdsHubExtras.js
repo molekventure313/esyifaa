@@ -704,7 +704,7 @@ export function ClaudeKeyCard({ marketerId }) {
     load();
   };
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const cmd = fresh ? `claude mcp add --transport http esyifa ${origin}/api/mcp --header "Authorization: Bearer ${fresh}"` : '';
+  const cmd = fresh ? `claude mcp add --scope user --transport http esyifa ${origin}/api/mcp --header "Authorization: Bearer ${fresh}"` : '';
   const copy = async () => { try { await navigator.clipboard.writeText(cmd); setCopied(true); } catch { setMsg('Gagal salin — salin secara manual.'); } };
   const code = { display: 'block', padding: '0.7rem 0.8rem', borderRadius: 8, background: t.headBg, border: t.border, fontSize: '0.75rem', fontFamily: 'ui-monospace, Consolas, monospace', wordBreak: 'break-all', color: t.text };
 
