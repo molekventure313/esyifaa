@@ -79,6 +79,7 @@ export default function PengurusanOrderPage() {
   // NinjaVan API (hantar terus, waybill, batal)
   const [nvPushing, setNvPushing] = useState(false);
   const [nvBusyId,  setNvBusyId]  = useState(null);
+  const [printFilter, setPrintFilter] = useState('all');   // all | unprinted | printed (waybill NinjaVan)
   const [nvEnv,     setNvEnv]     = useState('sandbox');
 
   const { showToast } = useToast();
@@ -156,7 +157,8 @@ export default function PengurusanOrderPage() {
   // notExportedOnly toggle menapis display table, bukan sekadar export action
   const displayOrders = orders.filter(o =>
     (!notExportedOnly || !o.ninjavan_exported_at) &&
-    (channel === 'all' || (o.order_channel || 'web') === channel)
+    (channel === 'all' || (o.order_channel || 'web') === channel) &&
+    (printFilter === 'all' || (nvActive(o) && (printFilter === 'printed' ? !!o.nv.printed_at : !o.nv.printed_at)))
   );
 
   // ─── Selection ─────────────────────────────────────────────────────────────
@@ -280,6 +282,7 @@ export default function PengurusanOrderPage() {
     if (!list.length) { showToast('Tiada parcel NinjaVan untuk order dipilih.', 'error'); return; }
     window.open(`/api/admin/ninjavan/waybill?ids=${list.slice(0, 30).join(',')}`, '_blank');
     if (list.length > 30) showToast('Maksimum 30 waybill setiap kali — 30 pertama dibuka.', 'info');
+    setTimeout(fetchOrders, 6000);   // segarkan tanda "Dah print"
   };
 
   const handleCancelNv = async (order) => {
@@ -661,6 +664,16 @@ export default function PengurusanOrderPage() {
               </option>
             ))}
         </select>
+        <select value={printFilter} onChange={e => setPrintFilter(e.target.value)} title="Tapis parcel NinjaVan ikut waybill dah dicetak atau belum" style={{
+          padding: '0.45rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+          background: printFilter !== 'all' ? (isLightMode ? '#FEE2E2' : 'rgba(220,38,38,0.15)') : subCardBg,
+          color: printFilter !== 'all' ? (isLightMode ? '#B91C1C' : '#FCA5A5') : textSecondary,
+          border: isLightMode ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.12)',
+        }}>
+          <option value="all">🖨️ Semua Waybill</option>
+          <option value="unprinted">⬜ Belum Print</option>
+          <option value="printed">✅ Dah Print</option>
+        </select>
 
         <input
           type="text"
@@ -921,6 +934,14 @@ export default function PengurusanOrderPage() {
                             <div style={{ fontSize: '0.6rem', color: textMuted, marginTop: '0.1rem', maxWidth: '170px', whiteSpace: 'normal' }}>
                               {order.nv.error ? order.nv.error.slice(0, 90) : `${order.nv.event && order.nv.event !== order.nv.status ? `${order.nv.event} · ` : ''}${fmtDateTime(order.nv.last_event_at)}`}
                             </div>
+                            {nvActive(order) && (
+                              <div style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: '0.2rem', color: order.nv.printed_at ? '#10B981' : '#D97706' }}
+                                title={order.nv.printed_at ? `Dicetak ${order.nv.print_count}x` : 'Waybill belum dicetak'}>
+                                {order.nv.printed_at
+                                  ? `🖨️ Dah print · ${fmtDateTime(order.nv.printed_at)}${order.nv.print_count > 1 ? ` (${order.nv.print_count}x)` : ''}`
+                                  : '⬜ Belum print'}
+                              </div>
+                            )}
                           </div>
                         );
                       })() : isExported ? (

@@ -166,7 +166,7 @@ export async function latestShipmentsFor(db, submissionIds) {
   const map = {};
   for (let i = 0; i < submissionIds.length; i += 200) {
     const { data } = await db.from('ninjavan_shipments')
-      .select('id, submission_id, tracking_number, status, event, is_terminal, cod_amount, last_event_at, delivered_at, returned_at, cancelled_at, cod_remitted_at, waybill_path, response_payload, created_at')
+      .select('id, submission_id, tracking_number, status, event, is_terminal, cod_amount, last_event_at, delivered_at, returned_at, cancelled_at, cod_remitted_at, waybill_path, waybill_printed_at, waybill_print_count, response_payload, created_at')
       .eq('env', NV_ENV).in('submission_id', submissionIds.slice(i, i + 200))
       .order('created_at', { ascending: true });
     for (const s of data || []) map[s.submission_id] = s;      // yang terakhir menang

@@ -188,6 +188,7 @@ export async function GET(req) {
         o.nv = {
           tracking_number: sh.tracking_number, status: sh.status, event: sh.event, group: statusGroupOf(sh),
           cod_amount: sh.cod_amount, last_event_at: sh.last_event_at || sh.created_at, has_waybill: !!sh.waybill_path,
+          printed_at: sh.waybill_printed_at || null, print_count: sh.waybill_print_count || 0,
           error: sh.status === 'Failed' ? errorMessageOf(sh.response_payload, 'Gagal dihantar') : null,
         };
       });

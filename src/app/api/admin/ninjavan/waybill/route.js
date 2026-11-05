@@ -21,11 +21,18 @@ export async function GET(req) {
 
   const pdfs = [];
   const errors = [];
+  const printed = [];
   for (const s of ready) {
-    try { pdfs.push(await getWaybill(g.admin, s)); }
+    try { pdfs.push(await getWaybill(g.admin, s)); printed.push(s); }
     catch (e) { errors.push(`${s.tracking_number}: ${e.message}`); }
   }
   if (!pdfs.length) return NextResponse.json({ success: false, error: errors.join(' · ') }, { status: 502 });
+
+  // Tanda "dah print" (sql/036) — gagal tanda tidak menghalang PDF
+  const now = new Date().toISOString();
+  await Promise.all(printed.map(s => g.admin.from('ninjavan_shipments')
+    .update({ waybill_printed_at: now, waybill_printed_by: g.user.id, waybill_print_count: (s.waybill_print_count || 0) + 1 })
+    .eq('id', s.id).then(({ error }) => { if (error) console.error('[ninjavan] tanda print gagal:', error.message); })));
 
   let out = pdfs[0];
   if (pdfs.length > 1) {
