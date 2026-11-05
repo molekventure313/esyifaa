@@ -156,7 +156,7 @@ export default function PengurusanOrderPage() {
   // ─── Display filter (client-side) ─────────────────────────────────────────
   // notExportedOnly toggle menapis display table, bukan sekadar export action
   const displayOrders = orders.filter(o =>
-    (!notExportedOnly || !o.ninjavan_exported_at) &&
+    (!notExportedOnly || (!o.ninjavan_exported_at && o.payment_status === 'completed' && !o.returned_at && isPhysicalOrder(o))) &&
     (channel === 'all' || (o.order_channel || 'web') === channel) &&
     (printFilter === 'all' || (nvActive(o) && (printFilter === 'printed' ? !!o.nv.printed_at : !o.nv.printed_at)))
   );

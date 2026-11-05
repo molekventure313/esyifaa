@@ -46,7 +46,10 @@ export async function GET(req) {
     let query = adminClient
       .from('submissions')
       .select('id, full_name, phone, address, problem, source, notes, qty, payment_type, payment_status, amount_paid, ninjavan_exported_at, created_at')
-      .in('payment_type', ['fpx_payment', 'cod']);
+      .in('payment_type', ['fpx_payment', 'cod'])
+      // WAJIB: hanya order dibayar / COD sah & belum di-return — FPX pending/gagal tak boleh masuk CSV (barang free)
+      .eq('payment_status', 'completed')
+      .is('returned_at', null);
 
     // Filter by specific IDs if provided
     if (idsParam) {

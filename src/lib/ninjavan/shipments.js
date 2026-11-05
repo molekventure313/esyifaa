@@ -210,6 +210,26 @@ export async function cancelShipment(db, shipment) {
   const now = new Date().toISOString();
   await db.from('ninjavan_shipments').update({ status: 'Cancelled', event: 'Cancelled', is_terminal: true, cancelled_at: now, updated_at: now })
     .eq('id', shipment.id);
+  await releaseCancelled(db, shipment);
+}
+
+/**
+ * Selepas parcel dibatalkan (dari E-Syifa atau dashboard NinjaVan → webhook):
+ *  · tanda "dah print" parcel itu direset
+ *  · order dibuka semula — tanda "dah export" dibuang supaya muncul dalam "Belum Diexport" & tak tercicir
+ *    (hanya live, dan hanya jika tiada parcel aktif lain untuk order itu)
+ */
+async function releaseCancelled(db, shipment) {
+  await db.from('ninjavan_shipments')
+    .update({ waybill_printed_at: null, waybill_printed_by: null, waybill_print_count: 0 })
+    .eq('id', shipment.id);
+  if (!shipment.submission_id || (shipment.env ?? NV_ENV) !== 'live') return;
+  const { data: others } = await db.from('ninjavan_shipments').select('id')
+    .eq('submission_id', shipment.submission_id).eq('env', 'live').neq('id', shipment.id)
+    .not('tracking_number', 'is', null).not('status', 'in', '(Cancelled,Failed)').limit(1);
+  if (others?.length) return;
+  await db.from('submissions').update({ ninjavan_exported_at: null, ninjavan_exported_by: null })
+    .eq('id', shipment.submission_id);
 }
 
 // ─── Webhook V2 ─────────────────────────────────────────────────────────────
@@ -253,7 +273,8 @@ export async function applyWebhookEvent(db, payload) {
   const { data } = await db.from('ninjavan_shipments').update(patch)
     .eq('tracking_number', tracking)
     .or(`last_event_at.is.null,last_event_at.lte."${iso}"`)
-    .select('id');
+    .select('id, submission_id, env');
+  if (event === 'Cancelled') for (const s of data || []) await releaseCancelled(db, s);
   return { updated: data?.length || 0 };
 }
 

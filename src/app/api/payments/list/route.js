@@ -73,8 +73,9 @@ export async function GET(req) {
       if (conds.length) query = query.or(conds.join(','));
     }
 
+    // Belum export = sedia dihantar: dibayar / COD sah, belum di-return, belum export (produk fizikal ditapis di bawah)
     if (notExported) {
-      query = query.is('ninjavan_exported_at', null);
+      query = query.is('ninjavan_exported_at', null).eq('payment_status', 'completed').is('returned_at', null);
     }
 
     // Penapis produk / pemilik / saluran — dikenakan pada senarai DAN statistik.
@@ -97,7 +98,7 @@ export async function GET(req) {
     if (error) throw error;
 
     // Physical filter: COD (semua) + FPX produk fizikal (sabun / garam / kasturi)
-    const filteredSubmissions = physical
+    const filteredSubmissions = (physical || notExported)
       ? (submissions || []).filter(isPhysicalOrder)
       : (submissions || []);
 
@@ -161,6 +162,7 @@ export async function GET(req) {
           .select('payment_type, source')
           .in('payment_type', ['fpx_payment', 'cod'])
           .eq('payment_status', 'completed')
+          .is('returned_at', null)
           .is('ninjavan_exported_at', null)
           .order('created_at', { ascending: true }))).then(data => ({ data })),
       ]);
