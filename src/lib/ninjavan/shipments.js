@@ -17,15 +17,15 @@ function e164(phone) {
   return local.startsWith('0') ? `+60${local.slice(1)}` : local ? `+${local}` : '';
 }
 
-/** Maklumat pengirim (HQ) dari env — wajib untuk 'from' */
-function senderInfo() {
+/** Maklumat pengirim (HQ) dari env — wajib untuk 'from'. override { name, phone } = jenama fighter (alamat pickup kekal HQ) */
+function senderInfo(override = null) {
   const env = process.env;
   const missing = ['NINJAVAN_SENDER_NAME', 'NINJAVAN_SENDER_PHONE', 'NINJAVAN_SENDER_EMAIL', 'NINJAVAN_SENDER_ADDRESS1', 'NINJAVAN_SENDER_POSTCODE']
     .filter(k => !env[k]);
   if (missing.length) throw new NinjaVanError(`Maklumat pengirim belum diset: ${missing.join(', ')}`);
   return {
-    name: env.NINJAVAN_SENDER_NAME,
-    phone_number: e164(env.NINJAVAN_SENDER_PHONE),
+    name: override?.name || env.NINJAVAN_SENDER_NAME,
+    phone_number: e164(override?.phone || env.NINJAVAN_SENDER_PHONE),
     email: env.NINJAVAN_SENDER_EMAIL,
     address: {
       address1: env.NINJAVAN_SENDER_ADDRESS1,
@@ -53,7 +53,7 @@ export function buildOrderPayload(o) {
     service_level: 'Standard',
     requested_tracking_number: o.requestedTrackingNumber,
     reference: { merchant_order_number: o.merchantRef },
-    from: senderInfo(),
+    from: senderInfo(o.sender),
     to: {
       name: o.name,
       phone_number: e164(o.phone),
@@ -112,7 +112,7 @@ export function orderInputFromSubmission(s, attempt = 0) {
  * Cipta parcel di NinjaVan & rekod dalam ninjavan_shipments.
  * Tracking yang sudah berjaya dipulangkan semula tanpa panggil API (tiada order berganda).
  */
-export async function createShipment(db, input, { submissionId = null, isTest = false, userId = null } = {}) {
+export async function createShipment(db, input, { submissionId = null, fighterOrderId = null, fighterId = null, isTest = false, userId = null } = {}) {
   const { data: existing } = await db.from('ninjavan_shipments')
     .select('*').eq('requested_tracking_number', input.requestedTrackingNumber).maybeSingle();
   if (existing?.tracking_number && existing.status !== 'Cancelled') return { shipment: existing, created: false };
@@ -121,6 +121,7 @@ export async function createShipment(db, input, { submissionId = null, isTest = 
   const base = {
     env: NV_ENV,
     submission_id: submissionId,
+    ...(fighterOrderId ? { fighter_order_id: fighterOrderId, fighter_id: fighterId } : {}),
     requested_tracking_number: input.requestedTrackingNumber,
     is_test: isTest,
     cod_amount: payload.parcel_job.cash_on_delivery || 0,
@@ -161,17 +162,68 @@ export async function pushSubmission(db, submission, userId = null) {
   return createShipment(db, orderInputFromSubmission(submission, attempt), { submissionId: submission.id, userId });
 }
 
-/** Parcel terkini (env semasa) bagi setiap order → { [submission_id]: shipment } */
-export async function latestShipmentsFor(db, submissionIds) {
+const SHIPMENT_COLS = 'id, env, submission_id, fighter_order_id, fighter_id, tracking_number, status, event, is_terminal, cod_amount, last_event_at, delivered_at, returned_at, cancelled_at, cod_remitted_at, waybill_path, waybill_printed_at, waybill_print_count, response_payload, created_at';
+
+/** Parcel terkini (env semasa) bagi setiap order → { [id]: shipment }. col = 'submission_id' (HQ) | 'fighter_order_id' (fighter) */
+export async function latestShipmentsBy(db, col, ids) {
   const map = {};
-  for (let i = 0; i < submissionIds.length; i += 200) {
+  for (let i = 0; i < ids.length; i += 200) {
     const { data } = await db.from('ninjavan_shipments')
-      .select('id, submission_id, tracking_number, status, event, is_terminal, cod_amount, last_event_at, delivered_at, returned_at, cancelled_at, cod_remitted_at, waybill_path, waybill_printed_at, waybill_print_count, response_payload, created_at')
-      .eq('env', NV_ENV).in('submission_id', submissionIds.slice(i, i + 200))
+      .select(SHIPMENT_COLS)
+      .eq('env', NV_ENV).in(col, ids.slice(i, i + 200))
       .order('created_at', { ascending: true });
-    for (const s of data || []) map[s.submission_id] = s;      // yang terakhir menang
+    for (const s of data || []) map[s[col]] = s;      // yang terakhir menang
   }
   return map;
+}
+export const latestShipmentsFor = (db, submissionIds) => latestShipmentsBy(db, 'submission_id', submissionIds);
+
+/** Parcel aktif = ada tracking, bukan Cancelled / Failed */
+export const isActiveShipment = s => !!s?.tracking_number && !['Cancelled', 'Failed'].includes(s.status);
+
+// ─── Fighter (akaun NinjaVan HQ) ─────────────────────────────────────────────
+// Caj pos kepada fighter (keputusan HQ): RM4.50 seunit parcel, +RM2 jika COD. Dicaj bila HQ pack.
+export const FIGHTER_POSTAGE = 4.5;
+export const FIGHTER_POSTAGE_COD_EXTRA = 2;
+export const fighterPostageOf = shipment => FIGHTER_POSTAGE + (Number(shipment?.cod_amount) > 0 ? FIGHTER_POSTAGE_COD_EXTRA : 0);
+
+/** fighter_orders → input buildOrderPayload. Pengirim = jenama fighter, alamat pickup HQ. */
+export function fighterOrderInput(o, { settings = {}, profile = {} } = {}, attempt = 0) {
+  const addr = parseAddressParts(addressStringOf(o));
+  if (!addr.poskod) throw new NinjaVanError('Alamat tiada poskod 5 digit — betulkan alamat order dulu.');
+  // 'F' membezakan dari order HQ (8 aksara id). Sandbox: 'SF' + 6. Aksara akhir = cubaan selepas batal.
+  const hex = o.id.replace(/-/g, '').toUpperCase();
+  const base = NV_ENV === 'live' ? `F${hex.slice(0, 7)}` : `SF${hex.slice(0, 6)}`;
+  return {
+    requestedTrackingNumber: `${base}${attempt.toString(36).toUpperCase()}`,
+    merchantRef: o.id,
+    name: o.full_name,
+    phone: o.phone,
+    address: { address1: addr.street, city: addr.daerah, state: addr.negeri, postcode: addr.poskod },
+    cod: o.payment_type === 'cod' ? Number(o.amount) || 0 : 0,
+    itemDescription: unitCellOf(o).replace(/\n/g, ' · '),
+    quantity: orderQty(o),
+    sender: {
+      name: settings.sender_name || profile.full_name || null,
+      phone: settings.sender_phone || settings.whatsapp || profile.phone || null,
+    },
+  };
+}
+
+/** Push satu order fighter ke akaun NinjaVan HQ → order jadi 'ready' (tunggu HQ pack) dengan tracking NinjaVan */
+export async function pushFighterOrder(db, order, { settings = {}, profile = {}, userId = null } = {}) {
+  if (order.payment_status !== 'completed') throw new NinjaVanError('Order belum dibayar / COD belum sah.');
+  if (order.ship_status !== 'new') throw new NinjaVanError(order.ship_status === 'ready' ? 'Order dah ada waybill.' : 'Order dah dipack / dibatalkan.');
+  const { data: prior } = await db.from('ninjavan_shipments')
+    .select('status').eq('fighter_order_id', order.id).eq('env', NV_ENV).not('tracking_number', 'is', null);
+  const attempt = (prior || []).filter(p => p.status === 'Cancelled').length;
+  const { shipment, created } = await createShipment(db, fighterOrderInput(order, { settings, profile }, attempt),
+    { fighterOrderId: order.id, fighterId: order.fighter_id, userId });
+  const now = new Date().toISOString();
+  await db.from('fighter_orders')
+    .update({ ship_status: 'ready', tracking_no: shipment.tracking_number, waybill_path: null, waybill_at: now, exported_at: now, updated_at: now })
+    .eq('id', order.id).eq('ship_status', 'new');
+  return { shipment, created };
 }
 
 /** Status NinjaVan → kumpulan ringkas untuk paparan & dashboard */
@@ -223,6 +275,17 @@ async function releaseCancelled(db, shipment) {
   await db.from('ninjavan_shipments')
     .update({ waybill_printed_at: null, waybill_printed_by: null, waybill_print_count: 0 })
     .eq('id', shipment.id);
+  if (shipment.fighter_order_id) {
+    // Order fighter kembali ke "perlu waybill" (hanya jika belum dipack) — boleh dihantar semula
+    const { data: others } = await db.from('ninjavan_shipments').select('id')
+      .eq('fighter_order_id', shipment.fighter_order_id).neq('id', shipment.id)
+      .not('tracking_number', 'is', null).not('status', 'in', '(Cancelled,Failed)').limit(1);
+    if (others?.length) return;
+    await db.from('fighter_orders')
+      .update({ ship_status: 'new', tracking_no: null, waybill_at: null, exported_at: null, updated_at: new Date().toISOString() })
+      .eq('id', shipment.fighter_order_id).eq('ship_status', 'ready');
+    return;
+  }
   if (!shipment.submission_id || (shipment.env ?? NV_ENV) !== 'live') return;
   const { data: others } = await db.from('ninjavan_shipments').select('id')
     .eq('submission_id', shipment.submission_id).eq('env', 'live').neq('id', shipment.id)
@@ -273,7 +336,7 @@ export async function applyWebhookEvent(db, payload) {
   const { data } = await db.from('ninjavan_shipments').update(patch)
     .eq('tracking_number', tracking)
     .or(`last_event_at.is.null,last_event_at.lte."${iso}"`)
-    .select('id, submission_id, env');
+    .select('id, submission_id, fighter_order_id, env');
   if (event === 'Cancelled') for (const s of data || []) await releaseCancelled(db, s);
   return { updated: data?.length || 0 };
 }

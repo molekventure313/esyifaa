@@ -11,6 +11,7 @@ import { SOURCE_TO_SKU, getProductBySku } from '@/lib/stock';
 import { decryptSecret } from '@/lib/fighter/crypto';
 import { markupsFor, tableMissing } from '@/lib/fighter/server';
 import { damageState, recordDamage, clearDamage } from '@/lib/stock-damage';
+import { latestShipmentsBy, isActiveShipment, fighterPostageOf } from '@/lib/ninjavan/shipments';
 
 export const APP_URL = 'https://e-syifa.com';
 const SITE = () => {
@@ -210,12 +211,23 @@ export async function packOrder(admin, orderId, actor) {
       moves.push({ product_id: product.id, movement_type: 'out', qty: it.qty, reference_type: 'order', reference_id: refOf(order.id), notes: `Fighter ${fighter?.full_name || ''} — ${order.full_name}`, created_by: actor.id });
       ledger.push({ fighter_id: order.fighter_id, order_id: order.id, kind: 'charge', sku: it.sku, qty: it.qty, cost_price: cost, markup, amount: round2(it.qty * (cost + markup)), notes: `${it.label} x${it.qty} — ${order.full_name}`, created_by: actor.id });
     }
+    // Parcel dalam akaun NinjaVan HQ → caj pos (RM4.50, +RM2 COD). Satu caj setiap parcel (unik shipment_id + kind).
+    const sh = (await latestShipmentsBy(admin, 'fighter_order_id', [order.id]))[order.id];
+    if (isActiveShipment(sh)) {
+      const { data: done } = await admin.from('fighter_ledger').select('id').eq('shipment_id', sh.id).eq('kind', 'postage').limit(1);
+      if (!done?.length) ledger.push({
+        fighter_id: order.fighter_id, order_id: order.id, shipment_id: sh.id, kind: 'postage', sku: null, qty: 0, cost_price: 0, markup: 0,
+        amount: round2(fighterPostageOf(sh)), notes: `Pos NinjaVan ${sh.tracking_number}${Number(sh.cod_amount) > 0 ? ' (COD)' : ''} — ${order.full_name}`, created_by: actor.id,
+      });
+    }
     if (moves.length) {
       const { error: e1 } = await admin.from('stock_movements').insert(moves);
       if (e1) throw e1;
+    }
+    if (ledger.length) {
       const { error: e2 } = await admin.from('fighter_ledger').insert(ledger);
       if (e2) {
-        await admin.from('stock_movements').delete().eq('reference_id', refOf(order.id)).eq('movement_type', 'out');
+        if (moves.length) await admin.from('stock_movements').delete().eq('reference_id', refOf(order.id)).eq('movement_type', 'out');
         throw e2;
       }
     }
@@ -319,13 +331,15 @@ export async function clearFighterDamage(admin, orderId, actor) {
 }
 
 // Ringkasan lejar: { charges, credits, net, markup, units } (markup bersih = override HQ)
+// net > 0 = fighter bayar HQ · net < 0 = HQ bayar fighter (COD diterima HQ melebihi caj)
 export function ledgerTotals(rows) {
-  const t = { charges: 0, credits: 0, net: 0, markup: 0, units: 0 };
+  const t = { charges: 0, credits: 0, postage: 0, cod: 0, net: 0, markup: 0, units: 0 };
   for (const r of rows || []) {
     const amt = Number(r.amount), sign = r.kind === 'credit' ? -1 : 1;
     if (r.kind === 'charge') t.charges += amt; else if (r.kind === 'credit') t.credits += -amt;
+    else if (r.kind === 'postage') t.postage += amt; else if (r.kind === 'cod') t.cod += -amt;
     t.net += amt;
-    if (r.kind !== 'adjust') { t.markup += sign * Number(r.markup) * r.qty; t.units += sign * r.qty; }
+    if (r.kind === 'charge' || r.kind === 'credit') { t.markup += sign * Number(r.markup) * r.qty; t.units += sign * r.qty; }
   }
   for (const k of Object.keys(t)) t[k] = round2(t[k]);
   return t;

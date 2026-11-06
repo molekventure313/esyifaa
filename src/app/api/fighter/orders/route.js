@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { fighterGuard, tableMissing } from '@/lib/fighter/server';
 import { generateNinjaVanCSV } from '@/lib/ninjavan-csv';
+import { NV_ENV, errorMessageOf } from '@/lib/ninjavan/api';
+import { latestShipmentsBy, statusGroupOf, isActiveShipment, cancelShipment } from '@/lib/ninjavan/shipments';
 
 // Fighter — order sendiri
 // GET   ?ship=all|new|ready|packed|returned|cancelled&pay=all|completed|pending&q= → senarai + bilangan
@@ -26,12 +28,23 @@ export async function GET(req) {
       g.admin.from('fighter_orders').select('ship_status, payment_status').eq('fighter_id', g.user.id),
     ]);
     if (error) throw new Error(tableMissing(error) ? MIGRATION_MSG : error.message);
+    // Parcel NinjaVan HQ terkini setiap order (status dari webhook)
+    const nv = await latestShipmentsBy(g.admin, 'fighter_order_id', (data || []).map(o => o.id)).catch(() => ({}));
+    for (const o of data || []) {
+      const sh = nv[o.id];
+      if (sh) o.nv = {
+        tracking_number: sh.tracking_number, status: sh.status, event: sh.event, group: statusGroupOf(sh), cod_amount: Number(sh.cod_amount || 0),
+        last_event_at: sh.last_event_at || sh.created_at, active: isActiveShipment(sh), cod_remitted_at: sh.cod_remitted_at,
+        error: sh.status === 'Failed' ? errorMessageOf(sh.response_payload, 'Gagal dihantar') : null,
+      };
+    }
+    const { data: st } = await g.admin.from('fighter_settings').select('courier').eq('fighter_id', g.user.id).maybeSingle();
     const counts = {};
     for (const r of all || []) {
       if (r.payment_status === 'completed' || r.ship_status !== 'new') counts[r.ship_status] = (counts[r.ship_status] || 0) + 1;
       if (r.payment_status === 'pending') counts.pending_pay = (counts.pending_pay || 0) + 1;
     }
-    return NextResponse.json({ success: true, data, counts });
+    return NextResponse.json({ success: true, data, counts, courier: st?.courier || 'hq', nv_env: NV_ENV });
   } catch (e) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });
   }
@@ -71,8 +84,12 @@ export async function PATCH(req) {
   try {
     const { id, action } = await req.json();
     if (action !== 'cancel') throw new Error('Tindakan tidak sah.');
-    const { data: o } = await g.admin.from('fighter_orders').select('payment_type, payment_status').eq('id', id).eq('fighter_id', g.user.id).maybeSingle();
+    const { data: o } = await g.admin.from('fighter_orders').select('payment_type, payment_status, ship_status').eq('id', id).eq('fighter_id', g.user.id).maybeSingle();
     if (!o) throw new Error('Order tidak dijumpai.');
+    if (!['new', 'ready'].includes(o.ship_status)) throw new Error('Order dah dipack — tak boleh dibatalkan.');
+    // Parcel NinjaVan HQ aktif (belum dipack) dibatalkan dulu — gagal batal di NinjaVan = order tak dibatalkan
+    const sh = (await latestShipmentsBy(g.admin, 'fighter_order_id', [id]))[id];
+    if (isActiveShipment(sh)) await cancelShipment(g.admin, sh);
     // FPX yang dah dibayar kekal 'completed' (rekod bayaran) — refund diurus fighter sendiri di CHIP
     const keepPaid = o.payment_type === 'fpx_payment' && o.payment_status === 'completed';
     const { data, error } = await g.admin.from('fighter_orders')

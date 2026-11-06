@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fighterGuard } from '@/lib/fighter/server';
+import { latestShipmentsBy, isActiveShipment } from '@/lib/ninjavan/shipments';
 
 // Fighter — waybill NinjaVan (dari akaun NinjaVan fighter) untuk order terpilih
 // POST multipart { file (PDF/gambar), ids (JSON), tracking? } → satu fail untuk semua order dipilih → ship_status 'ready'
@@ -26,6 +27,9 @@ export async function POST(req) {
       .eq('fighter_id', g.user.id).in('id', ids.slice(0, 200))
       .eq('payment_status', 'completed').in('ship_status', ['new', 'ready']);
     if (!orders?.length) throw new Error('Tiada order sah (mesti dah bayar / COD & belum dipack).');
+    // Order yang dah ada parcel NinjaVan HQ tak perlu waybill sendiri (elak parcel berganda)
+    const nv = await latestShipmentsBy(g.admin, 'fighter_order_id', orders.map(o => o.id)).catch(() => ({}));
+    if (orders.some(o => isActiveShipment(nv[o.id]))) throw new Error('Ada order yang dah dihantar melalui NinjaVan HQ — batal parcel itu dulu atau nyahpilih order tersebut.');
 
     const ext = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : 'jpg';
     const path = `waybills/${g.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;

@@ -49,24 +49,26 @@ export default function FighterBillingPage() {
       <div style={{ marginBottom: '1rem' }}>
         <div style={{ fontSize: '0.68rem', fontWeight: 700, color: t.accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>FIGHTER · STOK & BIL</div>
         <h1 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '0.15rem 0 0' }}>💵 Stok & Bil</h1>
-        <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: t.text2 }}>Setiap order yang HQ pack dicaj pada harga stok anda. Parcel return dikreditkan semula. HQ jana bil secara berkala.</p>
+        <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: t.text2 }}>Setiap order yang HQ pack dicaj pada harga stok anda (+ pos RM4.50 / parcel NinjaVan HQ, +RM2 COD). Parcel return dikreditkan semula. COD pelanggan yang HQ terima dari NinjaVan dikreditkan ke bil. HQ jana bil bersih secara berkala.</p>
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        {stat('Belum dibil', data.unbilled, t.accent, 'Caj terkumpul — masuk bil seterusnya')}
-        {stat('Bil tertunggak', data.outstanding, data.outstanding > 0 ? t.warn : t.ok, data.outstanding > 0 ? 'Sila bayar & upload resit' : 'Tiada bil tertunggak')}
+        {stat(data.unbilled < 0 ? 'Kredit belum dibil' : 'Belum dibil', Math.abs(data.unbilled), data.unbilled < 0 ? t.ok : t.accent,
+          data.unbilled < 0 ? 'COD melebihi caj — HQ akan bayar anda dalam bil seterusnya' : 'Caj terkumpul — masuk bil seterusnya')}
+        {stat(data.outstanding < 0 ? 'HQ perlu bayar anda' : 'Bil tertunggak', Math.abs(data.outstanding), data.outstanding > 0 ? t.warn : t.ok,
+          data.outstanding > 0 ? 'Sila bayar & upload resit' : data.outstanding < 0 ? 'Baki COD anda — HQ akan pindahkan' : 'Tiada bil tertunggak')}
       </div>
 
       <Card t={t} title="🧾 Bil">
         {!data.bills.length ? <div style={{ fontSize: '0.82rem', color: t.muted }}>Belum ada bil.</div> : data.bills.map(b => (
           <div key={b.id} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', padding: '0.65rem 0', borderTop: t.border }}>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{b.bill_no} <Badge ok={b.status === 'paid'}>{b.status === 'paid' ? 'Dibayar' : 'Belum bayar'}</Badge></div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>{b.bill_no} <Badge ok={b.status === 'paid'}>{b.total < 0 ? (b.status === 'paid' ? 'HQ dah bayar' : 'HQ akan bayar anda') : (b.status === 'paid' ? 'Dibayar' : 'Belum bayar')}</Badge></div>
               <div style={{ fontSize: '0.74rem', color: t.muted }}>{fmtTime(b.period_from)} – {fmtTime(b.period_to)}{b.paid_at ? ` · disahkan ${fmtTime(b.paid_at)}` : ''}</div>
             </div>
-            <div style={{ fontWeight: 800, fontSize: '1rem' }}>{rm(b.total)}</div>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: b.total < 0 ? t.ok : t.text }}>{b.total < 0 ? `+${rm(-b.total)}` : rm(b.total)}</div>
             {b.receipt_url && <a href={b.receipt_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.78rem', color: '#0EA5E9' }}>Resit</a>}
-            {b.status === 'unpaid' && (
+            {b.status === 'unpaid' && b.total > 0 && (
               <label style={{ ...btnStyle(t.accent, false), padding: '0.35rem 0.7rem', fontSize: '0.76rem' }}>
                 {busy === b.id ? 'Memuat naik...' : b.receipt_path ? 'Tukar resit' : '📎 Upload resit'}
                 <input type="file" accept="application/pdf,image/*" style={{ display: 'none' }} onChange={e => upload(b.id, e.target.files?.[0])} />
@@ -76,7 +78,7 @@ export default function FighterBillingPage() {
         ))}
       </Card>
 
-      <Card t={t} title="📒 Lejar caj stok" sub="300 rekod terkini.">
+      <Card t={t} title="📒 Lejar caj stok, pos & COD" sub="300 rekod terkini.">
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
             <thead><tr>{['Tarikh', 'Butiran', 'Unit', 'Harga seunit', 'Jumlah', 'Bil'].map(h => (
@@ -86,9 +88,9 @@ export default function FighterBillingPage() {
               {data.ledger.map(r => (
                 <tr key={r.id} style={{ borderTop: t.border }}>
                   <td style={{ padding: '0.45rem', whiteSpace: 'nowrap' }}>{fmtTime(r.created_at)}</td>
-                  <td style={{ padding: '0.45rem' }}>{r.kind === 'credit' ? '↩️ ' : ''}{r.notes}</td>
-                  <td style={{ padding: '0.45rem' }}>{r.qty}</td>
-                  <td style={{ padding: '0.45rem' }}>{rm(r.unit_price)}</td>
+                  <td style={{ padding: '0.45rem' }}>{{ credit: '↩️ ', postage: '🚚 ', cod: '🏦 ' }[r.kind] || ''}{r.notes}</td>
+                  <td style={{ padding: '0.45rem' }}>{r.kind === 'postage' || r.kind === 'cod' ? '—' : r.qty}</td>
+                  <td style={{ padding: '0.45rem' }}>{r.kind === 'postage' || r.kind === 'cod' ? '—' : rm(r.unit_price)}</td>
                   <td style={{ padding: '0.45rem', fontWeight: 700, color: r.amount < 0 ? t.ok : t.text }}>{r.amount < 0 ? `−${rm(-r.amount)}` : rm(r.amount)}</td>
                   <td style={{ padding: '0.45rem', color: t.muted }}>{r.bill_id ? '✓' : '—'}</td>
                 </tr>

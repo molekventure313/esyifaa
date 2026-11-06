@@ -3,11 +3,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useFighterTheme, Card, Badge, rm, inputStyle, btnStyle, fmtTime } from '@/components/fighter/ui';
 
-// Fighter — Order sendiri. Aliran: order masuk → export CSV → upload CSV ke akaun NinjaVan anda (pickup alamat HQ)
-// → upload PDF waybill di sini → HQ cetak waybill & pack → stok HQ dicaj ke akaun anda.
+// Fighter — Order sendiri.
+// Kurier HQ (lalai): order masuk → 🚀 Hantar ke NinjaVan (akaun HQ, pickup di HQ) → HQ cetak waybill & pack → stok + pos dicaj.
+// Akaun sendiri: export CSV → upload ke akaun NinjaVan anda → upload PDF waybill di sini → HQ cetak & pack.
+
+const NV_GROUPS = {
+  pending_pickup: { label: 'Menunggu Pickup', color: '#F59E0B', icon: '⏳' },
+  in_transit:     { label: 'Dalam Perjalanan', color: '#3B82F6', icon: '🚚' },
+  exception:      { label: 'Gagal Hantar', color: '#EF4444', icon: '⚠️' },
+  delivered:      { label: 'Delivered', color: '#10B981', icon: '✅' },
+  returned:       { label: 'Return', color: '#8B5CF6', icon: '↩️' },
+  cancelled:      { label: 'Parcel dibatal', color: '#94A3B8', icon: '🚫' },
+  failed:         { label: 'Gagal dihantar', color: '#EF4444', icon: '❌' },
+};
+const NV_BATCH = 10;
 
 const TABS = [
-  { id: 'new',       label: '🆕 Perlu waybill', ship: 'new', pay: 'completed' },
+  { id: 'new',       label: '🆕 Perlu dihantar', ship: 'new', pay: 'completed' },
   { id: 'ready',     label: '📦 Tunggu HQ pack', ship: 'ready' },
   { id: 'packed',    label: '🚚 Dah pack', ship: 'packed' },
   { id: 'returned',  label: '↩️ Return', ship: 'returned' },
@@ -77,8 +89,43 @@ export default function FighterOrdersPage() {
     if (j.url) window.open(j.url, '_blank'); else alert(j.error || 'Tiada waybill.');
   };
 
+  const hqCourier = (data?.courier || 'hq') === 'hq';
+
+  const pushNv = async () => {
+    const ids = [...sel];
+    if (!ids.length) return;
+    if (!confirm(`Hantar ${ids.length} order ke NinjaVan HQ${data?.nv_env === 'sandbox' ? ' (SANDBOX — ujian)' : ''}?\n\nParcel diambil di HQ. Caj pos RM4.50 / parcel (+RM2 jika COD) masuk bil anda bila HQ pack.`)) return;
+    setBusy('nv'); setMsg(null);
+    let sent = 0;
+    const errors = [];
+    try {
+      for (let i = 0; i < ids.length; i += NV_BATCH) {
+        const j = await (await fetch('/api/fighter/ninjavan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'push', ids: ids.slice(i, i + NV_BATCH) }) })).json();
+        if (!j.results) { errors.push(j.error || 'Ralat'); break; }
+        for (const r of j.results) {
+          if (r.ok) sent++;
+          else errors.push(`${rows.find(o => o.id === r.id)?.full_name || r.id}: ${r.error}`);
+        }
+      }
+      setMsg({ ok: !errors.length, text: `${sent} order dihantar ke NinjaVan — HQ akan cetak waybill & pack.${errors.length ? ` ${errors.length} gagal — ${errors.slice(0, 3).join(' | ')}` : ''}` });
+    } catch { setMsg({ ok: false, text: 'Ralat rangkaian. Sila cuba lagi.' }); }
+    finally { setBusy(''); await load(); }
+  };
+
+  const printNv = ids => {
+    const list = ids.filter(id => rows.find(o => o.id === id)?.nv?.active);
+    if (!list.length) return setMsg({ ok: false, text: 'Tiada parcel NinjaVan untuk order dipilih.' });
+    window.open(`/api/fighter/ninjavan?waybill=${list.slice(0, 30).join(',')}`, '_blank');
+  };
+
+  const cancelNv = async o => {
+    if (!confirm(`Batal parcel NinjaVan ${o.nv?.tracking_number} (${o.full_name})?\n\nOrder kembali ke "Perlu dihantar" & boleh dihantar semula.`)) return;
+    const j = await (await fetch('/api/fighter/ninjavan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'cancel', id: o.id }) })).json();
+    if (!j.success) alert(j.error); else { setMsg({ ok: true, text: `Parcel ${j.tracking_number} dibatalkan.` }); load(); }
+  };
+
   const cancel = async o => {
-    if (!confirm(`Batalkan order ${o.full_name}?${o.payment_type === 'fpx_payment' ? '\n\nFPX dah dibayar — refund pelanggan melalui portal CHIP anda.' : ''}`)) return;
+    if (!confirm(`Batalkan order ${o.full_name}?${o.nv?.active ? '\n\nParcel NinjaVan juga akan dibatalkan.' : ''}${o.payment_type === 'fpx_payment' ? '\n\nFPX dah dibayar — refund pelanggan melalui portal CHIP anda.' : ''}`)) return;
     const j = await (await fetch('/api/fighter/orders', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: o.id, action: 'cancel' }) })).json();
     if (!j.success) alert(j.error); else load();
   };
@@ -94,12 +141,21 @@ export default function FighterOrdersPage() {
       </div>
 
       <Card t={t} title="Cara proses order" style={{ padding: '0.85rem 1.1rem' }}>
-        <div style={{ fontSize: '0.78rem', color: t.text2, lineHeight: 1.75 }}>
-          1️⃣ Tab <strong>Perlu waybill</strong> → pilih order → <strong>Export CSV</strong><br />
-          2️⃣ Upload CSV ke <strong>akaun NinjaVan anda</strong> (alamat pickup: HQ E-Syifa') → muat turun PDF waybill<br />
-          3️⃣ Pilih order yang sama → <strong>Upload waybill</strong> → HQ cetak, pack & serah ke NinjaVan<br />
-          4️⃣ Bila HQ pack, stok dicaj ke akaun anda (lihat <strong>Stok & Bil</strong>)
-        </div>
+        {hqCourier ? (
+          <div style={{ fontSize: '0.78rem', color: t.text2, lineHeight: 1.75 }}>
+            1️⃣ Tab <strong>Perlu dihantar</strong> → pilih order → <strong>🚀 Hantar ke NinjaVan</strong> (akaun NinjaVan HQ, pickup di HQ)<br />
+            2️⃣ HQ cetak waybill, pack & serah ke NinjaVan — status parcel dikemaskini automatik (lihat <strong>Pos & COD</strong>)<br />
+            3️⃣ Bila HQ pack: stok + pos <strong>RM4.50 / parcel (+RM2 COD)</strong> dicaj ke bil anda<br />
+            4️⃣ COD pelanggan diterima HQ dari NinjaVan → <strong>dikreditkan</strong> ke bil anda (lihat <strong>Stok & Bil</strong>)
+          </div>
+        ) : (
+          <div style={{ fontSize: '0.78rem', color: t.text2, lineHeight: 1.75 }}>
+            1️⃣ Tab <strong>Perlu dihantar</strong> → pilih order → <strong>Export CSV</strong><br />
+            2️⃣ Upload CSV ke <strong>akaun NinjaVan anda</strong> (alamat pickup: HQ E-Syifa') → muat turun PDF waybill<br />
+            3️⃣ Pilih order yang sama → <strong>Upload waybill</strong> → HQ cetak, pack & serah ke NinjaVan<br />
+            4️⃣ Bila HQ pack, stok dicaj ke akaun anda (lihat <strong>Stok & Bil</strong>) · tukar ke NinjaVan HQ di <strong>Tetapan Akaun</strong>
+          </div>
+        )}
       </Card>
 
       <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
@@ -119,9 +175,18 @@ export default function FighterOrdersPage() {
             <button style={btnStyle(t.accent, false)} onClick={() => setSel(sel.size === rows.length ? new Set() : new Set(rows.map(r => r.id)))}>
               {sel.size === rows.length && rows.length ? 'Nyahpilih semua' : 'Pilih semua'}
             </button>
-            <button style={btnStyle()} disabled={!sel.size || !!busy} onClick={exportCsv}>{busy === 'csv' ? 'Menjana...' : `⬇️ Export CSV (${sel.size})`}</button>
-            <button style={btnStyle('#0EA5E9')} disabled={!sel.size || !!busy} onClick={() => fileRef.current?.click()}>{busy === 'wb' ? 'Memuat naik...' : `📄 Upload waybill (${sel.size})`}</button>
-            <input ref={fileRef} type="file" accept="application/pdf,image/*" style={{ display: 'none' }} onChange={e => uploadWaybill(e.target.files?.[0])} />
+            {hqCourier ? (
+              <>
+                {tab === 'new' && <button style={btnStyle('#DC2626')} disabled={!sel.size || !!busy} onClick={pushNv}>{busy === 'nv' ? '⏳ Menghantar...' : `🚀 Hantar ke NinjaVan (${sel.size})`}</button>}
+                {tab === 'ready' && <button style={btnStyle('#0EA5E9')} disabled={!sel.size || !!busy} onClick={() => printNv([...sel])}>🖨️ Waybill ({sel.size})</button>}
+              </>
+            ) : (
+              <>
+                <button style={btnStyle()} disabled={!sel.size || !!busy} onClick={exportCsv}>{busy === 'csv' ? 'Menjana...' : `⬇️ Export CSV (${sel.size})`}</button>
+                <button style={btnStyle('#0EA5E9')} disabled={!sel.size || !!busy} onClick={() => fileRef.current?.click()}>{busy === 'wb' ? 'Memuat naik...' : `📄 Upload waybill (${sel.size})`}</button>
+                <input ref={fileRef} type="file" accept="application/pdf,image/*" style={{ display: 'none' }} onChange={e => uploadWaybill(e.target.files?.[0])} />
+              </>
+            )}
           </>
         )}
       </div>
@@ -143,6 +208,24 @@ export default function FighterOrdersPage() {
                   </Badge>
                   {o.exported_at && o.ship_status === 'new' && <Badge>CSV ✓</Badge>}
                 </div>
+                {o.nv && NV_GROUPS[o.nv.group] && (o.nv.active || o.ship_status !== 'new') && (() => {
+                  const g = NV_GROUPS[o.nv.group];
+                  return (
+                    <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.3rem' }} title={o.nv.error || o.nv.event || o.nv.status}>
+                      <span style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem', borderRadius: 8, background: `${g.color}1A`, border: `1px solid ${g.color}55`, color: g.color, fontWeight: 700 }}>{g.icon} {g.label}</span>
+                      {o.nv.tracking_number && <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: t.text2 }}>{o.nv.tracking_number}</span>}
+                      <span style={{ fontSize: '0.68rem', color: t.muted }}>{o.nv.error ? o.nv.error.slice(0, 90) : `${o.nv.event && o.nv.event !== o.nv.status ? `${o.nv.event} · ` : ''}${fmtTime(o.nv.last_event_at)}`}</span>
+                      {o.nv.group === 'delivered' && o.nv.cod_amount > 0 && (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: o.nv.cod_remitted_at ? t.ok : '#F97316' }}>
+                          {o.nv.cod_remitted_at ? `🏦 COD dikreditkan ${fmtTime(o.nv.cod_remitted_at)}` : '💸 COD belum diterima HQ'}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+                {o.nv?.group === 'failed' && o.ship_status === 'new' && (
+                  <div style={{ fontSize: '0.7rem', color: t.bad, marginTop: '0.25rem' }}>❌ Gagal dihantar: {o.nv.error}</div>
+                )}
                 <div style={{ fontSize: '0.78rem', color: t.text2, marginTop: '0.2rem' }}>
                   {PRODUCT[o.source] || 'Sabun'} — {pakejOf(o) || `${o.qty || ''} unit`} · <strong style={{ color: t.text }}>{rm(o.amount)}</strong> · {fmtTime(o.created_at)}
                 </div>
@@ -155,6 +238,10 @@ export default function FighterOrdersPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-end' }}>
                 {o.waybill_path && <button style={{ ...btnStyle('#0EA5E9', false), padding: '0.3rem 0.6rem', fontSize: '0.74rem' }} onClick={() => viewWaybill(o.id)}>📄 Waybill</button>}
+                {o.nv?.active && <button style={{ ...btnStyle('#0EA5E9', false), padding: '0.3rem 0.6rem', fontSize: '0.74rem' }} onClick={() => printNv([o.id])}>🖨️ Waybill</button>}
+                {o.nv?.active && o.ship_status === 'ready' && (
+                  <button style={{ ...btnStyle(t.warn, false), padding: '0.3rem 0.6rem', fontSize: '0.74rem' }} onClick={() => cancelNv(o)}>🚫 Batal parcel</button>
+                )}
                 {['new', 'ready'].includes(o.ship_status) && (
                   <button style={{ ...btnStyle(t.bad, false), padding: '0.3rem 0.6rem', fontSize: '0.74rem' }} onClick={() => cancel(o)}>Batal</button>
                 )}

@@ -87,7 +87,8 @@ export async function POST(req) {
     const stamp = new Date(now.getTime() + 8 * 3600e3).toISOString().slice(2, 10).replace(/-/g, '');
     for (const [fid, list] of Object.entries(groups)) {
       const t = ledgerTotals(list);
-      if (t.net <= 0) continue;   // tiada caj bersih (cth semua return) → tunggu kitaran seterusnya
+      // Bil bersih: + fighter bayar HQ · − HQ bayar fighter (kredit COD > caj stok + pos). Kosong → langkau.
+      if (Math.abs(t.net) < 0.005) continue;
       const from = list.reduce((m, r) => (r.created_at < m ? r.created_at : m), list[0].created_at);
       const { data: bill, error: e1 } = await g.admin.from('fighter_bills').insert({
         fighter_id: fid, bill_no: `FB${stamp}-${(codeOf[fid] || 'x').toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,

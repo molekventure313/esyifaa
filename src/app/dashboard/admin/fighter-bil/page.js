@@ -79,10 +79,10 @@ export default function FighterBillsPage() {
                 <tr key={f.id}>
                   <td style={td}>{f.name}</td>
                   <td style={td}>{cur ? `${cur.units} unit · ${rm(cur.markup)}` : '—'}</td>
-                  <td style={td}>{rm(f.unbilled)}</td>
-                  <td style={{ ...td, color: f.outstanding > 0 ? t.warn : t.text, fontWeight: f.outstanding > 0 ? 700 : 400 }}>{rm(f.outstanding)}</td>
+                  <td style={{ ...td, color: f.unbilled < 0 ? t.ok : t.text }}>{f.unbilled < 0 ? `HQ bayar ${rm(-f.unbilled)}` : rm(f.unbilled)}</td>
+                  <td style={{ ...td, color: f.outstanding > 0 ? t.warn : f.outstanding < 0 ? t.ok : t.text, fontWeight: f.outstanding !== 0 ? 700 : 400 }}>{f.outstanding < 0 ? `HQ bayar ${rm(-f.outstanding)}` : rm(f.outstanding)}</td>
                   <td style={td}>
-                    <button style={{ ...btnStyle(t.accent, false), padding: '0.3rem 0.6rem', fontSize: '0.74rem' }} disabled={!!busy || f.unbilled <= 0}
+                    <button style={{ ...btnStyle(t.accent, false), padding: '0.3rem 0.6rem', fontSize: '0.74rem' }} disabled={!!busy || Math.abs(f.unbilled) < 0.005}
                       onClick={() => call(f.id, 'POST', { action: 'generate', fighter_id: f.id }, genNote)}>{busy === f.id ? '...' : 'Jana bil'}</button>
                   </td>
                 </tr>
@@ -97,14 +97,14 @@ export default function FighterBillsPage() {
         {!data.bills.length ? <div style={{ fontSize: '0.82rem', color: t.muted }}>Belum ada bil.</div> : data.bills.map(b => (
           <div key={b.id} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', padding: '0.6rem 0', borderTop: t.border }}>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.86rem' }}>{b.bill_no} <Badge ok={b.status === 'paid'}>{b.status === 'paid' ? 'Dibayar' : 'Belum bayar'}</Badge></div>
+              <div style={{ fontWeight: 700, fontSize: '0.86rem' }}>{b.bill_no} <Badge ok={b.status === 'paid'}>{b.total < 0 ? (b.status === 'paid' ? 'HQ dah bayar fighter' : 'HQ perlu bayar fighter') : (b.status === 'paid' ? 'Dibayar' : 'Belum bayar')}</Badge></div>
               <div style={{ fontSize: '0.74rem', color: t.muted }}>{b.fighter_name} · {fmtTime(b.period_from)} – {fmtTime(b.period_to)} · override {rm(b.markup_total)}{b.paid_ref ? ` · ref ${b.paid_ref}` : ''}</div>
             </div>
-            <div style={{ fontWeight: 800 }}>{rm(b.total)}</div>
+            <div style={{ fontWeight: 800, color: b.total < 0 ? t.ok : t.text }}>{b.total < 0 ? `−${rm(-b.total)}` : rm(b.total)}</div>
             {b.receipt_url ? <a href={b.receipt_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.78rem', color: '#0EA5E9' }}>📎 Resit</a> : <span style={{ fontSize: '0.74rem', color: t.muted }}>tiada resit</span>}
             {b.status === 'unpaid'
               ? <button style={{ ...btnStyle(t.ok), padding: '0.3rem 0.65rem', fontSize: '0.74rem' }} disabled={!!busy}
-                  onClick={() => { const ref = prompt(`Sahkan bil ${b.bill_no} (${rm(b.total)}) DIBAYAR?\nNo. rujukan bayaran (pilihan):`, ''); if (ref !== null) call(b.id, 'PATCH', { bill_id: b.id, status: 'paid', ref }, () => 'Bil disahkan dibayar.'); }}>✅ Sahkan bayar</button>
+                  onClick={() => { const ref = prompt(b.total < 0 ? `Sahkan HQ DAH BAYAR ${rm(-b.total)} kepada fighter (bil ${b.bill_no})?\nNo. rujukan pindahan (pilihan):` : `Sahkan bil ${b.bill_no} (${rm(b.total)}) DIBAYAR?\nNo. rujukan bayaran (pilihan):`, ''); if (ref !== null) call(b.id, 'PATCH', { bill_id: b.id, status: 'paid', ref }, () => 'Bil disahkan dibayar.'); }}>✅ Sahkan bayar</button>
               : <button style={{ ...btnStyle(t.muted, false), padding: '0.3rem 0.65rem', fontSize: '0.74rem' }} disabled={!!busy}
                   onClick={() => confirm('Batalkan pengesahan bayaran?') && call(b.id, 'PATCH', { bill_id: b.id, status: 'unpaid' }, () => 'Status bil dikembalikan ke belum bayar.')}>Batal sah</button>}
           </div>

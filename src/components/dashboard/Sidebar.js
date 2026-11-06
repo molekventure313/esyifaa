@@ -121,6 +121,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { section: 'UTAMA' },
     { label: 'Dashboard', href: '/dashboard/fighter' },
     { label: '📦 Order Saya', href: '/dashboard/fighter/orders' },
+    { label: '🚚 Pos & COD', href: '/dashboard/fighter/ninjavan' },
     { label: '💵 Stok & Bil', href: '/dashboard/fighter/stok' },
     { label: '📈 Ads Hub', href: '/dashboard/fighter/ads-hub' },
     { section: 'SALESPAGE' },

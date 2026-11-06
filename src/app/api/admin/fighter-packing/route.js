@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { guard, STAFF } from '@/lib/auth';
 import { packOrder, returnOrder, fighterDamageState } from '@/lib/fighter/orders';
 import { tableMissing } from '@/lib/fighter/server';
+import { latestShipmentsBy, isActiveShipment, statusGroupOf } from '@/lib/ninjavan/shipments';
 
 // HQ — Packing Fighter (staff + super_admin). Maklumat penghantaran sahaja (tiada statistik jualan fighter).
 // GET   ?status=ready|packed|returned&q= → order + waybill (signed URL)
@@ -39,12 +40,21 @@ export async function GET(req) {
     const urlOf = Object.fromEntries((signed || []).map(s => [s.path, s.signedUrl]));
 
     const dmgOf = status === 'returned' ? await fighterDamageState(g.admin, (rows || []).map(r => r.id)) : {};
+    // Parcel NinjaVan HQ (fighter guna akaun HQ) — waybill dari API + tanda dah print
+    const nvOf = await latestShipmentsBy(g.admin, 'fighter_order_id', (rows || []).map(r => r.id)).catch(() => ({}));
+    const nvInfo = sh => (isActiveShipment(sh) ? {
+      tracking_number: sh.tracking_number, status: sh.status, group: statusGroupOf(sh),
+      printed_at: sh.waybill_printed_at || null, print_count: sh.waybill_print_count || 0,
+    } : null);
 
     return NextResponse.json({
       success: true,
       role: g.role,
       ready_count: (counts || []).length,
-      data: (rows || []).map(r => ({ ...r, amount: Number(r.amount), fighter_name: nameOf[r.fighter_id] || '—', waybill_url: urlOf[r.waybill_path] || null, damage: dmgOf[r.id] || null })),
+      data: (rows || []).map(r => ({
+        ...r, amount: Number(r.amount), fighter_name: nameOf[r.fighter_id] || '—', waybill_url: urlOf[r.waybill_path] || null,
+        damage: dmgOf[r.id] || null, nv: nvInfo(nvOf[r.id]),
+      })),
     });
   } catch (e) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });

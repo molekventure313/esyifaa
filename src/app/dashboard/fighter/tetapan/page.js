@@ -38,7 +38,7 @@ export default function FighterSettingsPage() {
   const apply = s => setF({
     chip_brand_id: s.chip_brand_id, chip_api_key: '', claude_api_key: '',
     meta_pixel_id: s.meta_pixel_id, whatsapp: s.whatsapp, sender_name: s.sender_name, sender_phone: s.sender_phone,
-    ninjavan_shipper_no: s.ninjavan_shipper_no,
+    ninjavan_shipper_no: s.ninjavan_shipper_no, courier: s.courier || 'hq',
   });
 
   useEffect(() => {
@@ -129,20 +129,30 @@ export default function FighterSettingsPage() {
         <Field t={t} label="Meta Pixel ID" hint="Pixel anda sendiri — event Lead / Purchase dihantar ke pixel ini.">
           <input style={inp} value={f.meta_pixel_id || ''} onChange={set('meta_pixel_id')} placeholder="cth: 123456789012345" />
         </Field>
+        <Field t={t} label="Kurier" hint={(f.courier || 'hq') === 'hq'
+          ? 'Parcel dicipta terus dalam akaun NinjaVan HQ dari Order Saya. Caj pos RM4.50 / parcel (+RM2 jika COD) masuk bil. COD pelanggan diterima HQ & dikreditkan ke bil anda.'
+          : 'Export CSV → upload ke akaun NinjaVan anda sendiri → upload PDF waybill di Order Saya.'}>
+          <select style={inp} value={f.courier || 'hq'} onChange={set('courier')}>
+            <option value="hq">🚚 NinjaVan HQ (disyorkan)</option>
+            <option value="own">Akaun NinjaVan sendiri</option>
+          </select>
+        </Field>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0 0.85rem' }}>
-          <Field t={t} label="Nama pengirim (NinjaVan)" hint="Dipaparkan pada waybill & CSV NinjaVan anda.">
+          <Field t={t} label="Nama pengirim (NinjaVan)" hint="Dipaparkan pada waybill (alamat pickup tetap HQ).">
             <input style={inp} value={f.sender_name || ''} onChange={set('sender_name')} placeholder="cth: Kedai Ali" />
           </Field>
-          <Field t={t} label="No. telefon pengirim">
+          <Field t={t} label="No. telefon pengirim" hint="Pelanggan & rider hubungi nombor ini.">
             <input style={inp} value={f.sender_phone || ''} onChange={set('sender_phone')} placeholder="0123456789" />
           </Field>
-          <Field t={t} label="NinjaVan Shipper Order No" hint="Nombor shipper akaun NinjaVan anda — diisi dalam CSV bulk upload.">
-            <input style={inp} value={f.ninjavan_shipper_no || ''} onChange={set('ninjavan_shipper_no')} placeholder="cth: 10198183" />
-          </Field>
+          {(f.courier || 'hq') === 'own' && (
+            <Field t={t} label="NinjaVan Shipper Order No" hint="Nombor shipper akaun NinjaVan anda — diisi dalam CSV bulk upload.">
+              <input style={inp} value={f.ninjavan_shipper_no || ''} onChange={set('ninjavan_shipper_no')} placeholder="cth: 10198183" />
+            </Field>
+          )}
         </div>
         <button style={btnStyle()} disabled={!!busy} onClick={() => call('misc', 'PUT', {
           whatsapp: f.whatsapp, meta_pixel_id: f.meta_pixel_id, sender_name: f.sender_name, sender_phone: f.sender_phone,
-          ninjavan_shipper_no: f.ninjavan_shipper_no,
+          ninjavan_shipper_no: f.ninjavan_shipper_no, courier: f.courier || 'hq',
         })}>{busy === 'misc' ? 'Menyimpan...' : 'Simpan'}</button>
         <Msg section="misc" />
       </Card>

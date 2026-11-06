@@ -63,6 +63,10 @@ export async function PUT(req) {
     }
     if (b.sender_name !== undefined) row.sender_name = clean(b.sender_name, 80) || null;
     if (b.sender_phone !== undefined) row.sender_phone = phoneOf(b.sender_phone) || null;
+    if (b.courier !== undefined) {
+      if (!['hq', 'own'].includes(b.courier)) throw new Error('Pilihan kurier tidak sah.');
+      row.courier = b.courier;
+    }
     if (b.ninjavan_shipper_no !== undefined) row.ninjavan_shipper_no = clean(b.ninjavan_shipper_no, 30).replace(/[^\w-]/g, '') || null;
 
     // CHIP: brand / key berubah → uji dulu

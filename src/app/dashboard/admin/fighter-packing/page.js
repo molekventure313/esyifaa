@@ -24,6 +24,7 @@ export default function FighterPackingPage() {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState(null);
   const [ret, setRet] = useState(null);   // { id, qty: {sku: n}, reason } — borang return + unit rosak
+  const [printFilter, setPrintFilter] = useState('all');   // all | unprinted | printed (parcel NinjaVan HQ)
 
   const load = useCallback(async () => {
     try {
@@ -65,15 +66,23 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
     setRet(null);
   };
 
-  const rows = data?.data || [];
-  // Kumpul ikut fail waybill (satu PDF NinjaVan biasanya untuk beberapa order)
+  const rows = (data?.data || []).filter(o =>
+    printFilter === 'all' || (o.nv && (printFilter === 'printed' ? !!o.nv.printed_at : !o.nv.printed_at)));
+  // Kumpul ikut fail waybill (satu PDF NinjaVan fighter biasanya untuk beberapa order) · parcel NinjaVan HQ ikut fighter
   const groups = [];
   for (const o of rows) {
-    const key = tab === 'ready' ? (o.waybill_path || o.id) : o.id;
+    const key = tab === 'ready' ? (o.waybill_path || (o.nv ? `nv:${o.fighter_id}` : o.id)) : o.id;
     let g = groups.find(x => x.key === key);
-    if (!g) groups.push(g = { key, url: o.waybill_url, fighter: o.fighter_name, orders: [] });
+    if (!g) groups.push(g = { key, url: o.waybill_url, nv: !!o.nv && !o.waybill_path, fighter: o.fighter_name, orders: [] });
     g.orders.push(o);
   }
+  const printNv = ids => {
+    const list = ids.filter(id => rows.find(o => o.id === id)?.nv);
+    if (!list.length) return setMsg({ ok: false, text: 'Tiada parcel NinjaVan HQ dalam pilihan.' });
+    window.open(`/api/admin/ninjavan/waybill?fighter=1&ids=${list.slice(0, 30).join(',')}`, '_blank');
+    if (list.length > 30) setMsg({ ok: true, text: 'Maksimum 30 waybill setiap kali — 30 pertama dibuka.' });
+    setTimeout(load, 6000);   // segarkan tanda "Dah print"
+  };
   const toggle = ids => setSel(s => { const n = new Set(s); const all = ids.every(i => n.has(i)); ids.forEach(i => (all ? n.delete(i) : n.add(i))); return n; });
 
   return (
@@ -93,13 +102,26 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
             border: t.border, background: tab === x.id ? t.accent : t.cardBg, color: tab === x.id ? '#FFFFFF' : t.text2,
           }}>{x.label}{x.id === 'ready' && data?.ready_count ? ` (${data.ready_count})` : ''}</button>
         ))}
-        <input style={{ ...inputStyle(t), maxWidth: 260, marginLeft: 'auto' }} placeholder="Cari nama, telefon, tracking..." value={q} onChange={e => setQ(e.target.value)} />
+        <select value={printFilter} onChange={e => setPrintFilter(e.target.value)} title="Tapis parcel NinjaVan HQ ikut waybill dah dicetak atau belum"
+          style={{ ...inputStyle(t), maxWidth: 170, marginLeft: 'auto' }}>
+          <option value="all">🖨️ Semua waybill</option>
+          <option value="unprinted">⬜ Belum print</option>
+          <option value="printed">✅ Dah print</option>
+        </select>
+        <input style={{ ...inputStyle(t), maxWidth: 260 }} placeholder="Cari nama, telefon, tracking..." value={q} onChange={e => setQ(e.target.value)} />
       </div>
 
       {tab === 'ready' && rows.length > 0 && (
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.85rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
+          <button style={btnStyle(t.accent, false)} onClick={() => setSel(sel.size === rows.length ? new Set() : new Set(rows.map(r => r.id)))}>
+            {sel.size === rows.length ? 'Nyahpilih semua' : 'Pilih semua'}
+          </button>
+          <button style={btnStyle('#0EA5E9')} disabled={!sel.size}
+            onClick={() => printNv([...sel])}>
+            🖨️ Cetak waybill NinjaVan ({[...sel].filter(id => rows.find(o => o.id === id)?.nv).length})
+          </button>
           <button style={btnStyle(t.ok)} disabled={!sel.size || !!busy}
-            onClick={() => confirm(`Tanda ${sel.size} order DAH PACK? Stok HQ akan ditolak & dicaj ke fighter.`) && act({ action: 'pack', ids: [...sel] }, j => `${j.results.filter(r => r.ok).length} order dipack.`)}>
+            onClick={() => confirm(`Tanda ${sel.size} order DAH PACK? Stok HQ akan ditolak & dicaj ke fighter (termasuk pos RM4.50 / parcel NinjaVan HQ, +RM2 COD).`) && act({ action: 'pack', ids: [...sel] }, j => `${j.results.filter(r => r.ok).length} order dipack.`)}>
             {busy === 'pack' ? 'Memproses...' : `✅ Dah pack (${sel.size})`}
           </button>
         </div>
@@ -114,7 +136,12 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
               {tab === 'ready' && <input type="checkbox" checked={g.orders.every(o => sel.has(o.id))} onChange={() => toggle(g.orders.map(o => o.id))} style={{ width: 16, height: 16 }} />}
               <strong style={{ fontSize: '0.88rem' }}>🥊 {g.fighter}</strong>
-              {tab === 'ready' && <span style={{ fontSize: '0.75rem', color: t.muted }}>{g.orders.length} order · waybill {fmtTime(g.orders[0].waybill_at)}</span>}
+              {tab === 'ready' && <span style={{ fontSize: '0.75rem', color: t.muted }}>{g.orders.length} order · {g.nv ? '🚚 NinjaVan HQ' : `waybill ${fmtTime(g.orders[0].waybill_at)}`}</span>}
+              {g.nv && tab === 'ready' && (
+                <button style={{ ...btnStyle('#0EA5E9', false), padding: '0.3rem 0.65rem', fontSize: '0.76rem', marginLeft: 'auto' }} onClick={() => printNv(g.orders.map(o => o.id))}>
+                  🖨️ Cetak waybill ({g.orders.length})
+                </button>
+              )}
               {g.url && <a href={g.url} target="_blank" rel="noopener noreferrer" style={{ ...btnStyle('#0EA5E9', false), padding: '0.3rem 0.65rem', fontSize: '0.76rem', textDecoration: 'none', marginLeft: 'auto' }}>🖨️ Buka waybill</a>}
             </div>
             {g.orders.map(o => (
@@ -125,6 +152,13 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
                     <strong>{o.full_name}</strong> · {o.phone} <Badge ok={o.payment_type === 'cod' ? undefined : true}>{o.payment_type === 'cod' ? `COD RM${o.amount.toFixed(2)}` : 'FPX'}</Badge>
                     {o.tracking_no && <span style={{ fontSize: '0.75rem', color: t.muted }}> · {o.tracking_no}</span>}
                   </div>
+                  {o.nv && (
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, marginTop: '0.15rem', color: o.nv.printed_at ? t.ok : '#D97706' }}>
+                      🚚 NinjaVan HQ · {o.nv.printed_at
+                        ? `🖨️ Dah print ${fmtTime(o.nv.printed_at)}${o.nv.print_count > 1 ? ` (${o.nv.print_count}x)` : ''}`
+                        : '⬜ Belum print'}
+                    </div>
+                  )}
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: t.accent, marginTop: '0.15rem' }}>
                     {(o.items || []).map(i => `${i.label} x${i.qty}`).join(' + ')}
                   </div>
