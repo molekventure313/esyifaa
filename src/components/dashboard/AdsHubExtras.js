@@ -212,9 +212,13 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
   const [sched, setSched] = useState(null);
   const [form, setForm] = useState(null);
   const [msg, setMsg] = useState('');
+  const [tpls, setTpls] = useState([]);
+  const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
-    const [r, s] = await Promise.all([getJson(`/api/ads-hub/rules${q(marketerId)}`), getJson(`/api/ads-hub/schedules${q(marketerId)}`)]);
-    setRules(r.success ? r.rules : []); setSched(s.success ? s : { pending: [], done: [] });
+    const [r, s, tp] = await Promise.all([
+      getJson(`/api/ads-hub/rules${q(marketerId)}`), getJson(`/api/ads-hub/schedules${q(marketerId)}`), getJson('/api/ads-hub/rules/templates'),
+    ]);
+    setRules(r.success ? r.rules : []); setSched(s.success ? s : { pending: [], done: [] }); setTpls(tp.success ? tp.templates : []);
   }, [marketerId]);
   useEffect(() => { load(); }, [load]);
 
@@ -222,9 +226,26 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
   const remove = async id => { await sendJson(`/api/ads-hub/rules/${id}${q(marketerId)}`, 'DELETE'); await load(); };
   const cancel = async id => { const j = await sendJson(`/api/ads-hub/schedules/${id}${q(marketerId)}`, 'DELETE'); setMsg(j.message || j.error || ''); await load(); };
   const save = async () => {
-    const j = await sendJson(`/api/ads-hub/rules${q(marketerId)}`, 'POST', form);
+    const { editId, ...rule } = form;
+    const j = editId
+      ? await sendJson(`/api/ads-hub/rules/${editId}${q(marketerId)}`, 'PATCH', { rule })
+      : await sendJson(`/api/ads-hub/rules${q(marketerId)}`, 'POST', rule);
     setMsg(j.message || j.error || '');
     if (j.success) { setForm(null); await load(); }
+  };
+  // Peraturan / templat → bentuk borang
+  const toForm = r => ({
+    name: r.name, metric: r.metric || 'spend', operator: r.operator || '>', value: r.value ?? 0, conditions: r.conditions || [],
+    window_days: r.window_days ?? 1, min_spend: r.min_spend ?? 0, level: r.level || 'ad', frequency: r.frequency || 'daily',
+    run_at_time: r.run_at_time || '', action: r.action, action_value: r.action_value ?? '', action_max: r.action_max ?? '',
+    mode: r.mode || 'suggest', scope: r.scope || 'all',
+  });
+  const applyAll = async list => {
+    const autoN = list.filter(x => x.mode === 'auto').length;
+    if (!window.confirm(`Salin ${list.length} peraturan dari templat HQ ke akaun ini?${autoN ? ` ${autoN} dalam mod AUTO akan terus berjalan — semak budget & masa selepas ini.` : ''}`)) return;
+    setBusy(true);
+    const j = await sendJson(`/api/ads-hub/rules/templates${q(marketerId)}`, 'POST', { keys: list.map(x => x.key) });
+    setBusy(false); setMsg(j.message || j.error || ''); await load();
   };
 
   if (!rules || !sched) return <Spinner t={t} text="Memuatkan peraturan..." />;
@@ -232,16 +253,37 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCond = (i, k, v) => setForm(f => ({ ...f, conditions: f.conditions.map((c, j) => (j === i ? { ...c, [k]: v } : c)) }));
 
+  const names = new Set(rules.map(r => r.name));
+  const fresh = tpls.filter(x => !names.has(x.name));
+
   return (
     <div style={{ fontFamily: t.ff, color: t.text }}>
       {msg && <div style={{ padding: '0.7rem 1rem', borderRadius: 8, border: t.border, fontSize: '0.82rem', marginBottom: '1rem', color: t.text2 }}>{msg}</div>}
+
+      {canEdit && fresh.length > 0 && (
+        <Card t={t} title="📋 Templat peraturan HQ" sub="Peraturan yang sedang digunakan akaun HQ. Tekan Guna semua untuk salin terus, atau Ubah & guna untuk semak nilai (budget, masa, ROAS) dahulu. Selepas disalin, setiap peraturan boleh diubah dengan butang Ubah."
+          right={<button disabled={busy} onClick={() => applyAll(fresh)} style={btn(t, true)}>{busy ? 'Menyalin…' : `Guna semua (${fresh.length})`}</button>} pad={false}>
+          {fresh.map(x => (
+            <div key={x.key} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.65rem 1.25rem', borderBottom: t.rowBorder, flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 280px', minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.84rem' }}>{x.name}</div>
+                <div style={{ fontSize: '0.77rem', color: t.text2 }}>{x.summary}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => { setForm(toForm(x)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={btn(t)}>Ubah & guna</button>
+                <button disabled={busy} onClick={() => applyAll([x])} style={btn(t)}>Guna</button>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
 
       <Card t={t} title="Peraturan auto" sub="Peraturan ikut syarat dinilai setiap jam guna order sebenar (peringkat adset: kempen aktif sahaja); peraturan ikut jam dijalankan sekali sehari pada masa ditetapkan. Mod cadang = muncul di dashboard untuk anda Laksana; mod auto = terus dilaksana (tertakluk had di Tetapan)."
         right={canEdit && !form && <button onClick={() => setForm({ ...PRESETS[0] })} style={btn(t, true)}>+ Peraturan baru</button>} pad={false}>
         {form && (
           <div style={{ padding: '1rem 1.25rem', borderBottom: t.border, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: '0.75rem', color: t.muted, alignItems: 'center' }}>
-              Templat: {PRESETS.map(p => <button key={p.name} onClick={() => setForm({ ...p })} style={btn(t)}>{p.name}</button>)}
+              {form.editId ? <b style={{ color: t.text }}>Ubah peraturan #{form.editId}</b> : <>Templat: {PRESETS.map(p => <button key={p.name} onClick={() => setForm({ ...p })} style={btn(t)}>{p.name}</button>)}</>}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: '0.82rem' }}>
               <input id="rule-name" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nama peraturan" style={{ ...field, minWidth: 180 }} />
@@ -299,7 +341,7 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
               <select id="rule-mode" value={form.mode} onChange={e => set('mode', e.target.value)} style={field}>
                 <option value="suggest">Cadang sahaja</option><option value="auto">Auto laksana</option>
               </select>
-              <button onClick={save} style={btn(t, true)}>Simpan</button>
+              <button onClick={save} style={btn(t, true)}>{form.editId ? 'Simpan perubahan' : 'Simpan'}</button>
               <button onClick={() => setForm(null)} style={btn(t)}>Batal</button>
             </div>
           </div>
@@ -313,6 +355,7 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
             </div>
             {canEdit && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button onClick={() => { setForm({ ...toForm(r), editId: r.id }); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={btn(t)}>Ubah</button>
                 <button onClick={() => patch(r.id, { mode: r.mode === 'auto' ? 'suggest' : 'auto' })} style={btn(t)}>{r.mode === 'auto' ? 'Tukar ke cadang' : 'Tukar ke auto'}</button>
                 <button onClick={() => patch(r.id, { active: !r.active })} style={btn(t)}>{r.active ? 'Nyahaktif' : 'Aktifkan'}</button>
                 <button onClick={() => remove(r.id)} style={{ ...btn(t), color: t.bad }}>Padam</button>

@@ -124,26 +124,82 @@ export function describeRule(r) {
     + `${r.frequency === 'hourly' ? ' · boleh berulang setiap jam' : ''}${tail}`;
 }
 
+// Baris DB dari input peraturan (sudah disahkan). full = tulis semua kolum (untuk kemas kini; nilai lalai eksplisit).
+function ruleRow(r, full = false) {
+  const timed = !!r.run_at_time;
+  const row = {
+    name: r.name.trim().slice(0, 80),
+    metric: timed ? 'spend' : r.metric, operator: timed ? '>=' : r.operator, value: timed ? 0 : Number(r.value),
+    window_days: timed ? 1 : Number(r.window_days), min_spend: timed ? 0 : Number(r.min_spend) || 0, action: r.action,
+    action_value: isBudgetPct(r.action) || r.action === 'budget_set' ? Number(r.action_value) : null, mode: r.mode,
+  };
+  // Kolum migration 033/034 — semasa cipta hanya dihantar bila bukan nilai lalai
+  const scope = r.scope === 'autopilot' ? 'autopilot' : 'all';
+  const level = timed || r.level === 'adset' ? 'adset' : 'ad';
+  const conditions = !timed && r.conditions?.length ? r.conditions.map(c => ({ metric: c.metric, operator: c.operator, value: Number(c.value) })) : [];
+  const frequency = !timed && r.frequency === 'hourly' ? 'hourly' : 'daily';
+  const action_max = r.action === 'budget_up' && Number(r.action_max) > 0 ? Number(r.action_max) : null;
+  if (full || scope !== 'all') row.scope = scope;
+  if (full || timed) row.run_at_time = timed ? r.run_at_time : null;
+  if (full || level !== 'ad') row.level = level;
+  if (full || conditions.length) row.conditions = conditions;
+  if (full || frequency !== 'daily') row.frequency = frequency;
+  if (full || action_max) row.action_max = action_max;
+  return row;
+}
+
 export async function createRule(admin, marketerId, r) {
   const err = validateRule(r);
   if (err) return { ok: false, message: err };
-  const timed = !!r.run_at_time;
-  const row = {
-    marketer_id: marketerId, name: r.name.trim().slice(0, 80),
-    metric: timed ? 'spend' : r.metric, operator: timed ? '>=' : r.operator, value: timed ? 0 : Number(r.value),
-    window_days: timed ? 1 : Number(r.window_days), min_spend: timed ? 0 : Number(r.min_spend) || 0, action: r.action,
-    action_value: isBudgetPct(r.action) || r.action === 'budget_set' ? Number(r.action_value) : null, mode: r.mode, active: true,
-  };
-  // Kolum migration 033/034 — hanya dihantar bila bukan nilai lalai
-  if (r.scope === 'autopilot') row.scope = 'autopilot';
-  if (timed) { row.run_at_time = r.run_at_time; row.level = 'adset'; }
-  if (!timed && r.level === 'adset') row.level = 'adset';
-  if (!timed && r.conditions?.length) row.conditions = r.conditions.map(c => ({ metric: c.metric, operator: c.operator, value: Number(c.value) }));
-  if (!timed && r.frequency === 'hourly') row.frequency = 'hourly';
-  if (r.action === 'budget_up' && Number(r.action_max) > 0) row.action_max = Number(r.action_max);
+  const row = { marketer_id: marketerId, ...ruleRow(r), active: r.active === false ? false : true };
   const { data, error } = await admin.from('meta_rules').insert(row).select('id').single();
   if (error) return { ok: false, message: error.message };
   return { ok: true, id: data.id, message: `Peraturan #${data.id} "${row.name}" dicipta: ${describeRule(row)}.` };
+}
+
+/** Ubah keseluruhan peraturan (syarat, tindakan, mod…) — ID & sejarah kekal. */
+export async function updateRule(admin, marketerId, id, r) {
+  const err = validateRule(r);
+  if (err) return { ok: false, message: err };
+  const row = ruleRow(r, true);
+  if (typeof r.active === 'boolean') row.active = r.active;
+  const { data, error } = await admin.from('meta_rules').update(row).eq('id', id).eq('marketer_id', marketerId).select('*').maybeSingle();
+  if (error) return { ok: false, message: error.message };
+  if (!data) return { ok: false, message: 'Peraturan tidak dijumpai.' };
+  return { ok: true, id: data.id, message: `Peraturan #${data.id} "${data.name}" dikemas kini: ${describeRule(data)}.` };
+}
+
+// ---------- Templat peraturan = peraturan akaun HQ (super_admin) ----------
+const TEMPLATE_KEYS = ['name', 'metric', 'operator', 'value', 'conditions', 'window_days', 'min_spend', 'level', 'frequency', 'run_at_time', 'action', 'action_value', 'action_max', 'mode', 'scope'];
+export async function ruleTemplates(admin) {
+  const { data: hq } = await admin.from('profiles').select('id').eq('role', 'super_admin');
+  const ids = (hq || []).map(p => p.id);
+  if (!ids.length) return [];
+  const { data, error } = await admin.from('meta_rules').select('*').in('marketer_id', ids).eq('active', true).order('id');
+  if (error) throw new Error(error.message);
+  const seen = new Set();
+  return (data || []).filter(r => !seen.has(r.name) && seen.add(r.name)).map(r => {
+    const t = Object.fromEntries(TEMPLATE_KEYS.map(k => [k, r[k] ?? null]));
+    return {
+      ...t, key: r.id, conditions: r.conditions || [], run_at_time: r.run_at_time || '', level: r.level || 'ad',
+      frequency: r.frequency || 'daily', scope: r.scope || 'all', summary: describeRule(r),
+    };
+  });
+}
+
+/** Salin templat HQ ke akaun marketer. keys kosong = semua. Nama yang dah wujud dilangkau. forceSuggest untuk akaun tanpa token. */
+export async function applyRuleTemplates(admin, marketerId, { keys, forceSuggest = false } = {}) {
+  const all = await ruleTemplates(admin);
+  const pick = keys?.length ? all.filter(t => keys.map(Number).includes(Number(t.key))) : all;
+  const { data: existing } = await admin.from('meta_rules').select('name').eq('marketer_id', marketerId);
+  const have = new Set((existing || []).map(r => r.name));
+  const created = [], skipped = [];
+  for (const t of pick) {
+    if (have.has(t.name)) { skipped.push(t.name); continue; }
+    const r = await createRule(admin, marketerId, { ...t, mode: forceSuggest ? 'suggest' : t.mode });
+    if (r.ok) created.push({ id: r.id, name: t.name }); else skipped.push(`${t.name} (${r.message})`);
+  }
+  return { ok: true, created, skipped, message: `${created.length} peraturan dicipta dari templat HQ${skipped.length ? `; ${skipped.length} dilangkau (nama dah wujud atau ralat)` : ''}.` };
 }
 
 const cmp = (v, op, x) => (op === '>' ? v > x : op === '>=' ? v >= x : op === '<' ? v < x : op === '=' ? v === x : v <= x);

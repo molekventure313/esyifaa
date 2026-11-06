@@ -9,7 +9,7 @@ import { buildReport, periodRange, fetchAll, PERIODS, SST_RATE } from './report'
 import { runReadTool } from './chat';
 import * as autopilot from './autopilot';
 import { syncFromMcp } from './mcp-sync';
-import { createRule, describeRule } from './automation';
+import { createRule, describeRule, ruleTemplates, applyRuleTemplates } from './automation';
 import { fighterOrderRows, fighterCosts, FIGHTER_SLUGS } from './fighter';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
@@ -147,6 +147,16 @@ Metrik: spend, orders, revenue, roas (nisbah), cpa (RM), ctr (%).`,
       mode: enm(['suggest', 'auto'], 'suggest atau auto'),
       scope: enm(['all', 'autopilot'], 'all (lalai) atau autopilot sahaja'),
     }, ['name', 'action', 'mode']),
+  },
+  {
+    name: 'list_rule_templates',
+    description: 'Templat peraturan = peraturan yang sedang digunakan akaun HQ (key, nama, ringkasan, semua nilai). Guna untuk cadang peraturan kepada marketer; salin dengan apply_rule_templates atau ubah nilai dan cipta dengan create_rule.',
+    inputSchema: obj({}),
+  },
+  {
+    name: 'apply_rule_templates',
+    description: 'Salin templat peraturan HQ ke akaun anda (nama yang dah wujud dilangkau). keys kosong = semua. HANYA selepas pengguna setuju — terangkan dulu peraturan mod auto yang akan terus berjalan (budget, masa).',
+    inputSchema: obj({ keys: { type: 'array', items: { type: 'integer' }, description: 'key templat dari list_rule_templates; kosong = semua' } }),
   },
   {
     name: 'update_rule',
@@ -294,6 +304,13 @@ export async function callTool(admin, profile, name, input = {}) {
     if (!r.ok) throw fail(r.message);
     return r;
   }
+  if (name === 'list_rule_templates') {
+    return { templates: (await ruleTemplates(admin)).map(t => ({ key: t.key, name: t.name, rule: t.summary, mode: t.mode, values: pick(t, ['metric', 'operator', 'value', 'conditions', 'window_days', 'min_spend', 'level', 'frequency', 'run_at_time', 'action', 'action_value', 'action_max', 'scope']) })) };
+  }
+  if (name === 'apply_rule_templates') {
+    const c = await needConn();
+    return applyRuleTemplates(admin, mid, { keys: input.keys, forceSuggest: c.source === 'mcp' });
+  }
   if (name === 'update_rule') {
     const upd = {};
     if (typeof input.active === 'boolean') upd.active = input.active;
@@ -424,5 +441,5 @@ async function ordersSummary(admin, profile, { period, from, to }, product) {
 export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar akaun anda. ${BASIS}
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
-Peraturan auto Ads Hub: list_rules, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
+Peraturan auto Ads Hub: list_rules, list_rule_templates, apply_rule_templates, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
 Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;

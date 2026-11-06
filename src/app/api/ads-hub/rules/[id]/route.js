@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { marketerConn, fail } from '@/lib/ads-hub/guard';
+import { updateRule } from '@/lib/ads-hub/automation';
 
-// Ubah (active / mode) atau padam satu peraturan milik marketer
+// Ubah (active / mode, atau { rule } = keseluruhan peraturan) atau padam satu peraturan milik marketer
 export async function PATCH(req, { params }) {
   const g = await marketerConn(req);
   if (g.error) return g.error;
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
+  if (body.rule) {
+    if (body.rule.mode === 'auto' && !g.conn.token_encrypted) return NextResponse.json({ success: false, error: 'Akaun tanpa token: peraturan hanya boleh mod cadang.' }, { status: 400 });
+    const r = await updateRule(g.admin, g.mid, id, body.rule);
+    return NextResponse.json({ success: r.ok, ...r, error: r.ok ? undefined : r.message }, { status: r.ok ? 200 : 400 });
+  }
   const upd = {};
   if (typeof body.active === 'boolean') upd.active = body.active;
   if (['suggest', 'auto'].includes(body.mode)) upd.mode = body.mode;
