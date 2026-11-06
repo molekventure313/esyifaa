@@ -120,6 +120,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const fighterNav = [
     { section: 'UTAMA' },
     { label: 'Dashboard', href: '/dashboard/fighter' },
+    { label: '📊 Laporan Saya', href: '/dashboard/fighter/laporan' },
     { label: '📦 Order Saya', href: '/dashboard/fighter/orders' },
     { label: '🚚 Pos & COD', href: '/dashboard/fighter/ninjavan' },
     { label: '💵 Stok & Bil', href: '/dashboard/fighter/stok' },

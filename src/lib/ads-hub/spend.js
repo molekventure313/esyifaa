@@ -53,12 +53,16 @@ export async function campaignProducts(admin, conn) {
  */
 export async function fillAdsSpend(admin, conn, { from, to }) {
   if (!conn.auto_ads_spend) return { ok: true, skipped: true };
-  // Fighter berniaga sendiri — belanja ads tidak masuk ads_spend HQ / laporan marketer
-  const { data: who } = await admin.from('profiles').select('role').eq('id', conn.marketer_id).maybeSingle();
-  if (who?.role === 'independent') return { ok: true, skipped: true, note: 'Fighter — ads spend tidak direkod ke HQ.' };
   if (from < AUTO_SPEND_START) from = AUTO_SPEND_START;
   if (from > to) return { ok: true, skipped: true };
-  const owner = await spendOwner(admin, conn.marketer_id);
+  // Fighter berniaga sendiri — belanja ads ke fighter_ads_spend (Laporan Saya), TIDAK ke ads_spend HQ / laporan marketer
+  const { data: who } = await admin.from('profiles').select('role').eq('id', conn.marketer_id).maybeSingle();
+  const fighter = who?.role === 'independent';
+  const owner = fighter ? null : await spendOwner(admin, conn.marketer_id);
+  const table = fighter ? 'fighter_ads_spend' : 'ads_spend';
+  const scope = q => (fighter ? q.eq('fighter_id', conn.marketer_id) : owner ? q.eq('marketer_id', owner) : q.is('marketer_id', null));
+  const newRow = fighter ? { fighter_id: conn.marketer_id, source: 'auto' } : { marketer_id: owner };
+  const changed = fighter ? { source: 'auto', updated_at: new Date().toISOString() } : {};
   const [camps, ads, ins] = await Promise.all([
     campaignProducts(admin, conn),
     fetchAll(() => admin.from('meta_ads').select('ad_id, campaign_id').eq('marketer_id', conn.marketer_id).order('ad_id')),
@@ -76,9 +80,8 @@ export async function fillAdsSpend(admin, conn, { from, to }) {
     want.set(k, (want.get(k) || 0) + Number(r.spend || 0));
   }
 
-  let q = admin.from('ads_spend').select('id, spend_date, product, amount').gte('spend_date', from).lte('spend_date', to);
-  q = owner ? q.eq('marketer_id', owner) : q.is('marketer_id', null);
-  const { data: existing, error } = await q.order('id');
+  const { data: existing, error } = await scope(admin.from(table).select('id, spend_date, product, amount')
+    .gte('spend_date', from).lte('spend_date', to)).order('id');
   if (error) throw new Error(error.message);
 
   const have = new Map();
@@ -97,22 +100,22 @@ export async function fillAdsSpend(admin, conn, { from, to }) {
     if (amount <= 0) { if (cur) deletes.push(cur.id); continue; }
     if (!cur) {
       const [spend_date, product] = k.split('|');
-      inserts.push({ marketer_id: owner, spend_date, product, amount });
+      inserts.push({ ...newRow, spend_date, product, amount });
     } else if (round2(cur.amount) !== amount) updates.push({ id: cur.id, amount });
   }
   for (const [k, r] of have) if (!want.has(k)) deletes.push(r.id);
 
   if (inserts.length) {
-    const { error: e } = await admin.from('ads_spend').insert(inserts);
-    if (e) throw new Error(`ads_spend: ${e.message}`);
+    const { error: e } = await admin.from(table).insert(inserts);
+    if (e) throw new Error(`${table}: ${e.message}`);
   }
   for (const u of updates) {
-    const { error: e } = await admin.from('ads_spend').update({ amount: u.amount }).eq('id', u.id);
-    if (e) throw new Error(`ads_spend: ${e.message}`);
+    const { error: e } = await admin.from(table).update({ amount: u.amount, ...changed }).eq('id', u.id);
+    if (e) throw new Error(`${table}: ${e.message}`);
   }
   if (deletes.length) {
-    const { error: e } = await admin.from('ads_spend').delete().in('id', deletes);
-    if (e) throw new Error(`ads_spend: ${e.message}`);
+    const { error: e } = await admin.from(table).delete().in('id', deletes);
+    if (e) throw new Error(`${table}: ${e.message}`);
   }
   return { ok: true, inserted: inserts.length, updated: updates.length, deleted: deletes.length };
 }
