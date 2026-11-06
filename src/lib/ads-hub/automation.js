@@ -77,6 +77,7 @@ const OPERATORS = ['>', '>=', '<', '<=', '='];
 const ADSET_ONLY = ['activate_adset', 'budget_set'];
 const TIME_ACTIONS = ['pause_adset', 'activate_adset', 'budget_set'];
 const isBudgetPct = a => a === 'budget_up' || a === 'budget_down';
+const SCALE_CUTOFF_HOUR = 21;   // MYT
 
 export function validateRule(r) {
   const errs = [];
@@ -214,19 +215,22 @@ async function addEvent(admin, ev) {
 /** Cipta cadangan (dedupe) dan, untuk mod auto, terus laksana. */
 async function fireRule(admin, conn, rule, ev, action, out) {
   const created = await addEvent(admin, ev);
-  if (!created) return;
+  if (!created) return false;
   if (rule.mode === 'auto' && action) {
     // Peraturan setiap jam boleh naikkan budget berulang (langkau had sekali/20 jam);
-    // reset budget ikut jam juga langkau had % kenaikan.
+    // set budget (reset ikut jam / tangga scale) langkau had % kenaikan — had RM maksimum tetap terpakai.
     const r = await executeAction(admin, conn, action, {
-      source: 'auto', actorId: null, repeatRaise: rule.frequency === 'hourly' || !!rule.run_at_time, anyIncrease: !!rule.run_at_time,
+      source: 'auto', actorId: null, repeatRaise: rule.frequency === 'hourly' || !!rule.run_at_time,
+      anyIncrease: !!rule.run_at_time || rule.action === 'budget_set',
     });
     await admin.from('meta_events').update({
       status: r.ok ? 'executed' : 'failed', resolved_at: new Date().toISOString(), detail: `${ev.detail} → ${r.message}`,
     }).eq('id', created.id);
     if (r.ok) out.executed++;
+    return r.ok;
   } else {
     out.suggestions++;
+    return false;
   }
 }
 
@@ -265,10 +269,14 @@ function adsetAction(rule, s) {
   if (rule.action === 'activate_adset') return s.adset_status === 'PAUSED' ? { ...base, action: 'set_status', params: { status: 'ACTIVE' } } : null;
   if (s.daily_budget == null) return null;   // budget di peringkat kempen
   let newRm = null;
-  if (rule.action === 'budget_set') newRm = Number(rule.action_value);
+  if (rule.action === 'budget_set') {
+    newRm = Number(rule.action_value);
+    // Bersyarat (tangga scale): naik sahaja, tak pernah turunkan. Reset ikut jam boleh turunkan.
+    if (!rule.run_at_time && newRm <= s.daily_budget) return null;
+  }
   if (isBudgetPct(rule.action)) {
     const up = rule.action === 'budget_up';
-    newRm = Math.max(1, Math.round(s.daily_budget * (up ? 1 + rule.action_value / 100 : 1 - rule.action_value / 100)));
+    newRm = Math.max(1, (up ? Math.floor : Math.round)(s.daily_budget * (up ? 1 + rule.action_value / 100 : 1 - rule.action_value / 100)));   // floor: elak lebih had % (373×1.3=484.9)
     if (up && Number(rule.action_max) > 0) newRm = Math.min(newRm, Number(rule.action_max));
     if (up ? newRm <= s.daily_budget : newRm >= s.daily_budget) return null;
   }
@@ -303,14 +311,18 @@ async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
     if (!conds.every(c => m[c.metric] != null && cmp(m[c.metric], c.operator, Number(c.value)))) continue;
     const action = rule.action === 'notify' ? null : adsetAction(rule, s);
     if (rule.action !== 'notify' && !action) continue;
+    // Jangan naikkan budget selepas 9 malam (budget direset 23:30)
+    if (action?.action === 'set_budget' && action.params.daily_budget_rm > s.daily_budget && ctx.hour >= SCALE_CUTOFF_HOUR) continue;
     const win = Number(rule.window_days) === 1 ? 'hari ini' : `${rule.window_days} hari`;
-    await fireRule(admin, conn, rule, {
+    const ok = await fireRule(admin, conn, rule, {
       marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: action ? 'info' : 'warn',
       object_type: 'adset', object_id: id, object_name: s.adset_name,
       title: action ? describeAction(action) : `${s.adset_name}: ${conds.map(c => `${METRIC_LABEL[c.metric]} ${fmtMetric(c.metric, m[c.metric])}`).join(', ')}`,
       detail: `Peraturan "${rule.name}" (${win}): belanja RM${m.spend}, ${m.orders} order, jualan RM${m.revenue}, ROAS ${fmtMetric('roas', m.roas)}.`,
       action, dedupe_key: `rule:${rule.id}:adset:${id}:${stamp}`,
     }, action, out);
+    // Kemas kini cache supaya langkah tangga lain dalam larian sama tak turunkan budget
+    if (ok && action?.action === 'set_budget') s.daily_budget = action.params.daily_budget_rm;
   }
 }
 
@@ -410,7 +422,7 @@ export async function evaluateConnection(admin, conn) {
         seenAdsets.add(ad.adset_id);
         objKey = `adset:${ad.adset_id}`;
         const f = rule.action === 'budget_up' ? 1 + rule.action_value / 100 : 1 - rule.action_value / 100;
-        let newRm = Math.max(1, Math.round(ad.daily_budget * f));
+        let newRm = Math.max(1, (rule.action === 'budget_up' ? Math.floor : Math.round)(ad.daily_budget * f));
         if (rule.action === 'budget_up' && Number(rule.action_max) > 0) newRm = Math.min(newRm, Number(rule.action_max));
         if (autopilot && rule.action === 'budget_up') {
           const used = [...apBudgets.values()].reduce((s, v) => s + v, 0);
