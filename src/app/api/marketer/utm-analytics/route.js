@@ -54,6 +54,7 @@ export async function GET(req) {
       'sabun-garam-3': 'SP3 Sakit Misteri', 'sabun-garam-4': 'SP4 Bisikan',
       'sabun-garam-5': 'SP5 Anak Meracau', 'fsp-checkout': 'Pengisian (FPX)',
       'pengisian': 'Pengisian', 'garam-pengasihan': 'Garam Pengasihan', 'kasturi-kijang': 'Kasturi Kijang',
+      'kasturi-kijang-1': 'Kasturi 1 Kena Himpit', 'kasturi-kijang-2': 'Kasturi 2 Anak Meracau', 'kasturi-kijang-3': 'Kasturi 3 Sesak Dada', 'kasturi-kijang-4': 'Kasturi 4 Tengkuk Berat', 'kasturi-kijang-5': 'Kasturi 5 Wangian Solat',
     };
 
     let q = admin.from('submissions')

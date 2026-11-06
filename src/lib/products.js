@@ -51,6 +51,11 @@ export const SP_FILTER_GROUPS = [
   { label: '🧂 Garam & 🌿 Kasturi', items: [
     ['garam-pengasihan', '/garam-pengasihan'],
     ['kasturi-kijang',   '/kasturi-kijang'],
+    ['kasturi-kijang-1', '/kasturi-kijang-1 — Kena Himpit'],
+    ['kasturi-kijang-2', '/kasturi-kijang-2 — Anak Meracau'],
+    ['kasturi-kijang-3', '/kasturi-kijang-3 — Sesak Dada'],
+    ['kasturi-kijang-4', '/kasturi-kijang-4 — Tengkuk Berat'],
+    ['kasturi-kijang-5', '/kasturi-kijang-5 — Wangian Solat'],
   ] },
   { label: '✨ Pengisian / Rawatan', items: [
     ['pengisian-esyifa', '/pengisian-esyifa (+ Tasbih, Rawat Sendiri)'],

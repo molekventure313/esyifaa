@@ -46,12 +46,12 @@ export const ORDER_PRODUCTS = {
   'kasturi-kijang': {
     name: 'Minyak Kasturi Kijang Ruqyah E-Syifa',
     packages: [
-      { units: 1, label: '1 Botol (Pek Percubaan)', price: 20 },
-      { units: 3, label: '3 Botol (Pakej Rawatan Lengkap)', price: 30 },
-      { units: 5, label: '5 Botol (Pakej Seisi Keluarga)', price: 40 },
+      { units: 1, label: '1 Botol (Pek Percubaan)', price: 29, freePostage: true },
+      { units: 3, label: '3 Botol (Beli 2 Free 1)', price: 49, freePostage: true },
+      { units: 5, label: '5 Botol (Beli 3 Free 2)', price: 69, freePostage: true },
     ],
     addons: ['sabun', 'garam'],
-    postage: ({ east }) => (east ? POSTAGE_EAST : POSTAGE_NORMAL),
+    postage: () => 0,   // semua pakej Kasturi FREE POS seluruh Malaysia
   },
 };
 

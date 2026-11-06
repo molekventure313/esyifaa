@@ -9,37 +9,37 @@ import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 const BASE_PACKAGES = [
   {
     units: 5,
-    label: '5 Botol (Pakej Seisi Keluarga)',
-    sublabel: 'RM8 sebotol sahaja — Jimat RM60! Benteng lengkap satu rumah',
-    pillLabel: '5 BOTOL — PALING JIMAT',
-    price: 40,
-    originalPrice: 100,
-    savings: 60,
+    label: '5 Botol (Beli 3 Free 2)',
+    sublabel: 'RM13.80 sebotol sahaja — Benteng lengkap satu rumah',
+    pillLabel: 'BELI 3 FREE 2 — PALING JIMAT',
+    price: 69,
+    originalPrice: 145,
+    savings: 76,
     badge: 'PALING JIMAT',
     features: [
-      'JIMAT RM60',
+      'PERCUMA 2 BOTOL',
       'FREE POS & COD',
       'BEKALAN TAHAN LEBIH 6 BULAN',
-      'HANYA RM8 SEBOTOL',
+      'HANYA RM13.80 SEBOTOL',
     ],
     itemsCount: 5,
     hasCod: true,
   },
   {
     units: 3,
-    label: '3 Botol (Pakej Rawatan Lengkap)',
-    sublabel: 'RM10 sebotol sahaja — Simpan di rumah, bilik & kereta',
-    pillLabel: '3 BOTOL — PILIHAN RAMAI',
-    price: 30,
-    originalPrice: 60,
-    savings: 30,
+    label: '3 Botol (Beli 2 Free 1)',
+    sublabel: 'RM16.33 sebotol sahaja — Simpan di rumah, bilik & kereta',
+    pillLabel: 'BELI 2 FREE 1 — TERLARIS',
+    price: 49,
+    originalPrice: 87,
+    savings: 38,
     badge: 'PILIHAN RAMAI',
     recommended: true,
     features: [
-      'JIMAT RM30',
+      'PERCUMA 1 BOTOL',
       'FREE POS & COD',
       'UNTUK SUAMI, ISTERI & RUMAH',
-      'HANYA RM10 SEBOTOL',
+      'HANYA RM16.33 SEBOTOL',
     ],
     itemsCount: 3,
     hasCod: true,
@@ -49,12 +49,12 @@ const BASE_PACKAGES = [
     label: '1 Botol (Pek Percubaan)',
     sublabel: 'Sesuai untuk mencuba khasiat pati kasturi kijang ruqyah',
     pillLabel: '1 BOTOL — PERCUBAAN',
-    price: 20,
+    price: 29,
     originalPrice: 35,
-    savings: 15,
+    savings: 6,
     badge: null,
     features: [
-      'JIMAT RM15',
+      'JIMAT RM6',
       'FREE POS & COD',
       '1 BOTOL (PATI ASLI) SAHAJA',
       'PEK PERCUBAAN',
@@ -64,10 +64,10 @@ const BASE_PACKAGES = [
   },
 ];
 
-// Negeri Sabah/Sarawak — COD ditutup, postage RM10
+// Negeri Sabah/Sarawak — COD ditutup (FPX sahaja). Semua pakej Kasturi FREE POS seluruh Malaysia.
 const EAST_MALAYSIA = ['Sabah', 'Sarawak'];
-const POSTAGE_NORMAL = 5;
-const POSTAGE_EAST   = 10;
+const POSTAGE_NORMAL = 0;
+const POSTAGE_EAST   = 0;
 
 const MY_STATES = [
   'Johor','Kedah','Kelantan','Melaka','Negeri Sembilan','Pahang',
@@ -468,14 +468,14 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
                       <div style={{ display: 'flex', gap: '6px' }}>
                         {[1, 2, 3].map(i => (
                           <div key={i} style={{ width: '28px', height: '42px', position: 'relative', borderRadius: '4px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                            <Image src="/images/kasturi-kijang-opt.jpg" alt="Kasturi Kijang" fill style={{ objectFit: 'cover' }} />
+                            <Image src="/images/kasturi-kijang-botol.jpg" alt="Kasturi Kijang" fill sizes="40px" style={{ objectFit: 'cover' }} />
                           </div>
                         ))}
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         {[4, 5].map(i => (
                           <div key={i} style={{ width: '28px', height: '42px', position: 'relative', borderRadius: '4px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                            <Image src="/images/kasturi-kijang-opt.jpg" alt="Kasturi Kijang" fill style={{ objectFit: 'cover' }} />
+                            <Image src="/images/kasturi-kijang-botol.jpg" alt="Kasturi Kijang" fill sizes="40px" style={{ objectFit: 'cover' }} />
                           </div>
                         ))}
                       </div>
@@ -484,13 +484,13 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {[1, 2, 3].map(i => (
                         <div key={i} style={{ width: '32px', height: '50px', position: 'relative', borderRadius: '4px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.12)' }}>
-                          <Image src="/images/kasturi-kijang-opt.jpg" alt="Kasturi Kijang" fill style={{ objectFit: 'cover' }} />
+                          <Image src="/images/kasturi-kijang-botol.jpg" alt="Kasturi Kijang" fill sizes="40px" style={{ objectFit: 'cover' }} />
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div style={{ width: '38px', height: '62px', position: 'relative', borderRadius: '4px', overflow: 'hidden', boxShadow: '0 3px 8px rgba(0,0,0,0.15)' }}>
-                      <Image src="/images/kasturi-kijang-opt.jpg" alt="Kasturi Kijang" fill style={{ objectFit: 'cover' }} />
+                      <Image src="/images/kasturi-kijang-botol.jpg" alt="Kasturi Kijang" fill sizes="40px" style={{ objectFit: 'cover' }} />
                     </div>
                   )}
                   <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', fontWeight: 800, color: '#059669' }}>
@@ -1084,7 +1084,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.88rem', color: '#475569' }}>
               <span>Postage ({isEastMalaysia ? 'Sabah / Sarawak' : 'Semenanjung'}):</span>
-              <strong style={{ color: '#0F172A' }}>RM{effectivePostage}</strong>
+              <strong style={{ color: '#059669' }}>{effectivePostage ? `RM${effectivePostage}` : 'PERCUMA'}</strong>
             </div>
 
             <div style={{ borderTop: '1px dashed #CBD5E1', margin: '0.6rem 0' }} />

@@ -100,6 +100,11 @@ export async function GET(req) {
       'pengisian':     'Pengisian',
       'garam-pengasihan': 'Garam Pengasihan',
       'kasturi-kijang':   'Kasturi Kijang',
+      'kasturi-kijang-1': 'Kasturi 1 Kena Himpit',
+      'kasturi-kijang-2': 'Kasturi 2 Anak Meracau',
+      'kasturi-kijang-3': 'Kasturi 3 Sesak Dada',
+      'kasturi-kijang-4': 'Kasturi 4 Tengkuk Berat',
+      'kasturi-kijang-5': 'Kasturi 5 Wangian Solat',
     };
 
     const orders = (subs || []).map(s => ({

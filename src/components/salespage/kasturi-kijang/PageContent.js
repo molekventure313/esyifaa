@@ -19,7 +19,8 @@ import KasturiFAQSection from '@/components/salespage/kasturi-kijang/FAQSection'
 import KasturiClosingSection from '@/components/salespage/kasturi-kijang/ClosingSection';
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 
-export default function KasturiKijangPageContent({ source = 'kasturi-kijang' }) {
+// Varian angle (/kasturi-kijang-1..5): hanya Hero berbeza; section lain & testimoni dikongsi.
+export default function KasturiKijangPageContent({ source = 'kasturi-kijang', heroHeadline = null, heroSubheadline = null }) {
   return (
     <main style={{ minHeight: '100vh', background: '#FFFFFF', color: '#0F172A' }}>
       <MarketerPixelProvider />
@@ -28,7 +29,7 @@ export default function KasturiKijangPageContent({ source = 'kasturi-kijang' }) 
       <AnnouncementBar />
 
       {/* #02 — Hero Banner */}
-      <KasturiHeroSection />
+      <KasturiHeroSection headline={heroHeadline} subheadline={heroSubheadline} />
 
       {/* #03 — Testimoni Part 1 */}
       <KasturiTestimonialSection />

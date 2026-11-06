@@ -34,12 +34,12 @@ export const SP_PRODUCTS = {
     heroImage: '/images/kasturi-kijang-opt.jpg',
     solutionImage: '/images/kasturi-kijang-opt.jpg',
     gallery: ['/images/kasturi-kijang-opt.jpg'],
-    priceLine: 'Dari RM20 · 5 botol RM40 · COD & FPX',
+    priceLine: 'Dari RM29 · Beli 3 Free 2 RM69 · Free Pos · COD & FPX',
     facts: `Produk: Minyak Kasturi Kijang Asli E-Syifa' (botol poket), pati gred premium yang diruqyah khusus.
 - 100% bebas alkohol, sah untuk solat & wudhu. Wangian sunnah.
 - Ikhtiar untuk: benteng sihir, santau angin & saka; kena himpit/tindih & mimpi ngeri; gangguan jin/makhluk halus; keresahan jiwa & anxiety (aromaterapi menenangkan); anak kecil meracau malam; tengkuk berat, pening & lenguh sendi; seri wajah.
 - Cara guna: titis 1-2 titik pada nadi pergelangan tangan, belakang telinga & tengkuk; hidu dalam-dalam sambil niat mohon perlindungan Allah & selawat 3x; calit pada bucu bantal/selimut sebelum tidur; untuk anak: calit nipis di ubun-ubun & tapak kaki sebelum maghrib dan sebelum tidur. Boleh sapu pada tempat sakit (tengkuk, pinggang, lutut).
-- Harga: 1 botol RM20, 3 botol RM30, 5 botol RM40. Postage RM5 Semenanjung / RM10 Sabah & Sarawak. COD & FPX.`,
+- Harga: 1 botol RM29, 3 botol (Beli 2 Free 1) RM49, 5 botol (Beli 3 Free 2) RM69. FREE POS seluruh Malaysia. COD (Semenanjung) & FPX.`,
   },
   'garam-pengasihan': {
     label: 'Garam Pengasihan Masakan E-Syifa',

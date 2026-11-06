@@ -74,6 +74,11 @@ const SP_LABELS = {
   'sabun-garam-5':  '👶 SP5 — Anak Meracau',
   'garam-pengasihan': '🧂 Garam Pengasihan Masakan',
   'kasturi-kijang':   '🦌 Minyak Kasturi Kijang',
+  'kasturi-kijang-1': '🦌 Kasturi 1 — Kena Himpit',
+  'kasturi-kijang-2': '🦌 Kasturi 2 — Anak Meracau',
+  'kasturi-kijang-3': '🦌 Kasturi 3 — Sesak Dada',
+  'kasturi-kijang-4': '🦌 Kasturi 4 — Tengkuk Berat',
+  'kasturi-kijang-5': '🦌 Kasturi 5 — Wangian Solat',
   'fsp-checkout':   '✨ Pengisian ESyifaa (FPX)',
   'pengisian':      '✨ Pengisian ESyifaa',
 };

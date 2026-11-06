@@ -5,12 +5,14 @@ const MARKETER_SLUGS = [
   'tasbih-esyifa', 'sabun-garam', 'sabun-garam-1', 'sabun-garam-2',
   'sabun-garam-3', 'sabun-garam-4', 'sabun-garam-5', 'garam-pengasihan',
   'kasturi-kijang', 'ruqyah-harian',
+  'kasturi-kijang-1', 'kasturi-kijang-2', 'kasturi-kijang-3', 'kasturi-kijang-4', 'kasturi-kijang-5',
 ];
 
 // SP produk fizikal yang boleh dijual fighter melalui /f/<slug>
 const FIGHTER_SLUGS = [
   'sabun-garam', 'sabun-garam-1', 'sabun-garam-2', 'sabun-garam-3', 'sabun-garam-4', 'sabun-garam-5',
   'garam-pengasihan', 'kasturi-kijang',
+  'kasturi-kijang-1', 'kasturi-kijang-2', 'kasturi-kijang-3', 'kasturi-kijang-4', 'kasturi-kijang-5',
 ];
 
 /** @type {import('next').NextConfig} */

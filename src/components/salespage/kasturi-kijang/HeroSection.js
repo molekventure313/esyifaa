@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import { HL } from './heroStyle';
 
-export default function KasturiHeroSection() {
+// headline / subheadline (pilihan) — SP angle /kasturi-kijang-1..5; tanpa = SP asal
+export default function KasturiHeroSection({ headline = null, subheadline = null }) {
   const scrollToForm = () => {
     document.getElementById('borang')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -29,16 +31,13 @@ export default function KasturiHeroSection() {
           marginBottom: '1.25rem',
           letterSpacing: '-0.025em',
         }}>
-          &ldquo;Alhamdulillah badan rasa ringan, mimpi ngeri hilang &amp;{' '}
-          <span style={{
-            color: '#047857',
-            background: 'linear-gradient(120deg, rgba(167,243,208,0.4) 0%, rgba(167,243,208,0.8) 100%)',
-            padding: '0 6px',
-            borderRadius: '6px'
-          }}>
-            tiada lagi rasa takut &amp; diperhatikan
-          </span>{' '}
-          lepas amalkan Minyak Kasturi Kijang E-Syifa&rsquo;&rdquo;
+          {headline || (<>
+            &ldquo;Alhamdulillah badan rasa ringan, mimpi ngeri hilang &amp;{' '}
+            <span style={HL}>
+              tiada lagi rasa takut &amp; diperhatikan
+            </span>{' '}
+            lepas amalkan Minyak Kasturi Kijang E-Syifa&rsquo;&rdquo;
+          </>)}
         </h1>
 
         {/* 2. H4 SUBHEADLINE */}
@@ -51,7 +50,7 @@ export default function KasturiHeroSection() {
           margin: '0 auto 1.5rem auto',
           fontWeight: 500,
         }}>
-          Wangian sunnah kegemaran baginda Nabi ﷺ yang amat ditakuti oleh jin, syaitan dan tukang sihir. Cukup sekadar sapuan halus pada titik nadi dan tengkuk — bertindak sebagai <strong>benteng pendinding aktif 24 jam</strong> serta aromaterapi penenang jiwa yang resah 👇🏻
+          {subheadline || (<>Wangian sunnah kegemaran baginda Nabi ﷺ yang amat ditakuti oleh jin, syaitan dan tukang sihir. Cukup sekadar sapuan halus pada titik nadi dan tengkuk — bertindak sebagai <strong>benteng pendinding aktif 24 jam</strong> serta aromaterapi penenang jiwa yang resah 👇🏻</>)}
         </h4>
 
         {/* 3. RATING STAR BADGE (Tepat Di Bawah H4) */}
@@ -93,12 +92,15 @@ export default function KasturiHeroSection() {
               background: '#FFFFFF',
             }}>
               <Image
-                src="/images/kasturi-kijang-opt.jpg"
+                src="/images/kasturi-kijang-hero.jpg"
                 alt="Minyak Kasturi Kijang E-Syifa'"
-                width={440}
-                height={320}
+                width={960}
+                height={800}
+                sizes="(max-width: 500px) calc(100vw - 4rem), 420px"
+                quality={70}
                 style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
                 priority
+                fetchPriority="high"
               />
             </div>
             <div style={{
@@ -180,7 +182,7 @@ export default function KasturiHeroSection() {
             👉🏻 BELI SEKARANG — LINDUNGI DIRI &amp; KELUARGA
           </button>
           <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748B' }}>
-            Pakej Serendah <strong style={{ color: '#047857' }}>RM20</strong> Sebotol · Pakej 5 Botol RM40 (Paling Jimat) · Bayar Tunai Masa Sampai (COD)
+            Serendah <strong style={{ color: '#047857' }}>RM29</strong> · Beli 3 Free 2 hanya RM69 (Paling Jimat) · FREE POS &amp; COD Seluruh Malaysia
           </p>
         </div>
 

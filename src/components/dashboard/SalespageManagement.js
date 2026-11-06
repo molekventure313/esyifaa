@@ -42,14 +42,26 @@ const EVIDEO_PAGES = [
 
 // TAB 4: Produk Fizikal
 const PRODUK_PAGES = [
-  { label: 'Sabun Garam (Base)',         desc: 'SP base — default headline (feature angle). Guna untuk rujukan.',                                                         url: '/sabun-garam',   color: '#D97706', icon: '🧼', isNew: true },
-  { label: 'Sabun Garam #1 — Saka/Sihir/Santau', desc: 'Pilihan 1 FSP formula: "Alhamdulillah saka, sihir & santau...keluar selepas mandi"',                          url: '/sabun-garam-1', color: '#D97706', icon: '🧼', isNew: true },
-  { label: 'Sabun Garam #2 — Lenguh Urat/Badan',  desc: 'Pilihan 2 FSP formula: "Alhamdulillah lenguh urat, sakit badan...lega selepas amalkan"',                     url: '/sabun-garam-2', color: '#D97706', icon: '🧼', isNew: true },
-  { label: 'Sabun Garam #3 — Penyakit Misteri',   desc: 'Pilihan 3 FSP formula: "Alhamdulillah sakit misteri yg doktor tak tahu punca...makin pulih"',                url: '/sabun-garam-3', color: '#D97706', icon: '🧼', isNew: true },
-  { label: 'Sabun Garam #4 — Emosi/Bisikan/Tidur', desc: 'Pilihan 4 FSP formula: "Alhamdulillah bisikan halus, emosi tak terkawal & susah tidur...reda"',            url: '/sabun-garam-4', color: '#D97706', icon: '🧼', isNew: true },
-  { label: 'Sabun Garam #5 — Keluarga/Anak',       desc: 'Pilihan 5 FSP formula: "Alhamdulillah anak meracau malam, gatal-gatal & berat sekeluarga...hilang"',       url: '/sabun-garam-5', color: '#D97706', icon: '🧼', isNew: true },
-  { label: 'Garam Pengasihan Masakan',               desc: 'SP FSP 10% — Ikhtiar keretakan rumahtangga, sihir pemisah & lembutkan hati pasangan. COD + FPX.',        url: '/garam-pengasihan', color: '#EA580C', icon: '🧂', isNew: true },
-  { label: 'Minyak Kasturi Kijang Asli',             desc: 'SP FSP 10% — Ikhtiar gangguan halus, tindih tidur, sihir & ketenangan jiwa. 100% bebas alkohol.',        url: '/kasturi-kijang',   color: '#D97706', icon: '🦌', isNew: true },
+  { label: 'Sabun Garam (Base)',         desc: 'SP base — default headline (feature angle). Guna untuk rujukan.',                                                         url: '/sabun-garam', product: 'sabun',   color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #1 — Saka/Sihir/Santau', desc: 'Pilihan 1 FSP formula: "Alhamdulillah saka, sihir & santau...keluar selepas mandi"',                          url: '/sabun-garam-1', product: 'sabun', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #2 — Lenguh Urat/Badan',  desc: 'Pilihan 2 FSP formula: "Alhamdulillah lenguh urat, sakit badan...lega selepas amalkan"',                     url: '/sabun-garam-2', product: 'sabun', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #3 — Penyakit Misteri',   desc: 'Pilihan 3 FSP formula: "Alhamdulillah sakit misteri yg doktor tak tahu punca...makin pulih"',                url: '/sabun-garam-3', product: 'sabun', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #4 — Emosi/Bisikan/Tidur', desc: 'Pilihan 4 FSP formula: "Alhamdulillah bisikan halus, emosi tak terkawal & susah tidur...reda"',            url: '/sabun-garam-4', product: 'sabun', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Sabun Garam #5 — Keluarga/Anak',       desc: 'Pilihan 5 FSP formula: "Alhamdulillah anak meracau malam, gatal-gatal & berat sekeluarga...hilang"',       url: '/sabun-garam-5', product: 'sabun', color: '#D97706', icon: '🧼', isNew: true },
+  { label: 'Garam Pengasihan Masakan',               desc: 'SP FSP 10% — Ikhtiar keretakan rumahtangga, sihir pemisah & lembutkan hati pasangan. COD + FPX.',        url: '/garam-pengasihan', product: 'garam', color: '#EA580C', icon: '🧂', isNew: true },
+  { label: 'Minyak Kasturi Kijang Asli',             desc: 'SP FSP 10% — Ikhtiar gangguan halus, tindih tidur, sihir & ketenangan jiwa. 100% bebas alkohol. RM29 / Beli 2 Free 1 RM49 / Beli 3 Free 2 RM69, free pos.',        url: '/kasturi-kijang', product: 'kasturi',   color: '#D97706', icon: '🦌', isNew: true },
+  { label: 'Kasturi Kijang #1 — Kena Himpit', desc: 'Angle 1: Kena Himpit — hero berbeza, section & testimoni dikongsi dengan SP asal.', url: '/kasturi-kijang-1', product: 'kasturi', color: '#D97706', icon: '🦌', isNew: true },
+  { label: 'Kasturi Kijang #2 — Anak Meracau', desc: 'Angle 2: Anak Meracau — hero berbeza, section & testimoni dikongsi dengan SP asal.', url: '/kasturi-kijang-2', product: 'kasturi', color: '#D97706', icon: '🦌', isNew: true },
+  { label: 'Kasturi Kijang #3 — Sesak Dada', desc: 'Angle 3: Sesak Dada — hero berbeza, section & testimoni dikongsi dengan SP asal.', url: '/kasturi-kijang-3', product: 'kasturi', color: '#D97706', icon: '🦌', isNew: true },
+  { label: 'Kasturi Kijang #4 — Tengkuk Berat', desc: 'Angle 4: Tengkuk Berat — hero berbeza, section & testimoni dikongsi dengan SP asal.', url: '/kasturi-kijang-4', product: 'kasturi', color: '#D97706', icon: '🦌', isNew: true },
+  { label: 'Kasturi Kijang #5 — Wangian Solat', desc: 'Angle 5: Wangian Solat — hero berbeza, section & testimoni dikongsi dengan SP asal.', url: '/kasturi-kijang-5', product: 'kasturi', color: '#D97706', icon: '🦌', isNew: true },
+];
+
+// Sub-tab Produk Fizikal — ikut produk
+const PRODUK_GROUPS = [
+  { id: 'sabun',   label: '🧼 Sabun Garam',      desc: 'Sabun Garam Himalaya Pengisian — SP base + 5 angle FSP. COD & FPX.' },
+  { id: 'garam',   label: '🧂 Garam Pengasihan', desc: 'Garam Masakan Pengasihan — Beli 1 Free 1 / Beli 2 Free 2 / Beli 4 Free 2 + hadiah Kasturi.' },
+  { id: 'kasturi', label: '🦌 Kasturi Kijang',   desc: 'Minyak Kasturi Kijang — RM29 / Beli 2 Free 1 RM49 / Beli 3 Free 2 RM69. Free pos & COD.' },
 ];
 
 const TABS = [
@@ -184,6 +196,7 @@ export default function SalespageManagement({ isLightMode, cardBg, cardBorder, t
   const [trackingTypes, setTrackingTypes] = useState({});
   const [togglingTracking, setTogglingTracking] = useState({});
   const [activeTab, setActiveTab]         = useState('rawatan');
+  const [produkTab, setProdukTab]         = useState('sabun');
 
   useEffect(() => {
     fetch('/api/settings/homepage')
@@ -435,11 +448,25 @@ export default function SalespageManagement({ isLightMode, cardBg, cardBorder, t
       {/* ── TAB: Produk Fizikal ── */}
       {activeTab === 'produk' && (
         <div>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+            {PRODUK_GROUPS.map(g => {
+              const on = produkTab === g.id;
+              const n = PRODUK_PAGES.filter(x => x.product === g.id).length;
+              return (
+                <button key={g.id} onClick={() => setProdukTab(g.id)} style={{
+                  padding: '0.4rem 0.85rem', borderRadius: '999px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: on ? 700 : 500, fontFamily: 'inherit',
+                  border: on ? '1px solid #10B981' : (isLightMode ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.1)'),
+                  background: on ? (isLightMode ? '#DCFCE7' : 'rgba(52,211,153,0.15)') : 'transparent',
+                  color: on ? (isLightMode ? '#047857' : '#34D399') : textSecondary,
+                }}>{g.label} <span style={{ opacity: 0.7 }}>({n})</span></button>
+              );
+            })}
+          </div>
           <p style={{ margin: '0 0 1rem 0', fontSize: '0.78rem', color: textSecondary }}>
-            Salespage produk fizikal — sabun garam himalaya pengisian ruqyah. COD & FPX, postage RM5.
+            {PRODUK_GROUPS.find(g => g.id === produkTab)?.desc}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '0.85rem' }}>
-            {PRODUK_PAGES.map((page, i) => (
+            {PRODUK_PAGES.filter(x => x.product === produkTab).map((page, i) => (
               <ProductCard key={i} page={page} {...shared} />
             ))}
           </div>

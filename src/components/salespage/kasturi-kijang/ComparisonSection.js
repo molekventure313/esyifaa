@@ -24,7 +24,7 @@ const COMPARISON = [
   {
     feature: 'Harga & Tawaran Pakej',
     others: '❌ Mahal di pasaran luar (RM50–RM80 sebotol kecil)',
-    esyifaa: '✅ Promosi istimewa: 5 Botol RM40 (RM8 sebotol!)',
+    esyifaa: '✅ Promosi istimewa: Beli 3 Free 2 — 5 Botol RM69 (RM13.80 sebotol) + Free Pos',
   },
 ];
 

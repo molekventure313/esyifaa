@@ -11,6 +11,7 @@ import { markupsFor } from '@/lib/fighter/server';
 const FIGHTER_SLUGS = [
   'sabun-garam', 'sabun-garam-1', 'sabun-garam-2', 'sabun-garam-3', 'sabun-garam-4', 'sabun-garam-5',
   'garam-pengasihan', 'kasturi-kijang',
+  'kasturi-kijang-1', 'kasturi-kijang-2', 'kasturi-kijang-3', 'kasturi-kijang-4', 'kasturi-kijang-5',
 ];
 const fail = msg => Object.assign(new Error(msg), { toolError: true, status: 400 });
 

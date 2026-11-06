@@ -55,8 +55,8 @@ const PRODUCTS = [
     badge: 'MESRA POKET',
     color: '#A78BFA',
     image: '/images/kasturi-kijang-opt.jpg',
-    price: 'Dari RM20',
-    priceSub: '5 botol hanya RM40',
+    price: 'Dari RM29',
+    priceSub: 'Beli 3 Free 2 hanya RM69 · Free Pos',
     bullets: [
       'Calit di nadi, ubun-ubun & bantal sebelum tidur',
       'Pendinding diri & anak dari gangguan waktu malam',

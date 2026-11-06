@@ -15,6 +15,11 @@ const SP_LINKS = [
   ['sabun-garam-5', 'Sabun — Anak Meracau'],
   ['garam-pengasihan', 'Garam Pengasihan'],
   ['kasturi-kijang', 'Minyak Kasturi Kijang'],
+  ['kasturi-kijang-1', 'Kasturi — Kena Himpit'],
+  ['kasturi-kijang-2', 'Kasturi — Anak Meracau'],
+  ['kasturi-kijang-3', 'Kasturi — Sesak Dada'],
+  ['kasturi-kijang-4', 'Kasturi — Tengkuk Berat'],
+  ['kasturi-kijang-5', 'Kasturi — Wangian Solat'],
 ];
 
 export default function FighterDashboardPage() {

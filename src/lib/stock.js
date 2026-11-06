@@ -13,6 +13,11 @@ export const SOURCE_TO_SKU = {
   'garam-pengasihan': 'GPM-500G',
   // Minyak Kasturi Kijang (produk utama)
   'kasturi-kijang': 'KKE-01',
+  'kasturi-kijang-1': 'KKE-01',
+  'kasturi-kijang-2': 'KKE-01',
+  'kasturi-kijang-3': 'KKE-01',
+  'kasturi-kijang-4': 'KKE-01',
+  'kasturi-kijang-5': 'KKE-01',
   // Add-on: Kasturi Kijang E-Syifa' (apabila ditambah dari borang lain)
   'addon-kasturi': 'KKE-01',
   // Add-on: Garam Pengasihan (apabila ditambah dari borang Kasturi)
