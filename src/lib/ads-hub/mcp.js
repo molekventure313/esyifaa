@@ -9,6 +9,7 @@ import { buildReport, periodRange, fetchAll, PERIODS, SST_RATE } from './report'
 import { runReadTool } from './chat';
 import * as autopilot from './autopilot';
 import { syncFromMcp } from './mcp-sync';
+import { createRule, describeRule } from './automation';
 import { fighterOrderRows, fighterCosts, FIGHTER_SLUGS } from './fighter';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
@@ -112,6 +113,50 @@ export const TOOLS = [
         headline: str('Headline creative'), created_time: str('Masa cipta ad (ISO)'),
       }, ['ad_id']) },
     }, ['ad_account_id']),
+  },
+  {
+    name: 'list_rules',
+    description: 'Senarai peraturan auto Ads Hub akaun anda (ID, nama, aktif, mod, ringkasan syarat → tindakan, kali terakhir dijalankan).',
+    inputSchema: obj({}),
+  },
+  {
+    name: 'create_rule',
+    description: `Cipta peraturan auto Ads Hub (sama seperti Ads Hub → Tetapan → Peraturan). HANYA selepas pengguna setuju dengan ringkasan peraturan dalam perbualan.
+Dua jenis:
+1) Ikut syarat (dinilai setiap jam, data order sebenar): metric/operator/value + conditions tambahan (DAN, maks 3), window_days, min_spend. level 'ad' (setiap ad) atau 'adset' (metrik dijumlahkan ikut adset, kempen aktif sahaja). frequency 'hourly' = tindakan boleh berulang setiap jam (cth scale 30% sejam).
+2) Ikut jam: run_at_time 'HH:mm' (waktu Malaysia) → tindakan pada semua adset dalam kempen aktif sekali sehari; action hanya pause_adset / activate_adset / budget_set; syarat diabaikan.
+Tindakan: pause (ad), pause_adset, activate_adset, budget_up / budget_down (action_value = peratus 1–100, action_max = had budget RM untuk budget_up), budget_set (action_value = budget baru RM, peringkat adset), notify (amaran sahaja).
+mode 'suggest' = cadangan di dashboard untuk disahkan; 'auto' = terus dilaksana (tertakluk had keselamatan akaun). scope 'autopilot' = hanya kempen [AUTOPILOT].
+Metrik: spend, orders, revenue, roas (nisbah), cpa (RM), ctr (%).`,
+    inputSchema: obj({
+      name: str('Nama peraturan (maks 80 aksara)'),
+      metric: enm(['spend', 'orders', 'revenue', 'roas', 'cpa', 'ctr'], 'Metrik syarat utama (abaikan untuk run_at_time)'),
+      operator: enm(['>', '>=', '<', '<=', '='], 'Operator'),
+      value: { type: 'number', description: 'Nilai ambang' },
+      conditions: { type: 'array', description: 'Syarat tambahan (DAN), maks 3', items: obj({
+        metric: enm(['spend', 'orders', 'revenue', 'roas', 'cpa', 'ctr'], 'Metrik'), operator: enm(['>', '>=', '<', '<=', '='], 'Operator'), value: { type: 'number', description: 'Nilai' },
+      }, ['metric', 'operator', 'value']) },
+      window_days: int('Tempoh penilaian 1–30 hari (1 = hari ini)'),
+      min_spend: { type: 'number', description: 'Nilai hanya jika belanja tempoh ≥ RM ini (0 = tiada)' },
+      level: enm(['ad', 'adset'], 'Peringkat (lalai ad)'),
+      frequency: enm(['daily', 'hourly'], 'daily (lalai) atau hourly (boleh berulang setiap jam)'),
+      run_at_time: str('HH:mm waktu Malaysia untuk peraturan ikut jam (kosongkan untuk peraturan ikut syarat)'),
+      action: enm(['pause', 'pause_adset', 'activate_adset', 'budget_up', 'budget_down', 'budget_set', 'notify'], 'Tindakan'),
+      action_value: { type: 'number', description: 'Peratus untuk budget_up/budget_down; RM untuk budget_set' },
+      action_max: { type: 'number', description: 'Had budget maksimum RM untuk budget_up (pilihan)' },
+      mode: enm(['suggest', 'auto'], 'suggest atau auto'),
+      scope: enm(['all', 'autopilot'], 'all (lalai) atau autopilot sahaja'),
+    }, ['name', 'action', 'mode']),
+  },
+  {
+    name: 'update_rule',
+    description: 'Hidupkan/matikan peraturan atau tukar mod suggest/auto. HANYA selepas pengguna setuju. Untuk ubah syarat: padam (delete_rule) dan cipta semula.',
+    inputSchema: obj({ rule_id: int('ID peraturan'), active: bool('true = aktif'), mode: enm(['suggest', 'auto'], 'Mod baru') }, ['rule_id']),
+  },
+  {
+    name: 'delete_rule',
+    description: 'Padam satu peraturan. HANYA selepas pengguna setuju secara jelas.',
+    inputSchema: obj({ rule_id: int('ID peraturan') }, ['rule_id']),
   },
 ];
 
@@ -237,6 +282,36 @@ export async function callTool(admin, profile, name, input = {}) {
 
   if (name === 'sync_meta_data') return syncFromMcp(admin, mid, input);
 
+  if (name === 'list_rules') {
+    const { data, error } = await admin.from('meta_rules').select('*').eq('marketer_id', mid).order('id');
+    if (error) throw new Error(error.message);
+    return { rules: (data || []).map(r => ({ id: r.id, name: r.name, active: r.active, mode: r.mode, rule: describeRule(r), last_run_at: r.last_run_at })) };
+  }
+  if (name === 'create_rule') {
+    const c = await needConn();
+    if (input.mode === 'auto' && c.source === 'mcp') throw fail('Akaun tanpa token: peraturan hanya boleh mod "suggest" (E-Syifa tak boleh ubah ads dalam Meta untuk akaun ini).');
+    const r = await createRule(admin, mid, { window_days: 1, min_spend: 0, ...input, run_at_time: input.run_at_time || null });
+    if (!r.ok) throw fail(r.message);
+    return r;
+  }
+  if (name === 'update_rule') {
+    const upd = {};
+    if (typeof input.active === 'boolean') upd.active = input.active;
+    if (['suggest', 'auto'].includes(input.mode)) upd.mode = input.mode;
+    if (!Object.keys(upd).length) throw fail('Tiada perubahan (active / mode).');
+    if (upd.mode === 'auto' && (await connectionOf(admin, mid))?.source === 'mcp') throw fail('Akaun tanpa token: peraturan hanya boleh mod "suggest".');
+    const { data, error } = await admin.from('meta_rules').update(upd).eq('id', input.rule_id).eq('marketer_id', mid).select('*').maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw fail('Peraturan tidak dijumpai.');
+    return { ok: true, id: data.id, name: data.name, active: data.active, mode: data.mode, rule: describeRule(data) };
+  }
+  if (name === 'delete_rule') {
+    const { data, error } = await admin.from('meta_rules').delete().eq('id', input.rule_id).eq('marketer_id', mid).select('id, name').maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw fail('Peraturan tidak dijumpai.');
+    return { ok: true, message: `Peraturan #${data.id} "${data.name}" dipadam.` };
+  }
+
   if (name === 'get_account_info') {
     const c = await connectionOf(admin, mid);
     return {
@@ -349,4 +424,5 @@ async function ordersSummary(admin, profile, { period, from, to }, product) {
 export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar akaun anda. ${BASIS}
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
+Peraturan auto Ads Hub: list_rules, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
 Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
