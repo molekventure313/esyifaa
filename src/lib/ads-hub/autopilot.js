@@ -271,7 +271,26 @@ async function templateOf(conn, token) {
   // Pengiklan disahkan (wajib untuk sasaran Malaysia): salin beneficiary/payer dari adset contoh
   if (t.regional_regulated_categories?.length) out.regional_regulated_categories = t.regional_regulated_categories;
   if (t.regional_regulation_identities) out.regional_regulation_identities = t.regional_regulation_identities;
+  // Adset contoh lama mungkin tiada beneficiary/payer → ambil dari adset lain dalam akaun yang dah ada (akaun sama = pengiklan sama).
+  if (!out.regional_regulation_identities) {
+    const alt = await accountIdentity(conn, token);
+    if (alt) {
+      out.regional_regulation_identities = alt.identities;
+      if (!out.regional_regulated_categories && alt.categories?.length) out.regional_regulated_categories = alt.categories;
+    }
+  }
   return out;
+}
+
+async function accountIdentity(conn, token) {
+  try {
+    const r = await metaGet(`${conn.ad_account_id}/adsets`, {
+      fields: 'regional_regulated_categories,regional_regulation_identities', limit: 50,
+      effective_status: JSON.stringify(['ACTIVE', 'PAUSED', 'CAMPAIGN_PAUSED', 'ADSET_PAUSED']),
+    }, token);
+    const a = (r.data || []).find(x => x.regional_regulation_identities && Object.keys(x.regional_regulation_identities).length);
+    return a ? { identities: a.regional_regulation_identities, categories: a.regional_regulated_categories } : null;
+  } catch { return null; }
 }
 
 // Launch yang adsetnya dah dicipta (PAUSED) tapi ad belum siap — dikira sebagai slot supaya prepare_launch tak melepasi had.
@@ -304,13 +323,20 @@ async function insertRow(admin, marketerId, p, budget) {
 
 async function createAdset(admin, conn, token, row, p, status, save, actorId) {
   const budget = Number(row.daily_budget);
-  const campaignId = p.own_campaign ? await ownCampaign(conn, token, p) : await ensureCampaign(admin, conn, token, p.product);
   const tpl = await templateOf(conn, token);
+  const campaignId = p.own_campaign ? await ownCampaign(conn, token, p) : await ensureCampaign(admin, conn, token, p.product);
   const day = new Date(Date.now() + MYT_MS).toISOString().slice(5, 10).replace('-', '/');
   const name = `${p.product ? `${p.product} | ` : ''}${p.angle} | ${day}`.slice(0, 200);
-  const adset = await metaPost(`${conn.ad_account_id}/adsets`, {
-    ...tpl, name, campaign_id: campaignId, daily_budget: Math.round(budget * 100), status, start_time: row.start_time,
-  }, token);
+  let adset;
+  try {
+    adset = await metaPost(`${conn.ad_account_id}/adsets`, {
+      ...tpl, name, campaign_id: campaignId, daily_budget: Math.round(budget * 100), status, start_time: row.start_time,
+    }, token);
+  } catch (e) {
+    // 1-1-1: jangan tinggalkan kempen kosong bila adset ditolak
+    if (p.own_campaign) await metaPost(campaignId, { status: 'DELETED' }, token).catch(() => {});
+    throw e;
+  }
   await save({ campaign_id: campaignId, adset_id: adset.id });
   await log(admin, row.marketer_id, actorId, 'create_adset', 'adset', adset.id, name, 'ok', `Adset ${rm(budget)}/hari (${status}), mula ${row.start_time}`, { daily_budget_rm: budget, start_time: row.start_time, status });
 }
