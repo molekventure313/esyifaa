@@ -6,6 +6,7 @@ import { latestShipmentsBy, isActiveShipment, statusGroupOf } from '@/lib/ninjav
 
 // HQ — Packing Fighter (staff + super_admin). Maklumat penghantaran sahaja (tiada statistik jualan fighter).
 // GET   ?status=ready|packed|returned&q= → order + waybill (signed URL)
+// PATCH { ids, action: 'unprint' } → reset tanda "dah print" waybill NinjaVan HQ
 // PATCH { ids, action: 'pack' }   → tolak stok HQ + caj lejar fighter (kos + markup)
 // PATCH { id, action: 'return', damaged?: [{sku, qty}], reason? } → parcel pulang ke HQ: stok masuk semula + kredit caj;
 //        unit rosak ditolak semula dari stok & fighter tanggung (dicaj semula)
@@ -77,6 +78,18 @@ export async function PATCH(req) {
       }
       const failed = results.filter(r => !r.ok);
       return NextResponse.json({ success: failed.length === 0, results, error: failed.length ? `${failed.length} order gagal: ${failed[0].error}` : undefined });
+    }
+    if (b.action === 'unprint') {
+      // Reset tanda "dah print" (tersalah tekan / cetak percubaan) — waybill PDF kekal, boleh dicetak semula
+      const ids = (Array.isArray(b.ids) ? b.ids : [b.id]).filter(Boolean).slice(0, 100);
+      if (!ids.length) throw new Error('Pilih order dahulu.');
+      const shipIds = Object.values(await latestShipmentsBy(g.admin, 'fighter_order_id', ids))
+        .filter(sh => isActiveShipment(sh) && sh.waybill_printed_at).map(sh => sh.id);
+      if (!shipIds.length) throw new Error('Tiada waybill bertanda "dah print" untuk direset.');
+      const { error } = await g.admin.from('ninjavan_shipments')
+        .update({ waybill_printed_at: null, waybill_printed_by: null, waybill_print_count: 0 }).in('id', shipIds);
+      if (error) throw error;
+      return NextResponse.json({ success: true, reset: shipIds.length });
     }
     if (b.action === 'return') {
       const r = await returnOrder(g.admin, b.id, actor, { damaged: b.damaged, reason: b.reason });

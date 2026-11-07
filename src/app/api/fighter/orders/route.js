@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { fighterGuard, tableMissing } from '@/lib/fighter/server';
 import { generateNinjaVanCSV } from '@/lib/ninjavan-csv';
 import { NV_ENV, errorMessageOf } from '@/lib/ninjavan/api';
-import { latestShipmentsBy, statusGroupOf, isActiveShipment, cancelShipment } from '@/lib/ninjavan/shipments';
+import { latestShipmentsBy, statusGroupOf, isActiveShipment, cancelShipment, isCancellableShipment } from '@/lib/ninjavan/shipments';
 
 // Fighter — order sendiri
 // GET   ?ship=all|new|ready|packed|returned|cancelled&pay=all|completed|pending&q= → senarai + bilangan
@@ -89,6 +89,7 @@ export async function PATCH(req) {
     if (!['new', 'ready'].includes(o.ship_status)) throw new Error('Order dah dipack — tak boleh dibatalkan.');
     // Parcel NinjaVan HQ aktif (belum dipack) dibatalkan dulu — gagal batal di NinjaVan = order tak dibatalkan
     const sh = (await latestShipmentsBy(g.admin, 'fighter_order_id', [id]))[id];
+    if (isActiveShipment(sh) && !isCancellableShipment(sh)) throw new Error(`Parcel dah diambil kurier (${sh.status}) — tak boleh dibatalkan.`);
     if (isActiveShipment(sh)) await cancelShipment(g.admin, sh);
     // FPX yang dah dibayar kekal 'completed' (rekod bayaran) — refund diurus fighter sendiri di CHIP
     const keepPaid = o.payment_type === 'fpx_payment' && o.payment_status === 'completed';

@@ -239,6 +239,12 @@ export function statusGroupOf(sh) {
 }
 
 /**
+ * Parcel masih boleh dibatalkan = belum diambil kurier: menunggu pickup, atau pickup gagal
+ * ("Pickup Exception, Pending Reschedule" — driver datang tapi parcel tak diambil).
+ */
+export const isCancellableShipment = s => isActiveShipment(s) && (statusGroupOf(s) === 'pending_pickup' || s.status === 'Pickup Exception');
+
+/**
  * PDF waybill — dijana SEKALI dari API kemudian dibaca dari storage (keperluan NinjaVan: cache waybill).
  * Pulang Buffer PDF.
  */

@@ -13,6 +13,7 @@ export const STAFF_PATHS = [
   '/dashboard/admin/stok',
   '/dashboard/admin/pengisian-stok',
   '/dashboard/admin/return-parcel',
+  '/dashboard/admin/fighter-orders',
   '/dashboard/admin/fighter-packing',
 ];
 export const STAFF_HOME = '/dashboard/admin/pesakit-berbayar';

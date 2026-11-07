@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFighterTheme, Card, Badge, btnStyle, inputStyle, fmtTime } from '@/components/fighter/ui';
 import DamageBox from '@/components/DamageBox';
 
-// HQ — Packing Fighter (staff + super_admin). Fighter upload waybill NinjaVan sendiri → staff cetak & pack.
+// HQ — Packing Fighter (staff + super_admin). Parcel NinjaVan HQ (fighter / admin hantar) atau PDF waybill fighter → staff cetak & pack.
 // "Dah pack" = stok HQ ditolak + caj ke akaun fighter. Parcel pulang → "Return" = stok masuk semula + kredit.
 
 const TABS = [
@@ -91,7 +91,7 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
         <div style={{ fontSize: '0.68rem', fontWeight: 700, color: t.accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>HQ · PACKING FIGHTER</div>
         <h1 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '0.15rem 0 0' }}>📦 Packing Fighter</h1>
         <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: t.text2 }}>
-          Order penjual bebas. Cetak waybill (dari akaun NinjaVan fighter), pack, kemudian tekan <strong>Dah pack</strong> — stok HQ ditolak & dicaj ke fighter.
+          Order penjual bebas. Cetak waybill (NinjaVan HQ, atau PDF dari akaun NinjaVan fighter), pack, kemudian tekan <strong>Dah pack</strong> — stok HQ ditolak & dicaj ke fighter.
         </p>
       </div>
 
@@ -157,6 +157,13 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
                       🚚 NinjaVan HQ · {o.nv.printed_at
                         ? `🖨️ Dah print ${fmtTime(o.nv.printed_at)}${o.nv.print_count > 1 ? ` (${o.nv.print_count}x)` : ''}`
                         : '⬜ Belum print'}
+                      {o.nv.printed_at && tab === 'ready' && (
+                        <button disabled={!!busy} title="Tersalah tekan / cetak percubaan — tanda semula sebagai belum print"
+                          onClick={() => confirm(`Reset tanda "dah print" waybill ${o.nv.tracking_number}?`) && act({ action: 'unprint', ids: [o.id] }, () => 'Tanda print direset.')}
+                          style={{ marginLeft: '0.45rem', padding: '0.05rem 0.45rem', borderRadius: 5, fontSize: '0.66rem', fontWeight: 700, cursor: 'pointer', border: `1px solid ${t.muted}`, background: 'transparent', color: t.text2 }}>
+                          ↺ Reset print
+                        </button>
+                      )}
                     </div>
                   )}
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: t.accent, marginTop: '0.15rem' }}>

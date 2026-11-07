@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fighterGuard } from '@/lib/fighter/server';
 import { NV_ENV } from '@/lib/ninjavan/api';
-import { latestShipmentsBy, pushFighterOrder, cancelShipment, isActiveShipment } from '@/lib/ninjavan/shipments';
+import { latestShipmentsBy, pushFighterOrder, cancelShipment, isActiveShipment, isCancellableShipment } from '@/lib/ninjavan/shipments';
 import { buildNvSummary } from '@/lib/ninjavan/summary';
 import { waybillPdfResponse, WAYBILL_MAX } from '@/lib/ninjavan/waybill';
 
@@ -68,6 +68,7 @@ export async function POST(req) {
       if (o.ship_status !== 'ready') throw new Error('Hanya parcel yang belum dipack HQ boleh dibatalkan.');
       const sh = (await latestShipmentsBy(g.admin, 'fighter_order_id', [o.id]))[o.id];
       if (!isActiveShipment(sh)) throw new Error('Tiada parcel NinjaVan aktif untuk order ini.');
+      if (!isCancellableShipment(sh)) throw new Error(`Parcel dah diambil kurier (${sh.status}) — tak boleh dibatalkan.`);
       await cancelShipment(g.admin, sh);
       return NextResponse.json({ success: true, tracking_number: sh.tracking_number });
     }
