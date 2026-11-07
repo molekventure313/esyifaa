@@ -164,9 +164,11 @@ async function ownerLink(admin, marketerId, link) {
 }
 
 function validateLaunch(p) {
-  const need = ['client_ref', 'angle', 'headline', 'primary_text', 'link', 'video_id'];
+  const need = ['client_ref', 'angle', 'headline', 'primary_text', 'link'];
   const miss = need.filter(k => !String(p[k] ?? '').trim());
+  if (!String(p.video_id ?? '').trim() && !String(p.image_path ?? '').trim()) miss.push('video_id atau image_path');
   if (miss.length) throw fail(`Diperlukan: ${miss.join(', ')}.`);
+  if (p.video_id && p.image_path) throw fail('Beri video_id ATAU image_path, bukan kedua-duanya.');
   if (p.product && !AD_PRODUCT_KEYS.includes(p.product)) throw fail(`Produk tidak dikenali. Pilihan: ${AD_PRODUCT_KEYS.join(', ')}`);
   const cta = p.cta || 'LEARN_MORE';
   if (!CTA_TYPES.includes(cta)) throw fail(`cta mesti salah satu: ${CTA_TYPES.join(', ')}`);
@@ -174,7 +176,8 @@ function validateLaunch(p) {
     client_ref: String(p.client_ref).slice(0, 80), product: p.product || null, angle: String(p.angle).trim().slice(0, 80),
     headline: String(p.headline).trim().slice(0, 255), primary_text: String(p.primary_text).trim().slice(0, 5000),
     description: p.description ? String(p.description).trim().slice(0, 255) : null,
-    link: checkLink(p.link), video_id: String(p.video_id), thumbnail_path: p.thumbnail_path || null, cta,
+    link: checkLink(p.link), video_id: p.video_id ? String(p.video_id) : null, image_path: p.image_path || null,
+    thumbnail_path: p.thumbnail_path || null, cta, own_campaign: p.own_campaign === true,
     start: p.start === 'today' ? 'today' : 'tomorrow',
   };
 }
@@ -224,6 +227,27 @@ async function ensureCampaign(admin, conn, token, product) {
   return c.id;
 }
 
+// Struktur 1-1-1: satu kempen baru untuk setiap launch (1 kempen · 1 adset · 1 ad), ABO.
+async function ownCampaign(conn, token, p) {
+  const label = [...PRODUCTS, DIGITAL_AD].find(x => x.key === p.product)?.label || p.product || 'Ads';
+  const c = await metaPost(`${conn.ad_account_id}/campaigns`, {
+    name: `[1-1-1] ${label} · ${p.angle}`.slice(0, 200), objective: 'OUTCOME_SALES', status: 'ACTIVE', buying_type: 'AUCTION',
+    special_ad_categories: [], is_adset_budget_sharing_enabled: false,
+  }, token);
+  return c.id;
+}
+
+// Upload gambar dari storan ke Meta (adimages) → image_hash
+async function metaImageHash(admin, conn, token, marketerId, path) {
+  const res = await fetch(await signedUrl(admin, ownPath(marketerId, path)));
+  if (!res.ok) throw fail(`Gambar tidak dapat dibaca dari storan: ${path}`);
+  const bytes = Buffer.from(await res.arrayBuffer()).toString('base64');
+  const r = await metaPost(`${conn.ad_account_id}/adimages`, { bytes }, token);
+  const hash = Object.values(r.images || {})[0]?.hash;
+  if (!hash) throw fail('Meta tidak pulangkan image_hash untuk gambar ini.');
+  return hash;
+}
+
 async function templateOf(conn, token) {
   const t = await metaGet(conn.autopilot_template_adset_id, {
     fields: 'targeting,promoted_object,optimization_goal,billing_event,bid_strategy,bid_amount,attribution_spec,destination_type,regional_regulated_categories,regional_regulation_identities',
@@ -271,7 +295,7 @@ async function insertRow(admin, marketerId, p, budget) {
 
 async function createAdset(admin, conn, token, row, p, status, save, actorId) {
   const budget = Number(row.daily_budget);
-  const campaignId = await ensureCampaign(admin, conn, token, p.product);
+  const campaignId = p.own_campaign ? await ownCampaign(conn, token, p) : await ensureCampaign(admin, conn, token, p.product);
   const tpl = await templateOf(conn, token);
   const day = new Date(Date.now() + MYT_MS).toISOString().slice(5, 10).replace('-', '/');
   const name = `${p.product ? `${p.product} | ` : ''}${p.angle} | ${day}`.slice(0, 200);
@@ -312,6 +336,22 @@ export async function launchAd(admin, marketerId, actorId, input) {
       row = row || await insertRow(admin, marketerId, p, Number(conn.autopilot_adset_budget));
       await createAdset(admin, conn, token, row, p, 'ACTIVE', save, actorId);
       if (timeUp()) return summary(row, 'Adset dicipta. Panggil launch_ad sekali lagi dengan client_ref sama untuk sambung.', true);
+    }
+
+    if (!row.creative_id && p.image_path) {
+      // Ad gambar (link ad)
+      const linkData = {
+        image_hash: await metaImageHash(admin, conn, token, marketerId, p.image_path), link: p.link,
+        message: p.primary_text, name: p.headline, call_to_action: { type: p.cta, value: { link: p.link } },
+      };
+      if (p.description) linkData.description = p.description;
+      const story = { page_id: conn.autopilot_page_id, link_data: linkData };
+      if (conn.autopilot_ig_id) story.instagram_user_id = conn.autopilot_ig_id;
+      const creative = await metaPost(`${conn.ad_account_id}/adcreatives`, {
+        name: `${p.angle} — creative`.slice(0, 100), object_story_spec: story, url_tags: UTM_TAGS,
+      }, token);
+      await save({ creative_id: creative.id });
+      if (timeUp()) return summary(row, 'Creative dicipta. Panggil launch_ad sekali lagi dengan client_ref sama untuk sambung.', true);
     }
 
     if (!row.creative_id) {
