@@ -159,8 +159,17 @@ export async function videoStatus(admin, marketerId, { video_id }) {
 // Fighter: link dipaksa ke SP fighter (/f/<slug>?f=<kod> / SP Generator sendiri) supaya order tak masuk HQ
 async function ownerLink(admin, marketerId, link) {
   const p = await ownerProfile(admin, marketerId);
-  if (!isFighterProfile(p)) return link;
-  try { return await fighterAdLink(admin, p, link); } catch (e) { throw fail(e.message); }
+  if (isFighterProfile(p)) {
+    try { return await fighterAdLink(admin, p, link); } catch (e) { throw fail(e.message); }
+  }
+  // Marketer: order dikira milik marketer melalui ?m=<kod> (sama seperti Link Promosi) — tambah automatik.
+  if (p?.role === 'marketer' && p.marketer_code) {
+    const u = new URL(link);
+    if (!u.searchParams.get('m')) u.searchParams.set('m', p.marketer_code);
+    else if (u.searchParams.get('m').toLowerCase() !== p.marketer_code.toLowerCase()) throw fail(`Link mesti guna kod marketer akaun ini (?m=${p.marketer_code}).`);
+    return u.toString();
+  }
+  return link;
 }
 
 function validateLaunch(p) {

@@ -240,7 +240,48 @@ export const AUTOPILOT_TOOLS = [
   },
 ];
 const AUTOPILOT_NAMES = new Set(AUTOPILOT_TOOLS.map(t => t.name));
-export const toolsFor = () => [...TOOLS, ...AUTOPILOT_TOOLS];
+
+// HQ (super_admin) boleh bertindak bagi pihak akaun marketer/fighter: parameter "marketer" pada setiap alat.
+// Tetapan, had & suis autopilot akaun sasaran tetap dikuatkuasa; log aktiviti rekod HQ sebagai pelaku.
+const MARKETER_ARG = str('HQ sahaja: kod marketer (cth "faiz") untuk guna akaun Ads Hub marketer itu. Kosong = akaun HQ. Senarai: list_accounts.');
+const HQ_TOOLS = [{
+  name: 'list_accounts',
+  description: 'HQ sahaja: senarai akaun Ads Hub marketer/fighter yang disambung (kod, nama, ad account Meta, jenis sambungan, suis autopilot). Guna kod dalam parameter "marketer" alat lain.',
+  inputSchema: obj({}),
+}];
+const withMarketer = t => ({ ...t, inputSchema: { ...t.inputSchema, properties: { ...t.inputSchema.properties, marketer: MARKETER_ARG } } });
+export const toolsFor = profile => profile?.role === 'super_admin'
+  ? [...HQ_TOOLS, ...[...TOOLS, ...AUTOPILOT_TOOLS].map(withMarketer)]
+  : [...TOOLS, ...AUTOPILOT_TOOLS];
+
+async function listAccounts(admin) {
+  const { data: conns, error } = await admin.from('meta_connections')
+    .select('marketer_id, ad_account_id, ad_account_name, status, source, autopilot_enabled, autopilot_adset_budget, autopilot_max_adsets');
+  if (error) throw new Error(error.message);
+  const { data: ps } = await admin.from('profiles').select('id, full_name, role, marketer_code, is_active').in('id', (conns || []).map(c => c.marketer_id));
+  const byId = Object.fromEntries((ps || []).map(p => [p.id, p]));
+  return {
+    accounts: (conns || []).map(c => {
+      const p = byId[c.marketer_id] || {};
+      return {
+        marketer: p.role === 'super_admin' ? null : p.marketer_code, name: p.role === 'super_admin' ? 'HQ' : p.full_name,
+        type: p.role === 'independent' ? 'fighter' : p.role === 'super_admin' ? 'hq' : 'marketer', active: p.is_active !== false,
+        ad_account_id: c.ad_account_id, ad_account_name: c.ad_account_name, connection: c.source || 'token', status: c.status,
+        autopilot: { enabled: !!c.autopilot_enabled, adset_budget: c.autopilot_adset_budget, max_adsets: c.autopilot_max_adsets },
+      };
+    }),
+  };
+}
+
+// HQ → profil akaun sasaran (ikut kod marketer). Peraturan sama seperti pemilik key MCP.
+async function targetProfile(admin, profile, code) {
+  if (profile.role !== 'super_admin') throw fail('Parameter "marketer" hanya untuk akaun HQ.');
+  const { data: p } = await admin.from('profiles').select('id, role, full_name, team_leader_id, is_active, marketer_code')
+    .ilike('marketer_code', String(code).trim()).maybeSingle();
+  if (!p) throw fail(`Marketer "${code}" tidak dijumpai. Semak dengan list_accounts.`);
+  if (p.is_active === false || !['marketer', 'independent'].includes(p.role) || p.team_leader_id) throw fail(`Akaun "${code}" tidak layak (tidak aktif / bukan marketer atau fighter).`);
+  return p;
+}
 
 const fail = msg => Object.assign(new Error(msg), { toolError: true });
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -274,17 +315,24 @@ async function connectionOf(admin, mid) {
   return data;
 }
 
-export async function callTool(admin, profile, name, input = {}) {
+export async function callTool(admin, keyProfile, name, rawInput = {}) {
+  if (name === 'list_accounts') {
+    if (keyProfile.role !== 'super_admin') throw fail('list_accounts hanya untuk akaun HQ.');
+    return listAccounts(admin);
+  }
+  const { marketer, ...input } = rawInput || {};
+  const profile = marketer ? await targetProfile(admin, keyProfile, marketer) : keyProfile;
   const mid = profile.id;
+  const actor = keyProfile.id;
   if (AUTOPILOT_NAMES.has(name)) {
     if (name === 'autopilot_status') return autopilot.status(admin, mid);
     if (name === 'request_upload') return autopilot.requestUpload(admin, mid, input);
     if (name === 'upload_video') return autopilot.uploadVideo(admin, mid, input);
     if (name === 'video_status') return autopilot.videoStatus(admin, mid, input);
-    if (name === 'launch_ad') return autopilot.launchAd(admin, mid, mid, input);
-    if (name === 'prepare_launch') return autopilot.prepareLaunch(admin, mid, mid, input);
-    if (name === 'complete_launch') return autopilot.completeLaunch(admin, mid, mid, input);
-    if (name === 'cancel_launch') return autopilot.cancelLaunch(admin, mid, mid, input);
+    if (name === 'launch_ad') return autopilot.launchAd(admin, mid, actor, input);
+    if (name === 'prepare_launch') return autopilot.prepareLaunch(admin, mid, actor, input);
+    if (name === 'complete_launch') return autopilot.completeLaunch(admin, mid, actor, input);
+    if (name === 'cancel_launch') return autopilot.cancelLaunch(admin, mid, actor, input);
   }
   const needConn = async () => {
     const c = await connectionOf(admin, mid);
