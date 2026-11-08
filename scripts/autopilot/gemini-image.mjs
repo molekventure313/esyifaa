@@ -66,8 +66,11 @@ const model = arg('model') || process.env.GEMINI_IMAGE_MODEL || env.GEMINI_IMAGE
 const out = arg('out');
 const aspect = arg('aspect') || '4:5';
 const n = Math.max(1, Math.min(6, parseInt(arg('n') || '1', 10) || 1));
-const prompt = arg('prompt') || (arg('prompt-file') ? fs.readFileSync(arg('prompt-file'), 'utf8').trim() : '');
+// Baris bermula '#' dalam fail prompt = nota templat, tidak dihantar ke Gemini
+const prompt = arg('prompt') || (arg('prompt-file')
+  ? fs.readFileSync(arg('prompt-file'), 'utf8').split(/\r?\n/).filter(l => !l.startsWith('#')).join('\n').trim() : '');
 if (!out || !prompt) die('Guna: --prompt-file <prompt.txt> (atau --prompt "...") --out <bg.jpg> [--aspect 4:5] [--n 3] [--ref gambar.jpg]');
+if (/\{\{[^}]*\}\}/.test(prompt)) die(`Prompt masih ada ruang templat belum diisi: ${prompt.match(/\{\{[^}]*\}\}/g).slice(0, 3).join(', ')}`);
 if (!['1:1', '4:5', '9:16', '16:9', '3:4', '4:3'].includes(aspect)) die('--aspect mesti 1:1, 4:5, 9:16, 16:9, 3:4 atau 4:3');
 
 const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
