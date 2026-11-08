@@ -311,8 +311,11 @@ async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
     if (!conds.every(c => m[c.metric] != null && cmp(m[c.metric], c.operator, Number(c.value)))) continue;
     const action = rule.action === 'notify' ? null : adsetAction(rule, s);
     if (rule.action !== 'notify' && !action) continue;
+    const raise = action?.action === 'set_budget' && action.params.daily_budget_rm > s.daily_budget;
     // Jangan naikkan budget selepas 9 malam (budget direset 23:30)
-    if (action?.action === 'set_budget' && action.params.daily_budget_rm > s.daily_budget && ctx.hour >= SCALE_CUTOFF_HOUR) continue;
+    if (raise && ctx.hour >= SCALE_CUTOFF_HOUR) continue;
+    // Tangga scale: naik satu anak tangga sahaja setiap larian (jam) — tiada lompat RM60 → RM150
+    if (raise && (ctx.raised.has(id) || ctx.ladder.some(v => v > s.daily_budget && v < action.params.daily_budget_rm))) continue;
     const win = Number(rule.window_days) === 1 ? 'hari ini' : `${rule.window_days} hari`;
     const ok = await fireRule(admin, conn, rule, {
       marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: action ? 'info' : 'warn',
@@ -323,6 +326,7 @@ async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
     }, action, out);
     // Kemas kini cache supaya langkah tangga lain dalam larian sama tak turunkan budget
     if (ok && action?.action === 'set_budget') s.daily_budget = action.params.daily_budget_rm;
+    if (ok && raise) ctx.raised.add(id);
   }
 }
 
@@ -388,7 +392,9 @@ export async function evaluateConnection(admin, conn) {
     if (rule.level === 'adset') {
       if (!adsetCtx) {
         const [adsets, blocked] = await Promise.all([adsetIndex(admin, conn.marketer_id), blockedAdsets(admin, conn.marketer_id)]);
-        adsetCtx = { adsets, blocked, today, hour: new Date(Date.now() + MYT_MS).getUTCHours() };
+        // Anak tangga = semua peraturan bersyarat "set budget RMx" peringkat adset yang aktif
+        const ladder = rules.filter(r => r.level === 'adset' && r.action === 'budget_set' && !r.run_at_time).map(r => Number(r.action_value));
+        adsetCtx = { adsets, blocked, today, hour: new Date(Date.now() + MYT_MS).getUTCHours(), ladder, raised: new Set() };
       }
       await evaluateAdsetRule(admin, conn, rule, rep, adsetCtx, out);
       await admin.from('meta_rules').update({ last_run_at: new Date().toISOString() }).eq('id', rule.id);
