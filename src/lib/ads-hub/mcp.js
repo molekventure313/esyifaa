@@ -174,7 +174,7 @@ Metrik: spend, orders, revenue, roas (nisbah), cpa (RM), ctr (%).`,
 export const AUTOPILOT_TOOLS = [
   {
     name: 'autopilot_status',
-    description: 'Status autopilot akaun anda: suis ON/OFF, tetapan (bajet setiap adset, maks adset, had bajet harian, Page, adset contoh), adset dalam kempen [AUTOPILOT] (live dari Meta), slot kosong, masa mula seterusnya (06:00 esok) dan launch terkini. Panggil dahulu — buat draf hanya jika free_slots > 0.',
+    description: 'Status autopilot akaun anda: suis ON/OFF, MOD (manual/shadow/veto/auto) + "approval" (peraturan kelulusan yang WAJIB diikut), templat strategi (SOP penuh + had) dan arahan khusus akaun, launch hari ini / had sehari, tetapan (bajet setiap adset, maks adset, had bajet harian, Page, adset contoh), adset dalam kempen [AUTOPILOT] (live dari Meta), slot kosong, masa mula seterusnya (06:00 esok) dan launch terkini. Panggil dahulu — buat draf hanya jika free_slots > 0.',
     inputSchema: obj({}),
   },
   {
@@ -194,7 +194,7 @@ export const AUTOPILOT_TOOLS = [
   },
   {
     name: 'launch_ad',
-    description: `HANYA selepas draf (angle, ad copy, skrip VO, storyboard) diluluskan oleh pengguna. Cipta adset baru dalam kempen [AUTOPILOT] (satu kempen "[AUTOPILOT] <Produk>" setiap produk; HQ Sabun Garam: "[AUTOPILOT] HQ") (bajet ikut tetapan, targeting/pixel disalin dari adset contoh) + ad video dengan UTM automatik, dijadual mula 06:00 pagi esok (MYT), atau 06:00 pagi ini dengan start="today". Server tolak jika autopilot OFF, slot penuh atau melebihi had bajet harian. Resumable: jika status "launching", panggil semula dengan client_ref & parameter yang SAMA sehingga "scheduled".`,
+    description: `Kelulusan ikut MOD akaun (autopilot_status.approval): manual = HANYA selepas draf (angle, ad copy, skrip VO, storyboard) diluluskan pengguna; shadow/veto/auto = ikut SOP templat strategi tanpa tunggu kelulusan (shadow hanya merekod cadangan, tiada apa dicipta di Meta; veto sentiasa mula 06:00 esok). Cipta adset baru dalam kempen [AUTOPILOT] (satu kempen "[AUTOPILOT] <Produk>" setiap produk; HQ Sabun Garam: "[AUTOPILOT] HQ") (bajet ikut tetapan, targeting/pixel disalin dari adset contoh) + ad video dengan UTM automatik, dijadual mula 06:00 pagi esok (MYT), atau 06:00 pagi ini dengan start="today". Server tolak jika autopilot OFF, slot penuh, melebihi had bajet harian atau had launch sehari. Resumable: jika status "launching", panggil semula dengan client_ref & parameter yang SAMA sehingga "scheduled".`,
     inputSchema: obj({
       client_ref: str('ID unik draf ini (cth "2026-11-04-saka-1") — elak launch berganda'),
       product: { type: 'string', enum: AD_PRODUCT_KEYS, description: 'Produk' },
@@ -213,7 +213,7 @@ export const AUTOPILOT_TOOLS = [
   },
   {
     name: 'prepare_launch',
-    description: `Launch HIBRID (guna bila launch_ad ditolak kerana app Meta E-Syifa dalam mod Development). HANYA selepas draf diluluskan pengguna. Semak had yang sama, cipta adset PAUSED dalam kempen [AUTOPILOT] (mula 06:00 esok) dan pulangkan ad_spec. Kemudian cipta ad video dalam adset itu melalui MCP Meta Ads rasmi ikut ad_spec (url_tags WAJIB tepat), dan panggil complete_launch.`,
+    description: `Launch HIBRID (guna bila launch_ad ditolak kerana app Meta E-Syifa dalam mod Development). Kelulusan ikut MOD akaun seperti launch_ad (shadow: hanya rekod cadangan). Semak had yang sama, cipta adset PAUSED dalam kempen [AUTOPILOT] (mula 06:00 esok) dan pulangkan ad_spec. Kemudian cipta ad video dalam adset itu melalui MCP Meta Ads rasmi ikut ad_spec (url_tags WAJIB tepat), dan panggil complete_launch.`,
     inputSchema: obj({
       client_ref: str('ID unik draf ini — elak launch berganda'),
       product: { type: 'string', enum: AD_PRODUCT_KEYS, description: 'Produk' },
@@ -256,8 +256,10 @@ export const toolsFor = profile => profile?.role === 'super_admin'
 
 async function listAccounts(admin) {
   const { data: conns, error } = await admin.from('meta_connections')
-    .select('marketer_id, ad_account_id, ad_account_name, status, source, autopilot_enabled, autopilot_adset_budget, autopilot_max_adsets');
+    .select('*');
   if (error) throw new Error(error.message);
+  const { data: sts } = await admin.from('autopilot_strategies').select('id, name').then(r => r, () => ({ data: [] }));
+  const stName = Object.fromEntries((sts || []).map(x => [x.id, x.name]));
   const { data: ps } = await admin.from('profiles').select('id, full_name, role, marketer_code, is_active').in('id', (conns || []).map(c => c.marketer_id));
   const byId = Object.fromEntries((ps || []).map(p => [p.id, p]));
   return {
@@ -267,7 +269,10 @@ async function listAccounts(admin) {
         marketer: p.role === 'super_admin' ? null : p.marketer_code, name: p.role === 'super_admin' ? 'HQ' : p.full_name,
         type: p.role === 'independent' ? 'fighter' : p.role === 'super_admin' ? 'hq' : 'marketer', active: p.is_active !== false,
         ad_account_id: c.ad_account_id, ad_account_name: c.ad_account_name, connection: c.source || 'token', status: c.status,
-        autopilot: { enabled: !!c.autopilot_enabled, adset_budget: c.autopilot_adset_budget, max_adsets: c.autopilot_max_adsets },
+        autopilot: {
+          enabled: !!c.autopilot_enabled, mode: autopilot.modeOf(c), strategy: stName[c.autopilot_strategy_id] || null,
+          adset_budget: c.autopilot_adset_budget, max_adsets: c.autopilot_max_adsets, max_launches_day: c.autopilot_max_launches_day ?? null,
+        },
       };
     }),
   };
@@ -492,4 +497,4 @@ export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar a
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
 Peraturan auto Ads Hub: list_rules, list_rule_templates, apply_rule_templates, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
-Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
+Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;

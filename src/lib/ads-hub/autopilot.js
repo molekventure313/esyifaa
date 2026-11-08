@@ -17,6 +17,52 @@ const MYT_MS = 8 * 3600 * 1000;
 const rm = v => `RM${Number(v).toFixed(2).replace(/\.00$/, '')}`;
 
 const fail = msg => Object.assign(new Error(msg), { toolError: true });
+
+// Mod autopilot setiap akaun (migration 039; tiada kolum = manual). HQ sahaja yang tukar mod (Ads Hub → Tetapan → Autopilot).
+export const MODES = {
+  manual: 'MANUAL — bentang draf (angle, ad copy, skrip VO, storyboard) dan launch HANYA selepas pengguna luluskan dalam sesi.',
+  shadow: 'SHADOW — jalankan kitaran penuh ikut SOP tanpa tunggu kelulusan, tetapi launch_ad TIDAK mencipta apa-apa di Meta: ia merekod cadangan (status "shadow") untuk HQ nilai.',
+  veto: 'VETO — launch sendiri ikut SOP tanpa tunggu kelulusan. Ad sentiasa dijadual 06:00 esok supaya HQ sempat batal (cancel_launch). Laporkan setiap launch.',
+  auto: 'AUTO — launch sendiri ikut SOP tanpa tunggu kelulusan. Had keras tetap dikuatkuasa server. Laporkan setiap launch.',
+};
+export const modeOf = conn => (MODES[conn?.autopilot_mode] ? conn.autopilot_mode : 'manual');
+const todayMyt = (now = Date.now()) => new Date(now + MYT_MS).toISOString().slice(0, 10);
+
+async function strategyOf(admin, conn) {
+  if (!conn.autopilot_strategy_id) return null;
+  const { data } = await admin.from('autopilot_strategies').select('id, name, description, sop, params, updated_at').eq('id', conn.autopilot_strategy_id).maybeSingle();
+  return data || null;
+}
+
+// Launch baru hari ini (MYT) yang mencipta sesuatu di Meta — untuk had launch sehari
+async function launchesToday(admin, marketerId) {
+  const since = new Date(`${todayMyt()}T00:00:00+08:00`).toISOString();
+  const { count } = await admin.from('autopilot_launches').select('id', { count: 'exact', head: true })
+    .eq('marketer_id', marketerId).gte('created_at', since).in('status', ['launching', 'scheduled', 'cancelled']);
+  return count || 0;
+}
+
+async function checkDailyLaunches(admin, conn, marketerId) {
+  const max = Number(conn.autopilot_max_launches_day);
+  if (!(max > 0)) return;
+  const n = await launchesToday(admin, marketerId);
+  if (n >= max) throw fail(`Had launch sehari dicapai: ${n}/${max} launch hari ini (Ads Hub → Tetapan → Autopilot). Cuba esok.`);
+}
+
+// Mod shadow: rekod cadangan sahaja, tiada panggilan ke Meta
+async function recordShadow(admin, marketerId, actorId, conn, p) {
+  const { data: old } = await admin.from('autopilot_launches').select('*').eq('marketer_id', marketerId).eq('client_ref', p.client_ref).maybeSingle();
+  if (old) return summary(old, `client_ref ini dah direkod (status ${old.status}).`);
+  const { data: row, error } = await admin.from('autopilot_launches').insert({
+    marketer_id: marketerId, client_ref: p.client_ref, product: p.product, angle: p.angle, headline: p.headline,
+    primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: Number(conn.autopilot_adset_budget),
+    start_time: startFor(p.start), status: 'shadow', mode: 'shadow',
+  }).select('*').single();
+  if (error) throw fail(error.message);
+  await log(admin, marketerId, actorId, 'shadow_launch', 'ad', null, p.angle, 'ok', 'Mod shadow: cadangan launch direkod (tiada apa dicipta di Meta).',
+    { headline: p.headline, link: p.link, image_path: p.image_path, video_id: p.video_id });
+  return { ...summary(row, 'MOD SHADOW: cadangan direkod untuk HQ nilai — tiada ad dicipta di Meta.'), shadow: true };
+}
 const metaMsg = e => (e instanceof MetaError ? `Meta tolak: ${e.message}${e.info?.error_user_title ? ` (${e.info.error_user_title})` : ''}` : e.message);
 
 /** 06:00 pagi esok (waktu Malaysia) → ISO. */
@@ -88,8 +134,16 @@ export async function status(admin, marketerId) {
     .select('id, client_ref, product, angle, status, adset_id, ad_id, start_time, error, created_at')
     .eq('marketer_id', marketerId).order('created_at', { ascending: false }).limit(10);
   const missing = [!conn.autopilot_page_id && 'Facebook Page', !conn.autopilot_template_adset_id && 'adset contoh (template)'].filter(Boolean);
+  const mode = modeOf(conn);
+  const strategy = await strategyOf(admin, conn);
   return {
     enabled: conn.autopilot_enabled,
+    mode,
+    approval: MODES[mode],
+    strategy: strategy ? { name: strategy.name, description: strategy.description, params: strategy.params, sop: strategy.sop } : null,
+    account_notes: conn.autopilot_notes || null,
+    launches_today: await launchesToday(admin, marketerId),
+    max_launches_day: conn.autopilot_max_launches_day ?? null,
     ready: conn.autopilot_enabled && !missing.length,
     missing_settings: missing,
     settings: {
@@ -316,6 +370,7 @@ async function insertRow(admin, marketerId, p, budget) {
   const { data, error } = await admin.from('autopilot_launches').insert({
     marketer_id: marketerId, client_ref: p.client_ref, product: p.product, angle: p.angle, headline: p.headline,
     primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: budget, start_time: startFor(p.start),
+    ...(p.mode ? { mode: p.mode } : {}),
   }).select('*').single();
   if (error) throw fail(error.message);
   return data;
@@ -352,12 +407,17 @@ export async function launchAd(admin, marketerId, actorId, input) {
   const conn = await loadHqConn(admin, marketerId);
   if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
   if (!conn.autopilot_page_id || !conn.autopilot_template_adset_id) throw fail('Tetapan autopilot belum lengkap: Facebook Page & adset contoh (Ads Hub → Tetapan).');
+  const mode = modeOf(conn);
+  if (mode === 'shadow') return recordShadow(admin, marketerId, actorId, conn, p);
+  if (mode === 'veto') p.start = 'tomorrow';   // HQ mesti sempat batal sebelum ad mula
+  if (conn.autopilot_mode) p.mode = mode;
   const token = decryptToken(conn.token_encrypted);
 
   // Rekod / sambung semula ikut client_ref
   let { data: row } = await admin.from('autopilot_launches').select('*').eq('marketer_id', marketerId).eq('client_ref', p.client_ref).maybeSingle();
   if (row && ['scheduled', 'cancelled'].includes(row.status)) return summary(row, `Launch ini dah ${row.status === 'scheduled' ? 'dijadualkan' : 'dibatalkan'}.`);
   if (row?.status === 'failed') return summary(row, 'Launch ini gagal sebelum ini. Guna client_ref baru untuk cuba semula.');
+  if (row?.status === 'shadow') return summary(row, 'client_ref ini cadangan mod shadow. Guna client_ref baru untuk launch sebenar.');
 
   const save = async patch => {
     const { data } = await admin.from('autopilot_launches').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', row.id).select('*').single();
@@ -368,6 +428,7 @@ export async function launchAd(admin, marketerId, actorId, input) {
   try {
     if (!row?.adset_id) {
       await checkLimits(admin, conn, token, marketerId);
+      if (!row) await checkDailyLaunches(admin, conn, marketerId);
       row = row || await insertRow(admin, marketerId, p, Number(conn.autopilot_adset_budget));
       await createAdset(admin, conn, token, row, p, 'ACTIVE', save, actorId);
       if (timeUp()) return summary(row, 'Adset dicipta. Panggil launch_ad sekali lagi dengan client_ref sama untuk sambung.', true);
@@ -447,11 +508,16 @@ export async function prepareLaunch(admin, marketerId, actorId, input) {
   const conn = await loadHqConn(admin, marketerId);
   if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
   if (!conn.autopilot_page_id || !conn.autopilot_template_adset_id) throw fail('Tetapan autopilot belum lengkap: Facebook Page & adset contoh (Ads Hub → Tetapan).');
+  const mode = modeOf(conn);
+  if (mode === 'shadow') return recordShadow(admin, marketerId, actorId, conn, p);
+  if (mode === 'veto') p.start = 'tomorrow';   // HQ mesti sempat batal sebelum ad mula
+  if (conn.autopilot_mode) p.mode = mode;
   const token = decryptToken(conn.token_encrypted);
 
   let { data: row } = await admin.from('autopilot_launches').select('*').eq('marketer_id', marketerId).eq('client_ref', p.client_ref).maybeSingle();
   if (row && ['scheduled', 'cancelled'].includes(row.status)) return summary(row, `Launch ini dah ${row.status === 'scheduled' ? 'dijadualkan' : 'dibatalkan'}.`);
   if (row?.status === 'failed') return summary(row, 'Launch ini gagal sebelum ini. Guna client_ref baru untuk cuba semula.');
+  if (row?.status === 'shadow') return summary(row, 'client_ref ini cadangan mod shadow. Guna client_ref baru untuk launch sebenar.');
   const save = async patch => {
     const { data } = await admin.from('autopilot_launches').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', row.id).select('*').single();
     row = data;
@@ -460,6 +526,7 @@ export async function prepareLaunch(admin, marketerId, actorId, input) {
   try {
     if (!row?.adset_id) {
       await checkLimits(admin, conn, token, marketerId);
+      if (!row) await checkDailyLaunches(admin, conn, marketerId);
       row = row || await insertRow(admin, marketerId, p, Number(conn.autopilot_adset_budget));
       await createAdset(admin, conn, token, row, p, 'PAUSED', save, actorId);
     }

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { AdsHubDashboard, AdsHubSettings, useLightMode, theme, btn } from '@/components/dashboard/AdsHub';
-import { AlertsPanel, LatestReport, ReportsTab, LogTab, RulesTab, LimitsCard, SpendCard, AgentCard, ChatPanel, ClaudeKeyCard, AutopilotCard } from '@/components/dashboard/AdsHubExtras';
+import { AlertsPanel, LatestReport, ReportsTab, LogTab, RulesTab, LimitsCard, SpendCard, AgentCard, ChatPanel, ClaudeKeyCard, AutopilotCard, StrategiesPanel } from '@/components/dashboard/AdsHubExtras';
 
 const TABS = [
   { id: 'dashboard', label: '📈 Dashboard' },
@@ -57,6 +57,7 @@ export default function AdminAdsHubPage() {
   const [version, setVersion] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [newAgent, setNewAgent] = useState(false);
+  const [strategies, setStrategies] = useState(false);
   const bump = () => setVersion(v => v + 1);
   const isHq = selected === HQ;
   const mid = isHq ? undefined : selected || undefined;
@@ -102,6 +103,7 @@ export default function AdminAdsHubPage() {
         </div>
         {marketers && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => setStrategies(v => !v)} style={btn(t, strategies)}>🧠 Templat Strategi</button>
           <button onClick={() => setNewAgent(v => !v)} style={btn(t)}>+ Ejen AI</button>
           <select id="ads-hub-marketer" value={selected} onChange={e => { setSelected(e.target.value); setTab('dashboard'); setChatOpen(false); }}
             style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: t.border, background: t.cardBg, color: t.text, fontSize: '0.85rem', fontFamily: t.ff, minWidth: 240 }}>
@@ -128,6 +130,7 @@ export default function AdminAdsHubPage() {
       </div>
 
       {error && <div style={{ padding: '1rem', color: t.bad }}>{error}</div>}
+      {strategies && <div style={{ marginBottom: '1.25rem' }}><StrategiesPanel onClose={() => setStrategies(false)} /></div>}
       {newAgent && (
         <NewAgentForm t={t} onCancel={() => setNewAgent(false)}
           onCreated={a => { setNewAgent(false); setSelected(a.id); setTab('settings'); bump(); }} />

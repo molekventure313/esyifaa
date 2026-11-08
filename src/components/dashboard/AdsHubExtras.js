@@ -788,12 +788,13 @@ export function AutopilotCard({ marketerId } = {}) {
   const t = theme(useLightMode());
   const [s, setS] = useState(null);
   const [opts, setOpts] = useState(null);
+  const [canManage, setCanManage] = useState(false);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setS(null); setMsg('');
     getJson(`/api/ads-hub/autopilot${q(marketerId)}`).then(j => {
-      if (j.success) { setS(j.settings); setOpts(j.options); } else setMsg(j.error);
+      if (j.success) { setS(j.settings); setOpts(j.options); setCanManage(!!j.canManage); } else setMsg(j.error);
     });
   }, [marketerId]);
   const patch = async body => {
@@ -834,6 +835,7 @@ export function AutopilotCard({ marketerId } = {}) {
         </span>
         <button disabled={busy} onClick={() => patch({ autopilot_enabled: !on })} style={btn(t, !on)}>{on ? 'Matikan autopilot' : 'Hidupkan autopilot'}</button>
       </div>
+      <ModeSection t={t} s={s} setS={setS} opts={opts} canManage={canManage} busy={busy} patch={patch} field={field} row={row} />
       {row('ap-budget', 'Bajet setiap adset baru (RM/hari)', `Mesti ≤ had adset di kad Had keselamatan (RM${Number(s.limit_max_budget)}).`,
         <input id="ap-budget" type="number" min="1" value={s.autopilot_adset_budget} onChange={e => setS({ ...s, autopilot_adset_budget: e.target.value })} style={{ ...field, width: 110 }} />)}
       {row('ap-max', 'Adset aktif maksimum', 'Dalam kempen [AUTOPILOT]. Draf baru hanya bila ada slot kosong.',
@@ -851,6 +853,160 @@ export function AutopilotCard({ marketerId } = {}) {
         <button onClick={save} disabled={busy} style={btn(t, true)}>Simpan tetapan</button>
         {msg && <span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span>}
       </div>
+    </Card>
+  );
+}
+
+// ---------- Mod autopilot & templat strategi (migration 039) ----------
+const AP_MODES = [
+  { id: 'manual', label: '✋ Manual', hint: 'Ejen bentang draf, anda luluskan setiap ad sebelum launch (cara asal).' },
+  { id: 'shadow', label: '👀 Shadow', hint: 'Ejen buat semua ikut SOP tapi TIDAK launch — cadangan direkod untuk anda nilai.' },
+  { id: 'veto', label: '⏳ Auto + veto', hint: 'Ejen launch sendiri, sentiasa mula 06:00 esok. Anda boleh batal sebelum ad naik.' },
+  { id: 'auto', label: '🤖 Auto penuh', hint: 'Ejen launch sendiri ikut SOP. Had keras tetap dikuatkuasa server.' },
+];
+
+function ModeSection({ t, s, setS, opts, canManage, busy, patch, field, row }) {
+  if (s.mode_unavailable) {
+    return <div style={{ fontSize: '0.75rem', color: t.muted, padding: '0.6rem 0', borderBottom: t.rowBorder }}>Mod autopilot (manual / shadow / auto): run migration 039 dalam Supabase untuk aktifkan.</div>;
+  }
+  const mode = s.autopilot_mode || 'manual';
+  const cur = AP_MODES.find(m => m.id === mode) || AP_MODES[0];
+  const strategies = opts?.strategies || [];
+  const st = strategies.find(x => String(x.id) === String(s.autopilot_strategy_id || ''));
+  if (!canManage) {
+    return (
+      <div style={{ padding: '0.6rem 0', borderBottom: t.rowBorder, fontSize: '0.82rem' }}>
+        <strong>Mod: {cur.label}</strong><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>{cur.hint} Mod ditetapkan oleh HQ.</span>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div style={{ padding: '0.7rem 0', borderBottom: t.rowBorder }}>
+        <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: 6 }}>Mod autopilot</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {AP_MODES.map(m => (
+            <button key={m.id} disabled={busy} onClick={() => m.id !== mode && patch({ autopilot_mode: m.id })} style={btn(t, m.id === mode)}>{m.label}</button>
+          ))}
+        </div>
+        <div style={{ fontSize: '0.75rem', color: t.muted, marginTop: 6 }}>{cur.hint}</div>
+      </div>
+      {row('ap-strategy', 'Templat strategi', st?.description || 'SOP & had siap yang ejen ikut. Urus templat di butang "🧠 Templat Strategi" di atas.',
+        <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <select id="ap-strategy" value={s.autopilot_strategy_id || ''} onChange={e => setS({ ...s, autopilot_strategy_id: e.target.value || null })} style={{ ...field, maxWidth: 240 }}>
+            <option value="">— Tiada templat —</option>
+            {strategies.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select>
+          <button disabled={busy || !s.autopilot_strategy_id} title="Simpan templat dan salin had (bajet, slot, had harian, launch sehari) ke akaun ini"
+            onClick={() => patch({ autopilot_strategy_id: s.autopilot_strategy_id, apply_strategy: true })} style={btn(t)}>Guna & salin had</button>
+        </span>)}
+      {row('ap-launches', 'Launch baru maksimum sehari', 'Had keras di server, dikira ikut hari (waktu Malaysia).',
+        <input id="ap-launches" type="number" min="1" max="20" value={s.autopilot_max_launches_day ?? 3} onChange={e => setS({ ...s, autopilot_max_launches_day: e.target.value })} style={{ ...field, width: 110 }} />)}
+      <label htmlFor="ap-notes" style={{ display: 'block', padding: '0.6rem 0', borderBottom: t.rowBorder }}>
+        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Arahan khusus akaun ini</span><br />
+        <span style={{ fontSize: '0.75rem', color: t.muted }}>Ditambah atas SOP templat, cth produk fokus, angle yang dielak, gaya creative.</span>
+        <textarea id="ap-notes" rows={3} value={s.autopilot_notes || ''} onChange={e => setS({ ...s, autopilot_notes: e.target.value })} style={{ ...field, width: '100%', marginTop: 6, resize: 'vertical', boxSizing: 'border-box' }} />
+      </label>
+      <div style={{ padding: '0.5rem 0', borderBottom: t.rowBorder }}>
+        <button disabled={busy} onClick={() => patch({ autopilot_strategy_id: s.autopilot_strategy_id || null, autopilot_max_launches_day: s.autopilot_max_launches_day ?? 3, autopilot_notes: s.autopilot_notes || null })} style={btn(t)}>Simpan templat, had launch & arahan</button>
+      </div>
+    </>
+  );
+}
+
+const EMPTY_STRATEGY = { name: '', description: '', sop: '', params: { adset_budget: 60, max_adsets: 5, daily_cap: 300, max_launches_day: 2, kpi_roas: 2, products: [], creative: ['video'], structure: 'autopilot' } };
+
+// HQ: senarai & sunting templat strategi (SOP + had) — dipakai pada akaun di kad Autopilot
+export function StrategiesPanel({ onClose }) {
+  const t = theme(useLightMode());
+  const [list, setList] = useState(null);
+  const [edit, setEdit] = useState(null);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => getJson('/api/ads-hub/strategies').then(j => (j.success ? setList(j.strategies) : setMsg(j.error))), []);
+  useEffect(() => { load(); }, [load]);
+  const field = { padding: '0.45rem 0.6rem', borderRadius: 6, border: t.border, background: t.headBg, color: t.text, fontSize: '0.82rem', fontFamily: t.ff, boxSizing: 'border-box' };
+  const save = async () => {
+    setBusy(true); setMsg('');
+    const body = { name: edit.name, description: edit.description, sop: edit.sop, params: edit.params };
+    const j = edit.id ? await sendJson(`/api/ads-hub/strategies?id=${edit.id}`, 'PATCH', body) : await sendJson('/api/ads-hub/strategies', 'POST', body);
+    setBusy(false);
+    if (!j.success) return setMsg(j.error);
+    setEdit(null); setMsg('Disimpan.'); load();
+  };
+  const remove = async x => {
+    if (!window.confirm(`Padam templat "${x.name}"?${x.accounts ? ` ${x.accounts} akaun akan jadi tanpa templat (had akaun kekal).` : ''}`)) return;
+    const j = await fetch(`/api/ads-hub/strategies?id=${x.id}`, { method: 'DELETE' }).then(r => r.json()).catch(() => ({ success: false, error: 'Gagal hubungi server.' }));
+    if (!j.success) return setMsg(j.error);
+    load();
+  };
+  const P = edit?.params || {};
+  const setP = (k, v) => setEdit({ ...edit, params: { ...P, [k]: v } });
+  const num = (k, label, step = 1) => (
+    <label key={k} style={{ fontSize: '0.75rem', color: t.text2, display: 'flex', flexDirection: 'column', gap: 3 }}>{label}
+      <input type="number" step={step} value={P[k] ?? ''} onChange={e => setP(k, e.target.value)} style={{ ...field, width: 120 }} />
+    </label>
+  );
+  const open = x => setEdit({ ...EMPTY_STRATEGY, ...x, params: { ...EMPTY_STRATEGY.params, ...x.params } });
+
+  return (
+    <Card t={t} title="🧠 Templat Strategi" sub="SOP + had siap untuk ejen autopilot. Pilih templat untuk setiap akaun di Tetapan → Autopilot. Ubah SOP templat = semua akaun yang guna terus ikut SOP baru; had akaun hanya berubah bila tekan “Guna & salin had”.">
+      {list == null && (msg ? <div style={{ fontSize: '0.8rem', color: t.bad }}>{msg}</div> : <Spinner t={t} text="Memuatkan…" />)}
+      {list != null && !edit && (
+        <>
+          {list.length === 0 && <div style={{ fontSize: '0.8rem', color: t.muted, padding: '0.3rem 0 0.6rem' }}>Belum ada templat.</div>}
+          {list.map(x => (
+            <div key={x.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', padding: '0.6rem 0', borderBottom: t.rowBorder, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.82rem' }}><strong>{x.name}</strong> · {x.accounts} akaun<br />
+                <span style={{ fontSize: '0.72rem', color: t.muted }}>
+                  {x.description || '—'} · RM{x.params?.adset_budget ?? '?'}/adset · {x.params?.max_adsets ?? '?'} slot · had RM{x.params?.daily_cap ?? '?'} · {x.params?.max_launches_day ?? '?'} launch/hari · KPI ROAS {x.params?.kpi_roas ?? '?'}
+                </span></span>
+              <span style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => open(x)} style={btn(t)}>Sunting</button>
+                <button onClick={() => open({ ...x, id: undefined, name: `${x.name} (salinan)` })} style={btn(t)}>Salin</button>
+                <button onClick={() => remove(x)} style={btn(t)}>Padam</button>
+              </span>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: '0.9rem' }}>
+            <button onClick={() => setEdit(structuredClone(EMPTY_STRATEGY))} style={btn(t, true)}>+ Templat baru</button>
+            {onClose && <button onClick={onClose} style={btn(t)}>Tutup</button>}
+            {msg && <span style={{ fontSize: '0.8rem', color: t.text2 }}>{msg}</span>}
+          </div>
+        </>
+      )}
+      {edit && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <input value={edit.name} onChange={e => setEdit({ ...edit, name: e.target.value })} placeholder="Nama, cth: Sabun Garam — video 1-1-1" maxLength={80} style={field} />
+          <input value={edit.description || ''} onChange={e => setEdit({ ...edit, description: e.target.value })} placeholder="Ringkasan satu baris" maxLength={300} style={field} />
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {num('adset_budget', 'Bajet adset (RM)')}{num('max_adsets', 'Slot adset')}{num('daily_cap', 'Had harian (RM)')}
+            {num('max_launches_day', 'Launch / hari')}{num('kpi_roas', 'KPI ROAS', 0.1)}
+            <label style={{ fontSize: '0.75rem', color: t.text2, display: 'flex', flexDirection: 'column', gap: 3 }}>Struktur
+              <select value={P.structure || 'autopilot'} onChange={e => setP('structure', e.target.value)} style={field}>
+                <option value="autopilot">Kempen [AUTOPILOT] setiap produk</option>
+                <option value="1-1-1">1-1-1 (kempen sendiri setiap ad)</option>
+              </select>
+            </label>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <label style={{ fontSize: '0.75rem', color: t.text2, display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 200 }}>Produk (pisah koma)
+              <input value={(P.products || []).join(', ')} onChange={e => setP('products', e.target.value.split(','))} placeholder="sabun-garam, pengisian-item" style={field} />
+            </label>
+            <label style={{ fontSize: '0.75rem', color: t.text2, display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 200 }}>Jenis creative (pisah koma)
+              <input value={(P.creative || []).join(', ')} onChange={e => setP('creative', e.target.value.split(','))} placeholder="video, gambar" style={field} />
+            </label>
+          </div>
+          <label style={{ fontSize: '0.75rem', color: t.text2 }}>SOP penuh untuk ejen (bila buat ads baru, angle, struktur, creative, larangan, bila berhenti & tanya HQ)
+            <textarea rows={16} value={edit.sop} onChange={e => setEdit({ ...edit, sop: e.target.value })} style={{ ...field, width: '100%', marginTop: 4, fontFamily: 'ui-monospace, monospace', resize: 'vertical' }} />
+          </label>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button onClick={save} disabled={busy || !edit.name.trim()} style={btn(t, true)}>{busy ? 'Menyimpan…' : 'Simpan templat'}</button>
+            <button onClick={() => setEdit(null)} style={btn(t)}>Batal</button>
+            {msg && <span style={{ fontSize: '0.8rem', color: t.bad }}>{msg}</span>}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
