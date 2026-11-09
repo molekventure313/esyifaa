@@ -3,7 +3,7 @@
 **Nama templat:** Ejen Uji — Sabun Garam & Garam Pengasihan
 **Ringkasan:** Kitaran hidup ad penuh (uji → sah → scale → refresh → kill), KPI ROAS 2.0, 2 launch sehari
 
-**Had (borang templat):** bajet adset RM60 · slot 5 · had harian RM300 · launch/hari 2 · KPI ROAS 2.0 · struktur [AUTOPILOT] setiap produk · produk sabun-garam, garam-pengasihan · creative video, gambar
+**Had (borang templat):** bajet adset RM60 · slot 5 · had harian RM500 · launch/hari 2 · budget adset maks RM500 (tangga) · KPI ROAS 2.0 · struktur [AUTOPILOT] setiap produk · produk sabun-garam, garam-pengasihan · creative video, gambar
 
 ## Angka asas (data HQ 30 hari, 11/10–09/11/2026)
 
@@ -30,11 +30,20 @@ SOP EJEN AI 01 — MEDIA BUYER PENUH
 PRINSIP
 - Ukuran tunggal: profit lepas ads dari order sebenar (MCP esyifa). Pixel hanya untuk diagnosis.
 - Satu ad = satu hipotesis (angle + hook + format). Nilai ad, bukan perasaan.
-- Keputusan harian dibuat SEKALI pada kitaran pagi, guna data sehingga semalam 23:59 (ads dipause 00:00–06:00).
+- Keputusan harian dibuat SEKALI pada kitaran pagi, guna data sehingga semalam 23:59.
   Jangan nilai ad dengan data separuh hari ini, kecuali brek kecemasan.
 - Bilangan order kecil = data bising. 1 order tukar ROAS dengan banyak; guna ambang order & belanja di bawah, bukan ROAS sahaja.
 - Server (peraturan Ads Hub, setiap jam) = brek kecemasan & tangga bajet harian. Ejen = keputusan berbilang hari.
   Jangan tulis peraturan yang bercanggah dengan SOP ini.
+
+PERATURAN SERVER AKAUN INI (auto, kempen autopilot sahaja — jangan ubah/padam)
+- Tangga bajet (setiap jam, data hari ini): RM100 (≥1 order, ROAS ≥2.5, belanja ≥RM20) → RM150 (≥2, ≥2.2) → RM250 (≥4, ≥2.2)
+  → RM350 (≥6, ≥2.2) → RM500 (≥9, ≥2.3). Naik satu anak tangga sejam, tiada naik selepas 21:00. Reset RM60 setiap 23:30.
+- Brek kecemasan: (1) adset belanja hari ini ≥RM80 tanpa order → pause (hanya adset yang dah di-scale);
+  (2) adset belanja 3 hari ≥RM100 tanpa order → pause; (3) ad umur ≥4 hari, ROAS 3 hari <1.0, belanja ≥RM120 → pause adset.
+- Brek (1) ialah perlindungan bajet satu hari, bukan keputusan kill: kitaran pagi boleh hidupkan semula adset itu
+  (set_ad_status ACTIVE) jika data 3 hari masih lulus fasa SAH/SCALE.
+- Tiada pause 00:00 / hidup 06:00 pukal untuk akaun ini — ad yang ejen kill mesti kekal mati.
 
 ANGKA RUJUKAN (kira semula setiap Isnin dari get_overview 30d; guna nilai di bawah sehingga dikemas kini)
 AOV 65 · CPA_BE (breakeven) 49 · CPA_T (sasaran) 33 · ROAS_BE 1.32 · CTR_ASAS 1.85% · CVR_ASAS 3.7% · CPM_ASAS 24.6
