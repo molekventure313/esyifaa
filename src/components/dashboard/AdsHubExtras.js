@@ -148,8 +148,8 @@ export function ReportsTab({ marketerId }) {
 }
 
 // ---------- Log tindakan ----------
-const SOURCE_LABEL = { chat: '💬 Chat', jadual: '⏰ Jadual', auto: '🤖 Auto', cadangan: '💡 Cadangan', autopilot: '🚀 Autopilot' };
-const STATUS_STYLE = { ok: ['Berjaya', 'good'], failed: ['Gagal', 'bad'], rejected: ['Ditolak had', 'warn'] };
+const SOURCE_LABEL = { chat: '💬 Chat', jadual: '⏰ Jadual', auto: '🤖 Auto', cadangan: '💡 Cadangan', autopilot: '🚀 Autopilot', ejen: '🧠 Ejen AI' };
+const STATUS_STYLE = { ok: ['Berjaya', 'good'], failed: ['Gagal', 'bad'], rejected: ['Ditolak had', 'warn'], shadow: ['Shadow (rekod sahaja)', 'text2'] };
 const changeText = (a, b) => {
   if (!a && !b) return '';
   if (b?.daily_budget_rm != null && a?.daily_budget_rm != null) return `RM${a.daily_budget_rm} → RM${b.daily_budget_rm}`;
@@ -196,7 +196,7 @@ export function LogTab({ marketerId }) {
 }
 
 // ---------- Peraturan & jadual ----------
-const METRICS = { roas: 'ROAS', cpa: 'CPA (RM)', spend: 'Belanja (RM)', orders: 'Order', revenue: 'Jualan (RM)', ctr: 'CTR link (%)' };
+const METRICS = { roas: 'ROAS', cpa: 'CPA (RM)', spend: 'Belanja (RM)', orders: 'Order', revenue: 'Jualan (RM)', ctr: 'CTR link (%)', cpm: 'CPM (RM)', frequency: 'Frequency 7 hari', age_days: 'Umur ad (hari)', hook_rate: 'Hook rate video (%)' };
 const ACTIONS = { pause: 'Pause ad', pause_adset: 'Pause adset', activate_adset: 'Hidupkan adset', budget_up: 'Naikkan budget adset %', budget_down: 'Turunkan budget adset %', budget_set: 'Set budget adset (RM)', notify: 'Amaran sahaja' };
 const TIME_ACTIONS = ['pause_adset', 'activate_adset', 'budget_set'];
 const OPS = ['<', '<=', '>', '>=', '='];

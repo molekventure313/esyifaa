@@ -7,6 +7,7 @@ import { decryptToken } from './crypto';
 import { metaGet, metaPost, MetaError } from './meta';
 import { AD_PRODUCT_KEYS, PRODUCTS, DIGITAL_AD } from '@/lib/products';
 import { ownerProfile, isFighterProfile, fighterAdLink } from './fighter';
+import { executeAction } from './actions';
 
 export const BUCKET = 'ads-creatives';
 export const CTA_TYPES = ['LEARN_MORE', 'SHOP_NOW', 'ORDER_NOW', 'BUY_NOW', 'GET_OFFER'];
@@ -603,4 +604,64 @@ export async function cancelLaunch(admin, marketerId, actorId, { launch_id }) {
   const { data } = await admin.from('autopilot_launches').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', row.id).select('*').single();
   await log(admin, marketerId, actorId, 'set_status', 'adset', row.adset_id, row.angle, 'ok', 'Launch autopilot dibatalkan (adset dipause).', { status: 'PAUSED' });
   return summary(data, 'Launch dibatalkan — adset dipause.');
+}
+
+// ---------- Ejen: pause / hidupkan ad atau adset (kempen autopilot sahaja) ----------
+// Panggilan Meta dibuat oleh server (executeAction) — ejen tak pegang token. Had:
+// hanya objek dalam kempen [AUTOPILOT]/[1-1-1] akaun ini; mod shadow = rekod sahaja; hidupkan adset ikut slot & had bajet harian;
+// suis autopilot OFF = pause sahaja dibenarkan; maksimum EJEN_MAX_ACTIONS perubahan sehari.
+const EJEN_MAX_ACTIONS = 20;
+
+export async function setAdStatus(admin, marketerId, actorId, input) {
+  const type = input.object_type;
+  const status = input.status;
+  const id = String(input.object_id || '').trim();
+  const reason = String(input.reason || '').trim().slice(0, 500);
+  if (!['ad', 'adset'].includes(type)) throw fail('object_type mesti "ad" atau "adset".');
+  if (!['ACTIVE', 'PAUSED'].includes(status)) throw fail('status mesti "ACTIVE" atau "PAUSED".');
+  if (!/^\d{5,25}$/.test(id)) throw fail('object_id tidak sah.');
+  if (reason.length < 10) throw fail('reason diperlukan: sebab ringkas berdasarkan data (cth "ROAS 3 hari 0.9, belanja RM120, SOP A-Sah kill").');
+
+  const conn = await loadHqConn(admin, marketerId);
+  const mode = modeOf(conn);
+  if (status === 'ACTIVE' && !conn.autopilot_enabled) throw fail('Autopilot OFF — ejen hanya boleh pause. Hidupkan suis di Ads Hub → Tetapan → Autopilot.');
+  const token = decryptToken(conn.token_encrypted);
+
+  let obj;
+  try { obj = await metaGet(id, { fields: type === 'ad' ? 'name,status,campaign_id,adset_id' : 'name,status,campaign_id,daily_budget' }, token); }
+  catch (e) { throw fail(metaMsg(e)); }
+  const camps = await autopilotCampaignIds(admin, conn);
+  if (!camps.includes(obj.campaign_id)) throw fail(`"${obj.name}" bukan dalam kempen autopilot akaun ini — ejen hanya boleh ubah ad/adset dalam kempen [AUTOPILOT] / [1-1-1]. Untuk ad lain, guna Ads Hub atau minta HQ.`);
+  if (obj.status === status) return { ok: true, mode, message: `"${obj.name}" memang dah ${status === 'ACTIVE' ? 'aktif' : 'dipause'}.` };
+
+  const since = new Date(`${todayMyt()}T00:00:00+08:00`).toISOString();
+  const { count } = await admin.from('meta_actions_log').select('id', { count: 'exact', head: true })
+    .eq('marketer_id', marketerId).eq('source', 'ejen').in('status', ['ok', 'shadow']).gte('created_at', since);
+  if ((count || 0) >= EJEN_MAX_ACTIONS) throw fail(`Had ${EJEN_MAX_ACTIONS} perubahan status sehari oleh ejen dicapai. Lapor kepada HQ.`);
+
+  if (status === 'ACTIVE' && type === 'adset') {
+    const { data: bad } = await admin.from('autopilot_launches').select('id, status').eq('marketer_id', marketerId).eq('adset_id', id)
+      .in('status', ['launching', 'failed', 'cancelled']).limit(1);
+    if (bad?.length) throw fail(`Adset ini dari launch #${bad[0].id} berstatus "${bad[0].status}" — tidak boleh dihidupkan.`);
+    const budget = obj.daily_budget ? parseInt(obj.daily_budget, 10) / 100 : 0;
+    const active = (await liveAdsets(admin, conn, token)).filter(a => a.status === 'ACTIVE' && a.adset_id !== id);
+    const pending = await pendingLaunches(admin, marketerId, [...active.map(a => a.adset_id), id]);
+    const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || 0), 0);
+    if (active.length + pending.length >= conn.autopilot_max_adsets) throw fail(`Slot penuh: ${active.length + pending.length}/${conn.autopilot_max_adsets} adset aktif.`);
+    if (used + budget > Number(conn.autopilot_daily_cap) + 1e-9) throw fail(`Melebihi had bajet harian: ${rm(used)} + ${rm(budget)} > ${rm(conn.autopilot_daily_cap)}.`);
+  }
+
+  const verb = status === 'PAUSED' ? 'Pause' : 'Hidupkan';
+  if (mode === 'shadow') {
+    await admin.from('meta_actions_log').insert({
+      marketer_id: marketerId, actor_id: actorId || null, source: 'ejen', action: 'set_status', object_type: type, object_id: id,
+      object_name: obj.name, before: { status: obj.status }, after: { status }, status: 'shadow',
+      message: `MOD SHADOW (tiada perubahan di Meta): ${verb} — ${reason}`,
+    });
+    return { ok: true, shadow: true, mode, message: `MOD SHADOW: cadangan "${verb} ${obj.name}" direkod untuk HQ nilai — tiada perubahan di Meta.` };
+  }
+  const r = await executeAction(admin, conn, { action: 'set_status', object_type: type, object_id: id, object_name: obj.name, params: { status } },
+    { source: 'ejen', actorId, note: `Ejen: ${reason}` });
+  if (!r.ok) throw fail(r.message);
+  return { ok: true, mode, message: r.message, before: r.before, after: r.after };
 }

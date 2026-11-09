@@ -2,6 +2,7 @@
 // Untuk akaun tanpa token (source 'mcp'): cache meta_ads + meta_insights_daily diisi dari data yang dihantar,
 // kemudian ads spend automatik (belanja × 1.08) ditulis ikut produk kempen — sama seperti sync token HQ.
 import { fillAdsSpend } from './spend';
+import { fillFirstDelivery } from './sync';
 
 const MYT_MS = 8 * 3600 * 1000;
 const DAY = 86400000;
@@ -100,9 +101,11 @@ export async function syncFromMcp(admin, marketerId, input = {}) {
   await upsertChunks(admin, 'meta_ads', adUpserts, 'ad_id');
   const insightRows = [...rows.values()].map(({ r, ad_id, date }) => ({
     ad_id, date, marketer_id: marketerId, spend: num(r.spend), impressions: intv(r.impressions), reach: intv(r.reach),
-    link_clicks: intv(r.link_clicks ?? r.inline_link_clicks), pixel_purchases: intv(r.purchases), pixel_value: num(r.purchase_value), updated_at: now,
+    link_clicks: intv(r.link_clicks ?? r.inline_link_clicks), pixel_purchases: intv(r.purchases), pixel_value: num(r.purchase_value),
+    video_3s: intv(r.video_3s), thruplays: intv(r.thruplays), updated_at: now,
   }));
   await upsertChunks(admin, 'meta_insights_daily', insightRows, 'ad_id,date');
+  await fillFirstDelivery(admin, marketerId, insightRows);
 
   const dates = insightRows.map(r => r.date).sort();
   const { data: conn } = await admin.from('meta_connections').select('*').eq('marketer_id', marketerId).single();

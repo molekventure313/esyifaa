@@ -14,6 +14,7 @@ const r2 = n => Math.round((n || 0) * 100) / 100;
 const div = (a, b) => (b > 0 ? r2(a / b) : null);
 const mytDate = (ms = Date.now()) => new Date(ms + MYT_MS).toISOString().slice(0, 10);
 const toMyt = iso => mytDate(new Date(iso).getTime());
+export const ageDays = first => (first ? Math.round((Date.parse(`${mytDate()}T00:00:00Z`) - Date.parse(`${first}T00:00:00Z`)) / DAY) + 1 : null);
 
 export const PERIODS = {
   today:     { label: 'Hari Ini', days: 1 },
@@ -58,9 +59,12 @@ function metrics(m) {
     ctr: m.impressions ? r2((m.link_clicks / m.impressions) * 100) : null,
     cpm: m.impressions ? r2((m.spend / m.impressions) * 1000) : null,
     pixel_purchases: m.pixel_purchases, pixel_roas: div(m.pixel_value, m.spend),
+    // Video: hook rate = 3-saat views ÷ impressions (%), hold rate = ThruPlay ÷ 3-saat views (%)
+    video_3s: m.video_3s, hook_rate: m.video_3s && m.impressions ? r2((m.video_3s / m.impressions) * 100) : null,
+    hold_rate: m.video_3s ? r2((m.thruplays / m.video_3s) * 100) : null,
   };
 }
-const blank = () => ({ spend: 0, orders: 0, revenue: 0, cogs: 0, impressions: 0, link_clicks: 0, pixel_purchases: 0, pixel_value: 0 });
+const blank = () => ({ spend: 0, orders: 0, revenue: 0, cogs: 0, impressions: 0, link_clicks: 0, pixel_purchases: 0, pixel_value: 0, video_3s: 0, thruplays: 0 });
 const addInto = (t, m) => { for (const k of Object.keys(blank())) t[k] += m[k]; };
 
 // Supabase pulangkan maksimum 1000 baris setiap query — ambil berperingkat
@@ -138,6 +142,8 @@ export async function buildReport(admin, marketerId, { period, from, to, adId, p
       t.link_clicks += r.link_clicks || 0;
       t.pixel_purchases += r.pixel_purchases || 0;
       t.pixel_value += parseFloat(r.pixel_value) || 0;
+      t.video_3s += r.video_3s || 0;
+      t.thruplays += r.thruplays || 0;
     }
   }
 
@@ -172,6 +178,9 @@ export async function buildReport(admin, marketerId, { period, from, to, adId, p
       campaign_id: a.campaign_id, campaign_name: a.campaign_name, adset_name: a.adset_name, adset_id: a.adset_id,
       angle, angle_custom: !!a.angle,
       status: a.status, running, daily_budget: a.adset_daily_budget != null ? parseFloat(a.adset_daily_budget) : null,
+      // Umur ad: hari ke-N sejak impression pertama (hari pertama = 1); frequency & reach 7 hari dari Meta
+      first_delivery_date: a.first_delivery_date || null, age_days: ageDays(a.first_delivery_date),
+      frequency: a.frequency_7d != null ? parseFloat(a.frequency_7d) : null, reach_7d: a.reach_7d ?? null,
       ...metrics(m || blank()),
     });
     const g = angleMap.get(angle) || { ...blank(), ads: 0, running: 0 };

@@ -38,8 +38,14 @@ export async function syncConnection(admin, conn, { days = 3 } = {}) {
     const insights = await metaGetAll(`${acct}/insights`, {
       level: 'ad', time_increment: 1, limit: 500,
       time_range: { since: mytDate(days - 1), until: mytDate(0) },
-      fields: 'ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,reach,inline_link_clicks,actions,action_values',
+      fields: 'ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,reach,inline_link_clicks,actions,action_values,video_thruplay_watched_actions',
     }, token);
+
+    // Reach & frequency 7 hari sebenar (reach tak boleh dijumlah dari baris harian)
+    const reach7 = await metaGetAll(`${acct}/insights`, {
+      level: 'ad', limit: 500, time_range: { since: mytDate(6), until: mytDate(0) },
+      fields: 'ad_id,reach,frequency',
+    }, token).catch(() => []);
 
     const adRows = new Map(ads.map(a => [a.id, {
       ad_id: a.id, marketer_id: conn.marketer_id, ad_account_id: acct,
@@ -68,12 +74,19 @@ export async function syncConnection(admin, conn, { days = 3 } = {}) {
       link_clicks: parseInt(r.inline_link_clicks || 0, 10),
       pixel_purchases: Math.round(actionVal(r.actions, 'purchase')),
       pixel_value: actionVal(r.action_values, 'purchase'),
+      video_3s: Math.round(actionVal(r.actions, 'video_view')),
+      thruplays: Math.round(actionVal(r.video_thruplay_watched_actions, 'video_view')),
       updated_at: now,
     }));
+    for (const r of reach7) {
+      const row = adRows.get(r.ad_id);
+      if (row) { row.reach_7d = parseInt(r.reach || 0, 10); row.frequency_7d = Math.round(num(r.frequency) * 100) / 100; }
+    }
 
     // `angle` tidak disentuh — kekal tag marketer
     await upsertChunks(admin, 'meta_ads', [...adRows.values()], 'ad_id');
     await upsertChunks(admin, 'meta_insights_daily', insightRows, 'ad_id,date');
+    await fillFirstDelivery(admin, conn.marketer_id, insightRows);
     await admin.from('meta_connections').update({
       status: 'ok', status_message: null, checked_at: now, last_synced_at: now, updated_at: now,
     }).eq('marketer_id', conn.marketer_id);
@@ -90,6 +103,21 @@ export async function syncConnection(admin, conn, { days = 3 } = {}) {
       status: isTokenError(e) || !token ? 'error' : conn.status, status_message: message, checked_at: now, updated_at: now,
     }).eq('marketer_id', conn.marketer_id);
     return { ok: false, error: message };
+  }
+}
+
+// Umur ad: hari pertama ad dapat impression (diisi sekali sahaja)
+export async function fillFirstDelivery(admin, marketerId, insightRows) {
+  const first = new Map();
+  for (const r of insightRows) {
+    if (!(r.impressions > 0)) continue;
+    if (!first.has(r.ad_id) || r.date < first.get(r.ad_id)) first.set(r.ad_id, r.date);
+  }
+  if (!first.size) return;
+  const { data } = await admin.from('meta_ads').select('ad_id').eq('marketer_id', marketerId)
+    .is('first_delivery_date', null).in('ad_id', [...first.keys()]);
+  for (const a of data || []) {
+    await admin.from('meta_ads').update({ first_delivery_date: first.get(a.ad_id) }).eq('ad_id', a.ad_id);
   }
 }
 

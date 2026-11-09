@@ -132,11 +132,11 @@ export async function runReadTool(admin, conn, name, input) {
   }
   if (name === 'get_ad_history') {
     const days = Math.min(30, Math.max(1, input.days | 0));
-    const { data: ad } = await admin.from('meta_ads').select('ad_id, name, status, adset_id, adset_name, adset_daily_budget').eq('ad_id', input.ad_id).eq('marketer_id', id).maybeSingle();
+    const { data: ad } = await admin.from('meta_ads').select('ad_id, name, status, adset_id, adset_name, adset_daily_budget, first_delivery_date, frequency_7d, reach_7d').eq('ad_id', input.ad_id).eq('marketer_id', id).maybeSingle();
     if (!ad) return { error: 'Ad tidak dijumpai dalam akaun ini.' };
     const d = ms => new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10);
     const r = await buildReport(admin, id, { period: 'history', from: d(Date.now() - (days - 1) * 86400000), to: d(Date.now()), adId: input.ad_id });
-    return { ad, daily: r.daily.map(x => pick(x, ['date', 'spend', 'orders', 'revenue', 'roas', 'ctr', 'cpm'])) };
+    return { ad, daily: r.daily.map(x => pick(x, ['date', 'spend', 'orders', 'revenue', 'roas', 'cpa', 'ctr', 'cpm', 'impressions', 'hook_rate', 'hold_rate'])) };
   }
   if (name === 'get_account_structure') {
     const { data } = await admin.from('meta_ads').select('ad_id, name, status, adset_id, adset_name, adset_status, adset_daily_budget, campaign_id, campaign_name, campaign_status')

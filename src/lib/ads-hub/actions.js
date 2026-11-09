@@ -18,11 +18,11 @@ export function describeAction(a) {
   return a.action;
 }
 
-async function log(admin, conn, a, { source, actorId }, status, message, before = null, after = null) {
+async function log(admin, conn, a, { source, actorId, note }, status, message, before = null, after = null) {
   await admin.from('meta_actions_log').insert({
     marketer_id: conn.marketer_id, actor_id: actorId || null, source,
     action: a.action, object_type: a.object_type, object_id: a.object_id, object_name: a.object_name || before?.name || null,
-    before, after, status, message,
+    before, after, status, message: [note, message].filter(Boolean).join(' · ') || null,
   });
 }
 

@@ -8,7 +8,10 @@ const DAY = 86400000;
 const mytDate = (ms = Date.now()) => new Date(ms + MYT_MS).toISOString().slice(0, 10);
 const r2 = n => Math.round(n * 100) / 100;
 
-export const METRIC_LABEL = { spend: 'Belanja', orders: 'Order', revenue: 'Jualan', roas: 'ROAS', cpa: 'CPA', ctr: 'CTR link (%)' };
+export const METRIC_LABEL = {
+  spend: 'Belanja', orders: 'Order', revenue: 'Jualan', roas: 'ROAS', cpa: 'CPA', ctr: 'CTR link (%)',
+  cpm: 'CPM (RM)', frequency: 'Frequency 7 hari', age_days: 'Umur ad (hari)', hook_rate: 'Hook rate (%)',
+};
 export const RULE_ACTION_LABEL = { pause: 'Pause ad', pause_adset: 'Pause adset', activate_adset: 'Hidupkan adset', budget_up: 'Naikkan budget adset', budget_down: 'Turunkan budget adset', budget_set: 'Set budget adset', notify: 'Beri amaran sahaja' };
 
 // ---------- Tindakan berjadual ----------
@@ -284,16 +287,19 @@ function adsetAction(rule, s) {
   return { ...base, action: 'set_budget', params: { daily_budget_rm: newRm } };
 }
 
-const fmtMetric = (metric, v) => (v == null ? '—' : metric === 'roas' ? v.toFixed(2) : metric === 'ctr' ? `${v}%` : ['spend', 'revenue', 'cpa'].includes(metric) ? `RM${r2(v)}` : v);
+const fmtMetric = (metric, v) => (v == null ? '—' : ['roas', 'frequency'].includes(metric) ? v.toFixed(2) : ['ctr', 'hook_rate'].includes(metric) ? `${v}%`
+  : ['spend', 'revenue', 'cpa', 'cpm'].includes(metric) ? `RM${r2(v)}` : metric === 'age_days' ? `hari ke-${v}` : v);
 
 /** Peraturan peringkat adset: jumlahkan metrik ad ikut adset, semua syarat mesti benar. */
 async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
   const agg = new Map();
   for (const a of rep.ads) {
     if (!a.adset_id) continue;
-    const g = agg.get(a.adset_id) || { spend: 0, orders: 0, revenue: 0, impressions: 0, link_clicks: 0 };
+    const g = agg.get(a.adset_id) || { spend: 0, orders: 0, revenue: 0, impressions: 0, link_clicks: 0, video_3s: 0, reach7: 0, imp7: 0, age: null };
     g.spend += a.spend || 0; g.orders += a.orders || 0; g.revenue += a.revenue || 0;
-    g.impressions += a.impressions || 0; g.link_clicks += a.link_clicks || 0;
+    g.impressions += a.impressions || 0; g.link_clicks += a.link_clicks || 0; g.video_3s += a.video_3s || 0;
+    if (a.reach_7d && a.frequency) { g.reach7 += a.reach_7d; g.imp7 += a.reach_7d * a.frequency; }
+    if (a.age_days != null) g.age = Math.max(g.age ?? 0, a.age_days);   // umur adset = ad paling lama
     agg.set(a.adset_id, g);
   }
   const conds = [{ metric: rule.metric, operator: rule.operator, value: rule.value }, ...(rule.conditions || [])];
@@ -307,6 +313,9 @@ async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
       spend: r2(g.spend), orders: g.orders, revenue: r2(g.revenue),
       roas: g.spend > 0 ? r2(g.revenue / g.spend) : null, cpa: g.orders ? r2(g.spend / g.orders) : null,
       ctr: g.impressions ? r2((g.link_clicks / g.impressions) * 100) : null,
+      cpm: g.impressions ? r2((g.spend / g.impressions) * 1000) : null,
+      frequency: g.reach7 ? r2(g.imp7 / g.reach7) : null, age_days: g.age,
+      hook_rate: g.video_3s && g.impressions ? r2((g.video_3s / g.impressions) * 100) : null,
     };
     if (!conds.every(c => m[c.metric] != null && cmp(m[c.metric], c.operator, Number(c.value)))) continue;
     const action = rule.action === 'notify' ? null : adsetAction(rule, s);

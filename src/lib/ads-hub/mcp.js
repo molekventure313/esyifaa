@@ -54,6 +54,7 @@ const RANGE = {
 };
 const PRODUCT = enm(AD_PRODUCT_KEYS, 'Tapis ikut produk (produk kempen ikut tetapan kad Ads Spend). Kosong = semua produk.');
 
+const RULE_METRICS = ['spend', 'orders', 'revenue', 'roas', 'cpa', 'ctr', 'cpm', 'frequency', 'age_days', 'hook_rate'];
 const BASIS = 'Jualan & order datang dari order sebenar dalam sistem E-Syifa (completed, bukan return, FPX/COD), bukan pixel. Kos ads = belanja Meta + SST 8%. Profit lepas ads = jualan − kos produk & postage − kos ads. ROI = profit lepas ads ÷ kos ads. ROAS = jualan ÷ belanja Meta (tanpa SST).';
 
 export const TOOLS = [
@@ -64,12 +65,12 @@ export const TOOLS = [
   },
   {
     name: 'get_overview',
-    description: `Ringkasan prestasi untuk satu tempoh: belanja, order, jualan, ROAS sebenar, profit lepas ads, ROI, CPA; trend harian; prestasi ikut kempen dan angle. Ringkasan & trend kira SEMUA order akaun (organik/WhatsApp pun datang kesan ads); summary.ad_* = order yang dipadankan terus dengan ad melalui UTM. ${BASIS}`,
+    description: `Ringkasan prestasi untuk satu tempoh: belanja, order, jualan, ROAS sebenar, profit lepas ads, ROI, CPA; trend harian; prestasi ikut kempen dan angle. Ringkasan & trend kira SEMUA order akaun (organik/WhatsApp pun datang kesan ads); summary.ad_* = order yang dipadankan terus dengan ad melalui UTM. returns = kadar return COD (tempoh, matang 15–44 hari) + roas_adjusted_est (ROAS selepas tolak anggaran return tertunda) — guna untuk keputusan pada data terkini. ${BASIS}`,
     inputSchema: obj({ ...RANGE, product: PRODUCT }),
   },
   {
     name: 'get_ads',
-    description: 'Prestasi setiap ad untuk satu tempoh (hanya ad yang ada belanja/order atau sedang berjalan): status, adset, budget harian, angle, headline, belanja, order & jualan yang dipadankan melalui UTM, ROAS, profit, ROI, CPA, CTR, CPM, ROAS pixel. Guna untuk cari ad/hook/angle yang menang atau kalah.',
+    description: 'Prestasi setiap ad untuk satu tempoh (hanya ad yang ada belanja/order atau sedang berjalan): status, adset, budget harian, angle, headline, umur ad (age_days, hari ke-N sejak impression pertama), belanja, order & jualan yang dipadankan melalui UTM, ROAS, profit, ROI, CPA, CTR, CPM, frequency 7 hari, hook rate & hold rate video, ROAS pixel. Guna untuk cari ad/hook/angle yang menang, kalah atau letih.',
     inputSchema: obj({ ...RANGE, product: PRODUCT, only_running: bool('true = ad yang sedang ACTIVE sahaja'), limit: int('Bilangan ad maksimum (lalai 50, maks 200), disusun ikut belanja') }),
   },
   {
@@ -102,6 +103,7 @@ export const TOOLS = [
       insights: { type: 'array', description: 'Belanja harian setiap ad', items: obj({
         ad_id: str('ID ad'), date: str('YYYY-MM-DD (date_start)'), spend: { type: 'number', description: 'Belanja (tanpa SST)' },
         impressions: int('Impressions'), reach: int('Reach'), link_clicks: int('inline_link_clicks'),
+        video_3s: int('3-second video views (actions video_view, pilihan — untuk hook rate)'), thruplays: int('ThruPlay (video_thruplay_watched_actions, pilihan)'),
         purchases: int('Purchase pixel (pilihan)'), purchase_value: { type: 'number', description: 'Nilai purchase pixel (pilihan)' },
         ad_name: str('Nama ad'), adset_id: str('ID adset'), adset_name: str('Nama adset'), campaign_id: str('ID kempen'), campaign_name: str('Nama kempen'),
       }, ['ad_id', 'date', 'spend']) },
@@ -127,14 +129,14 @@ Dua jenis:
 2) Ikut jam: run_at_time 'HH:mm' (waktu Malaysia) → tindakan pada semua adset dalam kempen aktif sekali sehari; action hanya pause_adset / activate_adset / budget_set; syarat diabaikan.
 Tindakan: pause (ad), pause_adset, activate_adset, budget_up / budget_down (action_value = peratus 1–100, action_max = had budget RM untuk budget_up), budget_set (action_value = budget baru RM, peringkat adset), notify (amaran sahaja).
 mode 'suggest' = cadangan di dashboard untuk disahkan; 'auto' = terus dilaksana (tertakluk had keselamatan akaun). scope 'autopilot' = hanya kempen [AUTOPILOT].
-Metrik: spend, orders, revenue, roas (nisbah), cpa (RM), ctr (%).`,
+Metrik: spend, orders, revenue, roas (nisbah), cpa (RM), ctr (%), cpm (RM), frequency (7 hari sebenar dari Meta, tidak ikut window_days), age_days (hari ke-N sejak impression pertama, hari pertama = 1; cth age_days >= 3 = beri peluang 2 hari dulu), hook_rate (% 3-saat video views ÷ impressions).`,
     inputSchema: obj({
       name: str('Nama peraturan (maks 80 aksara)'),
-      metric: enm(['spend', 'orders', 'revenue', 'roas', 'cpa', 'ctr'], 'Metrik syarat utama (abaikan untuk run_at_time)'),
+      metric: enm(RULE_METRICS, 'Metrik syarat utama (abaikan untuk run_at_time)'),
       operator: enm(['>', '>=', '<', '<=', '='], 'Operator'),
       value: { type: 'number', description: 'Nilai ambang' },
       conditions: { type: 'array', description: 'Syarat tambahan (DAN), maks 3', items: obj({
-        metric: enm(['spend', 'orders', 'revenue', 'roas', 'cpa', 'ctr'], 'Metrik'), operator: enm(['>', '>=', '<', '<=', '='], 'Operator'), value: { type: 'number', description: 'Nilai' },
+        metric: enm(RULE_METRICS, 'Metrik'), operator: enm(['>', '>=', '<', '<=', '='], 'Operator'), value: { type: 'number', description: 'Nilai' },
       }, ['metric', 'operator', 'value']) },
       window_days: int('Tempoh penilaian 1–30 hari (1 = hari ini)'),
       min_spend: { type: 'number', description: 'Nilai hanya jika belanja tempoh ≥ RM ini (0 = tiada)' },
@@ -232,6 +234,16 @@ export const AUTOPILOT_TOOLS = [
     name: 'complete_launch',
     description: 'Lengkapkan launch hibrid selepas ad dicipta melalui MCP Meta Ads: sahkan ad berada dalam adset launch ini & creative ada url_tags utm_content={{ad.id}}, semak had sekali lagi, kemudian aktifkan adset (dijadual 06:00). Status jadi "scheduled".',
     inputSchema: obj({ launch_id: int('launch_id dari prepare_launch'), ad_id: str('ID ad yang dicipta melalui MCP Meta Ads') }, ['launch_id', 'ad_id']),
+  },
+  {
+    name: 'set_ad_status',
+    description: `Ejen: pause atau hidupkan semula ad / adset dalam kempen autopilot ([AUTOPILOT] / [1-1-1]) akaun ini — untuk kill ad kalah atau hidupkan semula ikut SOP. Server buat panggilan Meta (token tak didedahkan). Kelulusan ikut MOD akaun: manual = HANYA selepas pengguna setuju; shadow = direkod sahaja (tiada perubahan di Meta); veto/auto = terus ikut SOP. Had server: objek di luar kempen autopilot ditolak; suis autopilot OFF = pause sahaja; hidupkan adset ikut slot & had bajet harian; maksimum 20 perubahan sehari. reason WAJIB (data + rujukan SOP) — direkod dalam Log Ads Hub. Untuk kill satu angle penuh, pause adset; untuk buang satu creative dalam adset, pause ad.`,
+    inputSchema: obj({
+      object_type: enm(['ad', 'adset'], 'ad atau adset'),
+      object_id: str('ID ad / adset Meta (dari get_ads / get_account_structure / autopilot_status)'),
+      status: enm(['PAUSED', 'ACTIVE'], 'PAUSED = kill/pause, ACTIVE = hidupkan semula'),
+      reason: str('Sebab berdasarkan data + peraturan SOP, cth "Hari ke-3: ROAS 3 hari 1.1, belanja RM130, 1 order — SOP A2 kill"'),
+    }, ['object_type', 'object_id', 'status', 'reason']),
   },
   {
     name: 'cancel_launch',
@@ -338,6 +350,7 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
     if (name === 'prepare_launch') return autopilot.prepareLaunch(admin, mid, actor, input);
     if (name === 'complete_launch') return autopilot.completeLaunch(admin, mid, actor, input);
     if (name === 'cancel_launch') return autopilot.cancelLaunch(admin, mid, actor, input);
+    if (name === 'set_ad_status') return autopilot.setAdStatus(admin, mid, actor, input);
   }
   const needConn = async () => {
     const c = await connectionOf(admin, mid);
@@ -414,6 +427,7 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
     return {
       period: r.period, from: r.from, to: r.to, product: r.product,
       summary: r.summary,
+      returns: await returnStats(admin, profile, r).catch(e => ({ error: e.message })),
       daily: r.daily.map(d => pick(d, ['date', ...METRIC_KEYS])),
       campaigns: r.campaigns.map(c => pick(c, ['campaign_id', 'campaign_name', 'ads', 'running', ...METRIC_KEYS])),
       angles: r.angles.map(a => pick(a, ['angle', 'ads', 'running', ...METRIC_KEYS])),
@@ -427,8 +441,10 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
     const ads = (input.only_running ? r.ads.filter(a => a.running) : r.ads).slice(0, limit);
     return {
       period: r.period, from: r.from, to: r.to, product: r.product, total_ads: r.ads.length,
+      note: 'age_days = hari ke-N sejak impression pertama (1 = hari pertama). frequency/reach_7d = 7 hari terakhir dari Meta (bukan ikut tempoh). hook_rate = 3-saat views ÷ impressions (%), hold_rate = ThruPlay ÷ 3-saat views (%) — video sahaja.',
       ads: ads.map(a => pick(a, ['ad_id', 'name', 'headline', 'status', 'campaign_name', 'adset_id', 'adset_name', 'daily_budget', 'angle',
-        ...METRIC_KEYS, 'ctr', 'cpm', 'impressions', 'link_clicks', 'pixel_purchases', 'pixel_roas'])),
+        'first_delivery_date', 'age_days', ...METRIC_KEYS, 'ctr', 'cpm', 'frequency', 'reach_7d', 'hook_rate', 'hold_rate',
+        'impressions', 'link_clicks', 'pixel_purchases', 'pixel_roas'])),
     };
   }
 
@@ -443,6 +459,44 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
   if (name === 'get_orders_summary') return ordersSummary(admin, profile, range(input), productArg(input.product));
 
   throw fail(`Alat tidak dikenali: ${name}`);
+}
+
+// Kadar return COD: order baru belum sempat return, jadi ROAS tempoh terkini terlebih anggar.
+// Kadar "matang" = order 15–44 hari lalu (return dah selesai). Anggaran return tertunda = order COD < 15 hari × kadar matang − yang dah return.
+const RETURN_MATURE_DAYS = 15;
+async function returnStats(admin, profile, rep) {
+  if (profile.role === 'independent') return { note: 'Kadar return untuk akaun fighter belum disokong di sini.' };
+  const owner = await resolveOwner(admin, profile.role === 'super_admin' ? 'hq' : profile.id);
+  const DAYMS = 86400000;
+  const d = ms => new Date(ms + 8 * 3600000).toISOString().slice(0, 10);
+  const matureTo = d(Date.now() - RETURN_MATURE_DAYS * DAYMS);
+  const matureFrom = d(Date.now() - (RETURN_MATURE_DAYS + 29) * DAYMS);
+  const from = rep.from < matureFrom ? rep.from : matureFrom;
+  const rows = await fetchAll(() => applyOwner(admin.from('submissions').select('id, source, payment_type, created_at, returned_at'), owner)
+    .eq('payment_status', 'completed').in('payment_type', ['fpx_payment', 'cod'])
+    .gte('created_at', `${from}T00:00:00+08:00`).lte('created_at', `${rep.to}T23:59:59+08:00`).order('created_at'));
+  const prod = s => productOf(s.source) || DIGITAL_AD.key;
+  const mine = rows.filter(s => !rep.product || prod(s) === rep.product);
+  const day = s => d(new Date(s.created_at).getTime());
+  const rate = list => (list.length ? r2((list.filter(s => s.returned_at).length / list.length) * 100) : null);
+  const inPeriod = mine.filter(s => day(s) >= rep.from && day(s) <= rep.to);
+  const mature = mine.filter(s => day(s) >= matureFrom && day(s) <= matureTo);
+  const matureCod = mature.filter(s => s.payment_type === 'cod');
+  const codRate = matureCod.length ? matureCod.filter(s => s.returned_at).length / matureCod.length : 0;
+  const young = inPeriod.filter(s => s.payment_type === 'cod' && day(s) > matureTo);
+  const pending = Math.max(0, Math.round(young.length * codRate - young.filter(s => s.returned_at).length));
+  const sm = rep.summary;
+  const revAdj = Math.max(0, (sm.revenue || 0) - pending * (sm.aov || 0));
+  return {
+    period_orders_incl_returned: inPeriod.length,
+    period_returned: inPeriod.filter(s => s.returned_at).length,
+    period_return_rate_pct: rate(inPeriod),
+    mature_window: { from: matureFrom, to: matureTo },
+    mature_return_rate_pct: rate(mature), mature_cod_return_rate_pct: rate(matureCod), mature_cod_orders: matureCod.length,
+    young_cod_orders: young.length, expected_pending_returns: pending,
+    revenue_adjusted_est: r2(revAdj), roas_adjusted_est: sm.spend > 0 ? r2(revAdj / sm.spend) : null,
+    note: `Order COD < ${RETURN_MATURE_DAYS} hari belum tentu sampai/dibayar. roas_adjusted_est = ROAS selepas tolak anggaran return tertunda (kadar return COD matang). Guna ini untuk keputusan scale/kill pada data 1–14 hari terakhir.`,
+  };
 }
 
 async function ordersSummary(admin, profile, { period, from, to }, product) {
@@ -497,4 +551,4 @@ export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar a
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
 Peraturan auto Ads Hub: list_rules, list_rule_templates, apply_rule_templates, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
-Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
+Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch, set_ad_status untuk pause/hidupkan ad dalam kempen autopilot). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
