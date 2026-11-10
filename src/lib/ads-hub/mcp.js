@@ -148,6 +148,7 @@ Metrik: spend, orders, revenue, roas (nisbah), cpa (RM), ctr (%), cpm (RM), freq
       action_max: { type: 'number', description: 'Had budget maksimum RM untuk budget_up (pilihan)' },
       mode: enm(['suggest', 'auto'], 'suggest atau auto'),
       scope: enm(['all', 'autopilot'], 'all (lalai) atau autopilot sahaja'),
+      product: enm(['sabun-garam', 'garam-pengasihan', 'kasturi-kijang', 'pengisian'], 'Hanya kempen produk ini (produk kempen ikut tetapan kad Ads Spend). Kosong = semua produk. Produk yang ada peraturan ikut-syarat sendiri tidak dinilai oleh peraturan ikut-syarat umum; peraturan ikut jam umum tetap terpakai.'),
     }, ['name', 'action', 'mode']),
   },
   {

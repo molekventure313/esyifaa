@@ -377,6 +377,16 @@ async function insertRow(admin, marketerId, p, budget) {
   return data;
 }
 
+// Produk kempen = tetapan rasmi kad Ads Spend (meta_campaign_products) — peraturan ikut produk & ads spend tak perlu teka dari nama.
+// Kempen utama tanpa produk = Sabun Garam. Tetapan manual sedia ada tidak ditimpa.
+async function tagCampaignProduct(admin, marketerId, campaignId, product) {
+  if (!product || !AD_PRODUCT_KEYS.includes(product)) return;
+  await admin.from('meta_campaign_products').upsert(
+    { marketer_id: marketerId, campaign_id: String(campaignId), product, updated_at: new Date().toISOString() },
+    { onConflict: 'marketer_id,campaign_id', ignoreDuplicates: true },
+  ).then(() => {}, () => {});
+}
+
 async function createAdset(admin, conn, token, row, p, status, save, actorId) {
   const budget = Number(row.daily_budget);
   const tpl = await templateOf(conn, token);
@@ -394,6 +404,7 @@ async function createAdset(admin, conn, token, row, p, status, save, actorId) {
     throw e;
   }
   await save({ campaign_id: campaignId, adset_id: adset.id });
+  await tagCampaignProduct(admin, row.marketer_id, campaignId, p.own_campaign ? p.product : p.product || 'sabun-garam');
   await log(admin, row.marketer_id, actorId, 'create_adset', 'adset', adset.id, name, 'ok', `Adset ${rm(budget)}/hari (${status}), mula ${row.start_time}`, { daily_budget_rm: budget, start_time: row.start_time, status });
 }
 

@@ -2,6 +2,7 @@
 // Ads Hub — panel tambahan: amaran & cadangan, laporan pagi, log, peraturan & jadual, had keselamatan, Chat Ads.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { theme, useLightMode, Card, Spinner, btn, th, td, ago } from './AdsHub';
+import { PRODUCTS, DIGITAL_AD } from '@/lib/products';
 
 // marketerId kosong = akaun pemanggil sendiri (marketer, atau HQ bagi super_admin)
 const q = marketerId => (marketerId ? `?marketer=${marketerId}` : '');
@@ -214,6 +215,7 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
   const [msg, setMsg] = useState('');
   const [tpls, setTpls] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [ptab, setPtab] = useState('');   // '' = peraturan umum; kunci produk = peraturan produk itu
   const load = useCallback(async () => {
     const [r, s, tp] = await Promise.all([
       getJson(`/api/ads-hub/rules${q(marketerId)}`), getJson(`/api/ads-hub/schedules${q(marketerId)}`), getJson('/api/ads-hub/rules/templates'),
@@ -238,7 +240,7 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
     name: r.name, metric: r.metric || 'spend', operator: r.operator || '>', value: r.value ?? 0, conditions: r.conditions || [],
     window_days: r.window_days ?? 1, min_spend: r.min_spend ?? 0, level: r.level || 'ad', frequency: r.frequency || 'daily',
     run_at_time: r.run_at_time || '', action: r.action, action_value: r.action_value ?? '', action_max: r.action_max ?? '',
-    mode: r.mode || 'suggest', scope: r.scope || 'all',
+    mode: r.mode || 'suggest', scope: r.scope || 'all', product: r.product || '',
   });
   const applyAll = async list => {
     const autoN = list.filter(x => x.mode === 'auto').length;
@@ -255,6 +257,10 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
 
   const names = new Set(rules.map(r => r.name));
   const fresh = tpls.filter(x => !names.has(x.name));
+  const PTABS = [{ key: '', label: 'Umum' }, ...[...PRODUCTS, DIGITAL_AD].map(p => ({ key: p.key, label: p.label }))];
+  const shown = rules.filter(r => (r.product || '') === ptab);
+  const ownCond = shown.some(r => !r.run_at_time && r.active);   // enjin hanya kira peraturan aktif
+  const ptabLabel = PTABS.find(x => x.key === ptab)?.label;
 
   return (
     <div style={{ fontFamily: t.ff, color: t.text }}>
@@ -278,12 +284,29 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
         </Card>
       )}
 
-      <Card t={t} title="Peraturan auto" sub="Peraturan ikut syarat dinilai setiap jam guna order sebenar (peringkat adset: kempen aktif sahaja); peraturan ikut jam dijalankan sekali sehari pada masa ditetapkan. Mod cadang = muncul di dashboard untuk anda Laksana; mod auto = terus dilaksana (tertakluk had di Tetapan)."
-        right={canEdit && !form && <button onClick={() => setForm({ ...PRESETS[0] })} style={btn(t, true)}>+ Peraturan baru</button>} pad={false}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        {PTABS.map(x => {
+          const n = rules.filter(r => (r.product || '') === x.key).length;
+          const on = ptab === x.key;
+          return (
+            <button key={x.key || 'all'} id={`rules-tab-${x.key || 'umum'}`} onClick={() => { setPtab(x.key); setForm(null); }}
+              style={{ ...btn(t, on), opacity: on || n ? 1 : 0.6 }}>{x.label} <span style={{ opacity: 0.75 }}>({n})</span></button>
+          );
+        })}
+      </div>
+      {ptab && (
+        <div style={{ padding: '0.65rem 1rem', borderRadius: 8, border: t.border, fontSize: '0.78rem', marginBottom: '0.75rem', color: t.text2 }}>
+          {ownCond
+            ? <>Kempen <b>{ptabLabel}</b> ikut peraturan ikut-syarat di bawah sahaja — peraturan ikut-syarat <b>Umum</b> (tutup, tangga scale) tidak menyentuh kempen ini. Peraturan ikut jam Umum (reset budget, tutup/hidup semua) tetap terpakai.</>
+            : <>Tiada peraturan ikut-syarat khas yang aktif untuk <b>{ptabLabel}</b> — kempen produk ini ikut peraturan <b>Umum</b>. Cipta peraturan di sini untuk mengatasinya.</>}
+        </div>
+      )}
+      <Card t={t} title={ptab ? `Peraturan auto · ${ptabLabel}` : 'Peraturan auto · Umum'} sub="Peraturan ikut syarat dinilai setiap jam guna order sebenar (peringkat adset: kempen aktif sahaja); peraturan ikut jam dijalankan sekali sehari pada masa ditetapkan. Mod cadang = muncul di dashboard untuk anda Laksana; mod auto = terus dilaksana (tertakluk had di Tetapan)."
+        right={canEdit && !form && <button onClick={() => setForm({ ...PRESETS[0], product: ptab })} style={btn(t, true)}>+ Peraturan baru</button>} pad={false}>
         {form && (
           <div style={{ padding: '1rem 1.25rem', borderBottom: t.border, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: '0.75rem', color: t.muted, alignItems: 'center' }}>
-              {form.editId ? <b style={{ color: t.text }}>Ubah peraturan #{form.editId}</b> : <>Templat: {PRESETS.map(p => <button key={p.name} onClick={() => setForm({ ...p })} style={btn(t)}>{p.name}</button>)}</>}
+              {form.editId ? <b style={{ color: t.text }}>Ubah peraturan #{form.editId}</b> : <>Templat: {PRESETS.map(p => <button key={p.name} onClick={() => setForm({ ...p, product: ptab })} style={btn(t)}>{p.name}</button>)}</>}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: '0.82rem' }}>
               <input id="rule-name" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nama peraturan" style={{ ...field, minWidth: 180 }} />
@@ -338,6 +361,10 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
                   <option value="all">Semua kempen</option><option value="autopilot">Kempen autopilot sahaja</option>
                 </select>
               )}
+              <select id="rule-product" value={form.product || ''} onChange={e => set('product', e.target.value)} style={field} title="Peraturan produk mengatasi peraturan ikut-syarat umum untuk kempen produk itu">
+                <option value="">Semua produk</option>
+                {[...PRODUCTS, DIGITAL_AD].map(p => <option key={p.key} value={p.key}>{p.label} sahaja</option>)}
+              </select>
               <select id="rule-mode" value={form.mode} onChange={e => set('mode', e.target.value)} style={field}>
                 <option value="suggest">Cadang sahaja</option><option value="auto">Auto laksana</option>
               </select>
@@ -346,7 +373,7 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
             </div>
           </div>
         )}
-        {rules.map(r => (
+        {shown.map(r => (
           <div key={r.id} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.75rem 1.25rem', borderBottom: t.rowBorder, flexWrap: 'wrap', opacity: r.active ? 1 : 0.6 }}>
             <div style={{ flex: '1 1 280px', minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{r.name} {!r.active && <span style={{ color: t.muted, fontWeight: 500 }}>(tidak aktif)</span>}</div>
@@ -363,7 +390,7 @@ export function RulesTab({ marketerId, canEdit, autopilot }) {
             )}
           </div>
         ))}
-        {!rules.length && !form && <div style={{ padding: '1.5rem 1.25rem', color: t.muted, fontSize: '0.84rem' }}>Belum ada peraturan. Cipta di sini atau minta dalam chat, contoh: "pause ad yang ROAS bawah 1 selepas belanja RM60".</div>}
+        {!shown.length && !form && <div style={{ padding: '1.5rem 1.25rem', color: t.muted, fontSize: '0.84rem' }}>Belum ada peraturan. Cipta di sini atau minta dalam chat, contoh: "pause ad yang ROAS bawah 1 selepas belanja RM60".</div>}
       </Card>
 
       <Card t={t} title="Tindakan berjadual" sub="Dicipta melalui chat, contoh: &quot;hidupkan adset Lebam Jumaat 8 malam&quot;. Dijalankan setiap 10 minit." pad={false}>

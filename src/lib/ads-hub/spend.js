@@ -12,10 +12,11 @@ const round2 = n => Math.round((n || 0) * 100) / 100;
 // Teka produk dari nama campaign/adset/ad. null = tak pasti.
 export function guessProduct(...names) {
   const s = names.filter(Boolean).join(' ').toLowerCase();
-  if (/pengisian|rawatan|ruqyah|scanning/.test(s)) return DIGITAL_AD.key;
+  // Produk fizikal dulu — nama angle selalu sebut "ruqyah" (cth "Sabun Garam · Mandian Ruqyah")
   if (/pengasihan/.test(s)) return 'garam-pengasihan';
   if (/kasturi|kijang/.test(s)) return 'kasturi-kijang';
   if (/sabun/.test(s)) return 'sabun-garam';
+  if (/pengisian|rawatan|ruqyah|scanning/.test(s)) return DIGITAL_AD.key;
   return null;
 }
 

@@ -2,6 +2,8 @@
 import { executeAction, describeAction } from './actions';
 import { buildReport, fetchAll } from './report';
 import { autopilotCampaignIds } from './autopilot';
+import { campaignProducts } from './spend';
+import { PRODUCTS, DIGITAL_AD, AD_PRODUCT_KEYS } from '@/lib/products';
 
 const MYT_MS = 8 * 3600 * 1000;
 const DAY = 86400000;
@@ -88,6 +90,7 @@ export function validateRule(r) {
   if (!RULE_ACTION_LABEL[r.action]) errs.push('tindakan');
   if (!['suggest', 'auto'].includes(r.mode)) errs.push('mod');
   if (r.scope && !['all', 'autopilot'].includes(r.scope)) errs.push('skop');
+  if (r.product && !AD_PRODUCT_KEYS.includes(r.product)) errs.push('produk');
   if (r.action === 'budget_set' && !(Number(r.action_value) >= 1 && Number(r.action_value) <= 100000)) errs.push('budget baru (RM)');
   if (r.action_max != null && r.action_max !== '' && !(Number(r.action_max) >= 1)) errs.push('had budget maksimum');
   if (r.run_at_time) {
@@ -118,8 +121,11 @@ function actionText(r) {
   return RULE_ACTION_LABEL[r.action];
 }
 
+const productLabel = k => [...PRODUCTS, DIGITAL_AD].find(p => p.key === k)?.label || k;
+
 export function describeRule(r) {
-  const tail = ` · ${r.mode === 'auto' ? 'AUTO' : 'cadang sahaja'}` + (r.scope === 'autopilot' ? ' · kempen autopilot sahaja' : '');
+  const tail = ` · ${r.mode === 'auto' ? 'AUTO' : 'cadang sahaja'}` + (r.scope === 'autopilot' ? ' · kempen autopilot sahaja' : '')
+    + (r.product ? ` · ${productLabel(r.product)} sahaja` : '');
   if (r.run_at_time) return `Setiap hari ${r.run_at_time} → ${actionText(r)} (semua adset dalam kempen aktif)${tail}`;
   const conds = [{ metric: r.metric, operator: r.operator, value: r.value }, ...(r.conditions || [])].map(condText).join(' dan ');
   const win = Number(r.window_days) === 1 ? 'hari ini' : `dalam ${r.window_days} hari`;
@@ -143,7 +149,9 @@ function ruleRow(r, full = false) {
   const conditions = !timed && r.conditions?.length ? r.conditions.map(c => ({ metric: c.metric, operator: c.operator, value: Number(c.value) })) : [];
   const frequency = !timed && r.frequency === 'hourly' ? 'hourly' : 'daily';
   const action_max = r.action === 'budget_up' && Number(r.action_max) > 0 ? Number(r.action_max) : null;
+  const product = AD_PRODUCT_KEYS.includes(r.product) ? r.product : null;   // migration 041
   if (full || scope !== 'all') row.scope = scope;
+  if (full || product) row.product = product;
   if (full || timed) row.run_at_time = timed ? r.run_at_time : null;
   if (full || level !== 'ad') row.level = level;
   if (full || conditions.length) row.conditions = conditions;
@@ -174,7 +182,7 @@ export async function updateRule(admin, marketerId, id, r) {
 }
 
 // ---------- Templat peraturan = peraturan akaun HQ (super_admin) ----------
-const TEMPLATE_KEYS = ['name', 'metric', 'operator', 'value', 'conditions', 'window_days', 'min_spend', 'level', 'frequency', 'run_at_time', 'action', 'action_value', 'action_max', 'mode', 'scope'];
+const TEMPLATE_KEYS = ['name', 'metric', 'operator', 'value', 'conditions', 'window_days', 'min_spend', 'level', 'frequency', 'run_at_time', 'action', 'action_value', 'action_max', 'mode', 'scope', 'product'];
 export async function ruleTemplates(admin) {
   const { data: hq } = await admin.from('profiles').select('id').eq('role', 'super_admin');
   const ids = (hq || []).map(p => p.id);
@@ -259,7 +267,25 @@ async function blockedAdsets(admin, marketerId) {
 
 // Skop autopilot = semua kempen [AUTOPILOT] akaun ini (kempen utama + kempen setiap produk); conn.apCampaigns diisi oleh withApCampaigns
 const inScope = (rule, conn, s) => s.campaign_status === 'ACTIVE'
-  && (rule.scope !== 'autopilot' || !!conn.apCampaigns?.has(s.campaign_id));
+  && (rule.scope !== 'autopilot' || !!conn.apCampaigns?.has(s.campaign_id))
+  && productOk(rule, conn, s.campaign_id);
+
+/** Produk setiap kempen (conn.campProd) + produk yang ada peraturan ikut-syarat sendiri (conn.ownProducts). */
+async function withProducts(admin, conn, rules) {
+  if (conn.campProd) return conn;
+  conn.ownProducts = new Set(rules.filter(r => r.product && !r.run_at_time).map(r => r.product));
+  conn.campProd = new Map();
+  if (rules.some(r => r.product)) for (const c of await campaignProducts(admin, conn)) conn.campProd.set(c.campaign_id, c.product);
+  return conn;
+}
+
+// Peraturan produk → kempen produk itu sahaja. Peraturan ikut-syarat umum → langkau produk yang ada peraturan sendiri
+// (peraturan ikut jam umum — reset budget, tutup/hidup semua — tetap terpakai pada semua produk).
+const productOk = (rule, conn, campaignId) => {
+  const p = conn.campProd?.get(campaignId);
+  if (rule.product) return p === rule.product;
+  return !!rule.run_at_time || !p || !conn.ownProducts?.has(p);
+};
 async function withApCampaigns(admin, conn) {
   if (!conn.apCampaigns) conn.apCampaigns = new Set(await autopilotCampaignIds(admin, conn));
   return conn;
@@ -324,7 +350,7 @@ async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
     // Jangan naikkan budget selepas 9 malam (budget direset 23:30)
     if (raise && ctx.hour >= SCALE_CUTOFF_HOUR) continue;
     // Tangga scale: naik satu anak tangga sahaja setiap larian (jam) — tiada lompat RM60 → RM150
-    if (raise && (ctx.raised.has(id) || ctx.ladder.some(v => v > s.daily_budget && v < action.params.daily_budget_rm))) continue;
+    if (raise && (ctx.raised.has(id) || ctx.ladderFor(s.campaign_id).some(v => v > s.daily_budget && v < action.params.daily_budget_rm))) continue;
     const win = Number(rule.window_days) === 1 ? 'hari ini' : `${rule.window_days} hari`;
     const ok = await fireRule(admin, conn, rule, {
       marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: action ? 'info' : 'warn',
@@ -352,6 +378,7 @@ export async function runTimeRules(admin, { budgetMs = 15000 } = {}) {
     if (Date.now() - started > budgetMs) break;
     const { data: conn } = await admin.from('meta_connections').select('*').eq('marketer_id', rule.marketer_id).maybeSingle();
     if (!conn || conn.status === 'error') continue;
+    await withProducts(admin, conn, [rule]);
     const [adsets, blocked] = await Promise.all([adsetIndex(admin, rule.marketer_id), blockedAdsets(admin, rule.marketer_id)]);
     const out = { suggestions: 0, executed: 0 };
     let done = true;
@@ -394,6 +421,7 @@ export async function evaluateConnection(admin, conn) {
   }
 
   const { data: rules } = await admin.from('meta_rules').select('*').eq('marketer_id', conn.marketer_id).eq('active', true);
+  await withProducts(admin, conn, rules || []);
   let adsetCtx = null;
   for (const rule of rules || []) {
     if (rule.run_at_time) continue;   // dijalankan oleh runTimeRules
@@ -401,9 +429,10 @@ export async function evaluateConnection(admin, conn) {
     if (rule.level === 'adset') {
       if (!adsetCtx) {
         const [adsets, blocked] = await Promise.all([adsetIndex(admin, conn.marketer_id), blockedAdsets(admin, conn.marketer_id)]);
-        // Anak tangga = semua peraturan bersyarat "set budget RMx" peringkat adset yang aktif
-        const ladder = rules.filter(r => r.level === 'adset' && r.action === 'budget_set' && !r.run_at_time).map(r => Number(r.action_value));
-        adsetCtx = { adsets, blocked, today, hour: new Date(Date.now() + MYT_MS).getUTCHours(), ladder, raised: new Set() };
+        // Anak tangga = peraturan bersyarat "set budget RMx" peringkat adset yang aktif & terpakai pada produk kempen itu
+        const steps = rules.filter(r => r.level === 'adset' && r.action === 'budget_set' && !r.run_at_time);
+        const ladderFor = cid => steps.filter(r => productOk(r, conn, cid)).map(r => Number(r.action_value));
+        adsetCtx = { adsets, blocked, today, hour: new Date(Date.now() + MYT_MS).getUTCHours(), ladderFor, raised: new Set() };
       }
       await evaluateAdsetRule(admin, conn, rule, rep, adsetCtx, out);
       await admin.from('meta_rules').update({ last_run_at: new Date().toISOString() }).eq('id', rule.id);
@@ -414,7 +443,7 @@ export async function evaluateConnection(admin, conn) {
     const autopilot = rule.scope === 'autopilot';
     if (autopilot) await withApCampaigns(admin, conn);
     if (autopilot && !conn.apCampaigns.size) continue;
-    const inRuleScope = a => !autopilot || conn.apCampaigns.has(a.campaign_id);
+    const inRuleScope = a => (!autopilot || conn.apCampaigns.has(a.campaign_id)) && productOk(rule, conn, a.campaign_id);
     const apBudgets = new Map();
     if (autopilot) for (const a of rep.ads) if (a.running && inRuleScope(a) && a.daily_budget != null) apBudgets.set(a.adset_id, a.daily_budget);
     for (const ad of rep.ads.filter(a => a.running && inRuleScope(a))) {
