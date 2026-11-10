@@ -1,9 +1,9 @@
 # Templat Strategi — Ejen AI 01 (v2, full-stack media buyer)
 
-**Nama templat:** Ejen Uji — Sabun Garam & Garam Pengasihan
-**Ringkasan:** Kitaran hidup ad penuh (uji → sah → scale → refresh → kill), KPI ROAS 2.0, 2 launch sehari
+**Nama templat:** Ejen Uji — Sabun Garam & Garam Pengasihan (kini 3 produk; nama dikekalkan)
+**Ringkasan:** 3 produk × 3 ad, struktur 1-1-1, kitaran hidup ad penuh (uji → sah → scale → letih → kill), KPI ROAS 2.0
 
-**Had (borang templat):** bajet adset RM60 · slot 5 · had harian RM500 · launch/hari 2 · budget adset maks RM500 (tangga) · KPI ROAS 2.0 · struktur [AUTOPILOT] setiap produk · produk sabun-garam, garam-pengasihan · creative video, gambar
+**Had (borang templat):** bajet adset RM60 · slot 9 (3 setiap produk) · had harian RM900 · launch/hari 3 · budget adset maks RM500 (tangga) · KPI ROAS 2.0 · struktur 1-1-1 · produk sabun-garam, garam-pengasihan, kasturi-kijang · creative video, gambar
 
 ## Angka asas (data HQ 30 hari, 11/10–09/11/2026)
 
@@ -102,24 +102,41 @@ C. BREK AKAUN (semak sebelum apa-apa launch; jika berlaku → jangan launch, lap
 - ROAS akaun 3 hari < 1.3, ATAU profit lepas ads 7 hari < −RM300
 - Ad ditolak Meta / amaran polisi / akaun bermasalah dalam 7 hari
 - Peraturan auto akaun tiada atau dimatikan (list_rules)
-- 3 launch berturut-turut di-kill dalam fasa 1 → berhenti launch angle BARU; hanya variasi pemenang sehingga HQ semak
+- Satu PRODUK dengan 6 ad berturut-turut di-kill dalam fasa 1/2 → kurangkan produk itu ke 1 slot dan lapor kepada HQ
+  (masalah mungkin salespage / tawaran, bukan angle). Produk lain tidak terjejas.
 
-D. PILIH ANGLE (60 / 30 / 10)
-Bank angle = jurnal ejen + get_ads 30d akaun ini + akaun HQ (tanpa parameter marketer).
-- 60% VARIASI PEMENANG (ROAS ≥ 2.0, ≥ 5 order): kekal angle & emosi, tukar hook / pembuka / format.
-  Pemenang HQ semasa: "Gangguan saka/sihir datang balik?" (2.0, 83 order) · "Bilik Asing 8 Bulan" (Garam Pengasihan, 2.17) ·
-  "Bayar Bila Sampai" (tawaran, 2.74) · "Tengkuk Berat & Sesak Dada" (2.02)
-- 30% ANGLE CFT TERBUKTI (Direct / Tawaran / Testimoni / Soalan) yang belum diuji untuk produk itu dalam 14 hari
-- 10% ANGLE BARU — hanya bila slot lain dah terisi
-- Larangan: angle yang di-kill dalam 14 hari (melainkan diagnosis kata hook yang lemah, bukan angle), angle yang sama dengan ad aktif.
-  Kalah terkini: "Terjaga 3 Pagi", "Keluarga Mandi Bersama", "Rumah Rasa Berat", "Mak Ayah Di Kampung", "Sakit Misteri — Doktor Kata Normal".
-- Produk: Sabun Garam lalai; Garam Pengasihan bila tiada ad Garam Pengasihan aktif dan slot ≥ 2.
+D. PRODUK, SLOT & ANGLE
+Struktur: 1-1-1 — SETIAP ad = kempen sendiri "[1-1-1] <Produk> · <angle>" (1 kempen · 1 adset · 1 ad). Jangan kumpul ad dalam kempen produk.
+Slot: 3 ad aktif SETIAP produk — Sabun Garam (sabun-garam) 3 · Garam Pengasihan / garam masakan (garam-pengasihan) 3 · Kasturi Kijang (kasturi-kijang) 3.
+  Jumlah 9. Kira slot setiap produk dari autopilot_status.adsets (nama adset bermula "<produk> | ") + ad autopilot sedia ada.
+  Isi produk yang paling kurang slot dahulu; sama banyak → ikut urutan Kasturi → Garam → Sabun (produk kurang data dapat data dulu).
+  Jangan lebih 3 ad aktif untuk satu produk walaupun slot akaun masih ada.
+
+Angle BERBEZA (wajib): 3 ad aktif dalam produk yang sama mesti 3 angle yang berbeza — beza MASALAH / SITUASI teras, bukan hanya hook,
+  warna atau ayat. Sekurang-kurangnya 2 daripada 3 ad juga beza jenis CFT (Direct / Tawaran / Testimoni / Soalan / Edukasi) atau emosi.
+  Sebelum launch, semak senarai ad aktif + jurnal: jika angle baru sama teras dengan ad aktif atau ad yang di-kill dalam 14 hari → pilih lain.
+  Tulis dalam jurnal: kenapa angle ini berbeza dari 2 ad lain produk itu.
+
+Pilih angle ikut status produk:
+- Produk TIADA pemenang (tiada ad ROAS ≥ 2.0 dengan ≥ 5 order dalam akaun ini atau HQ 30 hari) → BEBAS uji angle BARU.
+  Semua 3 slot boleh angle baru. Cari angle dari: masalah/situasi pembeli dalam salespage & FAQ, testimoni sebenar, tawaran
+  (pakej, COD, harga), soalan/bantahan biasa, dan pemenang produk lain yang boleh dipindah (emosi sama, masalah berkait).
+  Kasturi Kijang sekarang dalam kategori ini (terbaik HQ "Pakej Seisi Keluarga" 1.88, 8 order — belum pemenang).
+- Produk ADA pemenang → maksimum 1 slot variasi pemenang (angle & emosi sama, hook/pembuka/format baru);
+  2 slot lagi angle berbeza (CFT terbukti atau baru). Pemenang HQ semasa:
+  Sabun: "Gangguan saka/sihir datang balik?" (2.03, 89 order) · "Mandian Ruqyah Di Rumah" (Direct, 2.59) · "Bayar Bila Sampai" (Tawaran, 2.29)
+  Garam Pengasihan: "Bilik Asing 8 Bulan" (Testimoni, 2.45, 34 order)
+- Bila ad ejen sendiri jadi pemenang → ia kekal; slot yang dikosongkan oleh kill diisi angle berbeza (bukan variasi kedua pemenang yang sama).
+- Larangan: angle yang di-kill dalam 14 hari untuk produk itu (melainkan diagnosis kata hook yang lemah, bukan angle).
+  Kalah terkini (Sabun): "Terjaga 3 Pagi", "Keluarga Mandi Bersama", "Rumah Rasa Berat", "Mak Ayah Di Kampung", "Sakit Misteri — Doktor Kata Normal".
+  Kalah (Kasturi HQ): "Wangian Sunnah" (Direct), "Kena Himpit" (Soalan), "Anak Meracau Maghrib". Kalah (Garam HQ): "Ikhtiar Dari Dapur", "Tanda-tanda Sihir Pemisah".
+- Launch sehari maksimum 3 (had server). Utamakan 1 setiap produk yang ada slot kosong.
 
 E. CREATIVE
 - Wajib panggil skill produk, cft-adcreative-formula, skrip-vo-heiuwtoa, draf-video-motion-graphic setiap kitaran.
 - Selang-seli format: video (VO penuh HEIUWTOA 60–80s, 4:5, thumbnail = frame 0) dan gambar (Gemini penuh, format CFT, 4:5).
 - 3 saat pertama = 80% kerja. Setiap variasi mesti beza pada hook/pembuka, bukan hanya warna.
-- TRUST / testimoni / angka: data sebenar dari skill produk sahaja. Jangan reka.
+- TRUST / testimoni / angka: data sebenar dari skill produk sahaja (Kasturi tiada skill → guna salespage /kasturi-kijang sahaja). Jangan reka.
 - Nama: angle mengandungi "<produk> | <angle> (<jenis CFT>) · <emosi> | v<n>" supaya variasi boleh dijejak.
 - Link: salespage HQ (https://e-syifa.com/<slug>) — ?m=<kod ejen> ditambah automatik.
 
@@ -131,9 +148,10 @@ F. QA SEBELUM LAUNCH (gagal → buat semula sekali; gagal lagi → langkau & lap
 - Ragu tentang polisi Meta → jangan launch, masukkan dalam laporan
 
 G. LAUNCH
-- launch_ad (atau prepare_launch → MCP Meta → complete_launch jika ditolak mod Development).
+- launch_ad dengan own_campaign: true (struktur 1-1-1 — WAJIB setiap launch). Jika ditolak mod Development: prepare_launch → MCP Meta → complete_launch.
 - client_ref: <YYYY-MM-DD>-ai01-<slug-angle>-v<n>. Ikut mod akaun (shadow rekod sahaja; veto/auto mula 06:00 esok).
-- Jangan ubah targeting, pixel, kempen atau peraturan.
+- Jangan ubah targeting, pixel, kempen atau peraturan. 2 ad pertama (10/11) berada dalam kempen "[AUTOPILOT] <Produk>" lama —
+  biarkan dan kira dalam slot produknya; ad baru semua 1-1-1.
 
 H. JURNAL (ingatan ejen — WAJIB, dibaca setiap kitaran sebelum pilih angle)
 Fail: autopilot/ejen-01/jurnal.md. Satu baris setiap ad:
