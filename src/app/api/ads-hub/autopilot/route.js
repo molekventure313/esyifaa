@@ -101,7 +101,13 @@ export async function PATCH(req) {
     }
     if ('autopilot_notes' in b) upd.autopilot_notes = b.autopilot_notes ? String(b.autopilot_notes).slice(0, 4000) : null;
     if ('autopilot_strategy_id' in b || b.apply_strategy) {
-      const id = b.autopilot_strategy_id ? Number(b.autopilot_strategy_id) : null;
+      let id = b.autopilot_strategy_id ? Number(b.autopilot_strategy_id) : null;
+      if (!('autopilot_strategy_id' in b)) {
+        // apply_strategy sahaja: guna templat sedia ada, jangan putuskan pautan
+        const { data: cur } = await g.admin.from('meta_connections').select('autopilot_strategy_id').eq('marketer_id', g.mid).maybeSingle();
+        id = cur?.autopilot_strategy_id || null;
+        if (!id) return NextResponse.json({ success: false, error: 'Akaun ini tiada templat strategi untuk diguna.' }, { status: 400 });
+      }
       upd.autopilot_strategy_id = id;
       if (id) {
         const { data: st } = await g.admin.from('autopilot_strategies').select('params').eq('id', id).maybeSingle();

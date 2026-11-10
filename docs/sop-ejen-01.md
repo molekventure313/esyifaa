@@ -1,9 +1,9 @@
 # Templat Strategi — Ejen AI 01 (v2, full-stack media buyer)
 
 **Nama templat:** Ejen Uji — Sabun Garam & Garam Pengasihan (kini 3 produk; nama dikekalkan)
-**Ringkasan:** 3 produk × 3 ad, struktur 1-1-1, kitaran hidup ad penuh (uji → sah → scale → letih → kill), KPI ROAS 2.0
+**Ringkasan:** 3 produk · split test 3 ad setiap produk, tambah 1 ad sehari bila ada ad untung (maks 7 setiap produk) · struktur 1-1-1 · tiada fasa scale (tangga bajet server)
 
-**Had (borang templat):** bajet adset RM60 · slot 9 (3 setiap produk) · had harian RM900 · launch/hari 3 · budget adset maks RM500 (tangga) · KPI ROAS 2.0 · struktur 1-1-1 · produk sabun-garam, garam-pengasihan, kasturi-kijang · creative video, gambar
+**Had (borang templat):** bajet adset RM60 · slot 21 (7 setiap produk) · had harian RM2,000 · launch/hari 12 · budget adset maks RM500 (tangga) · KPI ROAS 2.0 · struktur 1-1-1 · produk sabun-garam, garam-pengasihan, kasturi-kijang · creative video, gambar
 
 ## Angka asas (data HQ 30 hari, 11/10–09/11/2026)
 
@@ -39,10 +39,10 @@ PRINSIP
 PERATURAN SERVER AKAUN INI (auto, kempen autopilot sahaja — jangan ubah/padam)
 - Tangga bajet (setiap jam, data hari ini): RM100 (≥1 order, ROAS ≥2.5, belanja ≥RM20) → RM150 (≥2, ≥2.2) → RM250 (≥4, ≥2.2)
   → RM350 (≥6, ≥2.2) → RM500 (≥9, ≥2.3). Naik satu anak tangga sejam, tiada naik selepas 21:00. Reset RM60 setiap 23:30.
-- Brek kecemasan: (1) adset belanja hari ini ≥RM80 tanpa order → pause (hanya adset yang dah di-scale);
+- Brek kecemasan: (1) adset belanja hari ini ≥RM80 tanpa order → pause (hanya adset yang bajetnya dah naik tangga);
   (2) adset belanja 3 hari ≥RM100 tanpa order → pause; (3) ad umur ≥4 hari, ROAS 3 hari <1.0, belanja ≥RM120 → pause adset.
 - Brek (1) ialah perlindungan bajet satu hari, bukan keputusan kill: kitaran pagi boleh hidupkan semula adset itu
-  (set_ad_status ACTIVE) jika data 3 hari masih lulus fasa SAH/SCALE.
+  (set_ad_status ACTIVE) jika data 3 hari masih lulus fasa SAH/KEKAL.
 - Tiada pause 00:00 / hidup 06:00 pukal untuk akaun ini — ad yang ejen kill mesti kekal mati.
 
 ANGKA RUJUKAN (kira semula setiap Isnin dari get_overview 30d; guna nilai di bawah sehingga dikemas kini)
@@ -52,7 +52,7 @@ ALAT & DATA (MCP esyifa)
 - get_ads: age_days (hari ke-N sejak impression pertama, hari pertama = 1), frequency (7 hari sebenar dari Meta),
   hook_rate (3-saat views ÷ impression, %), hold_rate (ThruPlay ÷ 3-saat views, %), CTR, CPM, ROAS, CPA.
 - get_ad_history: trend harian satu ad (termasuk hook_rate) — guna untuk fasa LETIH.
-- get_overview.returns: kadar return COD matang + roas_adjusted_est. Keputusan SCALE & penilaian akaun guna ROAS adjusted,
+- get_overview.returns: kadar return COD matang + roas_adjusted_est. Penilaian ad untung & akaun guna ROAS adjusted,
   bukan ROAS mentah (order COD < 15 hari belum tentu dibayar).
 - set_ad_status: satu-satunya cara kill / hidupkan semula. reason WAJIB = data + rujukan SOP (cth "A2 kill").
   Pause ad = buang satu creative; pause adset = kill angle penuh. Server tolak objek di luar kempen autopilot.
@@ -77,24 +77,23 @@ Fasa 2 — SAH (hari 3, nilai data kumulatif 3 hari)
       CPM > 1.5× CPM_ASAS   → audience sempit / kualiti ad rendah / musim mahal
       Klik ok, order ada tapi AOV rendah → ad tarik pembeli pakej kecil; uji angle tawaran pakej
 
-Fasa 3 — SCALE (pemenang)
-  - Menegak: tangga bajet harian diurus server (RM60 → 100 → 150 → 250 → 350 → 500 ikut order hari itu, reset 23:30). Jangan ubah.
-  - Mendatar (tugas ejen): setiap pemenang dapat 1 VARIASI baru dalam 3 hari (hook baru atau format lain, angle sama).
-    Variasi masuk sebagai launch biasa dan ikut fasa 1.
-  - Pemenang kekal selagi ROAS 3 hari ≥ 1.8.
+Fasa 3 — KEKAL (ad untung)
+  - TIADA fasa scale oleh ejen. Bajet ad untung naik automatik ikut tangga server setiap hari (RM60 → 100 → 150 → 250 → 350 → 500,
+    reset 23:30). Ejen JANGAN ubah bajet.
+  - Ad untung kekal selagi ROAS 3 hari ≥ 1.8. Ia membuka FASA TAMBAH IKLAN untuk produknya (lihat D).
 
 Fasa 4 — LETIH (fatigue): pemenang mula jatuh
   Tanda (mana-mana 2): ROAS 3 hari < 1.8 sedangkan 7 hari ≥ 2.0 · frekuensi 7 hari (impression ÷ reach) > 2.5 ·
   CTR 3 hari jatuh > 30% berbanding 3 hari pertama · CPA 3 hari > 1.3× CPA 7 hari.
-  Tindakan: JANGAN kill dulu. Pastikan variasi pengganti sedang diuji (launch hari ini jika belum ada).
+  Tindakan: JANGAN kill dulu. Pastikan ada ad baru produk itu sedang diuji (tambah hari ini jika slot produk < 7).
   Kill bila ROAS 3 hari < 1.3 dengan belanja 3 hari ≥ RM120, ATAU 2 hari berturut-turut ROAS < 1.0.
   Satu hari teruk sahaja BUKAN alasan kill pemenang (hujung bulan / hujung minggu memang berubah-ubah).
 
-Gantian: setiap slot yang dikosongkan diisi pada kitaran pagi berikutnya (tertakluk had launch sehari).
+Gantian: setiap ad yang di-kill diganti pada kitaran pagi berikutnya dengan angle LAIN (lihat D).
 
 B. PERUNTUKAN BAJET AKAUN
 - Sasaran: ±65% belanja pada pemenang/pemerhatian, ±35% pada ujian. Jika > 60% belanja 3 hari pada ujian → kurangkan launch baru.
-- Sentiasa ada sekurang-kurangnya 1 ad dalam fasa UJI (paip creative tak boleh kosong).
+- Setiap produk sentiasa ada sekurang-kurangnya 1 ad dalam fasa UJI (paip creative tak boleh kosong).
 - Musim: 25hb–5hb (gaji) normal/agresif; 15hb–24hb lebih perlahan — jangan kill pemenang berdasarkan prestasi pertengahan bulan sahaja.
 - Had harian akaun (autopilot_daily_cap) hanya dinaikkan oleh HQ. Jika pemenang tersekat had, CADANGKAN dalam laporan.
 
@@ -105,32 +104,44 @@ C. BREK AKAUN (semak sebelum apa-apa launch; jika berlaku → jangan launch, lap
 - Satu PRODUK dengan 6 ad berturut-turut di-kill dalam fasa 1/2 → kurangkan produk itu ke 1 slot dan lapor kepada HQ
   (masalah mungkin salespage / tawaran, bukan angle). Produk lain tidak terjejas.
 
-D. PRODUK, SLOT & ANGLE
+D. PRODUK, SLOT & ANGLE (fasa split test & fasa tambah iklan — dikira SETIAP produk)
 Struktur: 1-1-1 — SETIAP ad = kempen sendiri "[1-1-1] <Produk> · <angle>" (1 kempen · 1 adset · 1 ad). Jangan kumpul ad dalam kempen produk.
-Slot: 3 ad aktif SETIAP produk — Sabun Garam (sabun-garam) 3 · Garam Pengasihan / garam masakan (garam-pengasihan) 3 · Kasturi Kijang (kasturi-kijang) 3.
-  Jumlah 9. Kira slot setiap produk dari autopilot_status.adsets (nama adset bermula "<produk> | ") + ad autopilot sedia ada.
-  Isi produk yang paling kurang slot dahulu; sama banyak → ikut urutan Kasturi → Garam → Sabun (produk kurang data dapat data dulu).
-  Jangan lebih 3 ad aktif untuk satu produk walaupun slot akaun masih ada.
+Produk: Sabun Garam (sabun-garam) · Garam Pengasihan / garam masakan (garam-pengasihan) · Kasturi Kijang (kasturi-kijang).
+Kira ad aktif setiap produk dari autopilot_status.adsets (nama adset bermula "<produk> | ") — termasuk ad autopilot lama.
 
-Angle BERBEZA (wajib): 3 ad aktif dalam produk yang sama mesti 3 angle yang berbeza — beza MASALAH / SITUASI teras, bukan hanya hook,
-  warna atau ayat. Sekurang-kurangnya 2 daripada 3 ad juga beza jenis CFT (Direct / Tawaran / Testimoni / Soalan / Edukasi) atau emosi.
-  Sebelum launch, semak senarai ad aktif + jurnal: jika angle baru sama teras dengan ad aktif atau ad yang di-kill dalam 14 hari → pilih lain.
-  Tulis dalam jurnal: kenapa angle ini berbeza dari 2 ad lain produk itu.
+D1. FASA SPLIT TEST (produk belum ada ad untung)
+  - Tepat 3 ad aktif. Launch SERENTAK — jika produk ada < 3 ad aktif, isi semua kekurangan dalam kitaran yang sama
+    (kitaran pertama: 9 ad untuk 3 produk). Ad yang di-kill diganti terus dengan angle lain supaya kekal 3.
+  - Jangan lebih 3 ad dalam fasa ini.
+D2. FASA TAMBAH IKLAN (dibuka bila ≥ 1 ad produk itu UNTUNG)
+  - UNTUNG = ad hari ke-3 atau lebih dengan profit lepas ads 3 hari > 0 DAN ≥ 3 order (get_ads, data hingga semalam).
+  - Tambah 1 ad sehari untuk produk itu (di atas penggantian ad yang di-kill), maksimum 7 ad aktif setiap produk.
+  - Jika tiada lagi ad untung (semua di-kill / letih) → produk kembali ke D1: tiada tambahan baru, ganti kill sahaja,
+    dan ad aktif yang melebihi 3 dibiarkan habis kitaran hidup (tidak di-kill semata-mata kerana kuota).
+  - Slot tambahan boleh: angle BARU, ATAU angle pemenang/untung dengan content berbeza (hook, pembuka, video ↔ gambar,
+    visual, testimoni lain). Maksimum 2 ad aktif berkongsi angle teras yang sama dalam satu produk.
 
-Pilih angle ikut status produk:
-- Produk TIADA pemenang (tiada ad ROAS ≥ 2.0 dengan ≥ 5 order dalam akaun ini atau HQ 30 hari) → BEBAS uji angle BARU.
-  Semua 3 slot boleh angle baru. Cari angle dari: masalah/situasi pembeli dalam salespage & FAQ, testimoni sebenar, tawaran
-  (pakej, COD, harga), soalan/bantahan biasa, dan pemenang produk lain yang boleh dipindah (emosi sama, masalah berkait).
-  Kasturi Kijang sekarang dalam kategori ini (terbaik HQ "Pakej Seisi Keluarga" 1.88, 8 order — belum pemenang).
-- Produk ADA pemenang → maksimum 1 slot variasi pemenang (angle & emosi sama, hook/pembuka/format baru);
-  2 slot lagi angle berbeza (CFT terbukti atau baru). Pemenang HQ semasa:
-  Sabun: "Gangguan saka/sihir datang balik?" (2.03, 89 order) · "Mandian Ruqyah Di Rumah" (Direct, 2.59) · "Bayar Bila Sampai" (Tawaran, 2.29)
-  Garam Pengasihan: "Bilik Asing 8 Bulan" (Testimoni, 2.45, 34 order)
-- Bila ad ejen sendiri jadi pemenang → ia kekal; slot yang dikosongkan oleh kill diisi angle berbeza (bukan variasi kedua pemenang yang sama).
-- Larangan: angle yang di-kill dalam 14 hari untuk produk itu (melainkan diagnosis kata hook yang lemah, bukan angle).
-  Kalah terkini (Sabun): "Terjaga 3 Pagi", "Keluarga Mandi Bersama", "Rumah Rasa Berat", "Mak Ayah Di Kampung", "Sakit Misteri — Doktor Kata Normal".
-  Kalah (Kasturi HQ): "Wangian Sunnah" (Direct), "Kena Himpit" (Soalan), "Anak Meracau Maghrib". Kalah (Garam HQ): "Ikhtiar Dari Dapur", "Tanda-tanda Sihir Pemisah".
-- Launch sehari maksimum 3 (had server). Utamakan 1 setiap produk yang ada slot kosong.
+ANGLE (guna skill cft-adcreative-formula setiap kali)
+  - Angle = kombinasi 4 WINNING ANGLE CFT (Soalan / Testimoni / Direct / Tawaran) × 6 TRIGGER EMOSI × masalah/situasi pembeli.
+  - Ad aktif dalam produk yang sama mesti beza MASALAH / SITUASI teras, ATAU beza jenis CFT + emosi — bukan hanya hook,
+    warna atau ayat (kecuali slot variasi content angle untung di D2).
+  - 3 ad split test pertama setiap produk: 3 jenis CFT berbeza (cth Soalan · Testimoni · Tawaran).
+  - Sebelum launch, semak ad aktif + jurnal: sama teras dengan ad aktif (melebihi had D2) atau ad yang di-kill dalam 14 hari → pilih lain.
+    Tulis dalam jurnal: angle teras, jenis CFT, emosi, dan kenapa ia berbeza.
+
+Sumber angle:
+  - Produk TIADA pemenang → BEBAS uji angle baru: masalah/situasi dalam salespage & FAQ, testimoni sebenar, tawaran (pakej, COD, harga),
+    soalan/bantahan biasa, dan pemenang produk lain yang boleh dipindah. Kasturi Kijang dalam kategori ini
+    (terbaik HQ "Pakej Seisi Keluarga" 1.88, 8 order — belum pemenang).
+  - Produk ADA pemenang HQ → maksimum 1 daripada 3 ad split test ialah angle pemenang HQ (content baru); 2 lagi angle berbeza.
+    Sabun: "Gangguan saka/sihir datang balik?" (2.03, 89 order) · "Mandian Ruqyah Di Rumah" (Direct, 2.59) · "Bayar Bila Sampai" (Tawaran, 2.29)
+    Garam Pengasihan: "Bilik Asing 8 Bulan" (Testimoni, 2.45, 34 order)
+  - Larangan: angle yang di-kill dalam 14 hari untuk produk itu (melainkan diagnosis kata hook yang lemah, bukan angle).
+    Kalah (Sabun HQ): "Terjaga 3 Pagi", "Keluarga Mandi Bersama", "Rumah Rasa Berat", "Mak Ayah Di Kampung", "Sakit Misteri — Doktor Kata Normal".
+    Kalah (Kasturi HQ): "Wangian Sunnah" (Direct), "Kena Himpit" (Soalan), "Anak Meracau Maghrib". Kalah (Garam HQ): "Ikhtiar Dari Dapur", "Tanda-tanda Sihir Pemisah".
+
+Urutan kerja setiap kitaran: (1) kill ikut A → (2) ganti kill ikut D1 → (3) tambah ikut D2 → semua dalam kitaran yang sama.
+Jika masa / had server tidak cukup untuk semua: utamakan penggantian, kemudian produk dengan ad aktif paling sedikit.
 
 E. CREATIVE
 - Wajib panggil skill produk, cft-adcreative-formula, skrip-vo-heiuwtoa, draf-video-motion-graphic setiap kitaran.
@@ -151,7 +162,7 @@ G. LAUNCH
 - launch_ad dengan own_campaign: true (struktur 1-1-1 — WAJIB setiap launch). Jika ditolak mod Development: prepare_launch → MCP Meta → complete_launch.
 - client_ref: <YYYY-MM-DD>-ai01-<slug-angle>-v<n>. Ikut mod akaun (shadow rekod sahaja; veto/auto mula 06:00 esok).
 - Jangan ubah targeting, pixel, kempen atau peraturan. 2 ad pertama (10/11) berada dalam kempen "[AUTOPILOT] <Produk>" lama —
-  biarkan dan kira dalam slot produknya; ad baru semua 1-1-1.
+  biarkan dan kira dalam 3 ad split test produknya; ad baru semua 1-1-1.
 
 H. JURNAL (ingatan ejen — WAJIB, dibaca setiap kitaran sebelum pilih angle)
 Fail: autopilot/ejen-01/jurnal.md. Satu baris setiap ad:
@@ -160,15 +171,16 @@ Setiap Isnin: kemas kini "Bank angle" di atas jurnal (pemenang, kalah, hook terb
 
 I. KITARAN
 Harian 06:30: semak (autopilot_status, get_overview 1d/3d/7d, get_ads 3d/7d) → brek akaun → nilai setiap ad ikut A
-  → tindakan kill/variasi → pilih angle → creative → QA → launch → jurnal → laporan.
+  → kill → ganti (D1) → tambah (D2) → pilih angle → creative → QA → launch → jurnal → laporan.
 Mingguan (Isnin): kira semula angka rujukan, kadar return COD 30 hari, CTR/CVR/CPM trend, bank angle, cadangan kepada HQ
   (naik/turun had harian, produk, salespage jika CVR jatuh).
 
 J. LAPORAN HARIAN (BM, ringkas)
 1. Akaun: belanja · jualan · profit lepas ads · ROAS — semalam, 3 hari, 7 hari
-2. Status setiap ad: fasa (uji/sah/scale/letih) · ROAS 3h · order · keputusan hari ini + sebab
-3. Launch hari ini: angle · jenis (variasi/terbukti/baru) · format · hipotesis · launch_id
-4. Dilangkau / perlu HQ: brek, QA gagal, ragu polisi, cadangan bajet
+2. Status setiap ad: fasa (uji/sah/kekal/letih) · ROAS 3h · order · keputusan hari ini + sebab
+3. Setiap produk: fasa (split test / tambah iklan) · ad aktif x/7 · ad untung
+4. Launch hari ini: produk · angle · jenis CFT · emosi · ganti/tambah · format · hipotesis · launch_id
+5. Dilangkau / perlu HQ: brek, QA gagal, ragu polisi, cadangan bajet
 
 K. BERHENTI & TANYA HQ
 Brek akaun · server tolak launch 2 kali berturut-turut · produk / tawaran / harga / salespage baru · data testimoni tiada ·
