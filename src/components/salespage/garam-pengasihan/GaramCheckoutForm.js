@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
+import { poskodPatch, checkoutIssue } from '@/lib/shipping-validate';
 
 // ─── Packages (FSP PRO: Terbesar di Kiri/Atas -> Terkecil di Kanan/Bawah) ──────────
 const BASE_PACKAGES = [
@@ -194,6 +195,8 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // Poskod: digit sahaja + negeri diisi automatik ikut poskod
+    if (name === 'poskod') { setFormData(prev => ({ ...prev, ...poskodPatch(value, prev.negeri) })); return; }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -214,7 +217,8 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
     if (!formData.poskod.trim()) return 'Sila masukkan poskod.';
     if (!formData.daerah.trim()) return 'Sila masukkan daerah / bandar.';
     if (!formData.negeri.trim()) return 'Sila pilih negeri anda.';
-    return null;
+    // Poskod sah & sepadan negeri, telefon Malaysia lengkap — elak order gagal dihantar ke NinjaVan
+    return checkoutIssue(formData);
   };
 
   // ─── FPX Submit ───────────────────────────────────────────────────────────
@@ -826,7 +830,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               <label style={LABEL_STYLE}>Poskod {REQ}</label>
               <input
                 type="text"
-                name="poskod"
+                name="poskod" inputMode="numeric"
                 placeholder="40000"
                 value={formData.poskod}
                 onChange={handleChange}

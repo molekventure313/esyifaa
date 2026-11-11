@@ -3,6 +3,7 @@
 import { NV_ENV, NinjaVanError, createOrder, cancelOrder, fetchWaybillPdf, errorMessageOf } from './api';
 import { addressStringOf, parseAddressParts, formatPhone, unitCellOf } from '@/lib/ninjavan-csv';
 import { orderQty, parseAmount } from '@/lib/marketer-calc';
+import { checkShipping } from '@/lib/shipping-validate';
 
 const TZ = 'Asia/Kuala_Lumpur';
 const WAYBILL_BUCKET = 'ninjavan-waybills';
@@ -154,12 +155,45 @@ export async function createShipment(db, input, { submissionId = null, fighterOr
   return { shipment, created: true };
 }
 
+/**
+ * Rekod / kosongkan ralat push pada order (kolum nv_error — migration 042).
+ * Tidak pernah gagal: kolum belum wujud = diabaikan.
+ */
+export async function recordNvError(db, table, id, message) {
+  try {
+    await db.from(table)
+      .update({ nv_error: message ? String(message).slice(0, 500) : null, nv_error_at: message ? new Date().toISOString() : null })
+      .eq('id', id);
+  } catch { /* migration 042 belum run */ }
+}
+
+/** Semakan sebelum push — ralat = sekat (NinjaVan tolak / kurier tak dapat hantar). Amaran tidak menyekat. */
+function assertShippable(o) {
+  const r = checkShipping({ full_name: o.full_name, phone: o.phone, address: addressStringOf(o) });
+  if (r.errors.length) throw new NinjaVanError(r.errors.join(' · '));
+}
+
+/** Jalankan push & rekod hasilnya pada order (ralat disimpan untuk tapisan "Perlu dibetulkan") */
+async function withErrorRecord(db, table, id, fn) {
+  try {
+    const out = await fn();
+    await recordNvError(db, table, id, null);
+    return out;
+  } catch (e) {
+    await recordNvError(db, table, id, e.message);
+    throw e;
+  }
+}
+
 /** Push satu order submissions ke NinjaVan */
 export async function pushSubmission(db, submission, userId = null) {
-  const { data: prior } = await db.from('ninjavan_shipments')
-    .select('status').eq('submission_id', submission.id).eq('env', NV_ENV).not('tracking_number', 'is', null);
-  const attempt = (prior || []).filter(p => p.status === 'Cancelled').length;
-  return createShipment(db, orderInputFromSubmission(submission, attempt), { submissionId: submission.id, userId });
+  return withErrorRecord(db, 'submissions', submission.id, async () => {
+    assertShippable(submission);
+    const { data: prior } = await db.from('ninjavan_shipments')
+      .select('status').eq('submission_id', submission.id).eq('env', NV_ENV).not('tracking_number', 'is', null);
+    const attempt = (prior || []).filter(p => p.status === 'Cancelled').length;
+    return createShipment(db, orderInputFromSubmission(submission, attempt), { submissionId: submission.id, userId });
+  });
 }
 
 const SHIPMENT_COLS = 'id, env, submission_id, fighter_order_id, fighter_id, tracking_number, status, event, is_terminal, cod_amount, last_event_at, delivered_at, returned_at, cancelled_at, cod_remitted_at, waybill_path, waybill_printed_at, waybill_print_count, response_payload, created_at';
@@ -211,9 +245,13 @@ export function fighterOrderInput(o, { settings = {}, profile = {} } = {}, attem
 }
 
 /** Push satu order fighter ke akaun NinjaVan HQ → order jadi 'ready' (tunggu HQ pack) dengan tracking NinjaVan */
-export async function pushFighterOrder(db, order, { settings = {}, profile = {}, userId = null } = {}) {
+export async function pushFighterOrder(db, order, opts = {}) {
   if (order.payment_status !== 'completed') throw new NinjaVanError('Order belum dibayar / COD belum sah.');
   if (order.ship_status !== 'new') throw new NinjaVanError(order.ship_status === 'ready' ? 'Order dah ada waybill.' : 'Order dah dipack / dibatalkan.');
+  return withErrorRecord(db, 'fighter_orders', order.id, () => { assertShippable(order); return pushFighterOrderInner(db, order, opts); });
+}
+
+async function pushFighterOrderInner(db, order, { settings = {}, profile = {}, userId = null } = {}) {
   const { data: prior } = await db.from('ninjavan_shipments')
     .select('status').eq('fighter_order_id', order.id).eq('env', NV_ENV).not('tracking_number', 'is', null);
   const attempt = (prior || []).filter(p => p.status === 'Cancelled').length;

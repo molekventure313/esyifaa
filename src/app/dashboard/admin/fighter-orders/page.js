@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useFighterTheme, Card, Badge, btnStyle, inputStyle, rm, fmtTime } from '@/components/fighter/ui';
+import EditShippingModal, { ShippingIssues } from '@/components/orders/EditShippingModal';
 
 // HQ — Semua Order Fighter (admin + super_admin).
 // Lihat semua order penjual bebas + jumlah jualan setiap fighter. Admin urus operasi bagi pihak fighter:
@@ -46,6 +47,7 @@ export default function AdminFighterOrdersPage() {
   const [sel, setSel] = useState(new Set());
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState(null);
+  const [editing, setEditing] = useState(null);   // order yang sedang dibetulkan
 
   const load = useCallback(async () => {
     try {
@@ -98,6 +100,12 @@ export default function AdminFighterOrdersPage() {
     if (!confirm(`BATALKAN order ${o.full_name} (${o.fighter_name})?${o.nv?.active ? `\nParcel NinjaVan ${o.nv.tracking_number} turut dibatalkan.` : ''}${fpx ? '\n\nFPX dah dibayar — refund pelanggan diurus fighter di CHIP.' : ''}`)) return;
     post({ action: 'cancel_order', id: o.id }, j => `Order dibatalkan${j.keep_paid ? ' — FPX dibayar, maklumkan fighter untuk refund' : ''}.`);
   };
+  // Betulkan alamat: belum dipack & (tiada parcel aktif atau parcel masih menunggu pickup)
+  const canEdit = o => ['new', 'ready'].includes(o.ship_status) && (!o.nv?.active || o.nv.cancellable);
+  const saveShipping = async body => {
+    const res = await fetch('/api/admin/fighter-orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'edit', id: editing.id, ...body }) });
+    return res.json().catch(() => ({ success: false, error: `Ralat (${res.status})` }));
+  };
   const toggle = id => setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const tot = data?.total;
@@ -125,6 +133,7 @@ export default function AdminFighterOrdersPage() {
         </select>
         <select value={ship} onChange={e => setShip(e.target.value)} style={selStyle}>
           <option value="all">🚚 Semua status</option>
+          <option value="problem">❌ Perlu dibetulkan</option>
           <option value="stuck">⏰ Tersangkut (&gt;{data?.stuck_hours || 48}j)</option>
           {Object.entries(SHIP).map(([k, [l]]) => <option key={k} value={k}>{l}</option>)}
         </select>
@@ -251,9 +260,14 @@ export default function AdminFighterOrdersPage() {
                           <a href="/dashboard/admin/fighter-packing" style={{ color: t.accent }}>Tanda di Packing Fighter →</a>
                         </div>
                       )}
+                      <ShippingIssues order={o} compact />
                       {o.packed_at && <div style={{ fontSize: '0.7rem', color: t.muted }}>Dipack {fmtTime(o.packed_at)}{o.returned_at ? ` · Return ${fmtTime(o.returned_at)}` : ''}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'stretch' }}>
+                      {canEdit(o) && (
+                        <button style={{ ...btnStyle(o.nv_error || o.ship_check?.errors?.length ? t.bad : o.ship_check ? t.warn : t.muted, !!(o.nv_error || o.ship_check?.errors?.length)), padding: '0.28rem 0.6rem', fontSize: '0.72rem' }}
+                          disabled={!!busy} onClick={() => setEditing(o)}>✏️ Betulkan</button>
+                      )}
                       {canPush(o) && (
                         <button style={{ ...btnStyle('#0EA5E9', false), padding: '0.28rem 0.6rem', fontSize: '0.72rem' }} disabled={!!busy} onClick={() => pushNv([o.id])}>🚚 Hantar NV</button>
                       )}
@@ -274,6 +288,13 @@ export default function AdminFighterOrdersPage() {
             </Card>
           )}
         </>
+      )}
+
+      {editing && (
+        <EditShippingModal order={editing} save={saveShipping} onClose={() => setEditing(null)}
+          onDone={m => { if (m) setMsg({ ok: true, text: m }); load(); }}
+          canPush={editing.payment_status === 'completed' && editing.courier !== 'own'}
+          t={{ cardBg: t.cardBg, subBg: t.subBg, border: t.border, text: t.text, text2: t.text2, muted: t.muted, ff: t.ff }} />
       )}
     </div>
   );

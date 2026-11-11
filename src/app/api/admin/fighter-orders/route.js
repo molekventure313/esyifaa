@@ -4,12 +4,16 @@ import { tableMissing } from '@/lib/fighter/server';
 import { NV_ENV, errorMessageOf } from '@/lib/ninjavan/api';
 import { latestShipmentsBy, pushFighterOrder, cancelShipment, isActiveShipment, statusGroupOf, isCancellableShipment } from '@/lib/ninjavan/shipments';
 import { logActivity } from '@/lib/utils/logger';
+import { checkShipping } from '@/lib/shipping-validate';
+import { editShipping } from '@/lib/ninjavan/edit-shipping';
 
 // HQ — Semua Order Fighter (admin + super_admin). Admin urus operasi bagi pihak fighter.
 // GET  ?from=YYYY-MM-DD&to=&fighter=&ship=&pay=&product=&q=  → senarai order + ringkasan jualan setiap fighter + order tersangkut
 // POST { action: 'push', ids }        → hantar ke NinjaVan HQ bagi pihak fighter (≤ 10 setiap panggilan) → "Tunggu HQ pack"
 // POST { action: 'cancel_nv', id }    → batal parcel NinjaVan (belum dipack) → order kembali "Perlu waybill"
 // POST { action: 'cancel_order', id } → batal order (belum dipack) — parcel NinjaVan aktif dibatalkan dahulu
+// POST { action: 'edit', id, full_name, phone, street, poskod, daerah, negeri, cancel_parcel?, push? } → betulkan maklumat penghantaran
+// GET ?ship=problem → order belum dihantar yang gagal push / maklumat penghantaran bermasalah
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 26;
@@ -55,10 +59,11 @@ export async function GET(req) {
 
     // Senarai (ikut semua tapisan). Carian nama / telefon / tracking mengabaikan julat tarikh.
     let list = g.admin.from('fighter_orders').select(COLS).order('created_at', { ascending: false }).limit(500);
-    if (!q) list = range(list);
+    if (!q && ship !== 'problem') list = range(list);   // Perlu dibetulkan: semua tarikh
     else list = list.or(`full_name.ilike.%${q}%,phone.ilike.%${q.replace(/\D/g, '') || q}%,tracking_no.ilike.%${q}%`);
     if (fighter) list = list.eq('fighter_id', fighter);
     if (ship === 'stuck') list = list.eq('payment_status', 'completed').eq('ship_status', 'new');
+    else if (ship === 'problem') list = list.eq('payment_status', 'completed').in('ship_status', ['new', 'ready']);
     else if (ship !== 'all') list = list.eq('ship_status', ship);
     if (pay !== 'all') list = list.eq('payment_status', pay);
     if (product !== 'all') list = list.eq('source', product);
@@ -114,11 +119,29 @@ export async function GET(req) {
     const { data: st } = fids.length ? await g.admin.from('fighter_settings').select('fighter_id, courier').in('fighter_id', fids) : { data: [] };
     const courierOf = Object.fromEntries((st || []).map(s => [s.fighter_id, s.courier || 'hq']));
 
+    // Ralat push terakhir (migration 042) + semakan maklumat penghantaran (order belum dihantar / parcel menunggu pickup)
+    const errOf = {};
+    const ids = (rows || []).map(r => r.id);
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data: er, error: ee } = await g.admin.from('fighter_orders').select('id, nv_error, nv_error_at').in('id', ids.slice(i, i + 200)).not('nv_error', 'is', null);
+      if (ee) break;   // kolum belum wujud
+      for (const r of er || []) errOf[r.id] = r;
+    }
+    const issuesOf = r => {
+      const sh = nvOf[r.id];
+      const open = r.payment_status === 'completed' && (r.ship_status === 'new' || (r.ship_status === 'ready' && (!isActiveShipment(sh) || isCancellableShipment(sh))));
+      if (!open) return null;
+      const c = checkShipping(r);
+      return c.errors.length || c.warnings.length ? c : null;
+    };
+    let out = (rows || []).map(r => ({ ...r, nv_error: errOf[r.id]?.nv_error || null, nv_error_at: errOf[r.id]?.nv_error_at || null, ship_check: issuesOf(r) }));
+    if (ship === 'problem') out = out.filter(r => r.nv_error || r.ship_check);
+
     return NextResponse.json({
       success: true, role: g.role, nv_env: NV_ENV, from, to, stuck_hours: STUCK_HOURS,
       total, summary, by_product: byProduct, stuck_count: (stuck || []).length,
       fighters: (fighters || []).map(f => ({ id: f.id, name: `${f.full_name} (${f.marketer_code || '—'})` })),
-      data: (rows || []).map(r => ({
+      data: out.map(r => ({
         ...r, amount: Number(r.amount || 0), fighter_name: label(r.fighter_id), courier: courierOf[r.fighter_id] || 'hq',
         nv: nvInfo(nvOf[r.id]), stuck: r.payment_status === 'completed' && r.ship_status === 'new' && r.created_at < stuckBefore,
       })),
@@ -134,6 +157,25 @@ export async function POST(req) {
   try {
     const b = await req.json().catch(() => ({}));
     const actorName = g.profile?.full_name || 'Admin';
+
+    if (b.action === 'edit') {
+      const { order, warnings, cancelled } = await editShipping(g.admin, {
+        table: 'fighter_orders', id: b.id, input: b, cancelParcel: !!b.cancel_parcel, actor: { id: g.user.id, name: actorName },
+      });
+      let push = null;
+      if (b.push) {
+        const { data: prof } = await g.admin.from('profiles').select('id, full_name, phone, marketer_code').eq('id', order.fighter_id).maybeSingle();
+        const { data: settings } = await g.admin.from('fighter_settings').select('*').eq('fighter_id', order.fighter_id).maybeSingle();
+        if ((settings?.courier || 'hq') === 'own') push = { ok: false, error: 'Fighter guna akaun NinjaVan sendiri — tidak dihantar.' };
+        else {
+          try {
+            const { shipment } = await pushFighterOrder(g.admin, order, { settings: settings || {}, profile: prof || {}, userId: g.user.id });
+            push = { ok: true, tracking_number: shipment.tracking_number };
+          } catch (e) { push = { ok: false, error: e.message }; }
+        }
+      }
+      return NextResponse.json({ success: true, warnings, cancelled, push });
+    }
 
     if (b.action === 'push') {
       const ids = (Array.isArray(b.ids) ? b.ids : []).filter(Boolean);

@@ -4,8 +4,11 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
+import { poskodPatch, checkoutIssue } from '@/lib/shipping-validate';
 
 // ─── Packages ─────────────────────────────────────────────────────────────────
+const AIR_TAWAR_OFFER = false;
+
 const BASE_PACKAGES = [
   {
     units: 1, label: '1 Unit', price: 39, savings: null, badge: null,
@@ -93,8 +96,9 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const marketerCode = searchParams?.get('m') || '';
   const fighterCode  = searchParams?.get('f') || '';   // SP fighter → order & bayaran ke akaun fighter
   const pathname     = usePathname() || '';
-  // UJIAN: offer Air Tawar Jarak Jauh aktif di SP HQ sahaja — SP marketer (?m= / /m/) kekal offer lama
-  const airOn        = !marketerCode && !fighterCode && !pathname.startsWith('/m/');
+  // Offer Air Tawar Jarak Jauh (ujian SP HQ) DIMATIKAN — HQ kembali sama dengan SP marketer.
+  // Untuk hidupkan semula: AIR_TAWAR_OFFER = true (aktif di SP HQ sahaja).
+  const airOn        = AIR_TAWAR_OFFER && !marketerCode && !fighterCode && !pathname.startsWith('/m/');
   
   const [selectedPkg,   setSelectedPkg]   = useState(2); // index 2 = 3 unit (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
@@ -171,6 +175,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // Poskod: digit sahaja + negeri diisi automatik ikut poskod
+    if (name === 'poskod') { setFormData(prev => ({ ...prev, ...poskodPatch(value, prev.negeri) })); return; }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -187,7 +193,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
     if (!formData.poskod.trim())    return 'Sila isi poskod.';
     if (!formData.daerah.trim())    return 'Sila isi daerah / bandar.';
     if (!formData.negeri)           return 'Sila pilih negeri.';
-    return null;
+    // Poskod sah & sepadan negeri, telefon Malaysia lengkap — elak order gagal dihantar ke NinjaVan
+    return checkoutIssue(formData);
   };
 
   // ─── FPX Submit ───────────────────────────────────────────────────────────
@@ -688,11 +695,10 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
               <div>
                 <label style={LABEL_STYLE}>Poskod {REQ}</label>
                 <input
-                  type="text" name="poskod"
+                  type="text" name="poskod" inputMode="numeric"
                   placeholder="Cth: 81300"
                   value={formData.poskod}
                   onChange={handleChange}
-                  maxLength={10}
                   required
                   style={INPUT_STYLE}
                 />

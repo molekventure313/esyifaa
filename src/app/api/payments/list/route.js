@@ -6,6 +6,48 @@ import { resolveOwner, applyOwner } from '@/lib/team';
 import { formatOrder } from '@/lib/orders';
 import { latestShipmentsFor, statusGroupOf } from '@/lib/ninjavan/shipments';
 import { errorMessageOf, NV_ENV } from '@/lib/ninjavan/api';
+import { checkShipping } from '@/lib/shipping-validate';
+
+/** Belum ada parcel aktif / belum diexport (CSV) — order masih boleh dibetulkan sebelum dihantar */
+const awaitingShipment = o => (o.nv ? !['pending_pickup', 'in_transit', 'delivered', 'returned', 'exception'].includes(o.nv.group) : !o.ninjavan_exported_at);
+/** Parcel masih menunggu pickup — boleh dibatalkan, dibetulkan & dihantar semula */
+const pendingParcel = o => o.nv?.group === 'pending_pickup' || o.nv?.status === 'Pickup Exception';
+
+/**
+ * Order "Perlu dibetulkan": dibayar / COD sah, belum di-return, belum dihantar, dan
+ * (push terakhir gagal ATAU semakan maklumat penghantaran ada ralat / amaran). 90 hari terakhir.
+ */
+async function problemOrderIds(db) {
+  const since = new Date(Date.now() - 90 * 864e5).toISOString();
+  const cols = 'id, full_name, phone, address, problem, source, payment_type, ninjavan_exported_at';
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db.from('submissions').select(cols)
+      .eq('payment_status', 'completed').is('returned_at', null).in('payment_type', ['fpx_payment', 'cod'])
+      .gte('created_at', since).order('created_at', { ascending: false }).range(from, from + 999);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  const { data: errRows } = await db.from('submissions').select('id').not('nv_error', 'is', null).is('returned_at', null)
+    .then(r => r, () => ({ data: [] }));
+  const hasErr = new Set((errRows || []).map(r => r.id));
+  // Semak maklumat dahulu (murah), kemudian status parcel hanya untuk calon yang bermasalah
+  const cand = rows.filter(isPhysicalOrder).filter(o => {
+    if (hasErr.has(o.id)) return true;
+    const r = checkShipping({ ...o, address: o.address || '' });
+    return r.errors.length || r.warnings.length;
+  });
+  const nv = await latestShipmentsFor(db, cand.map(o => o.id)).catch(() => ({}));
+  const ids = [];
+  for (const o of cand) {
+    const sh = nv[o.id];
+    const view = { ...o, nv: sh ? { group: statusGroupOf(sh), status: sh.status } : null };
+    // Termasuk parcel yang masih menunggu pickup — masih sempat dibatalkan, dibetulkan & dihantar semula
+    if (awaitingShipment(view) || pendingParcel(view)) ids.push(o.id);
+  }
+  return ids.slice(0, 1000);
+}
 
 export async function GET(req) {
   try {
@@ -28,11 +70,15 @@ export async function GET(req) {
     const channel       = searchParams.get('channel') || 'all';         // web | whatsapp
     const sp            = searchParams.get('sp') || 'all';              // <source SP HQ> | s:<slug> (SP Generator)
     // Tempoh (MYT): today | yesterday | month | year | all. 'Belum Diexport' abaikan tempoh — order lama yang belum dihantar tak tercicir
-    const range         = notExported ? null : periodRange(searchParams.get('period') || 'all');
+    // Tapis waybill NinjaVan (unprinted | printed) — di SERVER: parcel boleh jadi untuk order lama (di luar 100 terbaru / tempoh)
+    const print         = ['unprinted', 'printed'].includes(searchParams.get('print')) ? searchParams.get('print') : null;
+    // Perlu dibetulkan: order belum dihantar yang gagal push / maklumat penghantaran bermasalah — juga di SERVER
+    const problem       = searchParams.get('problem') === 'true';
+    const range         = (notExported || print || problem) ? null : periodRange(searchParams.get('period') || 'all');
     const search = searchParams.get('search') || '';
     const page   = parseInt(searchParams.get('page'))  || 1;
-    // Belum export: had lebih besar supaya order lama yang belum dihantar tak tercicir
-    const limit  = parseInt(searchParams.get('limit')) || (notExported ? 500 : 100);
+    // Belum export / tapisan print: had lebih besar supaya order lama tak tercicir
+    const limit  = parseInt(searchParams.get('limit')) || ((print || problem) ? 1000 : notExported ? 500 : 100);
     const offset = (page - 1) * limit;
 
     // Query all paid orders (FPX + COD) — exclude appointment (lead form, legacy)
@@ -91,6 +137,31 @@ export async function GET(req) {
     // Ada carian → SENARAI cari semua tarikh (dulu terhad ke 'Hari Ini' lalai → pesakit lama tak dijumpai); statistik kekal ikut tempoh.
     const dated = q => (range ? q.gte('created_at', range.from).lte('created_at', range.to) : q);
     query = search ? scoped(query) : dated(scoped(query));
+
+    if (print) {
+      // Order yang ada parcel aktif (bukan batal / gagal) dengan waybill belum / dah dicetak.
+      // "Dah print" dihadkan 14 hari terakhir (kalau tak, beribu parcel lama).
+      const ids = new Set();
+      for (let from = 0; ; from += 1000) {
+        let sq = adminClient.from('ninjavan_shipments').select('submission_id')
+          .eq('env', NV_ENV).not('submission_id', 'is', null).not('tracking_number', 'is', null)
+          .not('status', 'in', '(Cancelled,Failed)');
+        sq = print === 'unprinted' ? sq.is('waybill_printed_at', null)
+          : sq.gte('waybill_printed_at', new Date(Date.now() - 14 * 864e5).toISOString());
+        const { data, error: e } = await sq.order('created_at', { ascending: false }).range(from, from + 999);
+        if (e) throw e;
+        (data || []).forEach(r => ids.add(r.submission_id));
+        if (!data || data.length < 1000 || ids.size >= 1000) break;
+      }
+      query = query.in('id', ids.size ? [...ids].slice(0, 1000) : ['00000000-0000-0000-0000-000000000000']);
+    }
+
+    if (problem) {
+      const ids = await problemOrderIds(adminClient);
+      // Bilangan sahaja (lencana penapis — dipanggil jarang, bukan setiap refresh 15s)
+      if (searchParams.get('count_only') === 'true') return NextResponse.json({ success: true, count: ids.length });
+      query = query.in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+    }
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
@@ -195,6 +266,24 @@ export async function GET(req) {
         };
       });
     } catch (_) { /* jadual NinjaVan belum wujud — senarai tetap dipaparkan */ }
+
+    // Ralat push terakhir (migration 042) + semakan maklumat penghantaran untuk order fizikal yang belum dihantar
+    try {
+      const errOf = {};
+      for (let i = 0; i < formatted.length; i += 200) {
+        const { data, error: e } = await adminClient.from('submissions').select('id, nv_error, nv_error_at')
+          .in('id', formatted.slice(i, i + 200).map(o => o.id)).not('nv_error', 'is', null);
+        if (e) break;   // kolum belum wujud
+        for (const r of data || []) errOf[r.id] = r;
+      }
+      formatted.forEach(o => {
+        if (errOf[o.id]) { o.nv_error = errOf[o.id].nv_error; o.nv_error_at = errOf[o.id].nv_error_at; }
+        if (o.payment_status === 'completed' && !o.returned_at && isPhysicalOrder(o) && (awaitingShipment(o) || pendingParcel(o))) {
+          const r = checkShipping(o);
+          if (r.errors.length || r.warnings.length) o.ship_check = r;
+        }
+      });
+    } catch (_) { /* semakan pilihan sahaja */ }
 
     // Senarai SP Generator (dipublish) untuk penapis SP
     const { data: spPages } = await adminClient.from('ai_salespages')

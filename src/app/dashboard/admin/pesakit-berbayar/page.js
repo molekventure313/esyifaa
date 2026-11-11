@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { isPhysicalOrder, SP_FILTER_GROUPS, spFilterLabel } from '@/lib/products';
+import EditShippingModal, { ShippingIssues } from '@/components/orders/EditShippingModal';
 
 // Tarikh + masa ringkas (MYT ikut browser), cth: "27 Sep, 3:45 PTG"
 const fmtDateTime = (d) => d
@@ -80,6 +81,9 @@ export default function PengurusanOrderPage() {
   const [nvPushing, setNvPushing] = useState(false);
   const [nvBusyId,  setNvBusyId]  = useState(null);
   const [printFilter, setPrintFilter] = useState('all');   // all | unprinted | printed (waybill NinjaVan)
+  const [problemOnly, setProblemOnly] = useState(false);   // ❌ Perlu dibetulkan (gagal push / alamat bermasalah)
+  const [problemCount, setProblemCount] = useState(0);
+  const [editing, setEditing] = useState(null);             // order yang sedang dibetulkan
   const [nvEnv,     setNvEnv]     = useState('sandbox');
 
   const { showToast } = useToast();
@@ -119,6 +123,9 @@ export default function PengurusanOrderPage() {
       if (searchTerm.trim()) params.set('search', searchTerm.trim());
       // Tapis di server — kalau tak, hanya 100 order terbaru disemak & order lama yang belum export tercicir
       if (notExportedOnly) params.set('not_exported', 'true');
+      // Belum/Dah print juga di server — parcel boleh jadi untuk order lama di luar 100 terbaru
+      if (printFilter !== 'all') params.set('print', printFilter);
+      if (problemOnly) params.set('problem', 'true');
       if (productFilter !== 'all') params.set('product', productFilter);
       if (ownerFilter !== 'all') params.set('owner', ownerFilter);
       if (spFilter !== 'all') params.set('sp', spFilter);
@@ -145,7 +152,16 @@ export default function PengurusanOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, productFilter, ownerFilter, spFilter, channel, period]);
+  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, printFilter, problemOnly, productFilter, ownerFilter, spFilter, channel, period]);
+
+  // Bilangan order "Perlu dibetulkan" — setiap 60s (berat; bukan setiap refresh 15s)
+  const fetchProblemCount = useCallback(async () => {
+    try {
+      const j = await (await fetch('/api/payments/list?problem=true&count_only=true')).json();
+      if (j.success) setProblemCount(j.count || 0);
+    } catch { /* abaikan */ }
+  }, []);
+  useEffect(() => { fetchProblemCount(); const h = setInterval(fetchProblemCount, 60000); return () => clearInterval(h); }, [fetchProblemCount]);
 
   useEffect(() => {
     fetchOrders();
@@ -246,6 +262,13 @@ export default function PengurusanOrderPage() {
 
   // ─── NinjaVan API ──────────────────────────────────────────────────────────
   const canPushNv = o => o.payment_status === 'completed' && isPhysicalOrder(o) && !o.returned_at && !nvActive(o);
+  // Boleh dibetulkan: fizikal, belum di-return, belum dihantar (atau parcel masih menunggu pickup)
+  const nvPending = o => o.nv && (o.nv.group === 'pending_pickup' || o.nv.status === 'Pickup Exception');
+  const canEditShipping = o => isPhysicalOrder(o) && !o.returned_at && (o.nv ? (!nvActive(o) || nvPending(o)) : !o.ninjavan_exported_at);
+  const saveShipping = async body => {
+    const res = await fetch(`/api/orders/${editing.id}/shipping`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return res.json().catch(() => ({ success: false, error: `Ralat (${res.status})` }));
+  };
 
   const handlePushNv = async (ids) => {
     const list = ids.filter(id => { const o = orders.find(x => x.id === id); return o && canPushNv(o); });
@@ -267,7 +290,8 @@ export default function PengurusanOrderPage() {
         }
       }
       if (sent) showToast(`${sent} order dihantar ke NinjaVan.`, 'success');
-      if (errors.length) showToast(`${errors.length} gagal — ${errors.slice(0, 3).join(' | ')}`, 'error');
+      if (errors.length) showToast(`${errors.length} gagal — ${errors.slice(0, 2).join(' | ')}. Semua ralat disimpan: buka penapis ❌ Perlu dibetulkan.`, 'error');
+      fetchProblemCount();
       setSelectedIds(new Set());
       await fetchOrders();
     } catch {
@@ -674,6 +698,14 @@ export default function PengurusanOrderPage() {
           <option value="unprinted">⬜ Belum Print</option>
           <option value="printed">✅ Dah Print</option>
         </select>
+        <button onClick={() => setProblemOnly(v => !v)} title="Order belum dihantar yang gagal push ke NinjaVan atau maklumat penghantaran bermasalah (90 hari)" style={{
+          padding: '0.45rem 0.7rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+          background: problemOnly ? '#EF4444' : (problemCount ? (isLightMode ? '#FEE2E2' : 'rgba(220,38,38,0.15)') : subCardBg),
+          color: problemOnly ? '#FFFFFF' : (problemCount ? (isLightMode ? '#B91C1C' : '#FCA5A5') : textSecondary),
+          border: problemCount || problemOnly ? '1px solid #EF4444' : (isLightMode ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.12)'),
+        }}>
+          ❌ Perlu dibetulkan ({problemCount})
+        </button>
 
         <input
           type="text"
@@ -906,6 +938,7 @@ export default function PengurusanOrderPage() {
                           {order.payment_type === 'fpx_payment' ? 'Digital' : '—'}
                         </span>
                       )}
+                      <ShippingIssues order={order} compact />
                     </td>
 
                     {/* Status Bayaran */}
@@ -967,6 +1000,15 @@ export default function PengurusanOrderPage() {
                     {/* Tindakan */}
                     <td style={{ padding: '0.85rem 0.5rem' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {canEditShipping(order) && (
+                          <button onClick={() => setEditing(order)} title="Betulkan nama / telefon / alamat & hantar semula ke NinjaVan" style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.3rem 0.55rem', borderRadius: '6px',
+                            background: order.nv_error || order.ship_check?.errors?.length ? '#EF4444' : order.ship_check ? 'rgba(245,158,11,0.12)' : 'transparent',
+                            border: `1px solid ${order.nv_error || order.ship_check?.errors?.length ? '#EF4444' : order.ship_check ? 'rgba(245,158,11,0.5)' : (isLightMode ? '#CBD5E1' : 'rgba(255,255,255,0.15)')}`,
+                            color: order.nv_error || order.ship_check?.errors?.length ? '#FFFFFF' : order.ship_check ? '#D97706' : textSecondary,
+                            fontWeight: 700, fontSize: '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}>✏️ Betulkan</button>
+                        )}
                         {order.payment_type === 'fpx_payment' && ['pending', 'failed'].includes(order.payment_status) && (
                           <button
                             onClick={() => handleMarkPaid(order)}
@@ -1113,7 +1155,7 @@ export default function PengurusanOrderPage() {
               {displayOrders.length === 0 && !loading && (
                 <tr>
                   <td colSpan={10} style={{ padding: '3rem 0', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>
-                    {notExportedOnly && orders.length > 0
+                    {problemOnly ? '✅ Tiada order yang perlu dibetulkan.' : notExportedOnly && orders.length > 0
                       ? '✅ Semua order dalam tempoh ini sudah diexport.'
                       : 'Tiada rekod order lagi.'}
                   </td>
@@ -1123,6 +1165,17 @@ export default function PengurusanOrderPage() {
           </table>
         )}
       </div>
+
+      {editing && (
+        <EditShippingModal
+          order={editing}
+          save={saveShipping}
+          onClose={() => setEditing(null)}
+          onDone={msg => { if (msg) showToast(msg, 'success'); fetchOrders(); fetchProblemCount(); }}
+          canPush={editing.payment_status === 'completed'}
+          t={{ cardBg, subBg: subCardBg, border: cardBorder, text: textPrimary, text2: textSecondary, muted: textMuted, ff: 'var(--font-inter), -apple-system, sans-serif' }}
+        />
+      )}
     </div>
   );
 }
