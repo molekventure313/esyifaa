@@ -961,7 +961,8 @@ export default function PengurusanOrderPage() {
                     {/* Status NinjaVan — parcel API (webhook) dahulu, kemudian export CSV */}
                     <td style={{ padding: '0.85rem 0.5rem', whiteSpace: 'nowrap' }}>
                       {order.nv && NV_GROUPS[order.nv.group] ? (() => {
-                        const g = NV_GROUPS[order.nv.group];
+                        const g = order.nv.status === 'Pickup Exception' && order.nv.group === 'pending_pickup'
+                          ? { label: 'Pickup Dijadual Semula', color: '#F59E0B', icon: '🔁' } : NV_GROUPS[order.nv.group];
                         return (
                           <div title={order.nv.error || order.nv.event || order.nv.status}>
                             <span style={{

@@ -271,7 +271,10 @@ export function statusGroupOf(sh) {
   if (sh.status === 'Cancelled') return 'cancelled';
   if (sh.status === 'Delivered') return 'delivered';
   if (sh.status === 'Returned to Sender' || sh.event === 'Delivery Exception, Return to Sender Initiated' || sh.status === 'Return to Shipper Exception') return 'returned';
-  if (sh.status === 'Delivery Exception' || sh.status === 'Pickup Exception') return 'exception';
+  // Pickup Exception = parcel belum diambil (rider tak datang / tak ambil) — NinjaVan jadual semula pickup,
+  // jadi masih "Menunggu Pickup". Hanya bila NinjaVan berhenti cuba (Max Attempts) ia jadi masalah.
+  if (sh.status === 'Pickup Exception') return /max attempts/i.test(sh.event || '') ? 'exception' : 'pending_pickup';
+  if (sh.status === 'Delivery Exception') return 'exception';
   if (['Created', 'Pending Pickup', 'Driver dispatched for Pickup'].includes(sh.status)) return 'pending_pickup';
   return 'in_transit';
 }
