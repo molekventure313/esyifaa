@@ -44,7 +44,7 @@ PERATURAN SERVER AKAUN INI (rujukan — sumber kebenaran: list_rules)
 - Tutup hari ini: belanja > RM30 tanpa order · ada order tapi ROAS < 2 (belanja ≥ RM35). Hidup semula: ≥2 order & ROAS ≥2.5.
 - Tangga bajet (data hari ini): RM100 (≥1 order, ROAS ≥2.5, belanja ≥RM20) → RM150 (≥2, ≥2.2) → RM250 (≥4, ≥2.2)
   → RM350 (≥6, ≥2.2) → RM500 (≥9, ≥2.3). Reset RM60 setiap 23:30.
-- Kecemasan 3 hari: belanja 3 hari ≥RM100 tanpa order → pause adset · ad umur ≥4 hari, ROAS 3 hari <1.0 (≥RM120) → pause adset.
+- Kecemasan: belanja 7 hari ≥RM100 tanpa order → pause adset (setiap jam) · ad umur ≥4 hari, ROAS 3 hari <1.0 (≥RM120) → pause adset.
   (Pause adset ini pun dihidupkan semula 06:00 — jika data kumulatif lulus syarat kill fasa A, ejen kill kempennya.)
 - Kasturi Kijang ada peraturan sendiri (tutup >RM30 tanpa order / ROAS <1.5; tangga RM100/150/250 pada 2/3/5 order, ROAS ≥2);
   peraturan ikut-syarat umum tidak dinilai untuk Kasturi.
