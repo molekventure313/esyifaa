@@ -1,4 +1,4 @@
-# Templat Strategi — Ejen AI 01 (v2, full-stack media buyer)
+# Templat Strategi — Ejen AI 01 · Agent Miya (v2, full-stack media buyer)
 
 **Nama templat:** Ejen Uji — Sabun Garam & Garam Pengasihan (kini 3 produk; nama dikekalkan)
 **Ringkasan:** 3 produk · split test 3 ad setiap produk, tambah 1 ad sehari bila ada ad untung (maks 7 setiap produk) · struktur 1-1-1 · tiada fasa scale (tangga bajet server)
@@ -25,7 +25,7 @@ Order COD dikira "completed" semasa order masuk; return masuk kemudian. Jadi ROA
 ## SOP (salin ke kotak "SOP penuh")
 
 ```
-SOP EJEN AI 01 — MEDIA BUYER PENUH
+SOP EJEN AI 01 (AGENT MIYA) — MEDIA BUYER PENUH
 
 PRINSIP
 - Ukuran tunggal: profit lepas ads dari order sebenar (MCP esyifa). Pixel hanya untuk diagnosis.
