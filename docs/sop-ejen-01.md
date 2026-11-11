@@ -33,17 +33,27 @@ PRINSIP
 - Keputusan harian dibuat SEKALI pada kitaran pagi, guna data sehingga semalam 23:59.
   Jangan nilai ad dengan data separuh hari ini, kecuali brek kecemasan.
 - Bilangan order kecil = data bising. 1 order tukar ROAS dengan banyak; guna ambang order & belanja di bawah, bukan ROAS sahaja.
-- Server (peraturan Ads Hub, setiap jam) = brek kecemasan & tangga bajet harian. Ejen = keputusan berbilang hari.
-  Jangan tulis peraturan yang bercanggah dengan SOP ini.
+- PEMBAHAGIAN KERJA:
+  Peraturan Ads Hub (server, setiap jam) = ON/OFF HARIAN & tangga bajet — keputusan satu hari, data hari ini.
+  Ejen = KILL KEKAL berdasarkan data KUMULATIF berbilang hari (fasa A). Ejen tidak pause/hidup adset harian.
+  Adset PAUSED pada siang/malam biasanya kerja peraturan (get_activity, source "auto") — BUKAN kill; ia hidup semula 06:00.
+  Jangan ubah/padam peraturan; jika peraturan live bercanggah dengan SOP, ikut peraturan & lapor kepada HQ.
 
-PERATURAN SERVER AKAUN INI (auto, kempen autopilot sahaja — jangan ubah/padam)
-- Tangga bajet (setiap jam, data hari ini): RM100 (≥1 order, ROAS ≥2.5, belanja ≥RM20) → RM150 (≥2, ≥2.2) → RM250 (≥4, ≥2.2)
-  → RM350 (≥6, ≥2.2) → RM500 (≥9, ≥2.3). Naik satu anak tangga sejam, tiada naik selepas 21:00. Reset RM60 setiap 23:30.
-- Brek kecemasan: (1) adset belanja hari ini ≥RM80 tanpa order → pause (hanya adset yang bajetnya dah naik tangga);
-  (2) adset belanja 3 hari ≥RM100 tanpa order → pause; (3) ad umur ≥4 hari, ROAS 3 hari <1.0, belanja ≥RM120 → pause adset.
-- Brek (1) ialah perlindungan bajet satu hari, bukan keputusan kill: kitaran pagi boleh hidupkan semula adset itu
-  (set_ad_status ACTIVE) jika data 3 hari masih lulus fasa SAH/KEKAL.
-- Tiada pause 00:00 / hidup 06:00 pukal untuk akaun ini — ad yang ejen kill mesti kekal mati.
+PERATURAN SERVER AKAUN INI (rujukan — sumber kebenaran: list_rules)
+- Harian: tutup semua adset 00:00 → hidup semua 06:00 (hanya adset dalam kempen AKTIF).
+- Tutup hari ini: belanja > RM30 tanpa order · ada order tapi ROAS < 2 (belanja ≥ RM35). Hidup semula: ≥2 order & ROAS ≥2.5.
+- Tangga bajet (data hari ini): RM100 (≥1 order, ROAS ≥2.5, belanja ≥RM20) → RM150 (≥2, ≥2.2) → RM250 (≥4, ≥2.2)
+  → RM350 (≥6, ≥2.2) → RM500 (≥9, ≥2.3). Reset RM60 setiap 23:30.
+- Kecemasan 3 hari: belanja 3 hari ≥RM100 tanpa order → pause adset · ad umur ≥4 hari, ROAS 3 hari <1.0 (≥RM120) → pause adset.
+  (Pause adset ini pun dihidupkan semula 06:00 — jika data kumulatif lulus syarat kill fasa A, ejen kill kempennya.)
+- Kasturi Kijang ada peraturan sendiri (tutup >RM30 tanpa order / ROAS <1.5; tangga RM100/150/250 pada 2/3/5 order, ROAS ≥2);
+  peraturan ikut-syarat umum tidak dinilai untuk Kasturi.
+
+KILL = TUTUP KEMPEN (WAJIB)
+- set_ad_status object_type "campaign" + campaign_id (autopilot_status.adsets). Peraturan 06:00 hanya hidupkan adset dalam kempen
+  aktif, jadi kempen ditutup kekal mati dan slot/bajetnya dibebaskan. JANGAN kill dengan pause adset (dihidupkan semula 06:00).
+- Hidupkan semula ad yang di-kill = set_ad_status campaign ACTIVE (jarang; hanya jika kill silap data).
+- Kempen lama dikongsi (lebih 1 adset aktif) tidak boleh ditutup — server tolak; pause ad sahaja dan lapor.
 
 ANGKA RUJUKAN (kira semula setiap Isnin dari get_overview 30d; guna nilai di bawah sehingga dikemas kini)
 AOV 65 · CPA_BE (breakeven) 49 · CPA_T (sasaran) 33 · ROAS_BE 1.32 · CTR_ASAS 1.85% · CVR_ASAS 3.7% · CPM_ASAS 24.6
@@ -55,13 +65,14 @@ ALAT & DATA (MCP esyifa)
 - get_overview.returns: kadar return COD matang + roas_adjusted_est. Penilaian ad untung & akaun guna ROAS adjusted,
   bukan ROAS mentah (order COD < 15 hari belum tentu dibayar).
 - set_ad_status: satu-satunya cara kill / hidupkan semula. reason WAJIB = data + rujukan SOP (cth "A2 kill").
-  Pause ad = buang satu creative; pause adset = kill angle penuh. Server tolak objek di luar kempen autopilot.
+  Kill = pause KEMPEN (lihat "KILL = TUTUP KEMPEN"). Server tolak objek di luar kempen autopilot.
+- get_activity: log tindakan — source "auto" = peraturan, "ejen" = ejen. Semak sebelum tafsir status PAUSED.
 
 A. KITARAN HIDUP SETIAP AD (umur = age_days dari get_ads)
 
 Fasa 1 — UJI (hari 1–2, sehingga ±RM120 belanja)
-  Beri peluang penuh 2 hari. Kill awal HANYA jika:
-  - belanja ≥ RM50 (≈1× CPA_BE) dan 0 order, ATAU
+  Beri peluang penuh 2 hari (peraturan harian tutup adset > RM30 tanpa order — itu bukan kill). Kill awal HANYA jika:
+  - belanja KUMULATIF ≥ RM50 (≈1× CPA_BE) dan 0 order, ATAU
   - ≥ 3,000 impression dan CTR link < 0.8% (hook mati — penonton tak klik langsung)
   Selain itu biarkan, walaupun ROAS hari 1 rendah.
 
@@ -193,7 +204,8 @@ CVR akaun jatuh < 2.5% selama 3 hari (masalah salespage, bukan ad).
 
 | # | Perlu | Status |
 |---|---|---|
-| 1 | Ejen pause / hidupkan ad & adset | ✅ Alat MCP `set_ad_status` — kempen [AUTOPILOT]/[1-1-1] sahaja, ikut mod akaun (shadow = rekod), reason wajib, maks 20/hari, Log "🧠 Ejen AI" |
+| 1 | Ejen pause / hidupkan kempen, ad & adset | ✅ Alat MCP `set_ad_status` (`campaign` / `adset` / `ad`) — kempen [AUTOPILOT]/[1-1-1] sahaja, ikut mod akaun (shadow = rekod), reason wajib, maks 20/hari, Log "🧠 Ejen AI". Kill kekal = tutup kempen; kempen dikongsi ditolak |
+| 1b | Slot tidak dikira untuk kempen ditutup | ✅ `liveAdsets.live`: kempen ditutup = bebas; kempen 1-1-1 aktif = pegang slot walaupun adset dipause sementara oleh peraturan harian |
 | 2 | Peraturan ikut umur ad | ✅ Metrik `age_days` dalam rules engine & get_ads (cth `age_days >= 3` = beri peluang 2 hari) |
 | 3 | Frequency & CPM | ✅ Metrik `frequency` (7 hari sebenar dari Meta) & `cpm` dalam peraturan dan get_ads |
 | 4 | Kadar return COD | ✅ `get_overview.returns` — kadar matang 15–44 hari + `roas_adjusted_est` |

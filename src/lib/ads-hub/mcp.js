@@ -238,10 +238,11 @@ export const AUTOPILOT_TOOLS = [
   },
   {
     name: 'set_ad_status',
-    description: `Ejen: pause atau hidupkan semula ad / adset dalam kempen autopilot ([AUTOPILOT] / [1-1-1]) akaun ini — untuk kill ad kalah atau hidupkan semula ikut SOP. Server buat panggilan Meta (token tak didedahkan). Kelulusan ikut MOD akaun: manual = HANYA selepas pengguna setuju; shadow = direkod sahaja (tiada perubahan di Meta); veto/auto = terus ikut SOP. Had server: objek di luar kempen autopilot ditolak; suis autopilot OFF = pause sahaja; hidupkan adset ikut slot & had bajet harian; maksimum 20 perubahan sehari. reason WAJIB (data + rujukan SOP) — direkod dalam Log Ads Hub. Untuk kill satu angle penuh, pause adset; untuk buang satu creative dalam adset, pause ad.`,
+    description: `Ejen: pause atau hidupkan semula kempen / adset / ad autopilot ([AUTOPILOT] / [1-1-1]) akaun ini — untuk kill ad kalah atau hidupkan semula ikut SOP. Server buat panggilan Meta (token tak didedahkan). Kelulusan ikut MOD akaun: manual = HANYA selepas pengguna setuju; shadow = direkod sahaja (tiada perubahan di Meta); veto/auto = terus ikut SOP. Had server: objek di luar kempen autopilot ditolak; suis autopilot OFF = pause sahaja; hidupkan ikut slot & had bajet harian; maksimum 20 perubahan sehari. reason WAJIB (data + rujukan SOP) — direkod dalam Log Ads Hub.
+KILL KEKAL = pause KEMPEN (object_type "campaign", campaign_id dari autopilot_status.adsets): peraturan harian Ads Hub (tutup 00:00 / hidup 06:00 / tutup tanpa order) hanya sentuh adset dalam kempen AKTIF, jadi kempen ditutup kekal mati & slotnya dibebaskan. Pause adset hanya sementara (peraturan 06:00 hidupkan semula). Kempen dikongsi (>1 adset aktif) tidak boleh ditutup — pause ad sahaja.`,
     inputSchema: obj({
-      object_type: enm(['ad', 'adset'], 'ad atau adset'),
-      object_id: str('ID ad / adset Meta (dari get_ads / get_account_structure / autopilot_status)'),
+      object_type: enm(['campaign', 'adset', 'ad'], 'campaign (kill kekal 1-1-1), adset atau ad'),
+      object_id: str('ID kempen / adset / ad Meta (dari autopilot_status / get_ads / get_account_structure)'),
       status: enm(['PAUSED', 'ACTIVE'], 'PAUSED = kill/pause, ACTIVE = hidupkan semula'),
       reason: str('Sebab berdasarkan data + peraturan SOP, cth "Hari ke-3: ROAS 3 hari 1.1, belanja RM130, 1 order — SOP A2 kill"'),
     }, ['object_type', 'object_id', 'status', 'reason']),

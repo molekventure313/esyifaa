@@ -106,28 +106,44 @@ export async function autopilotCampaignIds(admin, conn) {
   return [...new Set([conn.autopilot_campaign_id, ...(data || []).map(r => r.campaign_id)].filter(Boolean))];
 }
 
-// Adset dalam kempen autopilot (live dari Meta). Aktif = status ACTIVE (termasuk yang dijadual).
+// Adset dalam kempen autopilot (live dari Meta). `live` = memegang slot & bajet:
+// - kempen ditutup (kill oleh ejen) → tidak live
+// - kempen 1 adset (1-1-1) → live selagi kempen aktif, walaupun adset dipause sementara oleh peraturan harian
+//   (tutup 00:00 / tutup belanja tanpa order) kerana peraturan 06:00 akan hidupkannya semula
+// - kempen dikongsi → ikut status adset (ACTIVE, termasuk yang dijadual)
+// - adset dari launch gagal / dibatalkan → tidak live
 async function liveAdsets(admin, conn, token) {
   const out = [];
+  const { data: dead } = await admin.from('autopilot_launches').select('adset_id').eq('marketer_id', conn.marketer_id)
+    .in('status', ['failed', 'cancelled']).not('adset_id', 'is', null);
+  const deadIds = new Set((dead || []).map(r => r.adset_id));
   for (const cid of await autopilotCampaignIds(admin, conn)) {
     try {
-      const r = await metaGet(`${cid}/adsets`, { fields: 'id,name,status,effective_status,daily_budget,start_time', limit: 100 }, token);
-      out.push(...(r.data || []).map(a => ({
-        adset_id: a.id, name: a.name, status: a.status, effective_status: a.effective_status, campaign_id: cid,
-        daily_budget: a.daily_budget ? parseInt(a.daily_budget, 10) / 100 : 0, start_time: a.start_time,
-      })));
+      const r = await metaGet(`${cid}/adsets`, { fields: 'id,name,status,effective_status,daily_budget,start_time,campaign{status}', limit: 100 }, token);
+      const list = r.data || [];
+      const solo = list.filter(a => !deadIds.has(a.id)).length === 1;
+      out.push(...list.map(a => {
+        const campaignStatus = a.campaign?.status || null;
+        const live = campaignStatus !== 'PAUSED' && !deadIds.has(a.id) && (solo || a.status === 'ACTIVE');
+        return {
+          adset_id: a.id, name: a.name, status: a.status, effective_status: a.effective_status, campaign_id: cid,
+          campaign_status: campaignStatus, live,
+          daily_budget: a.daily_budget ? parseInt(a.daily_budget, 10) / 100 : 0, start_time: a.start_time,
+        };
+      }));
     } catch (e) {
       if (!(e instanceof MetaError && e.code === 100)) throw e;   // kempen dipadam → akan dicipta semula
     }
   }
   return out;
 }
+const isLive = a => a.live;
 
 export async function status(admin, marketerId) {
   const conn = await loadHqConn(admin, marketerId);
   const token = decryptToken(conn.token_encrypted);
   const adsets = await liveAdsets(admin, conn, token);
-  const active = adsets.filter(a => a.status === 'ACTIVE');
+  const active = adsets.filter(isLive);
   const budget = Number(conn.autopilot_adset_budget);
   const pending = await pendingLaunches(admin, marketerId, active.map(a => a.adset_id));
   const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || budget), 0);
@@ -359,7 +375,7 @@ async function pendingLaunches(admin, marketerId, excludeAdsetIds = []) {
 async function checkLimits(admin, conn, token, marketerId, skipAdsetId = null) {
   const budget = Number(conn.autopilot_adset_budget);
   if (budget > Number(conn.limit_max_budget)) throw fail(`Bajet adset autopilot ${rm(budget)} melebihi had adset ${rm(conn.limit_max_budget)} (Tetapan → Had keselamatan).`);
-  const active = (await liveAdsets(admin, conn, token)).filter(a => a.status === 'ACTIVE' && a.adset_id !== skipAdsetId);
+  const active = (await liveAdsets(admin, conn, token)).filter(a => isLive(a) && a.adset_id !== skipAdsetId);
   const pending = await pendingLaunches(admin, marketerId, [...active.map(a => a.adset_id), skipAdsetId]);
   const count = active.length + pending.length;
   const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || budget), 0);
@@ -628,7 +644,7 @@ export async function setAdStatus(admin, marketerId, actorId, input) {
   const status = input.status;
   const id = String(input.object_id || '').trim();
   const reason = String(input.reason || '').trim().slice(0, 500);
-  if (!['ad', 'adset'].includes(type)) throw fail('object_type mesti "ad" atau "adset".');
+  if (!['ad', 'adset', 'campaign'].includes(type)) throw fail('object_type mesti "ad", "adset" atau "campaign".');
   if (!['ACTIVE', 'PAUSED'].includes(status)) throw fail('status mesti "ACTIVE" atau "PAUSED".');
   if (!/^\d{5,25}$/.test(id)) throw fail('object_id tidak sah.');
   if (reason.length < 10) throw fail('reason diperlukan: sebab ringkas berdasarkan data (cth "ROAS 3 hari 0.9, belanja RM120, SOP A-Sah kill").');
@@ -639,26 +655,42 @@ export async function setAdStatus(admin, marketerId, actorId, input) {
   const token = decryptToken(conn.token_encrypted);
 
   let obj;
-  try { obj = await metaGet(id, { fields: type === 'ad' ? 'name,status,campaign_id,adset_id' : 'name,status,campaign_id,daily_budget' }, token); }
+  const fields = type === 'ad' ? 'name,status,campaign_id,adset_id' : type === 'adset' ? 'name,status,campaign_id,daily_budget' : 'name,status';
+  try { obj = await metaGet(id, { fields }, token); }
   catch (e) { throw fail(metaMsg(e)); }
+  if (type === 'campaign') obj.campaign_id = id;
   const camps = await autopilotCampaignIds(admin, conn);
-  if (!camps.includes(obj.campaign_id)) throw fail(`"${obj.name}" bukan dalam kempen autopilot akaun ini — ejen hanya boleh ubah ad/adset dalam kempen [AUTOPILOT] / [1-1-1]. Untuk ad lain, guna Ads Hub atau minta HQ.`);
+  if (!camps.includes(obj.campaign_id)) throw fail(`"${obj.name}" bukan dalam kempen autopilot akaun ini — ejen hanya boleh ubah ad/adset/kempen [AUTOPILOT] / [1-1-1]. Untuk ad lain, guna Ads Hub atau minta HQ.`);
   if (obj.status === status) return { ok: true, mode, message: `"${obj.name}" memang dah ${status === 'ACTIVE' ? 'aktif' : 'dipause'}.` };
+
+  // Kill = tutup kempen 1-1-1 (peraturan ikut jam hanya hidupkan adset dalam kempen AKTIF, jadi kempen ditutup kekal mati).
+  // Kempen dikongsi (lebih 1 adset hidup) ditolak supaya ad lain tak terbunuh sekali.
+  let campAdsets = [];
+  if (type === 'campaign') {
+    campAdsets = (await liveAdsets(admin, conn, token)).filter(a => a.campaign_id === id);
+    if (status === 'PAUSED' && campAdsets.filter(a => a.status === 'ACTIVE').length > 1) {
+      throw fail(`Kempen "${obj.name}" ada ${campAdsets.filter(a => a.status === 'ACTIVE').length} adset aktif — tutup kempen akan kill semuanya. Pause adset/ad berkenaan sahaja, atau minta HQ.`);
+    }
+  }
 
   const since = new Date(`${todayMyt()}T00:00:00+08:00`).toISOString();
   const { count } = await admin.from('meta_actions_log').select('id', { count: 'exact', head: true })
     .eq('marketer_id', marketerId).eq('source', 'ejen').in('status', ['ok', 'shadow']).gte('created_at', since);
   if ((count || 0) >= EJEN_MAX_ACTIONS) throw fail(`Had ${EJEN_MAX_ACTIONS} perubahan status sehari oleh ejen dicapai. Lapor kepada HQ.`);
 
-  if (status === 'ACTIVE' && type === 'adset') {
-    const { data: bad } = await admin.from('autopilot_launches').select('id, status').eq('marketer_id', marketerId).eq('adset_id', id)
-      .in('status', ['launching', 'failed', 'cancelled']).limit(1);
-    if (bad?.length) throw fail(`Adset ini dari launch #${bad[0].id} berstatus "${bad[0].status}" — tidak boleh dihidupkan.`);
-    const budget = obj.daily_budget ? parseInt(obj.daily_budget, 10) / 100 : 0;
-    const active = (await liveAdsets(admin, conn, token)).filter(a => a.status === 'ACTIVE' && a.adset_id !== id);
-    const pending = await pendingLaunches(admin, marketerId, [...active.map(a => a.adset_id), id]);
+  if (status === 'ACTIVE' && (type === 'adset' || type === 'campaign')) {
+    // Hidupkan kempen = hidupkan semula adset aktif di dalamnya → semak slot & bajet sama seperti hidupkan adset
+    const ids = type === 'adset' ? [id]
+      : (campAdsets.length === 1 ? campAdsets : campAdsets.filter(a => a.status === 'ACTIVE')).map(a => a.adset_id);
+    const { data: bad } = ids.length ? await admin.from('autopilot_launches').select('id, status').eq('marketer_id', marketerId).in('adset_id', ids)
+      .in('status', ['launching', 'failed', 'cancelled']).limit(1) : { data: [] };
+    if (bad?.length) throw fail(`Adset dari launch #${bad[0].id} berstatus "${bad[0].status}" — tidak boleh dihidupkan.`);
+    const budget = type === 'adset' ? (obj.daily_budget ? parseInt(obj.daily_budget, 10) / 100 : 0)
+      : campAdsets.filter(a => ids.includes(a.adset_id)).reduce((s, a) => s + a.daily_budget, 0);
+    const active = (await liveAdsets(admin, conn, token)).filter(a => isLive(a) && !ids.includes(a.adset_id));
+    const pending = await pendingLaunches(admin, marketerId, [...active.map(a => a.adset_id), ...ids]);
     const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || 0), 0);
-    if (active.length + pending.length >= conn.autopilot_max_adsets) throw fail(`Slot penuh: ${active.length + pending.length}/${conn.autopilot_max_adsets} adset aktif.`);
+    if (active.length + pending.length + ids.length > conn.autopilot_max_adsets) throw fail(`Slot penuh: ${active.length + pending.length}/${conn.autopilot_max_adsets} adset aktif.`);
     if (used + budget > Number(conn.autopilot_daily_cap) + 1e-9) throw fail(`Melebihi had bajet harian: ${rm(used)} + ${rm(budget)} > ${rm(conn.autopilot_daily_cap)}.`);
   }
 
