@@ -223,6 +223,18 @@ export const FIGHTER_POSTAGE = 4.5;
 export const FIGHTER_POSTAGE_COD_EXTRA = 2;
 export const fighterPostageOf = shipment => FIGHTER_POSTAGE + (Number(shipment?.cod_amount) > 0 ? FIGHTER_POSTAGE_COD_EXTRA : 0);
 
+// Order fighter: produk dari kolum items (sumber sama dengan tolak stok HQ) — qty FPX selalunya kosong
+const FIGHTER_UNIT_WORD = [[/^GPM/i, 'PEK'], [/^KKE/i, 'BOTOL'], [/^SGH/i, 'UNIT']];
+const fighterItems = o => (Array.isArray(o.items) ? o.items : []).filter(i => i?.label && Number(i.qty) > 0);
+function fighterItemsText(o) {
+  const items = fighterItems(o);
+  if (!items.length) return '';
+  const [main, ...rest] = items;
+  const word = FIGHTER_UNIT_WORD.find(([re]) => re.test(main.sku || ''))?.[1] || 'UNIT';
+  return [main.label, `${main.qty} ${word}`, ...rest.map(i => `+ ${i.label}${i.qty > 1 ? ` x${i.qty}` : ''}`)].join(' · ');
+}
+const fighterItemsQty = o => fighterItems(o)[0]?.qty || 0;
+
 /** fighter_orders → input buildOrderPayload. Pengirim = jenama fighter, alamat pickup HQ. */
 export function fighterOrderInput(o, { settings = {}, profile = {} } = {}, attempt = 0) {
   const addr = parseAddressParts(addressStringOf(o));
@@ -237,8 +249,8 @@ export function fighterOrderInput(o, { settings = {}, profile = {} } = {}, attem
     phone: o.phone,
     address: { address1: addr.street, city: addr.daerah, state: addr.negeri, postcode: addr.poskod },
     cod: o.payment_type === 'cod' ? Number(o.amount) || 0 : 0,
-    itemDescription: unitCellOf(o).replace(/\n/g, ' · '),
-    quantity: orderQty(o),
+    itemDescription: fighterItemsText(o) || unitCellOf(o).replace(/\n/g, ' · '),
+    quantity: fighterItemsQty(o) || orderQty(o),
     sender: {
       name: settings.sender_name || profile.full_name || null,
       phone: settings.sender_phone || settings.whatsapp || profile.phone || null,
