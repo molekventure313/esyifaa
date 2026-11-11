@@ -84,4 +84,4 @@ PENGGANTIAN
 | Tarikh | Keputusan |
 |---|---|
 | 12/11/2026 | Kill pertama ikut SOP ini: tutup kempen [1-1-1] Sendawa, Mak Ayah, Rumah Rasa Berat dan [AUTOPILOT] Sabun Garam; pause ad KK Pakej Seisi Keluarga, Wangian Sunnah, Anak Meracau, Kena Himpit dan GP Pasangan Berubah, Tanda-tanda, Suami Berikhtiar, Ikhtiar Dapur. Kekal: GP Bilik Asing, SG Mandian Ruqyah, SG Bayar Bila Sampai, KK Tengkuk Berat (pengecualian HQ). Mulai hari ini semua launch HQ = 1-1-1. |
-| 12/11/2026 | Ganti split test Sabun Garam (3 kempen 1-1-1, mula 13/11 06:00, RM60/hari): Angin Saka video CFT-SITUASI (launch 50), Benteng Lepas Berubat gambar (launch 49), Hati Panas Dengan Anak video testimoni (launch 51). |
+| 12/11/2026 | Ganti split test Sabun Garam (3 kempen 1-1-1, mula 12/11 06:00, RM60/hari; asalnya dijadual 13/11 — launch dibuat 02:00 pagi, sepatutnya start "today"): Angin Saka video CFT-SITUASI (launch 50), Benteng Lepas Berubat gambar (launch 49), Hati Panas Dengan Anak video testimoni (launch 51). |
