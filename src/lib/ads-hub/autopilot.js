@@ -110,7 +110,8 @@ export async function autopilotCampaignIds(admin, conn) {
 // - kempen ditutup (kill oleh ejen) → tidak live
 // - kempen 1 adset (1-1-1) → live selagi kempen aktif, walaupun adset dipause sementara oleh peraturan harian
 //   (tutup 00:00 / tutup belanja tanpa order) kerana peraturan 06:00 akan hidupkannya semula
-// - kempen dikongsi → ikut status adset (ACTIVE, termasuk yang dijadual)
+// - kempen dikongsi → ikut status adset (ACTIVE, termasuk yang dijadual) DAN ada sekurang-kurangnya 1 ad ACTIVE
+//   (ad kalah di-kill dengan pause ad; peraturan 06:00 hidupkan adsetnya semula tapi ia tak belanja → bukan slot)
 // - adset dari launch gagal / dibatalkan → tidak live
 async function liveAdsets(admin, conn, token) {
   const out = [];
@@ -122,9 +123,19 @@ async function liveAdsets(admin, conn, token) {
       const r = await metaGet(`${cid}/adsets`, { fields: 'id,name,status,effective_status,daily_budget,start_time,campaign{status}', limit: 100 }, token);
       const list = r.data || [];
       const solo = list.filter(a => !deadIds.has(a.id)).length === 1;
+      let withActiveAd = null;   // Set adset_id yang ada ad ACTIVE (kempen dikongsi sahaja)
+      if (!solo) {
+        try {
+          const ads = await metaGet(`${cid}/ads`, { fields: 'adset_id,status', limit: 500 }, token);
+          withActiveAd = new Set((ads.data || []).filter(x => x.status === 'ACTIVE').map(x => x.adset_id));
+        } catch (e) {
+          if (!(e instanceof MetaError)) throw e;   // gagal baca ad → kira ikut status adset sahaja (selamat)
+        }
+      }
       out.push(...list.map(a => {
         const campaignStatus = a.campaign?.status || null;
-        const live = campaignStatus !== 'PAUSED' && !deadIds.has(a.id) && (solo || a.status === 'ACTIVE');
+        const live = campaignStatus !== 'PAUSED' && !deadIds.has(a.id)
+          && (solo || (a.status === 'ACTIVE' && (!withActiveAd || withActiveAd.has(a.id))));
         return {
           adset_id: a.id, name: a.name, status: a.status, effective_status: a.effective_status, campaign_id: cid,
           campaign_status: campaignStatus, live,
