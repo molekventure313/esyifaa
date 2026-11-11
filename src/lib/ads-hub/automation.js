@@ -527,14 +527,20 @@ export async function evaluateConnection(admin, conn) {
   return out;
 }
 
+// Semua akaun dinilai SERENTAK — dulu satu demi satu dengan had 20s, akaun di hujung senarai (cth HQ) tertinggal berjam-jam.
+// budgetMs = had masa menunggu; akaun yang lambat dilaporkan tanpa menghalang akaun lain.
 export async function evaluateAll(admin, { budgetMs = 20000 } = {}) {
-  const started = Date.now();
   const { data: conns } = await admin.from('meta_connections').select('*');
-  const results = [];
-  for (const conn of conns || []) {
-    if (Date.now() - started > budgetMs) break;
-    try { results.push({ marketer_id: conn.marketer_id, ...(await evaluateConnection(admin, conn)) }); }
-    catch (e) { results.push({ marketer_id: conn.marketer_id, error: e.message }); }
-  }
-  return { total: conns?.length || 0, evaluated: results.length, results };
+  let timer;
+  const timeout = new Promise(res => { timer = setTimeout(() => res('timeout'), budgetMs); });
+  const results = await Promise.all((conns || []).map(async conn => {
+    const run = evaluateConnection(admin, conn).then(
+      out => ({ marketer_id: conn.marketer_id, ...out }),
+      e => ({ marketer_id: conn.marketer_id, error: e.message }),
+    );
+    const r = await Promise.race([run, timeout]);
+    return r === 'timeout' ? { marketer_id: conn.marketer_id, error: `melebihi ${budgetMs / 1000}s` } : r;
+  }));
+  clearTimeout(timer);
+  return { total: conns?.length || 0, evaluated: results.filter(r => !r.error).length, results };
 }
