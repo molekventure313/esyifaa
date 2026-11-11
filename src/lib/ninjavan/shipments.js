@@ -287,13 +287,14 @@ export const isCancellableShipment = s => isActiveShipment(s) && (statusGroupOf(
  * Pulang Buffer PDF.
  */
 export async function getWaybill(db, shipment) {
-  if (shipment.waybill_path) {
+  // Simpanan lama (tanpa akhiran _h) masih tunjuk alamat pengirim → abaikan & jana semula
+  if (shipment.waybill_path?.endsWith('_h.pdf')) {
     const { data, error } = await db.storage.from(WAYBILL_BUCKET).download(shipment.waybill_path);
     if (!error && data) return Buffer.from(await data.arrayBuffer());
   }
   if (!shipment.tracking_number) throw new NinjaVanError('Parcel belum ada tracking number.');
   const pdf = await fetchWaybillPdf(db, shipment.tracking_number);
-  const path = `${shipment.env}/${shipment.tracking_number}.pdf`;
+  const path = `${shipment.env}/${shipment.tracking_number}_h.pdf`;   // _h = maklumat pengirim disorok
   const { error: upErr } = await db.storage.from(WAYBILL_BUCKET).upload(path, pdf, { contentType: 'application/pdf', upsert: true });
   if (upErr) console.error('[ninjavan] simpan waybill gagal:', upErr.message);
   else await db.from('ninjavan_shipments').update({ waybill_path: path, updated_at: new Date().toISOString() }).eq('id', shipment.id);

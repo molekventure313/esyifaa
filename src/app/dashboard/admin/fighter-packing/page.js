@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useFighterTheme, Card, Badge, btnStyle, inputStyle, fmtTime } from '@/components/fighter/ui';
 import DamageBox from '@/components/DamageBox';
+import { openMergedWaybills, WAYBILL_CHUNK } from '@/lib/ninjavan/waybill-client';
 
 // HQ — Packing Fighter (staff + super_admin). Parcel NinjaVan HQ (fighter / admin hantar) atau PDF waybill fighter → staff cetak & pack.
 // "Dah pack" = stok HQ ditolak + caj ke akaun fighter. Parcel pulang → "Return" = stok masuk semula + kredit.
@@ -76,12 +77,16 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
     if (!g) groups.push(g = { key, url: o.waybill_url, nv: !!o.nv && !o.waybill_path, fighter: o.fighter_name, orders: [] });
     g.orders.push(o);
   }
-  const printNv = ids => {
+  const printNv = async ids => {
     const list = ids.filter(id => rows.find(o => o.id === id)?.nv);
     if (!list.length) return setMsg({ ok: false, text: 'Tiada parcel NinjaVan HQ dalam pilihan.' });
-    window.open(`/api/admin/ninjavan/waybill?fighter=1&ids=${list.slice(0, 30).join(',')}`, '_blank');
-    if (list.length > 30) setMsg({ ok: true, text: 'Maksimum 30 waybill setiap kali — 30 pertama dibuka.' });
-    setTimeout(load, 6000);   // segarkan tanda "Dah print"
+    if (list.length > WAYBILL_CHUNK) setMsg({ ok: true, text: `Menyediakan ${list.length} waybill — sila tunggu…` });
+    try {
+      const { pages, errors } = await openMergedWaybills(part => `/api/admin/ninjavan/waybill?fighter=1&ids=${part.join(',')}`, list);
+      setMsg(errors.length ? { ok: false, text: `${pages} waybill dibuka · ${errors.length} ralat — ${errors.slice(0, 2).join(' | ')}` }
+        : list.length > WAYBILL_CHUNK ? { ok: true, text: `${pages} waybill sedia untuk dicetak.` } : null);
+    } catch (e) { setMsg({ ok: false, text: `Gagal sediakan waybill: ${e.message}` }); }
+    load();   // segarkan tanda "Dah print"
   };
   const toggle = ids => setSel(s => { const n = new Set(s); const all = ids.every(i => n.has(i)); ids.forEach(i => (all ? n.delete(i) : n.add(i))); return n; });
 

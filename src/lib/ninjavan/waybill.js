@@ -15,10 +15,17 @@ export async function waybillPdfResponse(db, shipments, { markUserId = null } = 
   const pdfs = [];
   const errors = [];
   const printed = [];
-  for (const s of ready) {
-    try { pdfs.push(await getWaybill(db, s)); printed.push(s); }
-    catch (e) { errors.push(`${s.tracking_number}: ${e.message}`); }
-  }
+  // Selari (5 serentak) supaya 30 waybill muat dalam had masa server; urutan cetakan dikekalkan
+  const got = new Array(ready.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(5, ready.length) }, async () => {
+    while (next < ready.length) {
+      const i = next++;
+      try { got[i] = { pdf: await getWaybill(db, ready[i]) }; }
+      catch (e) { got[i] = { error: `${ready[i].tracking_number}: ${e.message}` }; }
+    }
+  }));
+  got.forEach((r, i) => { if (r.pdf) { pdfs.push(r.pdf); printed.push(ready[i]); } else errors.push(r.error); });
   if (!pdfs.length) return NextResponse.json({ success: false, error: errors.join(' · ') }, { status: 502 });
 
   if (markUserId) {

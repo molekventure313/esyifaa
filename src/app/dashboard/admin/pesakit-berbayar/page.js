@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { isPhysicalOrder, SP_FILTER_GROUPS, spFilterLabel } from '@/lib/products';
 import EditShippingModal, { ShippingIssues } from '@/components/orders/EditShippingModal';
+import { openMergedWaybills, WAYBILL_CHUNK } from '@/lib/ninjavan/waybill-client';
 
 // Tarikh + masa ringkas (MYT ikut browser), cth: "27 Sep, 3:45 PTG"
 const fmtDateTime = (d) => d
@@ -301,12 +302,18 @@ export default function PengurusanOrderPage() {
     }
   };
 
-  const handlePrintWaybill = (ids) => {
+  const handlePrintWaybill = async (ids) => {
     const list = ids.filter(id => { const o = orders.find(x => x.id === id); return o && nvActive(o); });
     if (!list.length) { showToast('Tiada parcel NinjaVan untuk order dipilih.', 'error'); return; }
-    window.open(`/api/admin/ninjavan/waybill?ids=${list.slice(0, 30).join(',')}`, '_blank');
-    if (list.length > 30) showToast('Maksimum 30 waybill setiap kali — 30 pertama dibuka.', 'info');
-    setTimeout(fetchOrders, 6000);   // segarkan tanda "Dah print"
+    if (list.length > WAYBILL_CHUNK) showToast(`Menyediakan ${list.length} waybill — sila tunggu, PDF akan dibuka bila siap.`, 'info');
+    try {
+      const { pages, errors } = await openMergedWaybills(part => `/api/admin/ninjavan/waybill?ids=${part.join(',')}`, list);
+      if (errors.length) showToast(`${pages} waybill dibuka · ${errors.length} ralat — ${errors.slice(0, 2).join(' | ')}`, 'error');
+      else if (list.length > WAYBILL_CHUNK) showToast(`${pages} waybill sedia untuk dicetak.`, 'success');
+    } catch (e) {
+      showToast(`Gagal sediakan waybill: ${e.message}`, 'error');
+    }
+    fetchOrders();   // segarkan tanda "Dah print"
   };
 
   const handleCancelNv = async (order) => {

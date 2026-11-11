@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useFighterTheme, Card, Badge, rm, inputStyle, btnStyle, fmtTime } from '@/components/fighter/ui';
+import { openMergedWaybills } from '@/lib/ninjavan/waybill-client';
 
 // Fighter — Order sendiri.
 // Kurier HQ (lalai): order masuk → 🚀 Hantar ke NinjaVan (akaun HQ, pickup di HQ) → HQ cetak waybill & pack → stok + pos dicaj.
@@ -115,7 +116,9 @@ export default function FighterOrdersPage() {
   const printNv = ids => {
     const list = ids.filter(id => rows.find(o => o.id === id)?.nv?.active);
     if (!list.length) return setMsg({ ok: false, text: 'Tiada parcel NinjaVan untuk order dipilih.' });
-    window.open(`/api/fighter/ninjavan?waybill=${list.slice(0, 30).join(',')}`, '_blank');
+    openMergedWaybills(part => `/api/fighter/ninjavan?waybill=${part.join(',')}`, list)
+      .then(({ errors }) => { if (errors.length) setMsg({ ok: false, text: errors.slice(0, 2).join(' | ') }); })
+      .catch(e => setMsg({ ok: false, text: `Gagal sediakan waybill: ${e.message}` }));
   };
 
   const cancelNv = async o => {

@@ -148,7 +148,8 @@ export async function cancelOrder(db, trackingNumber) {
 
 /** GET /2.0/reports/waybill — PDF (Buffer). Panggil SEKALI per tracking; simpan & guna semula (lihat shipments.js) */
 export async function fetchWaybillPdf(db, trackingNumber) {
-  const qs = new URLSearchParams({ tid: trackingNumber, hide_shipper_details: 'false' });
+  // Sorok alamat & telefon pengirim pada waybill (sama seperti tetapan semasa submit manual di dashboard NinjaVan)
+  const qs = new URLSearchParams({ tid: trackingNumber, hide_shipper_details: 'true' });
   const { body } = await nvFetch(db, `/2.0/reports/waybill?${qs}`, { binary: true });
   return body;
 }
