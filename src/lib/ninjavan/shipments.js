@@ -80,7 +80,9 @@ export function buildOrderPayload(o) {
       } : {}),
       delivery_start_date: today,
       delivery_timeslot: { start_time: '09:00', end_time: '22:00', timezone: TZ },
-      ...(o.instructions ? { delivery_instructions: o.instructions } : {}),
+      // Comments pada waybill = delivery_instructions → produk & kuantiti untuk packing (sama kolum UNIT export CSV).
+      // NinjaVan tidak cetak items[] pada waybill.
+      delivery_instructions: String(o.instructions || o.itemDescription || '').slice(0, 255),
       ...(cod > 0 ? { cash_on_delivery: cod, cash_on_delivery_currency: 'MYR' } : {}),
       dimensions: { weight: 1 },
       items: [{ item_description: o.itemDescription.slice(0, 255), quantity: o.quantity || 1, is_dangerous_good: false }],
