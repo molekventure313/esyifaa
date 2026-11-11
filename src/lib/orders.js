@@ -1,5 +1,6 @@
 import { PRODUCTS, productOf } from '@/lib/products';
 import { orderQty, addonQtyOf } from '@/lib/marketer-calc';
+import { latestShipmentsFor, isActiveShipment, isCancellableShipment, cancelShipment } from '@/lib/ninjavan/shipments';
 
 const UNIT_WORD = { 'sabun-garam': 'Unit', 'garam-pengasihan': 'Pek', 'kasturi-kijang': 'Botol' };
 
@@ -8,8 +9,38 @@ const UNIT_WORD = { 'sabun-garam': 'Unit', 'garam-pengasihan': 'Pek', 'kasturi-k
 // Stok: buang SEMUA stock_movements yang dirujuk order ini ('out' auto-deduct + 'return'),
 // supaya kesan bersih order pada stok = 0. (Buang 'out' sahaja akan pulangkan stok
 // dua kali untuk order yang dah di-return.)
-export async function deleteOrders(adminClient, ids) {
-  if (!ids.length) return;
+/**
+ * Parcel NinjaVan aktif mesti dibatalkan dahulu — order dipadam tak boleh tinggal parcel di NinjaVan.
+ * Parcel belum diambil kurier → batal di NinjaVan (tanda print / export direset oleh cancelShipment).
+ * Parcel dah diambil kurier / batal gagal → order TIDAK dipadam.
+ * @returns {{ ok: string[], blocked: { id: string, reason: string }[], cancelled: string[] }}
+ */
+export async function releaseParcels(db, ids) {
+  const shipments = await latestShipmentsFor(db, ids);
+  const ok = [], blocked = [], cancelled = [];
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(5, ids.length) }, async () => {
+    while (next < ids.length) {
+      const id = ids[next++];
+      const s = shipments[id];
+      if (!isActiveShipment(s)) { ok.push(id); continue; }
+      if (!isCancellableShipment(s)) {
+        blocked.push({ id, reason: `parcel ${s.tracking_number} dah diambil kurier (${s.status})` });
+        continue;
+      }
+      try { await cancelShipment(db, s); cancelled.push(s.tracking_number); ok.push(id); }
+      catch (e) { blocked.push({ id, reason: `gagal batal parcel ${s.tracking_number}: ${e.message}` }); }
+    }
+  }));
+  return { ok, blocked, cancelled };
+}
+
+/** Padam order — parcel NinjaVan dibatalkan dahulu. Pulang hasil releaseParcels (ok = yang dipadam). */
+export async function deleteOrders(adminClient, requestedIds) {
+  if (!requestedIds.length) return { ok: [], blocked: [], cancelled: [] };
+  const released = await releaseParcels(adminClient, requestedIds);
+  const ids = released.ok;
+  if (!ids.length) return released;
 
   // Cases dulu (FK constraint)
   await adminClient.from('cases').delete().in('submission_id', ids);
@@ -22,6 +53,7 @@ export async function deleteOrders(adminClient, ids) {
 
   const { error } = await adminClient.from('submissions').delete().in('id', ids);
   if (error) throw error;
+  return released;
 }
 
 // Format satu order (submission) untuk paparan — dikongsi Pengurusan Order admin & Orders marketer.

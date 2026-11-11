@@ -5,6 +5,8 @@ import { deleteOrders } from '@/lib/orders';
 
 // POST /api/orders/bulk-delete — delete multiple orders
 // Body: { ids: ['id1', 'id2', ...] }
+// Parcel NinjaVan aktif dibatalkan dahulu; order yang parcelnya dah diambil kurier tidak dipadam.
+export const maxDuration = 26;
 export async function POST(req) {
   try {
     const supabase = await createClient();
@@ -41,12 +43,22 @@ export async function POST(req) {
     }
 
     // Cases + stock movements (out & return) + submissions
-    await deleteOrders(adminClient, validIds);
+    const { ok, blocked, cancelled } = await deleteOrders(adminClient, validIds);
+    const { data: names } = blocked.length
+      ? await adminClient.from('submissions').select('id, full_name').in('id', blocked.map(b => b.id))
+      : { data: [] };
+    const nameOf = Object.fromEntries((names || []).map(n => [n.id, n.full_name]));
+    const parts = [];
+    if (ok.length) parts.push(`${ok.length} order dipadam${cancelled.length ? ` (${cancelled.length} parcel NinjaVan dibatalkan)` : ''}.`);
+    if (blocked.length) parts.push(`${blocked.length} tidak dipadam — ${blocked.slice(0, 3).map(b => `${nameOf[b.id] || b.id}: ${b.reason}`).join(' | ')}`);
 
     return NextResponse.json({
-      success: true,
-      deleted: validIds.length,
-      message: `${validIds.length} order berjaya dipadam.`,
+      success: ok.length > 0,
+      deleted: ok.length,
+      blocked,
+      cancelled,
+      message: parts.join(' '),
+      ...(ok.length ? {} : { error: parts.join(' ') }),
     });
 
   } catch (error) {
