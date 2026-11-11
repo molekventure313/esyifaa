@@ -84,6 +84,8 @@ export default function PengurusanOrderPage() {
   const [printFilter, setPrintFilter] = useState('all');   // all | unprinted | printed (waybill NinjaVan)
   const [problemOnly, setProblemOnly] = useState(false);   // ❌ Perlu dibetulkan (gagal push / alamat bermasalah)
   const [problemCount, setProblemCount] = useState(0);
+  const [dupOnly, setDupOnly] = useState(false);            // 🔁 Order duplikat (telefon + produk sama dalam 7 hari)
+  const [dupCount, setDupCount] = useState(0);
   const [editing, setEditing] = useState(null);             // order yang sedang dibetulkan
   const [nvEnv,     setNvEnv]     = useState('sandbox');
 
@@ -127,6 +129,7 @@ export default function PengurusanOrderPage() {
       // Belum/Dah print juga di server — parcel boleh jadi untuk order lama di luar 100 terbaru
       if (printFilter !== 'all') params.set('print', printFilter);
       if (problemOnly) params.set('problem', 'true');
+      if (dupOnly) params.set('duplicate', 'true');
       if (productFilter !== 'all') params.set('product', productFilter);
       if (ownerFilter !== 'all') params.set('owner', ownerFilter);
       if (spFilter !== 'all') params.set('sp', spFilter);
@@ -143,6 +146,7 @@ export default function PengurusanOrderPage() {
         setNvEnv(json.nv_env || 'sandbox');
         setSpPages(json.sp_pages || []);
         setNotExportedCount(json.stats?.not_exported_physical ?? 0);
+        setDupCount(json.stats?.duplicate_30d ?? 0);
         setSelectedIds(prev => {
           const newIds = new Set((json.data || []).map(o => o.id));
           return new Set([...prev].filter(id => newIds.has(id)));
@@ -153,7 +157,7 @@ export default function PengurusanOrderPage() {
     } finally {
       setLoading(false);
     }
-  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, printFilter, problemOnly, productFilter, ownerFilter, spFilter, channel, period]);
+  }, [paymentStatusFilter, paymentTypeFilter, searchTerm, notExportedOnly, printFilter, problemOnly, dupOnly, productFilter, ownerFilter, spFilter, channel, period]);
 
   // Bilangan order "Perlu dibetulkan" — setiap 60s (berat; bukan setiap refresh 15s)
   const fetchProblemCount = useCallback(async () => {
@@ -300,6 +304,16 @@ export default function PengurusanOrderPage() {
     } finally {
       setNvPushing(false);
     }
+  };
+
+  const handleRestoreDuplicate = async (order) => {
+    const msg = order.payment_status === 'cancelled'
+      ? `Pulihkan order ${order.full_name}? Order akan jadi Selesai semula & stok ditolak.\n\n${order.duplicate_note}`
+      : `Buang tanda duplikat order ${order.full_name}?\n\n${order.duplicate_note}`;
+    if (!confirm(msg)) return;
+    const j = await (await fetch(`/api/orders/${order.id}/duplicate`, { method: 'PATCH' })).json().catch(() => ({}));
+    showToast(j.success ? j.message : (j.error || 'Gagal'), j.success ? 'success' : 'error');
+    fetchOrders();
   };
 
   const handlePrintWaybill = async (ids) => {
@@ -713,6 +727,14 @@ export default function PengurusanOrderPage() {
         }}>
           ❌ Perlu dibetulkan ({problemCount})
         </button>
+        <button onClick={() => setDupOnly(v => !v)} title="Pelanggan sama (no. telefon) order produk sama dalam 7 hari — COD dibatalkan automatik, FPX ditanda untuk semakan / refund" style={{
+          padding: '0.45rem 0.7rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+          background: dupOnly ? '#F59E0B' : subCardBg,
+          color: dupOnly ? '#FFFFFF' : (dupCount ? (isLightMode ? '#92400E' : '#FCD34D') : textSecondary),
+          border: dupCount || dupOnly ? '1px solid #F59E0B' : (isLightMode ? '1px solid #CBD5E1' : '1px solid rgba(255,255,255,0.12)'),
+        }}>
+          🔁 Duplikat ({dupCount})
+        </button>
 
         <input
           type="text"
@@ -835,6 +857,7 @@ export default function PengurusanOrderPage() {
             </h3>
             <p style={{ fontSize: '0.875rem', color: textSecondary, marginBottom: '1.5rem', lineHeight: 1.6 }}>
               Tindakan ini tidak boleh dibatalkan. Order yang dipadam tidak akan boleh dipulihkan.
+              Parcel NinjaVan yang belum diambil kurier akan dibatalkan sekali; order yang parcelnya dah diambil kurier tidak akan dipadam.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
               <button onClick={() => setConfirmDelete(false)} style={{ padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', background: subCardBg, border: cardBorder, color: textPrimary }}>Batal</button>
@@ -951,6 +974,17 @@ export default function PengurusanOrderPage() {
                     {/* Status Bayaran */}
                     <td style={{ padding: '0.85rem 0.5rem' }}>
                       <StatusBadge status={order.payment_status} />
+                      {order.duplicate_of && (
+                        <div style={{ marginTop: '0.35rem', maxWidth: '190px', padding: '0.3rem 0.45rem', borderRadius: '6px', fontSize: '0.64rem', lineHeight: 1.4,
+                          background: isLightMode ? '#FEF3C7' : 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.45)', color: isLightMode ? '#92400E' : '#FCD34D' }}>
+                          <div style={{ fontWeight: 800 }}>🔁 Duplikat{order.payment_status === 'cancelled' ? ' — auto batal' : ' — semak refund'}</div>
+                          <div style={{ whiteSpace: 'normal' }}>{order.duplicate_note}</div>
+                          <button onClick={() => handleRestoreDuplicate(order)} style={{ marginTop: '0.25rem', padding: '0.15rem 0.4rem', borderRadius: '5px', fontSize: '0.62rem', fontWeight: 700, cursor: 'pointer',
+                            background: 'transparent', border: '1px solid currentColor', color: 'inherit' }}>
+                            ↺ Bukan duplikat
+                          </button>
+                        </div>
+                      )}
                       {order.payment_type === 'fpx_payment' && order.chip_bill_id && (
                         <div style={{ fontSize: '0.6rem', color: textMuted, marginTop: '0.3rem', fontFamily: 'monospace' }}>
                           #{order.chip_bill_id.substring(0, 10)}...

@@ -9,6 +9,7 @@ import { PRODUCTS, productOf } from '@/lib/products';
 import { logActivity } from '@/lib/utils/logger';
 import { isRuqyahHarian, RH_NAME } from '@/lib/ruqyah-harian';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
+import { handleDuplicateOrder } from '@/lib/duplicates';
 
 // Label produk untuk notifikasi / log
 export function productLabelOf(submission) {
@@ -85,6 +86,9 @@ export async function completeFpxOrder({ supabase, submission, via, billId = nul
     await deductOrderStock(supabase, submission, via === 'chip' ? 'FPX Order' : 'FPX Manual');
   } catch (e) { console.error('Stock deduct FPX error (non-blocking):', e.message); }
 
+  // 3b. Duplikat (telefon + produk sama dalam 7 hari) — FPX dah dibayar → ditanda sahaja untuk semakan / refund
+  const duplicate = await handleDuplicateOrder(supabase, submission);
+
   // 4. Log aktiviti
   try {
     await logActivity(supabase, {
@@ -100,7 +104,7 @@ export async function completeFpxOrder({ supabase, submission, via, billId = nul
     });
   } catch (_) {}
 
-  return { amount };
+  return { amount, duplicate };
 }
 
 // Notifikasi WasapBot bayaran berjaya

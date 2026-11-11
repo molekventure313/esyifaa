@@ -6,6 +6,7 @@ import { sendAttributedCAPIEvent } from '@/lib/tracking/attributed';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 import { deductStock } from '@/lib/stock';
 import { createFighterOrder } from '@/lib/fighter/orders';
+import { handleDuplicateOrder } from '@/lib/duplicates';
 
 export async function POST(req) {
   try {
@@ -121,6 +122,8 @@ export async function POST(req) {
     };
     if (customerId) submissionData.customer_id = customerId;
 
+    let dup = null;   // order duplikat (telefon + produk sama dalam 7 hari) → auto batal
+
     try {
       const { data: submission, error: subErr } = await supabase
         .from('submissions')
@@ -196,12 +199,16 @@ export async function POST(req) {
           notes: `COD Add-On — Garam Masakan Pengasihan`,
         });
       }
+
+      // Duplikat → batal + pulang stok (selepas tolak stok supaya semua pergerakan stok order ini dibuang)
+      if (!subErr && submission) dup = await handleDuplicateOrder(supabase, submission);
     } catch (e) {
       console.warn('COD submission DB error:', e.message);
     }
 
     // Server-side CAPI Purchase — marketer order → pixel marketer sahaja; HQ order → HQ FPX pixel
-    try {
+    // (order duplikat yang dibatalkan tidak dihantar — elak Purchase berganda)
+    if (!dup?.cancelled) try {
       await sendAttributedCAPIEvent({ supabase, marketerId, hqPixel: 'fpx', event: {
         eventName: 'Purchase',
         eventId: `cod_${submissionId}`,
@@ -248,7 +255,7 @@ export async function POST(req) {
         source: source || 'sabun-garam',
         paymentType: 'cod',
       });
-      await sendGroupNotification(`📦 [ORDER COD BARU]\n${msg}`);
+      await sendGroupNotification(`${dup?.cancelled ? `🔁 [ORDER COD DUPLIKAT — AUTO BATAL]\n${dup.note}\n` : '📦 [ORDER COD BARU]\n'}${msg}`);
     } catch (e) {
       console.error('WasapBot COD Error (non-blocking):', e.message);
     }

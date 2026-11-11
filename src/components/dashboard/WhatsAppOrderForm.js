@@ -121,7 +121,9 @@ export default function WhatsAppOrderForm({ scopeLabel, ordersHref }) {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Gagal simpan order');
-      setDone({ name: form.full_name, phone: form.phone, product: def.name, pkg: priced.pkg.label, amount: json.amount, payment });
+      // Duplikat — order disimpan tapi dibatalkan / ditanda; tunjuk amaran, bukan "berjaya"
+      if (json.duplicate) setError(json.message);
+      else setDone({ name: form.full_name, phone: form.phone, product: def.name, pkg: priced.pkg.label, amount: json.amount, payment });
       setForm(EMPTY); setPasteText(''); setFilled(null); setAddons({}); setPkgIdx(0); setCus(EMPTY_CUSTOM); setOrigin(''); setAdjust(false); setCustomTotal(''); setPayment('paid');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {

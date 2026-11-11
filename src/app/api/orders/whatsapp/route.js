@@ -6,6 +6,7 @@ import { logActivity } from '@/lib/utils/logger';
 import { sendGroupNotification, buildOrderMessage } from '@/lib/notifications/wasapbot';
 import { priceOrder, priceCustom, addonInfo } from '@/lib/packages';
 import { deductOrderStock } from '@/lib/payments';
+import { handleDuplicateOrder } from '@/lib/duplicates';
 
 /**
  * POST /api/orders/whatsapp — Order WhatsApp (dashboard, marketer & admin sahaja)
@@ -144,6 +145,9 @@ export async function POST(req) {
     try { await deductOrderStock(supabase, submission, 'WhatsApp Order'); }
     catch (e) { console.error('Stock deduct WhatsApp order error (non-blocking):', e.message); }
 
+    // Duplikat (telefon + produk sama dalam 7 hari): COD → auto batal; dah bayar → ditanda untuk semakan / refund
+    const dup = await handleDuplicateOrder(supabase, submission);
+
     try {
       await logActivity(supabase, {
         userId: user.id, actionType: 'whatsapp_order_create', entityType: 'submission', entityId: submission.id,
@@ -160,9 +164,15 @@ export async function POST(req) {
         amount: `RM${total} (${payment === 'cod' ? 'COD — Bayar Masa Terima' : 'Dah bayar — transfer/QR'})`,
         address, source: `${b.product} (WhatsApp)`, paymentType: payment === 'cod' ? 'cod' : 'fpx',
       });
-      await sendGroupNotification(`💬 [ORDER WHATSAPP — ${actorName}]\n${msg}`);
+      await sendGroupNotification(`${dup ? `🔁 [DUPLIKAT — ${dup.cancelled ? 'AUTO BATAL' : 'SEMAK REFUND'}]\n${dup.note}\n` : ''}💬 [ORDER WHATSAPP — ${actorName}]\n${msg}`);
     } catch (e) { console.error('WasapBot WhatsApp order error (non-blocking):', e.message); }
 
+    if (dup) {
+      return NextResponse.json({
+        success: true, duplicate: true, cancelled: dup.cancelled, order_id: submission.id, amount: total,
+        message: `⚠️ ${dup.note}. Order ini ${dup.cancelled ? 'DIBATALKAN automatik (duplikat).' : 'ditanda duplikat — pelanggan dah bayar, semak & refund.'}`,
+      });
+    }
     return NextResponse.json({ success: true, order_id: submission.id, amount: total, message: `Order ${fullName} disimpan (RM${total}).` });
   } catch (error) {
     console.error('WhatsApp order error:', error);
