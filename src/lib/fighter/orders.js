@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
+import { chipClientEmail } from '@/lib/utils/chip-email';
 import { orderQty, addonQtyOf } from '@/lib/marketer-calc';
 import { productOf } from '@/lib/products';
 import { SOURCE_TO_SKU, getProductBySku } from '@/lib/stock';
@@ -70,6 +71,8 @@ export async function createFighterOrder(req, body, kind) {
   if (!name || !body.phone || !address) return bad('Sila isi nama, nombor telefon dan alamat penghantaran.');
   const ph = validateMalaysianPhone(body.phone);
   if (!ph.valid) return bad(ph.error || 'Nombor telefon tidak sah.');
+  const clientEmail = chipClientEmail(body.email, ph.formatted);
+  if (kind !== 'cod' && clientEmail.error) return bad(clientEmail.error);
 
   // Teks order — format sama dengan route HQ (COD / FPX)
   let problem, notes, amount, qty = null;
@@ -120,7 +123,7 @@ export async function createFighterOrder(req, body, kind) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${decryptSecret(s.chip_key_enc)}` },
     body: JSON.stringify({
       brand_id: s.chip_brand_id,
-      client: { email: `${ph.formatted}@esyifaa.com`, phone: ph.formatted, full_name: name },
+      client: { email: clientEmail.email, phone: ph.formatted, full_name: name },
       purchase: { currency: 'MYR', products: [{ name: `${ITEM_LABEL[SOURCE_TO_SKU[source]] || 'Produk'} E-Syifa'`, price: Math.round(amount * 100), quantity: 1 }] },
       reference: order.id,
       success_callback: `${site}/api/fighter/chip/webhook?o=${order.id}`,

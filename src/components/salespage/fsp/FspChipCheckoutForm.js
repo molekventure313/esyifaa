@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
+import EmailField from '@/components/salespage/EmailField';
 
 // Read UTM params from URL
 function getUTMParams() {
@@ -61,6 +62,7 @@ function FspChipCheckoutFormInner({ source = 'fsp-checkout' }) {
     full_name: '',
     dialCode: '+60',
     phone: '',
+    email: '',
     problem: '',
     honeypot: ''
   });
@@ -110,7 +112,7 @@ function FspChipCheckoutFormInner({ source = 'fsp-checkout' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           problem: formData.problem,
           honeypot: formData.honeypot,
           source: source,
@@ -379,6 +381,11 @@ function FspChipCheckoutFormInner({ source = 'fsp-checkout' }) {
                 Resit pembayaran &amp; info perawat akan dihantar melalui WhatsApp ini.
               </p>
             </div>
+
+            <EmailField value={formData.email} onChange={handleChange} hintColor="#6B7280"
+              wrapStyle={{ marginBottom: '1.25rem' }}
+              labelStyle={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.9rem', color: '#06231C' }}
+              inputStyle={{ width: '100%', padding: '0.85rem 1rem', background: '#F9FAFB', border: '1.5px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.95rem', outline: 'none', fontWeight: 500, boxSizing: 'border-box' }} />
 
             {/* Simptom / Masalah (Optional) */}
             <div style={{ marginBottom: '1.5rem' }}>

@@ -5,6 +5,7 @@ import { logActivity } from '@/lib/utils/logger';
 import { isRuqyahHarian, RH_PRICES, RH_MAX_SLOTS } from '@/lib/ruqyah-harian';
 import { countRhSlotsUsed } from '@/lib/ruqyah-harian-server';
 import { createFighterOrder } from '@/lib/fighter/orders';
+import { chipClientEmail } from '@/lib/utils/chip-email';
 
 export async function POST(req) {
   try {
@@ -32,6 +33,8 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: phoneResult.error || 'Sila masukkan nombor telefon yang sah.' }, { status: 400 });
 
     const formattedPhone = phoneResult.formatted;
+    const clientEmail = chipClientEmail(body.email, formattedPhone);
+    if (clientEmail.error) return NextResponse.json({ success: false, error: clientEmail.error }, { status: 400 });
     const cleanName  = full_name.trim();
     const ip         = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
     const user_agent = req.headers.get('user-agent') || 'unknown';
@@ -151,7 +154,7 @@ export async function POST(req) {
       const chipPayload = {
         brand_id: CHIP_BRAND_ID,
         client: {
-          email: `${formattedPhone}@esyifaa.com`,
+          email: clientEmail.email,
           phone: formattedPhone,
           full_name: cleanName,
         },

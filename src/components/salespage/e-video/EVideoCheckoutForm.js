@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
+import EmailField from '@/components/salespage/EmailField';
 
 function getUTMParams() {
   if (typeof window === 'undefined') return {};
@@ -33,6 +34,7 @@ function EVideoCheckoutFormInner() {
     full_name: '',
     dialCode: '+60',
     phone: '',
+    email: '',
     honeypot: '',
   });
   const [loading, setLoading] = useState(false);
@@ -95,7 +97,7 @@ function EVideoCheckoutFormInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           problem: 'E-Video Rawatan Ruqyah — perawat akan hubungi untuk hantar video via WhatsApp',
           honeypot: formData.honeypot,
           source: 'e-video',
@@ -232,6 +234,8 @@ function EVideoCheckoutFormInner() {
                   style={{ ...inputStyle, flex: 1 }} />
               </div>
             </div>
+
+            <EmailField value={formData.email} onChange={handleChange} inputStyle={inputStyle} labelStyle={labelStyle} wrapStyle={{ marginBottom: '1.25rem' }} />
 
             {/* Video delivery note */}
             <div style={{ marginBottom: '1.5rem' }}>

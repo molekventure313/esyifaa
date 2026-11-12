@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 import { useWaButton, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+import EmailField from '@/components/salespage/EmailField';
 
 const PACKAGE_FEATURES = [
   { icon: '🔥', text: 'Pengisian Ayat Ruqyah Pembakar & Pemusnah Jin' },
@@ -86,6 +87,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
     full_name: '',
     dialCode: '+60',
     phone: '',
+    email: '',
     item_description: '',
     honeypot: '',
   });
@@ -170,7 +172,7 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           problem: orderProblem,
           amount_in_myr: grandTotal,
           source: source || 'pengisian-esyifa',
@@ -654,6 +656,8 @@ function PengisianCheckoutFormInner({ source = 'pengisian-esyifa' }) {
                 Perawat akan menghubungi nombor ini dalam masa 24 jam untuk pengesahan pengisian.
               </p>
             </div>
+
+            <EmailField value={formData.email} onChange={handleChange} labelStyle={{ display: 'block', fontSize: '0.9rem', fontWeight: 800, color: '#0F172A', marginBottom: '0.4rem' }} inputStyle={{ width: '100%', padding: '0.9rem 1rem', borderRadius: '12px', background: '#FFFFFF', border: '1.5px solid #CBD5E1', color: '#0F172A', fontSize: '0.96rem', outline: 'none', boxSizing: 'border-box' }} wrapStyle={{}} />
 
             {/* Jenis / Nama Barang Yang Ingin Diisi */}
             <div>

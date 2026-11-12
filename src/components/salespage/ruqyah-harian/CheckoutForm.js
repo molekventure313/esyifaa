@@ -6,6 +6,7 @@ import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 import { RH_PACKAGES, RH_NAME, RH_SOURCE } from '@/lib/ruqyah-harian';
 import { useWaButton, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
 import { useRhSlots, SlotMeter } from '@/components/salespage/ruqyah-harian/Sections';
+import EmailField from '@/components/salespage/EmailField';
 
 // #13 + #15 — Pakej & borang bayaran FPX (prabayar, tiada potongan automatik)
 
@@ -35,7 +36,7 @@ function Inner({ source = RH_SOURCE }) {
 
   const [selected, setSelected] = useState(0);   // 0 = 3 Bulan (disyorkan)
   const [fpxPixelId, setFpxPixelId] = useState(null);
-  const [form, setForm] = useState({ full_name: '', dialCode: '+60', phone: '', problem: '', honeypot: '' });
+  const [form, setForm] = useState({ full_name: '', dialCode: '+60', phone: '', email: '', problem: '', honeypot: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const pkg = RH_PACKAGES[selected];
@@ -79,7 +80,7 @@ function Inner({ source = RH_SOURCE }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: form.full_name,
-          phone: `${form.dialCode}${form.phone.replace(/^0+/, '')}`,
+          phone: `${form.dialCode}${form.phone.replace(/^0+/, '')}`, email: form.email,
           problem: `${RH_NAME} (${pkg.label})${form.problem.trim() ? ` | Masalah: ${form.problem.trim()}` : ''}`,
           amount_in_myr: pkg.price,
           source, marketer_code: marketerCode,
@@ -151,6 +152,7 @@ function Inner({ source = RH_SOURCE }) {
             </select>
             <input style={input} inputMode="tel" placeholder="No. WhatsApp (cth: 0123456789)" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
           </div>
+          <EmailField value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} inputStyle={input} labelStyle={{ fontWeight: 700, fontSize: '0.88rem', color: '#0F172A', display: 'block', marginBottom: '0.35rem' }} wrapStyle={{}} />
           <textarea style={{ ...input, minHeight: '80px', resize: 'vertical' }} placeholder="Ceritakan ringkas masalah / gangguan yang dialami (pilihan)" value={form.problem} onChange={e => setForm({ ...form, problem: e.target.value })} maxLength={500} />
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={form.honeypot} onChange={e => setForm({ ...form, honeypot: e.target.value })} style={{ position: 'absolute', left: '-9999px' }} aria-hidden="true" />
 

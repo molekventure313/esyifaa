@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 import { poskodPatch, checkoutIssue } from '@/lib/shipping-validate';
+import EmailField from '@/components/salespage/EmailField';
 
 // ─── Packages (FSP PRO: Terbesar di Kiri/Atas -> Terkecil di Kanan/Bawah) ──────────
 const BASE_PACKAGES = [
@@ -129,7 +130,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
   const [selectedPkg, setSelectedPkg] = useState(0); // index 0 = 5 Botol (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
   const [formData, setFormData] = useState({
-    full_name: '', dialCode: '+60', phone: '',
+    full_name: '', dialCode: '+60', phone: '', email: '',
     street: '', poskod: '', daerah: '', negeri: '',
     honeypot: '',
   });
@@ -244,7 +245,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           problem: orderNotes,
           address,
           honeypot: formData.honeypot,
@@ -302,7 +303,7 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           address,
           quantity: pkg.units,
           units_label: pkg.label,
@@ -743,6 +744,8 @@ function KasturiCheckoutFormInner({ source = 'kasturi-kijang' }) {
               Nombor tracking &amp; status kurier dihantar melalui WhatsApp ini.
             </p>
           </div>
+
+          <EmailField value={formData.email} onChange={handleChange} inputStyle={INPUT_STYLE} labelStyle={LABEL_STYLE} />
 
           {/* Alamat Jalan */}
           <div style={{ marginBottom: '1.1rem' }}>

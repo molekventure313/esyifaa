@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 import { poskodPatch, checkoutIssue } from '@/lib/shipping-validate';
+import EmailField from '@/components/salespage/EmailField';
 
 // ─── Packages (FSP PRO: Terbesar di Kiri/Atas -> Terkecil di Kanan/Bawah) ──────────
 const BASE_PACKAGES = [
@@ -137,7 +138,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
   const [selectedPkg, setSelectedPkg] = useState(0); // index 0 = 6 Pek (Beli 4 Free 2 + Free Kasturi)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
   const [formData, setFormData] = useState({
-    full_name: '', dialCode: '+60', phone: '',
+    full_name: '', dialCode: '+60', phone: '', email: '',
     street: '', poskod: '', daerah: '', negeri: '',
     honeypot: '',
   });
@@ -255,7 +256,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           problem: orderNotes,
           address,
           honeypot: formData.honeypot,
@@ -313,7 +314,7 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           address,
           quantity: pkg.units,
           units_label: pkg.label,
@@ -809,6 +810,8 @@ function GaramCheckoutFormInner({ source = 'garam-pengasihan' }) {
               Nombor tracking &amp; kemaskini posmen akan dihantar melalui WhatsApp ini.
             </p>
           </div>
+
+          <EmailField value={formData.email} onChange={handleChange} inputStyle={INPUT_STYLE} labelStyle={LABEL_STYLE} />
 
           {/* Alamat Jalan */}
           <div style={{ marginBottom: '1.1rem' }}>

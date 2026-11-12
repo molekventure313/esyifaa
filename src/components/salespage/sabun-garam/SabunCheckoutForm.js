@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
+import EmailField from '@/components/salespage/EmailField';
 import Image from 'next/image';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 import { poskodPatch, checkoutIssue } from '@/lib/shipping-validate';
@@ -103,7 +104,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
   const [selectedPkg,   setSelectedPkg]   = useState(2); // index 2 = 3 unit (recommended)
   const [paymentMethod, setPaymentMethod] = useState('fpx');
   const [formData,      setFormData]      = useState({
-    full_name: '', dialCode: '+60', phone: '',
+    full_name: '', dialCode: '+60', phone: '', email: '',
     street: '',   // No. rumah, nama jalan, taman
     poskod: '',
     daerah: '',
@@ -232,7 +233,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           problem: orderNotes,
           address,                          // ← simpan address ke kolum dedicated
           honeypot: formData.honeypot,
@@ -289,7 +290,7 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.full_name,
-          phone: rawPhone,
+          phone: rawPhone, email: formData.email,
           address,
           quantity: pkg.units,
           units_label: pkg.label,
@@ -676,6 +677,8 @@ function SabunCheckoutFormInner({ source = 'sabun-garam' }) {
                 Kami akan hantar maklumat pesanan ke WhatsApp ini.
               </p>
             </div>
+
+            <EmailField value={formData.email} onChange={handleChange} inputStyle={INPUT_STYLE} labelStyle={LABEL_STYLE} wrapStyle={{ marginBottom: '1.15rem' }} />
 
             {/* Alamat — Street */}
             <div style={{ marginBottom: '1.15rem' }}>
