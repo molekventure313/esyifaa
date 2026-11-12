@@ -974,7 +974,7 @@ export default function PengurusanOrderPage() {
                     {/* Status Bayaran */}
                     <td style={{ padding: '0.85rem 0.5rem' }}>
                       <StatusBadge status={order.payment_status} />
-                      {order.duplicate_of && (
+                      {(order.duplicate_of || order.duplicate_note) && (
                         <div style={{ marginTop: '0.35rem', maxWidth: '190px', padding: '0.3rem 0.45rem', borderRadius: '6px', fontSize: '0.64rem', lineHeight: 1.4,
                           background: isLightMode ? '#FEF3C7' : 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.45)', color: isLightMode ? '#92400E' : '#FCD34D' }}>
                           <div style={{ fontWeight: 800 }}>🔁 Duplikat{order.payment_status === 'cancelled' ? ' — auto batal' : ' — semak refund'}</div>

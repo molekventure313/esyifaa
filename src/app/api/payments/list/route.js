@@ -165,7 +165,7 @@ export async function GET(req) {
       query = query.in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
     }
 
-    if (duplicate) query = query.not('duplicate_of', 'is', null);
+    if (duplicate) query = query.not('duplicate_note', 'is', null);
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
@@ -295,13 +295,13 @@ export async function GET(req) {
       const dupOf = {};
       for (let i = 0; i < formatted.length; i += 200) {
         const { data, error: e } = await adminClient.from('submissions').select('id, duplicate_of, duplicate_note')
-          .in('id', formatted.slice(i, i + 200).map(o => o.id)).not('duplicate_of', 'is', null);
+          .in('id', formatted.slice(i, i + 200).map(o => o.id)).not('duplicate_note', 'is', null);
         if (e) throw e;   // kolum belum wujud
         for (const r of data || []) dupOf[r.id] = r;
       }
       formatted.forEach(o => { if (dupOf[o.id]) { o.duplicate_of = dupOf[o.id].duplicate_of; o.duplicate_note = dupOf[o.id].duplicate_note; } });
       const { count: dc } = await adminClient.from('submissions').select('id', { count: 'exact', head: true })
-        .not('duplicate_of', 'is', null).gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString());
+        .not('duplicate_note', 'is', null).gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString());
       duplicateCount = dc || 0;
     } catch (_) { /* migration 043 belum run */ }
 

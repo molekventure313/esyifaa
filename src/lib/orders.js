@@ -1,6 +1,7 @@
 import { PRODUCTS, productOf } from '@/lib/products';
 import { orderQty, addonQtyOf } from '@/lib/marketer-calc';
 import { latestShipmentsFor, isActiveShipment, isCancellableShipment, cancelShipment } from '@/lib/ninjavan/shipments';
+import { restoreDuplicatesOf } from '@/lib/duplicates';
 
 const UNIT_WORD = { 'sabun-garam': 'Unit', 'garam-pengasihan': 'Pek', 'kasturi-kijang': 'Botol' };
 
@@ -35,12 +36,19 @@ export async function releaseParcels(db, ids) {
   return { ok, blocked, cancelled };
 }
 
-/** Padam order — parcel NinjaVan dibatalkan dahulu. Pulang hasil releaseParcels (ok = yang dipadam). */
-export async function deleteOrders(adminClient, requestedIds) {
-  if (!requestedIds.length) return { ok: [], blocked: [], cancelled: [] };
+/**
+ * Padam order — parcel NinjaVan dibatalkan dahulu. Pulang hasil releaseParcels (ok = yang dipadam)
+ * + restored = nama pelanggan yang order duplikatnya dipulihkan kerana order asal dipadam.
+ * @param actor { id, name } — untuk log pemulihan duplikat
+ */
+export async function deleteOrders(adminClient, requestedIds, actor = null) {
+  if (!requestedIds.length) return { ok: [], blocked: [], cancelled: [], restored: [] };
   const released = await releaseParcels(adminClient, requestedIds);
   const ids = released.ok;
-  if (!ids.length) return released;
+  if (!ids.length) return { ...released, restored: [] };
+
+  // Order duplikat yang merujuk order ini (cth COD kedua dibatal auto) → pulihkan, jangan hilang kedua-duanya
+  released.restored = await restoreDuplicatesOf(adminClient, ids, actor);
 
   // Cases dulu (FK constraint)
   await adminClient.from('cases').delete().in('submission_id', ids);

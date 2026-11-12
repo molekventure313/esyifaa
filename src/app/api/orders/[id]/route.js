@@ -36,7 +36,7 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ success: false, error: 'Order tidak dijumpai atau tidak dibenarkan dipadam.' }, { status: 404 });
     }
 
-    const { blocked, cancelled } = await deleteOrders(adminClient, [id]);
+    const { blocked, cancelled, restored } = await deleteOrders(adminClient, [id], { id: user.id, name: profile?.full_name });
     if (blocked.length) {
       return NextResponse.json({ success: false, error: `Order tidak dipadam — ${blocked[0].reason}.` }, { status: 409 });
     }
@@ -51,7 +51,8 @@ export async function DELETE(req, { params }) {
       description: `Order ${submission.full_name} (${submission.phone}) dipadam oleh ${isAdmin ? 'admin' : 'marketer'} ${profile?.full_name || user.id}${cancelled.length ? ` — parcel NinjaVan ${cancelled[0]} dibatalkan` : ''}`,
     });
 
-    return NextResponse.json({ success: true, message: `Order ${submission.full_name} berjaya dipadam${cancelled.length ? ` & parcel NinjaVan ${cancelled[0]} dibatalkan` : ''}.` });
+    const restoredMsg = restored?.length ? ` Order duplikat ${restored.join(', ')} dipulihkan (aktif semula).` : '';
+    return NextResponse.json({ success: true, message: `Order ${submission.full_name} berjaya dipadam${cancelled.length ? ` & parcel NinjaVan ${cancelled[0]} dibatalkan` : ''}.${restoredMsg}` });
 
   } catch (error) {
     console.error('Delete Order Error:', error);

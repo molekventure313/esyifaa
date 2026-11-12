@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { deleteOrders } from '@/lib/orders';
+import { logActivity } from '@/lib/utils/logger';
 
 // POST /api/orders/bulk-delete — delete multiple orders
 // Body: { ids: ['id1', 'id2', ...] }
@@ -15,7 +16,7 @@ export async function POST(req) {
 
     const adminClient = createAdminClient();
     const { data: profile } = await adminClient
-      .from('profiles').select('role').eq('id', user.id).single();
+      .from('profiles').select('role, full_name').eq('id', user.id).single();
     const isAdmin = ['admin', 'super_admin'].includes(profile?.role);
     if (!isAdmin) return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
 
@@ -33,7 +34,7 @@ export async function POST(req) {
     // Only allow delete of COD/FPX payment orders (not appointments)
     const { data: valid } = await adminClient
       .from('submissions')
-      .select('id')
+      .select('id, payment_type, payment_status, full_name, phone, source, amount_paid, notes, marketer_id, created_at')
       .in('id', ids)
       .in('payment_type', ['fpx_payment', 'cod']);
 
@@ -43,13 +44,26 @@ export async function POST(req) {
     }
 
     // Cases + stock movements (out & return) + submissions
-    const { ok, blocked, cancelled } = await deleteOrders(adminClient, validIds);
+    const actorName = profile?.full_name || user.id;
+    const { ok, blocked, cancelled, restored } = await deleteOrders(adminClient, validIds, { id: user.id, name: actorName });
+
+    // Audit — setiap order yang dipadam (sama format dengan padam satu order)
+    const byId = Object.fromEntries(valid.map(s => [s.id, s]));
+    await Promise.all(ok.map(id => logActivity(adminClient, {
+      userId: user.id,
+      actionType: 'order_delete',
+      entityType: 'submission',
+      entityId: id,
+      oldValues: byId[id],
+      description: `Order ${byId[id]?.full_name} (${byId[id]?.phone}) dipadam oleh admin ${actorName} (padam pukal)`,
+    }).catch(() => {})));
     const { data: names } = blocked.length
       ? await adminClient.from('submissions').select('id, full_name').in('id', blocked.map(b => b.id))
       : { data: [] };
     const nameOf = Object.fromEntries((names || []).map(n => [n.id, n.full_name]));
     const parts = [];
     if (ok.length) parts.push(`${ok.length} order dipadam${cancelled.length ? ` (${cancelled.length} parcel NinjaVan dibatalkan)` : ''}.`);
+    if (restored?.length) parts.push(`Order duplikat ${restored.join(', ')} dipulihkan (aktif semula).`);
     if (blocked.length) parts.push(`${blocked.length} tidak dipadam — ${blocked.slice(0, 3).map(b => `${nameOf[b.id] || b.id}: ${b.reason}`).join(' | ')}`);
 
     return NextResponse.json({

@@ -78,11 +78,12 @@ export async function handleDuplicateOrder(db, submission) {
  * "Bukan duplikat" — buang tanda; COD yang dibatalkan dipulihkan (completed) & stok ditolak semula.
  * @returns {Promise<{ restored: boolean }>}
  */
-export async function restoreDuplicate(db, id, actor) {
+export async function restoreDuplicate(db, id, actor, reason = '') {
   const { data: s, error } = await db.from('submissions').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!s) throw new Error('Order tidak dijumpai.');
-  if (!s.duplicate_of) throw new Error('Order ini tidak bertanda duplikat.');
+  // duplicate_of jadi NULL bila order asal dipadam (FK SET NULL) — nota duplikat masih menandakannya
+  if (!s.duplicate_of && !s.duplicate_note) throw new Error('Order ini tidak bertanda duplikat.');
   const restore = s.payment_status === 'cancelled';
   const { error: upErr } = await db.from('submissions')
     .update({ duplicate_of: null, duplicate_note: null, ...(restore ? { payment_status: 'completed' } : {}) })
@@ -96,8 +97,34 @@ export async function restoreDuplicate(db, id, actor) {
     await logActivity(db, {
       userId: actor.id, actionType: 'order_duplicate_restore', entityType: 'submission', entityId: id,
       oldValues: { duplicate_of: s.duplicate_of, duplicate_note: s.duplicate_note, payment_status: s.payment_status },
-      description: `${actor.name || 'Admin'} tanda order ${s.full_name} (${s.phone}) BUKAN duplikat${restore ? ' — order dipulihkan' : ''}`,
+      description: reason
+        ? `Order ${s.full_name} (${s.phone}) ${restore ? 'dipulihkan' : 'tidak lagi bertanda duplikat'} — ${reason}`
+        : `${actor.name || 'Admin'} tanda order ${s.full_name} (${s.phone}) BUKAN duplikat${restore ? ' — order dipulihkan' : ''}`,
     });
   } catch { /* */ }
   return { restored: restore };
+}
+
+/**
+ * Order asal akan dipadam → pulihkan order yang dibatalkan/ditanda sebagai duplikatnya,
+ * supaya pelanggan tidak hilang kedua-dua order. Panggil SEBELUM padam (FK duplicate_of jadi NULL selepas padam).
+ * Order yang turut dipadam dalam kumpulan sama dilangkau. Tidak pernah throw.
+ * @returns {Promise<string[]>} nama pelanggan yang dipulihkan
+ */
+export async function restoreDuplicatesOf(db, earlierIds, actor) {
+  try {
+    const { data } = await db.from('submissions').select('id, full_name').in('duplicate_of', earlierIds);
+    const restored = [];
+    for (const d of data || []) {
+      if (earlierIds.includes(d.id)) continue;
+      try {
+        await restoreDuplicate(db, d.id, actor || { id: null }, `order asal (yang dirujuk sebagai duplikat) dipadam${actor?.name ? ` oleh ${actor.name}` : ''}`);
+        restored.push(d.full_name);
+      } catch (e) { console.error('[duplicate] pulih gagal:', d.id, e.message); }
+    }
+    return restored;
+  } catch (e) {
+    console.error('[duplicate] semak duplikat order dipadam gagal:', e.message);
+    return [];
+  }
 }
