@@ -12,8 +12,10 @@ SOP AUTOPILOT HQ — STRUKTUR 1-1-1 & KILL
 PRINSIP
 - Ukuran tunggal: ROAS & profit dari order sebenar (MCP esyifa get_ads / get_overview). Pixel hanya untuk diagnosis.
 - Satu ad = satu hipotesis (angle + hook + format). Nilai ad ikut data, bukan perasaan.
-- Keputusan kill dibuat SEKALI pada kitaran pagi, guna data KUMULATIF hingga semalam 23:59 (get_ads from = tarikh ad mula,
-  to = semalam) + 3 hari terakhir. Jangan guna period 7d sahaja (boleh potong hari pertama ad). Jangan nilai data separuh hari ini.
+- SETIAP HARI (kitaran pagi) baca data 4 HARI TERAKHIR hingga semalam 23:59 untuk SETIAP ad yang masih hidup
+  (get_ads from = semalam − 3 hari, to = semalam; cth pagi 14/11 → 10/11–13/11), termasuk ad di luar kempen autopilot
+  ("[IMAGE] …", "CV - …"). Data kumulatif (from = tarikh ad mula) hanya sebagai konteks dalam jadual cadangan.
+  Jangan nilai data separuh hari ini.
 - PEMBAHAGIAN KERJA:
   Peraturan Ads Hub (server, setiap jam) = ON/OFF HARIAN & tangga bajet: tutup 00:00, hidup 06:00, tutup belanja >RM30 tanpa order,
   tutup ROAS <2 (belanja ≥RM35), tangga RM100→500, reset RM60 23:30, peraturan khas Kasturi.
@@ -32,23 +34,16 @@ STRUKTUR 1-1-1 (WAJIB untuk semua launch baru)
 ANGKA RUJUKAN (data HQ 30 hari; kira semula setiap Isnin dari get_overview 30d)
 AOV RM65 · CPA_BE (breakeven) RM49 · CPA_T (sasaran) RM33 · ROAS_BE 1.32 · CTR_ASAS 1.85% · CVR_ASAS 3.7% · CPM_ASAS RM24.6
 
-KITARAN HIDUP SETIAP AD (umur = age_days dari get_ads, hari pertama = 1)
-Fasa 1 — UJI (hari 1–2)
-  Beri peluang penuh 2 hari. Kill awal HANYA jika:
-  - belanja kumulatif ≥ RM50 dan 0 order, ATAU
-  - ≥ 3,000 impression dan CTR link < 0.8% (hook mati)
-Fasa 2 — SAH (hari 3, data kumulatif)
-  - PEMENANG: ROAS ≥ 2.0 DAN ≥ 4 order → KEKAL
-  - PERHATI: ROAS 1.5–2.0, atau ≥ 2.0 tapi < 4 order → lanjut, maksimum hingga hari 5
-  - KILL: ROAS < 1.5 dengan belanja ≥ RM100, ATAU CPA > CPA_BE (RM49) dengan ≥ 2 order
-  - Hari ≥ 5: mesti PEMENANG atau KILL (tiada lagi PERHATI)
-Fasa 3 — KEKAL (pemenang)
-  - Bajet naik ikut tangga server sahaja; jangan ubah bajet manual.
-  - Kekal selagi ROAS 3 hari ≥ 1.8.
-Fasa 4 — LETIH (pemenang mula jatuh; mana-mana 2 tanda)
-  ROAS 3h < 1.8 sedangkan 7h ≥ 2.0 · frequency 7h > 2.5 · CTR 3h jatuh > 30% · CPA 3h > 1.3× CPA 7h.
-  Tindakan: pastikan ada ad baru produk itu sedang diuji. Kill bila ROAS 3h < 1.3 (belanja 3h ≥ RM120),
-  ATAU 2 hari berturut ROAS < 1.0. Satu hari teruk sahaja bukan alasan kill pemenang.
+PERATURAN KILL HARIAN — ROAS 4 HARI (peraturan utama, diguna mulai 13/11/2026)
+  Untuk setiap ad hidup berumur hari ke-3 atau lebih (age_days ≥ 3):
+  - ROAS 4 hari < 2.0 DAN belanja 4 hari ≥ RM60 → CADANG KILL dalam cadangan harian (pemenang lama pun termasuk;
+    nyatakan ROAS kumulatif sebagai konteks supaya HQ boleh kecualikan).
+  - ROAS 4 hari ≥ 2.0 → KEKAL. Bajet naik ikut tangga server sahaja; jangan ubah bajet manual.
+  - Belanja 4 hari < RM60 → data belum cukup, KEKAL dan perhati (nyatakan dalam jadual).
+  Ad hari 1–2 (UJI): beri peluang penuh 2 hari. Cadang kill awal HANYA jika belanja kumulatif ≥ RM50 dan 0 order,
+  ATAU ≥ 3,000 impression dan CTR link < 0.8% (hook mati).
+  Tanda LETIH (untuk diagnosis & keutamaan ganti, bukan syarat kill): frequency 7h > 2.5 · CTR 4h jatuh > 30% berbanding 7h ·
+  CPA 4h > 1.3× CPA 7h. Pemenang yang letih tapi ROAS 4h masih ≥ 2.0 → kekal, tapi pastikan pengganti produk itu sedang diuji.
 
 DIAGNOSIS SETIAP KILL (rekod untuk angle seterusnya)
   CTR < 1.2% → hook / visual pembuka lemah · hook_rate rendah → 3 saat pertama tak hentikan scroll ·
@@ -63,20 +58,37 @@ CARA KILL (set_ad_status; reason WAJIB = data + rujukan SOP, cth "Hari ke-5, ROA
    (peraturan 00:00 dah pause semua), atau pause adset satu-satu dahulu, kemudian tutup kempen.
 3. Kempen dikongsi yang masih ada pemenang → pause AD yang kalah sahaja (bukan adset — adset dihidupkan semula 06:00).
    Adset tanpa ad ACTIVE tidak dikira slot (sejak commit 6a80939).
-4. Ad di luar kempen autopilot ("CV - Video - Sabun", "[IMAGE] …") → server tolak; lapor kepada HQ untuk tindakan manual.
+4. Ad di luar kempen autopilot ("CV - Video - Sabun", "[IMAGE] …") → server Ads Hub tolak. Selepas HQ lulus, pause AD itu
+   melalui MCP Meta Ads rasmi (ads_update_entity, entity_type "ad", fields {"status":"PAUSED"}, akaun act_1540811267265252).
+   Jangan pause adset (peraturan 06:00 hidupkan semula) dan jangan sentuh adset 120252113089850123 — ia adset templat autopilot.
 5. JANGAN kill dengan pause adset — peraturan 06:00 hidupkan semula.
 6. Maksimum 20 perubahan status sehari. Hidupkan semula (ACTIVE) hanya jika kill silap data.
 
-KELULUSAN (mod manual)
-- Kitaran pagi berjadual HANYA bentang jadual cadangan: ad · fasa · ROAS kumulatif & 3h · belanja · order · keputusan
-  (KEKAL / PERHATI / KILL) · sebab SOP · cara kill. Tiada set_ad_status.
-- Kill dilaksana selepas HQ balas "lulus kill" (atau senarai pengecualian, cth "kekal Tengkuk Berat") dalam sesi yang sama.
-- Selepas kill: lapor kempen/ad yang ditutup + slot bebas, kemudian draf ganti dengan angle LAIN (struktur 1-1-1).
+CADANGAN HARIAN (mod manual) — SATU mesej kepada HQ setiap pagi, dalam susunan ini:
+1. Jadual semua ad hidup: ad · produk · umur · belanja 4h · order 4h · ROAS 4h · CPA 4h · ROAS kumulatif · keputusan
+   (KEKAL / PERHATI / CADANG KILL) · sebab SOP · diagnosis · cara kill.
+2. Untuk SETIAP cadangan kill → terus cadang angle pengganti untuk slot itu (lihat PENGGANTIAN): produk sama,
+   jenis (angle BARU / PECAHAN angle menang), angle · CFT · emosi · format, sebab dari data.
+3. Draf penuh pengganti (ad copy, skrip VO, draf animasi / gambar) ikut skill autopilot-hq Langkah 3.
+- Tiada set_ad_status / launch sebelum HQ balas. "lulus kill" = kill sahaja; "lulus semua" = kill + produksi & launch pengganti;
+  HQ boleh beri pengecualian (cth "kekal Gangguan saka").
+- Selepas kill: lapor kempen/ad yang ditutup + slot bebas.
 
-PENGGANTIAN
-- Setiap ad yang di-kill diganti pada kitaran berikutnya dengan angle berbeza (masalah/situasi teras, atau jenis CFT + emosi).
+PENGGANTIAN (kaedah Agent Miya, docs/sop-ejen-01.md bahagian D)
+- Setiap ad yang di-kill diganti dengan ad PRODUK SAMA dalam cadangan yang sama, supaya slot tak kosong (struktur 1-1-1).
+- Pilih SATU daripada dua jenis untuk setiap pengganti:
+  a. ANGLE BARU — masalah/situasi teras lain dari salespage & FAQ, testimoni sebenar, tawaran (pakej, COD, harga),
+     soalan/bantahan biasa, atau pemenang produk lain yang boleh dipindah.
+  b. PECAHAN ANGLE MENANG — angle teras pemenang (ROAS 4h ≥ 2.0 atau pemenang terbukti HQ) dengan content berbeza:
+     hook / pembuka baru, video ↔ gambar, visual lain, testimoni lain, emosi lain.
+- Imbangan: produk TIADA pemenang → angle baru. Produk ADA pemenang → maksimum 1 daripada 3 pengganti/ujian aktif produk itu
+  ialah pecahan angle menang; selebihnya angle baru. Maksimum 2 ad aktif berkongsi angle teras yang sama dalam satu produk.
+- Ad aktif dalam produk sama mesti beza masalah/situasi teras, ATAU beza jenis CFT (Soalan / Testimoni / Direct / Tawaran) + emosi.
+- Larangan: angle yang di-kill dalam 14 hari untuk produk itu (kecuali diagnosis kata hook yang lemah, bukan angle).
+- Guna skill cft-adcreative-formula + skill produk setiap kali; tulis alasan pilihan dari data (angle mana menang/kalah).
 - Setiap produk sentiasa ada sekurang-kurangnya 1 ad dalam fasa UJI.
-- Bilangan draf = min(slot bebas selepas kill, had launch sehari, 3).
+- Bilangan pengganti = min(ad yang dicadang kill + slot bebas, had launch sehari, 3); jika lebih, utamakan produk
+  dengan ad aktif paling sedikit.
 ```
 
 ## Log keputusan
@@ -85,3 +97,6 @@ PENGGANTIAN
 |---|---|
 | 12/11/2026 | Kill pertama ikut SOP ini: tutup kempen [1-1-1] Sendawa, Mak Ayah, Rumah Rasa Berat dan [AUTOPILOT] Sabun Garam; pause ad KK Pakej Seisi Keluarga, Wangian Sunnah, Anak Meracau, Kena Himpit dan GP Pasangan Berubah, Tanda-tanda, Suami Berikhtiar, Ikhtiar Dapur. Kekal: GP Bilik Asing, SG Mandian Ruqyah, SG Bayar Bila Sampai, KK Tengkuk Berat (pengecualian HQ). Mulai hari ini semua launch HQ = 1-1-1. |
 | 12/11/2026 | Ganti split test Sabun Garam (3 kempen 1-1-1, mula 12/11 06:00, RM60/hari; asalnya dijadual 13/11 — launch dibuat 02:00 pagi, sepatutnya start "today"): Angin Saka video CFT-SITUASI (launch 50), Benteng Lepas Berubat gambar (launch 49), Hati Panas Dengan Anak video testimoni (launch 51). |
+| 12/11/2026 | Kill KK Tengkuk Berat & Sesak Dada (pause ad 120252658398690123): hari 6, ROAS kumulatif 1.54 / 3h 1.24, RM229, 8 order — bukan pemenang hari ≥ 5. Diagnosis: AOV RM44 (halaman kasturi-kijang-3), bukan creative. Kekal: GP Bilik Asing, SG Mandian Ruqyah, SG Bayar Bila Sampai, 3 ad UJI 12/11. |
+| 13/11/2026 | Kill "apa yg diisi dalam sabun" (CV - Video - Sabun, pause ad 120252113089890123 melalui MCP Meta Ads — server Ads Hub tolak ad luar autopilot): hari 44, ROAS 4h 1.65 (RM119.76, 3 order), 30h 1.36, CPM RM41. SOP dikemas kini: peraturan kill harian = ROAS 4 hari < 2.0 (hari ≥ 3, belanja 4h ≥ RM60) → cadang kill + terus cadang pengganti (angle baru / pecahan angle menang, kaedah Miya). |
+| 13/11/2026 | Launch 3 kempen 1-1-1 (dilancar 00:07, mula 13/11 06:00, RM60/hari): GP Faridah "Bertengkar Benda Kecil" video testimoni (launch 53), KK Kak Salmah + Pakej 2+1 video → /kasturi-kijang (launch 54), SG "Balik Kerja Badan Berat" gambar Direct (launch 55; tertangguh ±20 min kerana had API Meta). |
