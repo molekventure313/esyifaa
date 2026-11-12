@@ -36,10 +36,12 @@ AOV RM65 · CPA_BE (breakeven) RM49 · CPA_T (sasaran) RM33 · ROAS_BE 1.32 · C
 
 PERATURAN KILL HARIAN — ROAS 4 HARI (peraturan utama, diguna mulai 13/11/2026)
   Untuk setiap ad hidup berumur hari ke-3 atau lebih (age_days ≥ 3):
-  - ROAS 4 hari < 2.0 DAN belanja 4 hari ≥ RM60 → CADANG KILL dalam cadangan harian (pemenang lama pun termasuk;
+  - ROAS 4 hari < 2.0 DAN belanja 4 hari > RM140 (minimum RM35 sehari × 4) → CADANG KILL dalam cadangan harian (pemenang lama pun termasuk;
     nyatakan ROAS kumulatif sebagai konteks supaya HQ boleh kecualikan).
   - ROAS 4 hari ≥ 2.0 → KEKAL. Bajet naik ikut tangga server sahaja; jangan ubah bajet manual.
-  - Belanja 4 hari < RM60 → data belum cukup, KEKAL dan perhati (nyatakan dalam jadual).
+  - Belanja 4 hari ≥ RM100 DAN 0 order dalam 4 hari → CADANG KILL (iklan yang ditutup peraturan setiap hari ±RM31
+    tanpa order tak akan capai RM140; syarat ini menangkapnya).
+  - Belanja 4 hari ≤ RM140 (dan bukan kes 0 order di atas) → data belum cukup, KEKAL dan perhati (nyatakan dalam jadual).
   Ad hari 1–2 (UJI): beri peluang penuh 2 hari. Cadang kill awal HANYA jika belanja kumulatif ≥ RM50 dan 0 order,
   ATAU ≥ 3,000 impression dan CTR link < 0.8% (hook mati).
   Tanda LETIH (untuk diagnosis & keutamaan ganti, bukan syarat kill): frequency 7h > 2.5 · CTR 4h jatuh > 30% berbanding 7h ·
@@ -98,5 +100,5 @@ PENGGANTIAN (kaedah Agent Miya, docs/sop-ejen-01.md bahagian D)
 | 12/11/2026 | Kill pertama ikut SOP ini: tutup kempen [1-1-1] Sendawa, Mak Ayah, Rumah Rasa Berat dan [AUTOPILOT] Sabun Garam; pause ad KK Pakej Seisi Keluarga, Wangian Sunnah, Anak Meracau, Kena Himpit dan GP Pasangan Berubah, Tanda-tanda, Suami Berikhtiar, Ikhtiar Dapur. Kekal: GP Bilik Asing, SG Mandian Ruqyah, SG Bayar Bila Sampai, KK Tengkuk Berat (pengecualian HQ). Mulai hari ini semua launch HQ = 1-1-1. |
 | 12/11/2026 | Ganti split test Sabun Garam (3 kempen 1-1-1, mula 12/11 06:00, RM60/hari; asalnya dijadual 13/11 — launch dibuat 02:00 pagi, sepatutnya start "today"): Angin Saka video CFT-SITUASI (launch 50), Benteng Lepas Berubat gambar (launch 49), Hati Panas Dengan Anak video testimoni (launch 51). |
 | 12/11/2026 | Kill KK Tengkuk Berat & Sesak Dada (pause ad 120252658398690123): hari 6, ROAS kumulatif 1.54 / 3h 1.24, RM229, 8 order — bukan pemenang hari ≥ 5. Diagnosis: AOV RM44 (halaman kasturi-kijang-3), bukan creative. Kekal: GP Bilik Asing, SG Mandian Ruqyah, SG Bayar Bila Sampai, 3 ad UJI 12/11. |
-| 13/11/2026 | Kill "apa yg diisi dalam sabun" (CV - Video - Sabun, pause ad 120252113089890123 melalui MCP Meta Ads — server Ads Hub tolak ad luar autopilot): hari 44, ROAS 4h 1.65 (RM119.76, 3 order), 30h 1.36, CPM RM41. SOP dikemas kini: peraturan kill harian = ROAS 4 hari < 2.0 (hari ≥ 3, belanja 4h ≥ RM60) → cadang kill + terus cadang pengganti (angle baru / pecahan angle menang, kaedah Miya). |
+| 13/11/2026 | Kill "apa yg diisi dalam sabun" (CV - Video - Sabun, pause ad 120252113089890123 melalui MCP Meta Ads — server Ads Hub tolak ad luar autopilot): hari 44, ROAS 4h 1.65 (RM119.76, 3 order), 30h 1.36, CPM RM41. SOP dikemas kini: peraturan kill harian = ROAS 4 hari < 2.0 (hari ≥ 3, belanja 4h > RM140 = RM35 sehari × 4; ATAU belanja 4h ≥ RM100 dengan 0 order) → cadang kill + terus cadang pengganti (angle baru / pecahan angle menang, kaedah Miya). |
 | 13/11/2026 | Launch 3 kempen 1-1-1 (dilancar 00:07, mula 13/11 06:00, RM60/hari): GP Faridah "Bertengkar Benda Kecil" video testimoni (launch 53), KK Kak Salmah + Pakej 2+1 video → /kasturi-kijang (launch 54), SG "Balik Kerja Badan Berat" gambar Direct (launch 55; tertangguh ±20 min kerana had API Meta). |
