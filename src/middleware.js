@@ -55,6 +55,7 @@ export async function middleware(request) {
     '/api/webhooks',      // webhook NinjaVan — disahkan dengan HMAC X-Ninjavan-Hmac-Sha256
     '/api/admin/ninjavan/audit',  // audit sandbox — super_admin ATAU x-cron-secret (disemak dalam route)
     '/api/mcp',           // MCP E-Syifa — dilindungi API key (Bearer esk_…) dalam route
+    '/api/app/feed',      // feed order app Android — dilindungi token peranti (Bearer esd_…) dalam route
     '/api/setup',
     '/api/register-perawat',
     '/api/register-marketer',

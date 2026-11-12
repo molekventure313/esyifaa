@@ -31,3 +31,12 @@ next-env.d.ts
 
 # autopilot HQ — fail kerja creative (video, VO)
 /autopilot/
+
+# app Android — output build & kunci tandatangan (simpan backup kunci di luar git)
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+/android/keystore/
+/android/*.apk
+/*.apk

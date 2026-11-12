@@ -1,0 +1,42 @@
+plugins { id 'com.android.application' }
+
+def ksFile = rootProject.file('keystore/esyifa-release.jks')
+
+android {
+    namespace 'com.esyifa.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.esyifa.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+        buildConfigField 'String', 'BASE_URL', '"https://e-syifa.com"'
+    }
+
+    buildFeatures { buildConfig true }
+
+    signingConfigs {
+        release {
+            if (ksFile.exists()) {
+                storeFile ksFile
+                storePassword System.getenv('ESYIFA_KS_PASS') ?: 'esyifa-app'
+                keyAlias 'esyifa'
+                keyPassword System.getenv('ESYIFA_KS_PASS') ?: 'esyifa-app'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ksFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
