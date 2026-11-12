@@ -33,6 +33,11 @@ const PENGISIAN_PAGES = [
 // TAB: Langganan (servis bayaran bulanan)
 const LANGGANAN_PAGES = [
   { label: "Ruqyah Harian E-Syifa'", desc: 'Servis langganan — perawat bacakan ruqyah terus ke atas diri pesakit 2x sehari. 3 Bulan RM300 · 1 Bulan RM150. Had 100 pendaftaran baru sebulan.', url: '/ruqyah-harian', color: '#047857', icon: '🌙', isNew: true },
+  { label: 'Ruqyah Harian #1 — Lakonan Masa Rawatan', desc: 'Angle 1: Lakonan Masa Rawatan — hero, masalah, fears & insight berbeza; pakej, checkout & FAQ dikongsi dengan SP asal.', url: '/ruqyah-harian-1', color: '#047857', icon: '🌙', isNew: true },
+  { label: 'Ruqyah Harian #2 — Hanya Pesakit Yang Tahu', desc: 'Angle 2: Hanya Pesakit Yang Tahu — hero, masalah, fears & insight berbeza; pakej, checkout & FAQ dikongsi dengan SP asal.', url: '/ruqyah-harian-2', color: '#047857', icon: '🌙', isNew: true },
+  { label: 'Ruqyah Harian #3 — Sihir Harian vs Berubat Sebulan Sekali', desc: 'Angle 3: Sihir Harian vs Berubat Sebulan Sekali — hero, masalah, fears & insight berbeza; pakej, checkout & FAQ dikongsi dengan SP asal.', url: '/ruqyah-harian-3', color: '#047857', icon: '🌙', isNew: true },
+  { label: 'Ruqyah Harian #4 — Kira Kos Berubat', desc: 'Angle 4: Kira Kos Berubat — hero, masalah, fears & insight berbeza; pakej, checkout & FAQ dikongsi dengan SP asal.', url: '/ruqyah-harian-4', color: '#047857', icon: '🌙', isNew: true },
+  { label: 'Ruqyah Harian #5 — Punca Di Tangan Tukang Sihir', desc: 'Angle 5: Punca Di Tangan Tukang Sihir — hero, masalah, fears & insight berbeza; pakej, checkout & FAQ dikongsi dengan SP asal.', url: '/ruqyah-harian-5', color: '#047857', icon: '🌙', isNew: true },
 ];
 
 // TAB 3: E-Video

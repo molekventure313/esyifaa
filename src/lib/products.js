@@ -60,6 +60,11 @@ export const SP_FILTER_GROUPS = [
   { label: '✨ Pengisian / Rawatan', items: [
     ['pengisian-esyifa', '/pengisian-esyifa (+ Tasbih, Rawat Sendiri)'],
     ['ruqyah-harian',    '/ruqyah-harian'],
+    ['ruqyah-harian-1',  '/ruqyah-harian-1 — Lakonan Masa Rawatan'],
+    ['ruqyah-harian-2',  '/ruqyah-harian-2 — Hanya Pesakit Yang Tahu'],
+    ['ruqyah-harian-3',  '/ruqyah-harian-3 — Sihir Harian vs Berubat Sebulan Sekali'],
+    ['ruqyah-harian-4',  '/ruqyah-harian-4 — Kira Kos Berubat'],
+    ['ruqyah-harian-5',  '/ruqyah-harian-5 — Punca Di Tangan Tukang Sihir'],
     ['fsp-checkout',     '/fsp-checkout — Rawatan RM50'],
     ['e-video',          '/e-video'],
   ] },

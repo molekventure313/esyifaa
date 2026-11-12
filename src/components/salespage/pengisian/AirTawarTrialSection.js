@@ -1,11 +1,12 @@
 'use client';
 
-import { buildWaLink, trackWaClick, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+import { buildWaLink, trackWaClick, useWaButton, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
 
 /**
  * Counter-rejection "tak percaya kesan pengisian" — cuba air tawar jarak jauh PERCUMA dulu.
  * Diletak terus selepas borang tempahan (pembeli yang dah yakin tak terganggu).
- * WhatsApp SENTIASA ke no. Pengisian HQ (perawat yang buat bacaan) — termasuk di link marketer.
+ * Default (SP Pengisian): WhatsApp SENTIASA ke no. Pengisian HQ (perawat yang buat bacaan) — termasuk di link marketer.
+ * Dengan `hqNumber` (SP Ruqyah Harian): SP HQ → hqNumber; SP marketer → no. marketer (tiada nombor → butang disembunyikan).
  * Klik → Meta Pixel `Lead` + rekod klik/UTM (wa_clicks), content_name "Air Tawar (Pengisian)".
  */
 const MESSAGE = 'Assalamualaikum, saya nak cuba air tawar jarak jauh percuma dulu.';
@@ -16,7 +17,11 @@ const STEPS = [
   ['Perawat bacakan ayat ruqyah dari jarak jauh', 'Minum air tersebut & rasai sendiri kesannya.'],
 ];
 
-export default function AirTawarTrialSection({ background = 'linear-gradient(180deg, #FFFFFF 0%, #F0FDF4 100%)' }) {
+export default function AirTawarTrialSection({ background = 'linear-gradient(180deg, #FFFFFF 0%, #F0FDF4 100%)', hqNumber }) {
+  const product = 'Air Tawar (Pengisian)';
+  const wa = useWaButton({ hqNumber: hqNumber || HQ_WHATSAPP_PENGISIAN, message: MESSAGE, product });
+  const href = hqNumber ? wa.href : buildWaLink(HQ_WHATSAPP_PENGISIAN, MESSAGE);
+  const hidden = hqNumber ? wa.hidden : false;
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   return (
@@ -73,8 +78,8 @@ export default function AirTawarTrialSection({ background = 'linear-gradient(180
         </div>
 
         <a
-          href={buildWaLink(HQ_WHATSAPP_PENGISIAN, MESSAGE)}
-          onClick={() => trackWaClick({ product: 'Air Tawar (Pengisian)' })}
+          href={href}
+          onClick={() => trackWaClick({ product })}
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -84,6 +89,7 @@ export default function AirTawarTrialSection({ background = 'linear-gradient(180
             background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
             borderRadius: '50px', textDecoration: 'none',
             boxShadow: '0 8px 25px rgba(37,211,102,0.35)',
+            visibility: hidden ? 'hidden' : 'visible',
           }}
         >
           💬 Saya Nak Cuba Air Tawar Percuma

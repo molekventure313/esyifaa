@@ -5,15 +5,15 @@ import { RH_MAX_SLOTS } from '@/lib/ruqyah-harian';
 
 // SP Ruqyah Harian E-Syifa — seksyen kandungan (Framework FSP 10%, angle A2: helah jin semasa rawatan)
 
-const ff = 'var(--font-inter), -apple-system, sans-serif';
-const C = { green: '#047857', greenSoft: '#ECFDF5', border: '#A7F3D0', ink: '#0F172A', body: '#334155', muted: '#64748B', gold: '#D97706' };
+export const ff = 'var(--font-inter), -apple-system, sans-serif';
+export const C = { green: '#047857', greenSoft: '#ECFDF5', border: '#A7F3D0', ink: '#0F172A', body: '#334155', muted: '#64748B', gold: '#D97706' };
 
-const scrollToForm = e => {
+export const scrollToForm = e => {
   e?.preventDefault();
   document.getElementById('borang')?.scrollIntoView({ behavior: 'smooth' });
 };
 
-function Chip({ children, dark }) {
+export function Chip({ children, dark }) {
   return (
     <span style={{
       display: 'inline-block', background: dark ? 'rgba(253,224,71,0.12)' : '#FFFFFF', border: `1px solid ${dark ? 'rgba(253,224,71,0.45)' : C.border}`,
@@ -23,7 +23,7 @@ function Chip({ children, dark }) {
   );
 }
 
-function H2({ children, dark }) {
+export function H2({ children, dark }) {
   return (
     <h2 style={{ fontSize: 'clamp(1.5rem, 3.4vw, 2.15rem)', fontWeight: 900, color: dark ? '#FEF3C7' : C.ink, margin: '0.2rem 0 0.75rem', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
       {children}
@@ -31,7 +31,7 @@ function H2({ children, dark }) {
   );
 }
 
-function Section({ children, bg = '#FFFFFF', max = '920px', center = true, id, pad = '4.25rem 1.25rem' }) {
+export function Section({ children, bg = '#FFFFFF', max = '920px', center = true, id, pad = '4.25rem 1.25rem' }) {
   return (
     <section id={id} style={{ background: bg, padding: pad, fontFamily: ff, borderBottom: '1px solid #E2E8F0' }}>
       <div style={{ maxWidth: max, margin: '0 auto', textAlign: center ? 'center' : 'left' }}>{children}</div>
@@ -130,7 +130,7 @@ export function Hero() {
 }
 
 // #3 / #12 ─ Testimoni Sebenar Ruqyah Harian E-Syifa
-const TESTIMONIALS_PART1 = [
+export const TESTIMONIALS_PART1 = [
   {
     name: 'Tuan Fauzi',
     location: 'Kuantan, Pahang',
@@ -173,7 +173,7 @@ const TESTIMONIALS_PART1 = [
   },
 ];
 
-const TESTIMONIALS_PART2 = [
+export const TESTIMONIALS_PART2 = [
   {
     name: 'Puan Mariam',
     location: 'Ayer Keroh, Melaka',
@@ -216,7 +216,7 @@ const TESTIMONIALS_PART2 = [
   },
 ];
 
-function WaBubble({ t }) {
+export function WaBubble({ t }) {
   return (
     <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 15px rgba(0,0,0,0.04)', textAlign: 'left' }}>
       <div style={{ background: '#F0FDF4', borderBottom: '1px solid #E2E8F0', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -255,14 +255,14 @@ function WaBubble({ t }) {
   );
 }
 
-export function Testimonials({ part = 1 }) {
-  const items = part === 1 ? TESTIMONIALS_PART1 : TESTIMONIALS_PART2;
+export function Testimonials({ part = 1, items: custom, title, subtitle }) {
+  const items = custom || (part === 1 ? TESTIMONIALS_PART1 : TESTIMONIALS_PART2);
   return (
     <Section bg="#F8FAF9" max="960px">
       <Chip>💬 Bukti Pengalaman Pesakit (Gelombang {part})</Chip>
-      <H2>{part === 1 ? 'Kisah Mereka Yang Dibacakan Ruqyah Setiap Hari' : 'Betul Ke Dibaca Dari Jauh Setiap Hari Berkesan?'}</H2>
+      <H2>{title || (part === 1 ? 'Kisah Mereka Yang Dibacakan Ruqyah Setiap Hari' : 'Betul Ke Dibaca Dari Jauh Setiap Hari Berkesan?')}</H2>
       <p style={{ fontSize: '0.95rem', color: C.muted, lineHeight: 1.65, maxWidth: '560px', margin: '0 auto 2.5rem' }}>
-        {part === 1 ? 'Mesej WhatsApp terus daripada pesakit Ruqyah Harian — ikhtiar berterusan, dengan izin Allah.' : 'Jom baca apa kata mereka yang dah melanggan Ruqyah Harian E-Syifa 👇'}
+        {subtitle || (part === 1 ? 'Mesej WhatsApp terus daripada pesakit Ruqyah Harian — ikhtiar berterusan, dengan izin Allah.' : 'Jom baca apa kata mereka yang dah melanggan Ruqyah Harian E-Syifa 👇')}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
         {items.map(t => <WaBubble key={t.name} t={t} />)}
@@ -337,7 +337,7 @@ export function Authority() {
 }
 
 // #7 + #8 ─ Solution & manfaat
-const BENEFITS = [
+export const BENEFITS = [
   'Dibacakan 2x sehari — tiada hari terlepas sepanjang langganan',
   'Jin tiada ruang menyorok di antara sesi rawatan',
   'Ikhtiar patahkan sihir yang dihantar berulang kali',
@@ -501,14 +501,15 @@ const FAQS = [
   ['Ini tangkal atau ada unsur syirik?', 'Tidak. 100% ruqyah syar\'iyyah — bacaan Al-Quran, doa & zikir. Tiada rajah, wafak, khodam atau jin dampingan. Kesembuhan hanya daripada Allah.'],
   ['Ada jaminan? Bagaimana selepas tempoh tamat?', 'Ada — jaminan 30 hari wang dikembalikan. Tiada potongan automatik; kami akan ingatkan di WhatsApp sebelum tempoh langganan tamat, dan anda boleh pilih untuk sambung.'],
 ];
-export function FAQ() {
+export function FAQ({ extra = [] }) {
   const [open, setOpen] = useState(0);
+  const items = [...extra, ...FAQS];
   return (
     <Section bg="#F8FAF9" max="780px">
       <Chip>❓ Soalan Lazim</Chip>
       <H2>Ada pertanyaan?</H2>
       <div style={{ display: 'grid', gap: '0.6rem', textAlign: 'left', marginTop: '1.25rem' }}>
-        {FAQS.map(([q, a], i) => (
+        {items.map(([q, a], i) => (
           <div key={q} style={{ background: '#FFFFFF', border: `1px solid ${open === i ? C.border : '#E2E8F0'}`, borderRadius: '12px', overflow: 'hidden' }}>
             <button onClick={() => setOpen(open === i ? null : i)} style={{ width: '100%', padding: '1rem 1.2rem', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', gap: '0.75rem', textAlign: 'left', fontFamily: ff, fontSize: '0.95rem', fontWeight: 700, color: C.ink }}>
               {q}<span style={{ color: C.green, transform: open === i ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>+</span>
@@ -522,10 +523,10 @@ export function FAQ() {
 }
 
 // Penutup
-export function Closing() {
+export function Closing({ title = 'Jangan biar ia datang balik lagi.' }) {
   return (
     <Section bg="linear-gradient(180deg, #042E23, #021812)" max="760px">
-      <H2 dark>Jangan biar ia datang balik lagi.</H2>
+      <H2 dark>{title}</H2>
       <p style={{ color: '#A7F3D0', fontSize: '1.02rem', lineHeight: 1.7, margin: '0 0 1.75rem' }}>
         Mula dibacakan ruqyah setiap pagi &amp; malam — hari ini. Slot terhad {RH_MAX_SLOTS} pesakit baru sebulan.
       </p>

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
-// No. WhatsApp HQ — SATU nombor untuk SEMUA SP HQ (section WhatsApp, butang WA, Air Tawar, Pengisian, Ruqyah Harian, Tasbih)
+// No. WhatsApp HQ — SATU nombor untuk SEMUA SP HQ (section WhatsApp, butang WA, Air Tawar, Pengisian, Tasbih)
 export const HQ_WHATSAPP = '601149794073';
 // Dulu SP Pengisian guna nombor berasingan — kini sama dengan HQ (nama dikekalkan supaya import sedia ada tak rosak)
 export const HQ_WHATSAPP_PENGISIAN = HQ_WHATSAPP;
 // No. WhatsApp HQ khas untuk SP Sabun Garam (semua /sabun-garam*)
 export const HQ_WHATSAPP_SABUN = '60172827714';
+// No. WhatsApp HQ khas untuk SP Ruqyah Harian (semua /ruqyah-harian*, termasuk Air Tawar). SP marketer → no. marketer.
+export const HQ_WHATSAPP_RUQYAH_HARIAN = '601118939984';
 
 export const buildWaLink = (num, msg) => `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 

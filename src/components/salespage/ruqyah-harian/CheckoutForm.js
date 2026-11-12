@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generateEventId, getPixelCookies } from '@/lib/tracking/pixel';
 import { RH_PACKAGES, RH_NAME, RH_SOURCE } from '@/lib/ruqyah-harian';
-import { useWaButton, HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+import { useWaButton, HQ_WHATSAPP_RUQYAH_HARIAN } from '@/components/salespage/useSalesContact';
 import { useRhSlots, SlotMeter } from '@/components/salespage/ruqyah-harian/Sections';
 import EmailField from '@/components/salespage/EmailField';
 
@@ -28,7 +28,7 @@ function utm() {
   return Object.fromEntries(['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].map(k => [k, p.get(k) || null]));
 }
 
-function Inner({ source = RH_SOURCE }) {
+function Inner({ source = RH_SOURCE, title }) {
   const searchParams = useSearchParams();
   const marketerCode = searchParams?.get('m') || '';
   const slots = useRhSlots();
@@ -43,7 +43,7 @@ function Inner({ source = RH_SOURCE }) {
   const ff = 'var(--font-inter), -apple-system, sans-serif';
 
   const wa = useWaButton({
-    hqNumber: HQ_WHATSAPP_PENGISIAN,
+    hqNumber: HQ_WHATSAPP_RUQYAH_HARIAN,
     message: full ? `Assalamualaikum, saya nak masuk senarai menunggu ${RH_NAME}` : `Assalamualaikum, saya nak daftar ${RH_NAME} (${pkg.label})`,
     product: RH_NAME,
   });
@@ -106,7 +106,7 @@ function Inner({ source = RH_SOURCE }) {
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 style={{ fontSize: 'clamp(1.5rem, 3.4vw, 2.15rem)', fontWeight: 900, color: '#0F172A', margin: '0 0 0.6rem', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
-            Jangan tunggu ia datang balik — mula dibacakan <span style={{ color: '#047857' }}>setiap hari</span>
+            {title || <>Jangan tunggu ia datang balik — mula dibacakan <span style={{ color: '#047857' }}>setiap hari</span></>}
           </h2>
           <p style={{ color: '#64748B', fontSize: '0.98rem', margin: '0 0 1.25rem' }}>Pilih pakej anda. Bayar sekali melalui FPX — tiada potongan automatik.</p>
           <SlotMeter />

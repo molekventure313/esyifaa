@@ -1,7 +1,7 @@
 import MarketerPixelProvider from '@/components/salespage/MarketerPixelProvider';
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
 import AirTawarTrialSection from '@/components/salespage/pengisian/AirTawarTrialSection';
-import { HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+import { HQ_WHATSAPP_RUQYAH_HARIAN } from '@/components/salespage/useSalesContact';
 import RuqyahHarianCheckout from '@/components/salespage/ruqyah-harian/CheckoutForm';
 import {
   AnnouncementBar, Hero, Testimonials, Problems, Fears, Authority, Solution,
@@ -26,8 +26,8 @@ export default function RuqyahHarianPage() {
       <Testimonials part={2} />    {/* #12 — placeholder */}
       <Guarantee />                {/* #14 */}
       <RuqyahHarianCheckout />     {/* #13 + #15 */}
-      <AirTawarTrialSection background="linear-gradient(180deg, #FFFFFF 0%, #F0FDF4 100%)" />
-      <WhatsAppOrderSection product="Ruqyah Harian E-Syifa" background="#F0FDF4" hqNumber={HQ_WHATSAPP_PENGISIAN} />  {/* #16 */}
+      <AirTawarTrialSection background="linear-gradient(180deg, #FFFFFF 0%, #F0FDF4 100%)" hqNumber={HQ_WHATSAPP_RUQYAH_HARIAN} />
+      <WhatsAppOrderSection product="Ruqyah Harian E-Syifa" background="#F0FDF4" hqNumber={HQ_WHATSAPP_RUQYAH_HARIAN} />  {/* #16 */}
       <FAQ />                      {/* #17 */}
       <Closing />
       <footer style={{ background: '#021812', color: '#94A3B8', padding: '2rem 1rem', textAlign: 'center', fontSize: '0.8rem', fontFamily: 'var(--font-inter), -apple-system, sans-serif' }}>

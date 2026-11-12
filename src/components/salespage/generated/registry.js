@@ -4,7 +4,7 @@
 // Produk fizikal (Sabun / Kasturi / Garam): TIADA section order WhatsApp — order melalui borang sahaja.
 
 import WhatsAppOrderSection from '@/components/salespage/WhatsAppOrderSection';
-import { HQ_WHATSAPP_PENGISIAN } from '@/components/salespage/useSalesContact';
+import { HQ_WHATSAPP_PENGISIAN, HQ_WHATSAPP_RUQYAH_HARIAN } from '@/components/salespage/useSalesContact';
 
 // Sabun Garam
 import SabunTestimonialSection from '@/components/salespage/sabun-garam/TestimonialSection';
@@ -122,7 +122,7 @@ export const HQ_SLOTS = {
     testimoni2: () => <RhTestimonials part={2} />,
     guarantee:  () => <RhGuarantee />,
     checkout:   () => <RuqyahHarianCheckout />,
-    whatsapp:   () => <WhatsAppOrderSection product="Ruqyah Harian E-Syifa" background="#F0FDF4" hqNumber={HQ_WHATSAPP_PENGISIAN} />,
+    whatsapp:   () => <WhatsAppOrderSection product="Ruqyah Harian E-Syifa" background="#F0FDF4" hqNumber={HQ_WHATSAPP_RUQYAH_HARIAN} />,
     faq:        () => <RhFAQ />,
   },
   rawatan: {
