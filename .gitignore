@@ -40,3 +40,5 @@ next-env.d.ts
 /android/keystore/
 /android/*.apk
 /*.apk
+/android/sounds-preview/
+/android/pilih-bunyi-cing.html
