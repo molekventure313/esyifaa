@@ -316,6 +316,15 @@ function adsetAction(rule, s) {
 const fmtMetric = (metric, v) => (v == null ? '—' : ['roas', 'frequency'].includes(metric) ? v.toFixed(2) : ['ctr', 'hook_rate'].includes(metric) ? `${v}%`
   : ['spend', 'revenue', 'cpa', 'cpm'].includes(metric) ? `RM${r2(v)}` : metric === 'age_days' ? `hari ke-${v}` : v);
 
+/** Adakah budget adset ini dah dinaikkan oleh peraturan auto sejak awal jam semasa (waktu Malaysia)? */
+async function raisedThisHour(admin, marketerId, adsetId) {
+  const hourStart = new Date(Math.floor((Date.now() + MYT_MS) / 3600000) * 3600000 - MYT_MS).toISOString();
+  const { data } = await admin.from('meta_actions_log').select('before, after')
+    .eq('marketer_id', marketerId).eq('object_id', adsetId).eq('action', 'set_budget').eq('source', 'auto').eq('status', 'ok')
+    .gte('created_at', hourStart).limit(20);
+  return (data || []).some(r => Number(r.after?.daily_budget_rm) > Number(r.before?.daily_budget_rm));
+}
+
 /** Peraturan peringkat adset: jumlahkan metrik ad ikut adset, semua syarat mesti benar. */
 async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
   const agg = new Map();
@@ -351,6 +360,8 @@ async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
     if (raise && ctx.hour >= SCALE_CUTOFF_HOUR) continue;
     // Tangga scale: naik satu anak tangga sahaja setiap larian (jam) — tiada lompat RM60 → RM150
     if (raise && (ctx.raised.has(id) || ctx.ladderFor(s.campaign_id).some(v => v > s.daily_budget && v < action.params.daily_budget_rm))) continue;
+    // Pengawal DB: jika cron dicetuskan dua kali dalam jam yang sama (ctx berasingan), jangan naik anak tangga kedua
+    if (raise && await raisedThisHour(admin, conn.marketer_id, id)) { ctx.raised.add(id); continue; }
     const win = Number(rule.window_days) === 1 ? 'hari ini' : `${rule.window_days} hari`;
     const ok = await fireRule(admin, conn, rule, {
       marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: action ? 'info' : 'warn',
@@ -379,6 +390,9 @@ export async function runTimeRules(admin, { budgetMs = 15000 } = {}) {
     const { data: conn } = await admin.from('meta_connections').select('*').eq('marketer_id', rule.marketer_id).maybeSingle();
     if (!conn || conn.status === 'error') continue;
     await withProducts(admin, conn, [rule]);
+    // Skop autopilot perlukan senarai kempen autopilot — tanpanya inScope() langkau SEMUA adset tanpa ralat
+    // (punca reset 23:30 tidak berjalan sejak 5/11).
+    if (rule.scope === 'autopilot') await withApCampaigns(admin, conn);
     const [adsets, blocked] = await Promise.all([adsetIndex(admin, rule.marketer_id), blockedAdsets(admin, rule.marketer_id)]);
     const out = { suggestions: 0, executed: 0 };
     let done = true;
@@ -422,6 +436,9 @@ export async function evaluateConnection(admin, conn) {
 
   const { data: rules } = await admin.from('meta_rules').select('*').eq('marketer_id', conn.marketer_id).eq('active', true);
   await withProducts(admin, conn, rules || []);
+  // Muat kempen autopilot SEBELUM peraturan peringkat adset (tangga, kecemasan) — jika tidak, peraturan berskop
+  // autopilot hanya berfungsi bila kebetulan peraturan peringkat ad dinilai dahulu.
+  if ((rules || []).some(r => r.scope === 'autopilot')) await withApCampaigns(admin, conn);
   let adsetCtx = null;
   for (const rule of rules || []) {
     if (rule.run_at_time) continue;   // dijalankan oleh runTimeRules
