@@ -7,7 +7,7 @@ import PosCodDashboard from '@/components/ninjavan/PosCodDashboard';
 // (tanda COD diterima → kredit COD ke bil fighter).
 export default function NinjaVanDashboardPage() {
   const [scope, setScope] = useState('hq');
-  const urlFor = useCallback(period => `/api/admin/ninjavan/summary?period=${period}&scope=${scope}`, [scope]);
+  const urlFor = useCallback((period, product = 'all') => `/api/admin/ninjavan/summary?period=${period}&scope=${scope}&product=${product}`, [scope]);
   const tab = (value, text) => (
     <button key={value} onClick={() => setScope(value)} style={{
       padding: '0.35rem 0.85rem', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer', border: 'none', marginRight: '0.35rem',

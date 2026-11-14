@@ -28,9 +28,10 @@ const fmtDateTime = d => d
  * urlFor(period) → endpoint ringkasan · canRemit → boleh tanda COD diterima (HQ) · showFighter → kolum fighter
  * label / subtitle → tajuk · headerExtra → elemen tambahan di header (cth tab HQ / Fighter)
  */
-export default function PosCodDashboard({ urlFor, canRemit = false, showFighter = false, label = '🚚 NINJAVAN', subtitle, headerExtra = null, remitNote }) {
+export default function PosCodDashboard({ urlFor, canRemit = false, showFighter = false, label = '🚚 NINJAVAN', subtitle, headerExtra = null, remitNote, waFrom = 'E-Syifa' }) {
   const { showToast } = useToast();
   const [period,   setPeriod]   = useState('month');
+  const [product,  setProduct]  = useState('all');     // all | key produk | lain
   const [data,     setData]     = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [group,    setGroup]    = useState('all');     // all | floating | <group key>
@@ -57,7 +58,7 @@ export default function PosCodDashboard({ urlFor, canRemit = false, showFighter 
 
   const load = useCallback(async () => {
     try {
-      const res  = await fetch(urlFor(period));
+      const res  = await fetch(urlFor(period, product));
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Gagal memuatkan data');
       setData(json);
@@ -66,7 +67,7 @@ export default function PosCodDashboard({ urlFor, canRemit = false, showFighter 
     } finally {
       setLoading(false);
     }
-  }, [period, urlFor]);
+  }, [period, product, urlFor]);
 
   useEffect(() => {
     setLoading(true);
@@ -76,6 +77,27 @@ export default function PosCodDashboard({ urlFor, canRemit = false, showFighter 
     return () => clearInterval(t);
   }, [load]);
 
+  const productLabel = Object.fromEntries((data?.products || []).map(p => [p.key, p.label]));
+  // WhatsApp pelanggan (semua status) — nombor 60xxxxxxxxx, mesej awal ikut status parcel (boleh diubah sebelum hantar)
+  const waLink = p => {
+    let n = String(p.phone || '').replace(/\D/g, '');
+    if (n.startsWith('0')) n = `6${n}`;
+    if (n.length < 10) return null;
+    const produk = productLabel[p.product] ? ` ${productLabel[p.product]}` : '';
+    const tn = p.tracking_number ? ` (${p.tracking_number})` : '';
+    const body = {
+      pending_pickup: `Nak sahkan pesanan${produk} anda sebelum diserahkan kepada kurier NinjaVan. Alamat & nombor ni betul ya? Ada apa-apa nak diubah sebelum kami hantar?`,
+      in_transit:     `Parcel${produk} anda${tn} sedang dalam perjalanan. Kurier akan call sebelum sampai, mohon angkat ya 🙏 Ada masa atau tempat tertentu yang lebih sesuai untuk terima parcel?`,
+      exception:      `Kurier NinjaVan maklumkan parcel${produk} anda${tn} tak dapat dihantar. Boleh kami tahu apa yang berlaku? Tak sempat angkat call, tiada di rumah, atau alamat kurang jelas? Kami boleh aturkan hantar semula ikut masa yang sesuai untuk anda.`,
+      returned:       `Parcel${produk} anda${tn} dipulangkan oleh kurier kepada kami. Boleh kami tahu sebabnya? Ada masalah semasa penghantaran, berubah fikiran, atau ada yang kurang jelas tentang produk? Kalau masih berminat, kami boleh hantar semula 🙏`,
+      cancelled:      `Pesanan${produk} anda${tn} telah dibatalkan. Boleh kami tahu kenapa? Kalau ada soalan tentang produk atau cara bayaran, kami sedia bantu. Masih berminat untuk teruskan?`,
+      failed:         `Pesanan${produk} anda belum dapat dihantar kerana ada masalah pada maklumat penghantaran. Boleh semak semula alamat penuh & poskod anda?`,
+      delivered:      `Alhamdulillah parcel${produk} anda dah sampai 🎉 Semua dalam keadaan baik? Kalau ada soalan tentang cara guna, terus tanya kami ya.`,
+    }[p.group] || `Kami ingin bertanya tentang parcel${produk} anda${tn}.`;
+    const greet = `Assalamualaikum ${p.name || ''}${waFrom ? `, kami dari ${waFrom}` : ''}`;
+    const msg = `${greet}${p.group === 'pending_pickup' ? ' 😊' : '.'} ${body}`;
+    return `https://wa.me/${n}?text=${encodeURIComponent(msg)}`;
+  };
   const isFloating = p => p.group === 'delivered' && p.cod_amount > 0 && !p.cod_remitted_at;
   const parcels = (data?.parcels || []).filter(p =>
     group === 'all' ? true : group === 'floating' ? isFloating(p) : p.group === group);
@@ -142,6 +164,26 @@ export default function PosCodDashboard({ urlFor, canRemit = false, showFighter 
         <div style={{ ...card, textAlign: 'center', color: textSecondary, padding: '3rem 0' }}>Memuatkan...</div>
       ) : data && (
         <>
+          {/* ─── Tapis produk ─── */}
+          {data.products && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: textSecondary, marginRight: '0.2rem' }}>Produk:</span>
+              {[{ key: 'all', label: 'Semua', count: data.product_total }, ...data.products].map(p => {
+                const on = product === p.key;
+                return (
+                  <button key={p.key} onClick={() => { setProduct(p.key); setSelected(new Set()); }} disabled={!on && p.key !== 'all' && !p.count} style={{
+                    padding: '0.35rem 0.8rem', borderRadius: '999px', fontSize: '0.75rem', cursor: 'pointer',
+                    fontWeight: on ? 700 : 500, border: on ? '1px solid #6366F1' : cardBorder,
+                    background: on ? (isLightMode ? '#EEF2FF' : '#1E1B4B') : cardBg,
+                    color: on ? (isLightMode ? '#4F46E5' : '#A5B4FC') : textSecondary,
+                    opacity: !on && p.key !== 'all' && !p.count ? 0.45 : 1,
+                  }}>{p.label} <span style={{ color: textMuted, fontWeight: 500 }}>· {p.count ?? 0}</span></button>
+                );
+              })}
+              {loading && <span style={{ fontSize: '0.7rem', color: textMuted }}>Memuatkan...</span>}
+            </div>
+          )}
+
           {/* ─── COD ─── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
             {[
@@ -217,6 +259,14 @@ export default function PosCodDashboard({ urlFor, canRemit = false, showFighter 
                       <td style={{ padding: '0.6rem 0.4rem' }}>
                         <div style={{ fontWeight: 600 }}>{p.name}</div>
                         {p.phone && <div style={{ fontSize: '0.68rem', color: textMuted }}>{p.phone}</div>}
+                        {waLink(p) && (
+                          <a href={waLink(p)} target="_blank" rel="noopener noreferrer" style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.3rem', padding: '0.22rem 0.55rem',
+                            borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap',
+                            background: '#25D366', color: '#fff',
+                          }}>💬 WhatsApp</a>
+                        )}
+                        {productLabel[p.product] && <div style={{ fontSize: '0.66rem', color: '#6366F1', fontWeight: 600 }}>{productLabel[p.product]}</div>}
                       </td>
                       {showFighter && <td style={{ padding: '0.6rem 0.4rem', fontSize: '0.74rem', color: textSecondary }}>🥊 {p.fighter_name || '—'}</td>}
                       <td style={{ padding: '0.6rem 0.4rem' }}>

@@ -1,5 +1,5 @@
 // Ringkasan Pos & COD (status parcel + floating COD) — dikongsi oleh dashboard HQ & Portal Fighter.
-import { periodRange } from '@/lib/products';
+import { periodRange, productOf, PRODUCTS } from '@/lib/products';
 import { NV_ENV } from './api';
 import { statusGroupOf } from './shipments';
 
@@ -8,12 +8,14 @@ const round2 = n => Math.round(n * 100) / 100;
 
 /**
  * scope: 'hq' (parcel order HQ sahaja) | 'fighter' (semua parcel fighter) | { fighterId } (parcel seorang fighter)
+ * product: 'all' | key produk (PRODUCTS) | 'lain' (parcel tanpa produk fizikal dikenali, cth ujian)
  * Floating COD = COD parcel Delivered yang belum ditanda diterima dari NinjaVan (cod_remitted_at kosong).
+ * Kiraan status & COD dikira selepas tapis produk; product_counts = bilangan parcel setiap produk (sebelum tapis).
  */
-export async function buildNvSummary(db, { period = 'month', scope = 'hq' } = {}) {
+export async function buildNvSummary(db, { period = 'month', scope = 'hq', product = 'all' } = {}) {
   const range = periodRange(period);
   const fighterScope = scope !== 'hq';
-  const rows = [];
+  const all = [];
   for (let from = 0; ; from += 1000) {
     let q = db.from('ninjavan_shipments')
       .select(`id, submission_id, fighter_order_id, fighter_id, tracking_number, status, event, cod_amount, is_test, last_event_at, delivered_at, returned_at, cod_remitted_at, waybill_printed_at, created_at,
@@ -27,9 +29,15 @@ export async function buildNvSummary(db, { period = 'month', scope = 'hq' } = {}
     if (range) q = q.gte('created_at', range.from).lte('created_at', range.to);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    rows.push(...(data || []));
+    all.push(...(data || []));
     if (!data || data.length < 1000) break;
   }
+
+  // Tapis produk (ikut source order HQ / fighter)
+  const productKeyOf = r => productOf((fighterScope ? r.fighter_order : r.submission)?.source) || 'lain';
+  const productCounts = { all: all.length };
+  for (const r of all) { const k = productKeyOf(r); productCounts[k] = (productCounts[k] || 0) + 1; }
+  const rows = product && product !== 'all' ? all.filter(r => productKeyOf(r) === product) : all;
 
   // Nama fighter (tab Fighter di HQ)
   let fighterName = {};
@@ -59,6 +67,7 @@ export async function buildNvSummary(db, { period = 'month', scope = 'hq' } = {}
       group, cod_amount: amt, is_test: r.is_test, last_event_at: r.last_event_at, delivered_at: r.delivered_at,
       returned_at: r.returned_at, cod_remitted_at: r.cod_remitted_at, printed_at: r.waybill_printed_at, created_at: r.created_at,
       name: who?.full_name || (r.is_test ? 'Order ujian' : '—'), phone: who?.phone || '', source: who?.source || '',
+      product: productKeyOf(r),
       fighter_name: fighterName[r.fighter_id] || null,
     };
   });
@@ -80,6 +89,12 @@ export async function buildNvSummary(db, { period = 'month', scope = 'hq' } = {}
     },
     total: rows.length,
     active,
+    product: product || 'all',
+    products: [
+      ...PRODUCTS.map(p => ({ key: p.key, label: p.label, count: productCounts[p.key] || 0 })),
+      ...(productCounts.lain ? [{ key: 'lain', label: 'Lain-lain', count: productCounts.lain }] : []),
+    ],
+    product_total: productCounts.all,
     parcels,
   };
 }

@@ -26,7 +26,8 @@ export async function GET(req) {
       const own = ids.map(id => shipments[id]).filter(s => s?.fighter_id === g.user.id);
       return waybillPdfResponse(g.admin, own);
     }
-    const out = await buildNvSummary(g.admin, { period: sp.get('period') || 'month', scope: { fighterId: g.user.id } });
+    const product = /^[a-z-]{1,30}$/.test(sp.get('product') || '') ? sp.get('product') : 'all';
+    const out = await buildNvSummary(g.admin, { period: sp.get('period') || 'month', scope: { fighterId: g.user.id }, product });
     return NextResponse.json({ success: true, ...out });
   } catch (e) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });
