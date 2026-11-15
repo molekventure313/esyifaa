@@ -11,6 +11,7 @@ import * as autopilot from './autopilot';
 import { syncFromMcp } from './mcp-sync';
 import { createRule, describeRule, ruleTemplates, applyRuleTemplates } from './automation';
 import { fighterOrderRows, fighterCosts, FIGHTER_SLUGS } from './fighter';
+import { STOCK_TOOLS, STOCK_NAMES, callStockTool } from './mcp-stock';
 
 export const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 export const SERVER_INFO = { name: 'esyifa', title: 'E-Syifa Ads Hub', version: '1.0.0' };
@@ -265,7 +266,7 @@ const HQ_TOOLS = [{
 }];
 const withMarketer = t => ({ ...t, inputSchema: { ...t.inputSchema, properties: { ...t.inputSchema.properties, marketer: MARKETER_ARG } } });
 export const toolsFor = profile => profile?.role === 'super_admin'
-  ? [...HQ_TOOLS, ...[...TOOLS, ...AUTOPILOT_TOOLS].map(withMarketer)]
+  ? [...HQ_TOOLS, ...STOCK_TOOLS, ...[...TOOLS, ...AUTOPILOT_TOOLS].map(withMarketer)]
   : [...TOOLS, ...AUTOPILOT_TOOLS];
 
 async function listAccounts(admin) {
@@ -340,6 +341,7 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
     return listAccounts(admin);
   }
   const { marketer, ...input } = rawInput || {};
+  if (STOCK_NAMES.has(name)) return callStockTool(admin, keyProfile, name, input, marketer);
   const profile = marketer ? await targetProfile(admin, keyProfile, marketer) : keyProfile;
   const mid = profile.id;
   const actor = keyProfile.id;
@@ -553,4 +555,5 @@ export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar a
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
 Peraturan auto Ads Hub: list_rules, list_rule_templates, apply_rule_templates, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
-Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch, set_ad_status untuk pause/hidupkan ad dalam kempen autopilot). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.`;
+Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch, set_ad_status untuk pause/hidupkan ad dalam kempen autopilot). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.
+Stok HQ (key HQ sahaja): get_stock (baki & pergerakan), add_stock (batch masuk: SKU, kuantiti, kos seunit), adjust_stock (kiraan fizikal / rosak, nota wajib). Order COD/FPX menolak stok automatik — jangan tolak stok order secara manual.`;
