@@ -2,7 +2,7 @@
 // SEMUA perubahan (chat, jadual, auto, cadangan) melalui executeAction: semak had keselamatan,
 // laksana di Meta, kemas kini cache meta_ads dan catat meta_actions_log.
 import { decryptToken } from './crypto';
-import { metaGet, metaPost, MetaError } from './meta';
+import { metaGet, metaPost, MetaError, rateLimitHint } from './meta';
 
 const OBJECT_TYPES = ['ad', 'adset', 'campaign'];
 const STATUS_LABEL = { ACTIVE: 'hidupkan', PAUSED: 'pause' };
@@ -124,7 +124,7 @@ export async function executeAction(admin, conn, a, ctx) {
     throw reject(`Tindakan "${a.action}" tidak disokong.`);
   } catch (e) {
     const status = e.rejected ? 'rejected' : 'failed';
-    const message = e instanceof MetaError ? `Meta tolak: ${e.message}` : e.message;
+    const message = e instanceof MetaError ? `Meta tolak: ${e.message}${rateLimitHint(e)}` : e.message;
     await log(admin, conn, a, ctx, status, message, before).catch(() => {});
     return { ok: false, rejected: !!e.rejected, message };
   }

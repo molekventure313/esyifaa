@@ -4,7 +4,7 @@
 // Launch boleh disambung (resumable): setiap panggilan buat langkah yang belum siap, simpan kemajuan
 // dalam autopilot_launches, dan pulangkan status 'launching' jika masa hampir tamat (had masa Netlify).
 import { decryptToken } from './crypto';
-import { metaGet, metaPost, MetaError } from './meta';
+import { metaGet, metaGetAll, metaPost, MetaError, rateLimitHint } from './meta';
 import { AD_PRODUCT_KEYS, PRODUCTS, DIGITAL_AD } from '@/lib/products';
 import { ownerProfile, isFighterProfile, fighterAdLink } from './fighter';
 import { executeAction } from './actions';
@@ -64,7 +64,7 @@ async function recordShadow(admin, marketerId, actorId, conn, p) {
     { headline: p.headline, link: p.link, image_path: p.image_path, video_id: p.video_id });
   return { ...summary(row, 'MOD SHADOW: cadangan direkod untuk HQ nilai — tiada ad dicipta di Meta.'), shadow: true };
 }
-const metaMsg = e => (e instanceof MetaError ? `Meta tolak: ${e.message}${e.info?.error_user_title ? ` (${e.info.error_user_title})` : ''}` : e.message);
+const metaMsg = e => (e instanceof MetaError ? `Meta tolak: ${e.message}${e.info?.error_user_title ? ` (${e.info.error_user_title})` : ''}${rateLimitHint(e)}` : e.message);
 
 /** 06:00 pagi esok (waktu Malaysia) → ISO. */
 export function nextStart(now = Date.now()) {
@@ -118,36 +118,62 @@ async function liveAdsets(admin, conn, token) {
   const { data: dead } = await admin.from('autopilot_launches').select('adset_id').eq('marketer_id', conn.marketer_id)
     .in('status', ['failed', 'cancelled']).not('adset_id', 'is', null);
   const deadIds = new Set((dead || []).map(r => r.adset_id));
-  for (const cid of await autopilotCampaignIds(admin, conn)) {
-    try {
-      const r = await metaGet(`${cid}/adsets`, { fields: 'id,name,status,effective_status,daily_budget,start_time,campaign{status}', limit: 100 }, token);
-      const list = r.data || [];
-      const solo = list.filter(a => !deadIds.has(a.id)).length === 1;
-      let withActiveAd = null;   // Set adset_id yang ada ad ACTIVE (kempen dikongsi sahaja)
-      if (!solo) {
-        try {
-          const ads = await metaGet(`${cid}/ads`, { fields: 'adset_id,status', limit: 500 }, token);
-          withActiveAd = new Set((ads.data || []).filter(x => x.status === 'ACTIVE').map(x => x.adset_id));
-        } catch (e) {
-          if (!(e instanceof MetaError)) throw e;   // gagal baca ad → kira ikut status adset sahaja (selamat)
-        }
-      }
-      out.push(...list.map(a => {
-        const campaignStatus = a.campaign?.status || null;
-        const live = campaignStatus !== 'PAUSED' && !deadIds.has(a.id)
-          && (solo || (a.status === 'ACTIVE' && (!withActiveAd || withActiveAd.has(a.id))));
-        return {
-          adset_id: a.id, name: a.name, status: a.status, effective_status: a.effective_status, campaign_id: cid,
-          campaign_status: campaignStatus, live,
-          daily_budget: a.daily_budget ? parseInt(a.daily_budget, 10) / 100 : 0, start_time: a.start_time,
-        };
-      }));
-    } catch (e) {
-      if (!(e instanceof MetaError && e.code === 100)) throw e;   // kempen dipadam → akan dicipta semula
+  const campaignIds = await autopilotCampaignIds(admin, conn);
+  if (!campaignIds.length) return out;
+
+  // HAD KADAR META: SATU panggilan peringkat ad account (ditapis campaign.id IN [...]) untuk semua kempen,
+  // bukan satu panggilan setiap kempen — struktur 1-1-1 menambah kempen setiap launch, dan gelung lama
+  // (N panggilan × status/kill/launch) menyebabkan "Ad Account Has Too Many API Calls".
+  const gone = s => s === 'DELETED' || s === 'ARCHIVED';
+  const byCampaign = new Map();
+  for (const ids of chunks(campaignIds, 50)) {
+    const rows = await metaGetAll(`${conn.ad_account_id}/adsets`, {
+      fields: 'id,name,status,effective_status,daily_budget,start_time,campaign_id,campaign{status}',
+      filtering: [{ field: 'campaign.id', operator: 'IN', value: ids }], limit: 200,
+    }, token);
+    for (const a of rows) {
+      if (gone(a.status) || gone(a.campaign?.status)) continue;   // kempen/adset dipadam → bukan slot
+      const cid = String(a.campaign_id || a.campaign?.id);
+      if (!byCampaign.has(cid)) byCampaign.set(cid, []);
+      byCampaign.get(cid).push(a);
     }
+  }
+
+  // Kempen dikongsi (> 1 adset) sahaja perlu tahu adset mana ada ad ACTIVE — satu panggilan lagi untuk semua.
+  const shared = [...byCampaign].filter(([, list]) => list.filter(a => !deadIds.has(a.id)).length > 1).map(([cid]) => cid);
+  let withActiveAd = null;   // Set adset_id yang ada ad ACTIVE (kempen dikongsi sahaja)
+  if (shared.length) {
+    try {
+      withActiveAd = new Set();
+      for (const ids of chunks(shared, 50)) {
+        const ads = await metaGetAll(`${conn.ad_account_id}/ads`, {
+          fields: 'adset_id,status', filtering: [{ field: 'campaign.id', operator: 'IN', value: ids }], limit: 500,
+        }, token);
+        for (const x of ads) if (x.status === 'ACTIVE') withActiveAd.add(x.adset_id);
+      }
+    } catch (e) {
+      if (!(e instanceof MetaError)) throw e;   // gagal baca ad → kira ikut status adset sahaja (selamat)
+      withActiveAd = null;
+    }
+  }
+
+  for (const [cid, list] of byCampaign) {
+    const solo = list.filter(a => !deadIds.has(a.id)).length === 1;
+    out.push(...list.map(a => {
+      const campaignStatus = a.campaign?.status || null;
+      const live = campaignStatus !== 'PAUSED' && !deadIds.has(a.id)
+        && (solo || (a.status === 'ACTIVE' && (!withActiveAd || withActiveAd.has(a.id))));
+      return {
+        adset_id: a.id, name: a.name, status: a.status, effective_status: a.effective_status, campaign_id: cid,
+        campaign_status: campaignStatus, live,
+        daily_budget: a.daily_budget ? parseInt(a.daily_budget, 10) / 100 : 0, start_time: a.start_time,
+      };
+    }));
   }
   return out;
 }
+
+const chunks = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
 const isLive = a => a.live;
 
 export async function status(admin, marketerId) {
@@ -537,7 +563,7 @@ export async function launchAd(admin, marketerId, actorId, input) {
 }
 
 // ---------- Launch hibrid: adset oleh E-Syifa, ad oleh MCP Meta Ads rasmi ----------
-// App Meta E-Syifa (mod Development) boleh cipta adset tapi Meta tolak creative/post daripadanya. prepare_launch cipta
+// Sandaran: jika Meta tolak creative/post daripada app E-Syifa (app kini Live — jarang berlaku). prepare_launch cipta
 // adset PAUSED dengan had yang sama; Claude cipta ad melalui MCP Meta (mcp.facebook.com/ads) ikut ad_spec; complete_launch
 // sahkan ad (adset & UTM) dan aktifkan adset — dijadual mula 06:00 macam launch_ad.
 
@@ -700,7 +726,13 @@ export async function setAdStatus(admin, marketerId, actorId, input) {
   // Kempen dikongsi (lebih 1 adset hidup) ditolak supaya ad lain tak terbunuh sekali.
   let campAdsets = [];
   if (type === 'campaign') {
-    campAdsets = (await liveAdsets(admin, conn, token)).filter(a => a.campaign_id === id);
+    // Satu panggilan untuk kempen ini sahaja (bukan liveAdsets semua kempen) — jimat had kadar Meta.
+    try {
+      const r = await metaGet(`${id}/adsets`, { fields: 'id,status,daily_budget', limit: 100 }, token);
+      campAdsets = (r.data || []).filter(a => a.status !== 'DELETED' && a.status !== 'ARCHIVED').map(a => ({
+        adset_id: a.id, status: a.status, campaign_id: id, daily_budget: a.daily_budget ? parseInt(a.daily_budget, 10) / 100 : 0,
+      }));
+    } catch (e) { throw fail(metaMsg(e)); }
     if (status === 'PAUSED' && campAdsets.filter(a => a.status === 'ACTIVE').length > 1) {
       throw fail(`Kempen "${obj.name}" ada ${campAdsets.filter(a => a.status === 'ACTIVE').length} adset aktif — tutup kempen akan kill semuanya. Pause adset/ad berkenaan sahaja, atau minta HQ.`);
     }

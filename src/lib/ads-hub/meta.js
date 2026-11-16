@@ -12,27 +12,68 @@ export class MetaError extends Error {
 // Token tamat / dibatalkan / tiada kebenaran → sambungan perlu dikemas kini oleh marketer
 export const isTokenError = e => e instanceof MetaError && [190, 102, 200, 10].includes(e.code);
 
+// Had kadar Meta (app / akaun / Business Use Case). 17 + subcode 2446079 = "Ad Account Has Too Many API Calls".
+const RATE_CODES = new Set([4, 17, 32, 613, 80000, 80001, 80002, 80003, 80004, 80005, 80006, 80008, 80009, 80014]);
+export const isRateLimit = e => e instanceof MetaError && (RATE_CODES.has(e.code) || e.info?.error_subcode === 2446079);
+
+// Header x-business-use-case-usage: { "<id>": [{ type, call_count, total_cputime, total_time,
+//   estimated_time_to_regain_access (minit), ads_api_access_tier }] } → ringkasan untuk mesej ralat.
+function usageOf(res) {
+  const out = {};
+  try {
+    const buc = JSON.parse(res.headers.get('x-business-use-case-usage') || '{}');
+    for (const rows of Object.values(buc)) for (const r of rows || []) {
+      out.wait_min = Math.max(out.wait_min || 0, Number(r.estimated_time_to_regain_access) || 0);
+      out.pct = Math.max(out.pct || 0, Number(r.call_count) || 0, Number(r.total_cputime) || 0, Number(r.total_time) || 0);
+      if (r.ads_api_access_tier) out.tier = r.ads_api_access_tier;
+    }
+    const acct = JSON.parse(res.headers.get('x-ad-account-usage') || 'null');
+    if (acct) {
+      out.pct = Math.max(out.pct || 0, Number(acct.acc_id_util_pct) || 0);
+      if (acct.reset_time_duration) out.wait_min = Math.max(out.wait_min || 0, Math.ceil(Number(acct.reset_time_duration) / 60));
+      if (acct.ads_api_access_tier) out.tier = acct.ads_api_access_tier;
+    }
+  } catch { /* header rosak — abaikan */ }
+  return out;
+}
+
 const encode = params => new URLSearchParams(
   Object.entries(params).map(([k, v]) => [k, typeof v === 'object' ? JSON.stringify(v) : String(v)])
 );
 
-export async function metaGet(path, params, token) {
-  const url = path.startsWith('http') ? path : `${META_API}/${path}?${encode({ ...params, access_token: token })}`;
-  const res = await fetch(url, { cache: 'no-store' });
+async function parse(res) {
   const json = await res.json().catch(() => ({}));
-  if (!res.ok || json.error) throw new MetaError(json.error || { message: `HTTP ${res.status}` });
+  if (!res.ok || json.error) {
+    const err = new MetaError(json.error || { message: `HTTP ${res.status}` });
+    if (isRateLimit(err)) {
+      err.usage = usageOf(res);
+      // Sekatan had akaun Meta biasanya ±5 minit; jangan cuba semula serta-merta (memanjangkan sekatan).
+      err.retryAfterMin = Math.max(5, err.usage.wait_min || 0);
+    }
+    throw err;
+  }
   return json;
 }
 
+export async function metaGet(path, params, token) {
+  const url = path.startsWith('http') ? path : `${META_API}/${path}?${encode({ ...params, access_token: token })}`;
+  return parse(await fetch(url, { cache: 'no-store' }));
+}
+
 export async function metaPost(path, params, token) {
-  const res = await fetch(`${META_API}/${path}`, {
+  return parse(await fetch(`${META_API}/${path}`, {
     method: 'POST', cache: 'no-store',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: encode({ ...params, access_token: token }),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || json.error) throw new MetaError(json.error || { message: `HTTP ${res.status}` });
-  return json;
+  }));
+}
+
+/** Mesej BM untuk ralat had kadar: berapa lama tunggu + tier akses API (development_access = had rendah). */
+export function rateLimitHint(e) {
+  if (!isRateLimit(e)) return '';
+  const u = e.usage || {};
+  return ` — HAD KADAR META: tunggu sekurang-kurangnya ${e.retryAfterMin} minit sebelum cuba semula (client_ref sama); `
+    + `jangan cuba semula serta-merta.${u.tier ? ` Tier API app: ${u.tier}.` : ''}`;
 }
 
 // Ikut paging.next sehingga habis (atau maxPages)

@@ -170,7 +170,12 @@ F. QA SEBELUM LAUNCH (gagal → buat semula sekali; gagal lagi → langkau & lap
 - Ragu tentang polisi Meta → jangan launch, masukkan dalam laporan
 
 G. LAUNCH
-- launch_ad dengan own_campaign: true (struktur 1-1-1 — WAJIB setiap launch). Jika ditolak mod Development: prepare_launch → MCP Meta → complete_launch.
+- launch_ad dengan own_campaign: true (struktur 1-1-1 — WAJIB setiap launch). App Meta E-Syifa sudah Live — launch_ad ialah laluan biasa.
+  Hanya jika Meta tolak creative/ad dari app: prepare_launch → MCP Meta → complete_launch.
+- HAD KADAR META ("Too Many API Calls" / "HAD KADAR META"): berhenti panggil alat Meta, tunggu sekurang-kurangnya minit yang
+  dinyatakan dalam ralat (min 5 minit), kemudian cuba SEKALI lagi dengan client_ref sama. Jangan cuba semula serta-merta
+  (sekatan dipanjangkan) dan jangan tukar ke laluan hibrid (guna kuota app yang sama). Gagal lagi selepas tunggu → SOP K.
+  Jimatkan panggilan: autopilot_status SEKALI setiap kitaran; data guna get_ads/get_overview (cache, tiada panggilan Meta).
 - client_ref: <YYYY-MM-DD>-ai01-<slug-angle>-v<n>. Ikut mod akaun (shadow rekod sahaja; veto/auto mula 06:00 esok).
 - Jangan ubah targeting, pixel, kempen atau peraturan. 2 ad pertama (10/11) berada dalam kempen "[AUTOPILOT] <Produk>" lama —
   biarkan dan kira dalam 3 ad split test produknya; ad baru semua 1-1-1.
