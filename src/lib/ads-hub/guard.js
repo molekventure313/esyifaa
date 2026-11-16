@@ -32,13 +32,13 @@ export function targetMarketer(g, requested) {
   return { id: requested || g.user.id };
 }
 
-// Sasaran tulis: marketer → diri sendiri; super_admin → ?marketer=<id> (marketer utama) atau akaun HQ sendiri.
+// Sasaran tulis: marketer → diri sendiri; super_admin → ?marketer=<id> (marketer utama / fighter) atau akaun HQ sendiri.
 // Pulangkan { id, profile } atau { error }.
 export async function writeTarget(g, req) {
   const requested = req ? new URL(req.url).searchParams.get('marketer') : null;
   if (!g.isOwner || !requested || requested === g.user.id) return { id: g.user.id, profile: g.profile };
   const { data: p } = await g.admin.from('profiles').select('id, role, full_name, team_leader_id, is_ai_agent').eq('id', requested).maybeSingle();
-  if (p?.role !== 'marketer' || p.team_leader_id) return err('Marketer tidak sah.', 400);
+  if (!['marketer', 'independent'].includes(p?.role) || p.team_leader_id) return err('Marketer tidak sah.', 400);
   return { id: p.id, profile: p };
 }
 

@@ -86,7 +86,8 @@ export default function AdminAdsHubPage() {
   }, [selected, mid, version]);
 
   const agents = (marketers || []).filter(m => m.is_ai_agent);
-  const humans = (marketers || []).filter(m => !m.is_ai_agent);
+  const fighters = (marketers || []).filter(m => m.is_fighter);
+  const humans = (marketers || []).filter(m => !m.is_ai_agent && !m.is_fighter);
   const connected = humans.filter(m => m.connection);
   const notConnected = humans.filter(m => !m.connection);
   const optLabel = m => `${m.name}${m.connection ? `${m.connection.status === 'error' ? ' ⚠️' : ''} · ${m.connection.ad_account_name}` : ' · belum sambung'}`;
@@ -98,7 +99,7 @@ export default function AdminAdsHubPage() {
           <div style={{ fontSize: '0.68rem', fontWeight: 700, color: t.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.15rem' }}>ADMIN · IKLAN META</div>
           <h1 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>📈 Ads Hub Marketer</h1>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: t.text2 }}>
-            {marketers ? `${agents.length} ejen AI · ${connected.length} daripada ${humans.length} marketer dah sambung akaun Meta` : 'Prestasi iklan setiap marketer, ROAS dari order sebenar'}
+            {marketers ? `${agents.length} ejen AI · ${fighters.length} fighter · ${connected.length} daripada ${humans.length} marketer dah sambung akaun Meta` : 'Prestasi iklan setiap marketer, ROAS dari order sebenar'}
           </p>
         </div>
         {marketers && (
@@ -117,6 +118,11 @@ export default function AdminAdsHubPage() {
             {connected.length > 0 && (
               <optgroup label="👤 Marketer · dah sambung">
                 {connected.map(m => <option key={m.id} value={m.id}>{optLabel(m)}</option>)}
+              </optgroup>
+            )}
+            {fighters.length > 0 && (
+              <optgroup label="⚔️ Fighter">
+                {fighters.map(m => <option key={m.id} value={m.id}>{optLabel(m)}</option>)}
               </optgroup>
             )}
             {notConnected.length > 0 && (
@@ -146,7 +152,7 @@ export default function AdminAdsHubPage() {
                 }}>{x.label}</button>
               ))}
             </div>
-            {!isHq && who && <span style={{ fontSize: '0.78rem', color: t.text2 }}>Anda mengurus akaun {current?.is_ai_agent ? '🤖 ' : ''}<strong style={{ color: t.text }}>{who}</strong>{current?.code ? ` (kod ${current.code})` : ''}. Perubahan direkod atas nama anda.</span>}
+            {!isHq && who && <span style={{ fontSize: '0.78rem', color: t.text2 }}>Anda mengurus akaun {current?.is_ai_agent ? '🤖 ' : current?.is_fighter ? '⚔️ fighter ' : ''}<strong style={{ color: t.text }}>{who}</strong>{current?.code ? ` (kod ${current.code})` : ''}. Perubahan direkod atas nama anda.</span>}
           </div>
 
           <div key={`${selected}-${tab}-${version}`}>
