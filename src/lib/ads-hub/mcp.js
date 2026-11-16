@@ -249,6 +249,15 @@ KILL KEKAL = pause KEMPEN (object_type "campaign", campaign_id dari autopilot_st
     }, ['object_type', 'object_id', 'status', 'reason']),
   },
   {
+    name: 'set_account_notes',
+    description: `Tulis STRATEGI SENDIRI akaun ini (arahan khusus akaun / account_notes) yang ejen ikut bersama SOP templat HQ — dibaca semula dalam autopilot_status.account_notes. Pemilik akaun (marketer / fighter, key sendiri) dan HQ boleh guna. Kegunaan: produk fokus, angle, bajet ujian, syarat kill/kekal sendiri, gaya creative, jadual. Bila bercanggah dengan SOP templat, arahan akaun diikut KECUALI had keras server (slot, bajet harian, had launch, mod kelulusan) — itu tidak boleh diubah di sini. WAJIB: tunjuk teks penuh kepada pengguna dan dapatkan persetujuan sebelum simpan. Maksimum 20,000 aksara. Setiap perubahan direkod dalam Log Ads Hub.`,
+    inputSchema: obj({
+      notes: str('Teks strategi (Markdown ringkas). Untuk mode "clear" boleh kosong.'),
+      mode: enm(['replace', 'append', 'clear'], 'replace (lalai) = ganti semua · append = tambah di hujung · clear = padam'),
+      reason: str('Sebab ringkas perubahan (direkod dalam log)'),
+    }, ['mode']),
+  },
+  {
     name: 'cancel_launch',
     description: 'Batal launch autopilot: pause adsetnya (boleh sebelum atau selepas 06:00).',
     inputSchema: obj({ launch_id: int('launch_id dari launch_ad / autopilot_status') }, ['launch_id']),
@@ -354,6 +363,7 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
     if (name === 'prepare_launch') return autopilot.prepareLaunch(admin, mid, actor, input);
     if (name === 'complete_launch') return autopilot.completeLaunch(admin, mid, actor, input);
     if (name === 'cancel_launch') return autopilot.cancelLaunch(admin, mid, actor, input);
+    if (name === 'set_account_notes') return autopilot.setAccountNotes(admin, mid, actor, input);
     if (name === 'set_ad_status') return autopilot.setAdStatus(admin, mid, actor, input);
   }
   const needConn = async () => {
@@ -555,5 +565,5 @@ export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar a
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
 Peraturan auto Ads Hub: list_rules, list_rule_templates, apply_rule_templates, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
-Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch, set_ad_status untuk pause/hidupkan ad dalam kempen autopilot). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch.
+Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch, set_ad_status untuk pause/hidupkan ad dalam kempen autopilot). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch. Strategi sendiri akaun (produk fokus, angle, syarat kill/kekal) disimpan dengan set_account_notes selepas pengguna setuju dengan teks penuh, dan dibaca semula dalam autopilot_status.account_notes.
 Stok HQ (key HQ sahaja): get_stock (baki & pergerakan), add_stock (batch masuk: SKU, kuantiti, kos seunit), adjust_stock (kiraan fizikal / rosak, nota wajib). Order COD/FPX menolak stok automatik — jangan tolak stok order secara manual.`;

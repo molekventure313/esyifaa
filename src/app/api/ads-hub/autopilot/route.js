@@ -12,6 +12,7 @@ const COLS2 = `${COLS}, autopilot_mode, autopilot_strategy_id, autopilot_max_lau
 const MISSING = 'Run migration 032 & 039 dalam Supabase dulu.';
 const missing = e => /autopilot_/.test(e?.message || '');
 const MODES = ['manual', 'shadow', 'veto', 'auto'];
+const NOTES_MAX = 20000;   // arahan khusus akaun / strategi sendiri marketer & fighter
 // Pilih lajur: cuba dengan kolum 039, jika belum di-run guna set asal (mod = manual)
 async function readConn(admin, mid, extra = '') {
   let r = await admin.from('meta_connections').select(`${COLS2}${extra}`).eq('marketer_id', mid).maybeSingle();
@@ -87,8 +88,8 @@ export async function PATCH(req) {
         upd[k] = v;
       }
     }
-    // Mod, strategi, nota & had launch sehari: HQ (super_admin) sahaja
-    const hqOnly = ['autopilot_mode', 'autopilot_strategy_id', 'autopilot_notes', 'autopilot_max_launches_day', 'apply_strategy'].filter(k => k in b);
+    // Mod, strategi & had launch sehari: HQ (super_admin) sahaja. Arahan akaun (strategi sendiri): pemilik akaun (marketer / fighter) atau HQ.
+    const hqOnly = ['autopilot_mode', 'autopilot_strategy_id', 'autopilot_max_launches_day', 'apply_strategy'].filter(k => k in b);
     if (hqOnly.length && !g.isOwner) return NextResponse.json({ success: false, error: 'Mod & strategi autopilot ditetapkan oleh HQ.' }, { status: 403 });
     if ('autopilot_mode' in b) {
       if (!MODES.includes(b.autopilot_mode)) return NextResponse.json({ success: false, error: 'Mod tidak sah.' }, { status: 400 });
@@ -99,7 +100,7 @@ export async function PATCH(req) {
       if (!(v >= 1 && v <= 20)) return NextResponse.json({ success: false, error: 'Launch sehari mesti antara 1 dan 20.' }, { status: 400 });
       upd.autopilot_max_launches_day = v;
     }
-    if ('autopilot_notes' in b) upd.autopilot_notes = b.autopilot_notes ? String(b.autopilot_notes).slice(0, 4000) : null;
+    if ('autopilot_notes' in b) upd.autopilot_notes = b.autopilot_notes ? String(b.autopilot_notes).slice(0, NOTES_MAX) : null;
     if ('autopilot_strategy_id' in b || b.apply_strategy) {
       let id = b.autopilot_strategy_id ? Number(b.autopilot_strategy_id) : null;
       if (!('autopilot_strategy_id' in b)) {

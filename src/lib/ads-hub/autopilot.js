@@ -630,6 +630,28 @@ function summary(row, message, pending = false) {
 }
 
 /** Batal launch: pause adset (sebelum atau selepas mula). */
+// Strategi sendiri / arahan khusus akaun (autopilot_notes). Ejen baca dalam autopilot_status.account_notes.
+// Pemilik akaun (marketer / fighter) atau HQ boleh ubah. Mod, templat & had keras kekal milik HQ.
+export const NOTES_MAX = 20000;
+export async function setAccountNotes(admin, marketerId, actorId, { notes, mode = 'replace', reason }) {
+  if (!['replace', 'append', 'clear'].includes(mode)) throw fail('mode mesti replace, append atau clear.');
+  if (mode !== 'clear' && !String(notes || '').trim()) throw fail('notes kosong. Guna mode "clear" untuk padam.');
+  const { data: conn, error } = await admin.from('meta_connections').select('autopilot_notes').eq('marketer_id', marketerId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!conn) throw fail('Akaun Meta belum disambung.');
+  const before = conn.autopilot_notes || '';
+  const after = mode === 'clear' ? '' : mode === 'append' ? [before.trim(), String(notes).trim()].filter(Boolean).join('\n\n') : String(notes).trim();
+  if (after.length > NOTES_MAX) throw fail(`Strategi terlalu panjang (${after.length} aksara, had ${NOTES_MAX}). Ringkaskan.`);
+  const { error: uErr } = await admin.from('meta_connections').update({ autopilot_notes: after || null }).eq('marketer_id', marketerId);
+  if (uErr) throw new Error(uErr.message);
+  await admin.from('meta_actions_log').insert({
+    marketer_id: marketerId, actor_id: actorId, source: 'autopilot', action: 'autopilot_notes',
+    before: { notes: before }, after: { notes: after }, status: 'ok',
+    message: `Strategi akaun (${mode}): ${before.length} → ${after.length} aksara${reason ? ` · ${String(reason).slice(0, 300)}` : ''}`,
+  }).then(() => {}, () => {});
+  return { ok: true, mode, chars_before: before.length, chars_after: after.length, account_notes: after || null };
+}
+
 export async function cancelLaunch(admin, marketerId, actorId, { launch_id }) {
   const { data: row } = await admin.from('autopilot_launches').select('*').eq('marketer_id', marketerId).eq('id', launch_id).maybeSingle();
   if (!row) throw fail('Launch tidak dijumpai.');

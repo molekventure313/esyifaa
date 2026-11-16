@@ -904,6 +904,12 @@ function ModeSection({ t, s, setS, opts, canManage, busy, patch, field, row }) {
     return (
       <div style={{ padding: '0.6rem 0', borderBottom: t.rowBorder, fontSize: '0.82rem' }}>
         <strong>Mod: {cur.label}</strong><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>{cur.hint} Mod ditetapkan oleh HQ.</span>
+        <label htmlFor="ap-notes-own" style={{ display: 'block', marginTop: 10 }}>
+          <span style={{ fontWeight: 600 }}>Strategi sendiri (arahan akaun)</span><br />
+          <span style={{ fontSize: '0.75rem', color: t.muted }}>Ejen ikut arahan ini bersama SOP templat HQ{st ? ` (${st.name})` : ''}. Had server (slot, bajet, had launch) tetap terpakai. Claude anda juga boleh tulis melalui alat MCP set_account_notes.</span>
+          <textarea id="ap-notes-own" rows={6} value={s.autopilot_notes || ''} onChange={e => setS({ ...s, autopilot_notes: e.target.value })} maxLength={20000} style={{ ...field, width: '100%', marginTop: 6, resize: 'vertical', boxSizing: 'border-box' }} />
+        </label>
+        <button disabled={busy} onClick={() => patch({ autopilot_notes: s.autopilot_notes || null })} style={{ ...btn(t), marginTop: 6 }}>Simpan strategi</button>
       </div>
     );
   }
