@@ -892,6 +892,76 @@ const AP_MODES = [
   { id: 'auto', label: '🤖 Auto penuh', hint: 'Ejen launch sendiri ikut SOP. Had keras tetap dikuatkuasa server.' },
 ];
 
+// Marketer / fighter: guna templat strategi HQ → disalin jadi versi sendiri yang boleh diedit (macam peraturan). Migration 044.
+const MY_PARAMS = [['adset_budget', 'Bajet setiap adset (RM)'], ['max_adsets', 'Maks adset live'], ['daily_cap', 'Had bajet harian (RM)'], ['kpi_roas', 'KPI ROAS']];
+function MyStrategy({ t, field, onSettings }) {
+  const [d, setD] = useState(null);
+  const [pick, setPick] = useState('');
+  const [edit, setEdit] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const load = useCallback(() => getJson('/api/ads-hub/strategies').then(j => {
+    if (!j.success) return setMsg(j.error);
+    setD(j);
+    const mine = j.my_versions.find(v => v.active);
+    setEdit(mine ? { id: mine.id, name: mine.name, description: mine.description || '', sop: mine.sop || '', params: { ...(mine.params || {}) } } : null);
+  }), []);
+  useEffect(() => { load(); }, [load]);
+  const refreshCard = () => getJson('/api/ads-hub/autopilot').then(j => j.success && onSettings(j.settings));
+  const run = async (fn, okMsg) => {
+    setBusy(true); setMsg('');
+    const j = await fn();
+    setBusy(false);
+    if (!j.success) return setMsg(j.error);
+    setMsg(j.message || okMsg);
+    await load(); refreshCard();
+  };
+  if (!d) return msg ? <div style={{ fontSize: '0.75rem', color: t.muted, marginTop: 10 }}>{msg}</div> : null;
+  const active = [...d.hq_templates, ...d.my_versions].find(x => x.active);
+  const useTpl = (id, reset) => run(() => sendJson('/api/ads-hub/strategies', 'POST', { template_id: Number(id), reset: !!reset }), 'Disimpan.');
+  const save = () => run(() => sendJson(`/api/ads-hub/strategies?id=${edit.id}`, 'PATCH', {
+    name: edit.name, description: edit.description, sop: edit.sop,
+    params: Object.fromEntries(MY_PARAMS.map(([k]) => [k, edit.params[k] ?? ''])),
+  }), 'Versi strategi disimpan.');
+  const mineActive = d.my_versions.find(v => v.active);
+  return (
+    <div style={{ marginTop: 10, paddingTop: 10, borderTop: t.rowBorder }}>
+      <div style={{ fontWeight: 600 }}>Strategi aktif: {active ? `${active.name}${mineActive ? ' (versi saya)' : ' (templat HQ)'}` : 'tiada'}</div>
+      <div style={{ fontSize: '0.75rem', color: t.muted, marginBottom: 6 }}>Pilih templat HQ untuk disalin jadi versi anda sendiri, kemudian ubah SOP & had ikut cara anda. Claude anda boleh buat yang sama melalui MCP (use_strategy_template, update_my_strategy).</div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select id="my-strategy-template" value={pick} onChange={e => setPick(e.target.value)} style={{ ...field, maxWidth: 280 }}>
+          <option value="">— Pilih templat HQ —</option>
+          {d.hq_templates.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+          {d.my_versions.length > 0 && <optgroup label="Versi saya">{d.my_versions.map(x => <option key={x.id} value={x.id}>✏️ {x.name}</option>)}</optgroup>}
+        </select>
+        <button disabled={busy || !pick} onClick={() => useTpl(pick)} style={btn(t, true)}>Guna</button>
+        {mineActive?.source_id && <button disabled={busy} title="Tulis semula versi anda dari templat HQ terkini (suntingan anda hilang)" onClick={() => confirm('Tulis semula versi anda ikut templat HQ terkini? Suntingan anda akan hilang.') && useTpl(mineActive.source_id, true)} style={btn(t)}>Reset ikut HQ</button>}
+      </div>
+      {edit && (
+        <div style={{ marginTop: 10 }}>
+          <input id="my-strategy-name" value={edit.name} onChange={e => setEdit({ ...edit, name: e.target.value })} maxLength={80} placeholder="Nama versi" style={{ ...field, width: '100%', boxSizing: 'border-box', marginBottom: 6 }} />
+          <input id="my-strategy-desc" value={edit.description} onChange={e => setEdit({ ...edit, description: e.target.value })} maxLength={300} placeholder="Penerangan ringkas" style={{ ...field, width: '100%', boxSizing: 'border-box', marginBottom: 6 }} />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            {MY_PARAMS.map(([k, label]) => (
+              <label key={k} htmlFor={`my-strategy-${k}`} style={{ fontSize: '0.75rem', color: t.text2 }}>{label}<br />
+                <input id={`my-strategy-${k}`} type="number" value={edit.params[k] ?? ''} onChange={e => setEdit({ ...edit, params: { ...edit.params, [k]: e.target.value } })} style={{ ...field, width: 110 }} />
+              </label>
+            ))}
+          </div>
+          <label htmlFor="my-strategy-sop" style={{ fontSize: '0.75rem', color: t.text2 }}>SOP ({edit.sop.length.toLocaleString()} / 20,000 aksara)</label>
+          <textarea id="my-strategy-sop" rows={12} value={edit.sop} onChange={e => setEdit({ ...edit, sop: e.target.value })} maxLength={20000} style={{ ...field, width: '100%', marginTop: 4, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'monospace', fontSize: '0.75rem' }} />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' }}>
+            <button disabled={busy} onClick={save} style={btn(t, true)}>Simpan versi saya</button>
+            <button disabled={busy} onClick={() => confirm(`Padam versi "${edit.name}"? Akaun akan kembali tanpa strategi.`) && run(() => fetch(`/api/ads-hub/strategies?id=${edit.id}`, { method: 'DELETE' }).then(r => r.json()).catch(() => ({ success: false, error: 'Gagal hubungi server.' })), 'Versi dipadam.')} style={btn(t)}>Padam versi</button>
+            <span style={{ fontSize: '0.72rem', color: t.muted }}>Had launch sehari & mod kekal ditetapkan HQ.</span>
+          </div>
+        </div>
+      )}
+      {msg && <div style={{ fontSize: '0.78rem', color: t.text2, marginTop: 6 }}>{msg}</div>}
+    </div>
+  );
+}
+
 function ModeSection({ t, s, setS, opts, canManage, busy, patch, field, row }) {
   if (s.mode_unavailable) {
     return <div style={{ fontSize: '0.75rem', color: t.muted, padding: '0.6rem 0', borderBottom: t.rowBorder }}>Mod autopilot (manual / shadow / auto): run migration 039 dalam Supabase untuk aktifkan.</div>;
@@ -904,12 +974,13 @@ function ModeSection({ t, s, setS, opts, canManage, busy, patch, field, row }) {
     return (
       <div style={{ padding: '0.6rem 0', borderBottom: t.rowBorder, fontSize: '0.82rem' }}>
         <strong>Mod: {cur.label}</strong><br /><span style={{ fontSize: '0.75rem', color: t.muted }}>{cur.hint} Mod ditetapkan oleh HQ.</span>
+        <MyStrategy t={t} field={field} onSettings={settings => setS(settings)} />
         <label htmlFor="ap-notes-own" style={{ display: 'block', marginTop: 10 }}>
-          <span style={{ fontWeight: 600 }}>Strategi sendiri (arahan akaun)</span><br />
-          <span style={{ fontSize: '0.75rem', color: t.muted }}>Ejen ikut arahan ini bersama SOP templat HQ{st ? ` (${st.name})` : ''}. Had server (slot, bajet, had launch) tetap terpakai. Claude anda juga boleh tulis melalui alat MCP set_account_notes.</span>
+          <span style={{ fontWeight: 600 }}>Arahan tambahan akaun</span><br />
+          <span style={{ fontSize: '0.75rem', color: t.muted }}>Nota ringkas yang ejen ikut di atas SOP strategi aktif. Had server (slot, bajet, had launch) tetap terpakai. Claude anda juga boleh tulis melalui alat MCP set_account_notes.</span>
           <textarea id="ap-notes-own" rows={6} value={s.autopilot_notes || ''} onChange={e => setS({ ...s, autopilot_notes: e.target.value })} maxLength={20000} style={{ ...field, width: '100%', marginTop: 6, resize: 'vertical', boxSizing: 'border-box' }} />
         </label>
-        <button disabled={busy} onClick={() => patch({ autopilot_notes: s.autopilot_notes || null })} style={{ ...btn(t), marginTop: 6 }}>Simpan strategi</button>
+        <button disabled={busy} onClick={() => patch({ autopilot_notes: s.autopilot_notes || null })} style={{ ...btn(t), marginTop: 6 }}>Simpan arahan</button>
       </div>
     );
   }

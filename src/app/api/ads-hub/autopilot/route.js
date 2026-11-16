@@ -61,8 +61,11 @@ export async function GET(req) {
   for (const a of ads || []) if (!seen.has(a.adset_id)) seen.set(a.adset_id, { id: a.adset_id, name: a.adset_name, status: a.adset_status, campaign: a.campaign_name });
   opts.adsets = [...seen.values()].sort((x, y) => (x.status === 'ACTIVE' ? -1 : 1) - (y.status === 'ACTIVE' ? -1 : 1));
   if (g.isOwner && !settings.mode_unavailable) {
-    const { data: st } = await g.admin.from('autopilot_strategies').select('id, name, description, params').order('name');
-    opts.strategies = st || [];
+    // Templat HQ + versi sendiri akaun ini (migration 044); sebelum 044: semua templat
+    let { data: st, error: sErr } = await g.admin.from('autopilot_strategies').select('id, name, description, params, owner_id')
+      .or(`owner_id.is.null,owner_id.eq.${g.mid}`).order('name');
+    if (sErr) ({ data: st } = await g.admin.from('autopilot_strategies').select('id, name, description, params').order('name'));
+    opts.strategies = (st || []).map(x => (x.owner_id ? { ...x, name: `✏️ ${x.name}` } : x));
   }
   return NextResponse.json({ success: true, settings, options: opts, canManage: !!g.isOwner });
 }

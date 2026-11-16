@@ -8,6 +8,7 @@ import { resolveOwner, applyOwner } from '@/lib/team';
 import { buildReport, periodRange, fetchAll, PERIODS, SST_RATE } from './report';
 import { runReadTool } from './chat';
 import * as autopilot from './autopilot';
+import * as strategies from './strategies';
 import { syncFromMcp } from './mcp-sync';
 import { createRule, describeRule, ruleTemplates, applyRuleTemplates } from './automation';
 import { fighterOrderRows, fighterCosts, FIGHTER_SLUGS } from './fighter';
@@ -258,6 +259,30 @@ KILL KEKAL = pause KEMPEN (object_type "campaign", campaign_id dari autopilot_st
     }, ['mode']),
   },
   {
+    name: 'list_strategy_templates',
+    description: 'Senarai templat strategi: hq_templates (templat HQ, baca sahaja) dan my_versions (versi sendiri akaun ini, boleh diedit), serta active_id (yang ejen ikut sekarang, dipulangkan juga dalam autopilot_status.strategy). Beri template_id untuk SOP penuh satu templat.',
+    inputSchema: obj({ template_id: int('Pilihan: id templat untuk dapatkan SOP penuh') }),
+  },
+  {
+    name: 'use_strategy_template',
+    description: 'Guna templat strategi HQ pada akaun ini (macam apply_rule_templates): templat disalin jadi VERSI SENDIRI akaun ("<nama> — versi <kod>") yang boleh diedit dengan update_my_strategy, dan terus jadi strategi aktif. Had dari templat HQ (bajet setiap adset, slot, bajet harian, launch sehari) disalin ke tetapan akaun. Jika versi dari templat sama dah wujud, ia diaktifkan semula (reset=true = tulis semula ikut HQ terkini, suntingan sendiri hilang). Beri id versi sendiri untuk tukar antara versi. WAJIB dapatkan persetujuan pengguna dahulu.',
+    inputSchema: obj({
+      template_id: int('id templat HQ (atau id versi sendiri untuk aktifkan semula)'),
+      reset: bool('true = tulis semula versi sendiri dari templat HQ terkini'),
+    }, ['template_id']),
+  },
+  {
+    name: 'update_my_strategy',
+    description: 'Edit VERSI SENDIRI strategi akaun ini (lalai: versi aktif): nama, penerangan, SOP penuh (Markdown, maks 20,000 aksara) dan params (adset_budget, max_adsets, daily_cap, kpi_roas, products, creative, structure). Templat HQ tidak boleh diedit — guna use_strategy_template dulu. Had launch sehari (max_launches_day) dan mod kelulusan kekal ditetapkan HQ. Jika versi ini aktif, had baru terus dikenakan pada tetapan akaun. WAJIB tunjuk perubahan penuh kepada pengguna dan dapatkan persetujuan sebelum simpan. Direkod dalam Log Ads Hub.',
+    inputSchema: obj({
+      strategy_id: int('Pilihan: id versi sendiri (lalai versi aktif)'),
+      name: str('Nama baru versi'),
+      description: str('Penerangan ringkas (maks 300 aksara)'),
+      sop: str('SOP penuh baru (ganti keseluruhan)'),
+      params: { type: 'object', description: 'Param yang diubah sahaja: adset_budget, max_adsets, daily_cap, kpi_roas (nombor), products, creative (senarai), structure ("1-1-1" | "autopilot")' },
+    }),
+  },
+  {
     name: 'cancel_launch',
     description: 'Batal launch autopilot: pause adsetnya (boleh sebelum atau selepas 06:00).',
     inputSchema: obj({ launch_id: int('launch_id dari launch_ad / autopilot_status') }, ['launch_id']),
@@ -364,6 +389,15 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
     if (name === 'complete_launch') return autopilot.completeLaunch(admin, mid, actor, input);
     if (name === 'cancel_launch') return autopilot.cancelLaunch(admin, mid, actor, input);
     if (name === 'set_account_notes') return autopilot.setAccountNotes(admin, mid, actor, input);
+    if (name === 'list_strategy_templates') {
+      const list = await strategies.listForAccount(admin, mid, { full: false });
+      if (!input.template_id) return list;
+      const { data: one } = await admin.from('autopilot_strategies').select('id, name, description, sop, params, owner_id').eq('id', input.template_id).maybeSingle();
+      if (!one || (one.owner_id && one.owner_id !== mid)) throw fail('Templat tidak dijumpai.');
+      return { ...list, template: one };
+    }
+    if (name === 'use_strategy_template') return strategies.useTemplate(admin, mid, actor, input);
+    if (name === 'update_my_strategy') return strategies.updateOwn(admin, mid, actor, input, { hq: keyProfile.role === 'super_admin' });
     if (name === 'set_ad_status') return autopilot.setAdStatus(admin, mid, actor, input);
   }
   const needConn = async () => {
@@ -565,5 +599,5 @@ export const INSTRUCTIONS = `Pelayan MCP E-Syifa: data Ads Hub & order sebenar a
 Mula dengan get_account_info. Untuk keputusan ads, percaya ROAS/profit dari order sebenar (get_overview, get_ads), bukan ROAS pixel.
 Akaun TANPA token (meta.source 'mcp' atau belum disambung — kebanyakan marketer): cipta & urus ads melalui MCP Meta Ads rasmi dengan url_tags dari get_account_info (WAJIB utm_content={{ad.id}}), dan hantar belanja harian dari MCP Meta Ads ke sync_meta_data (cadangan setiap pagi: semalam & hari ini) supaya Ads Hub & ads spend terisi automatik.
 Peraturan auto Ads Hub: list_rules, list_rule_templates, apply_rule_templates, create_rule, update_rule, delete_rule — terangkan peraturan dalam bahasa mudah (syarat → tindakan, mod) dan dapatkan persetujuan pengguna sebelum cipta/ubah/padam.
-Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch, set_ad_status untuk pause/hidupkan ad dalam kempen autopilot). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch. Strategi sendiri akaun (produk fokus, angle, syarat kill/kekal) disimpan dengan set_account_notes selepas pengguna setuju dengan teks penuh, dan dibaca semula dalam autopilot_status.account_notes.
+Akaun dengan token (HQ) ada alat autopilot (autopilot_status, request_upload, upload_video, video_status, launch_ad, prepare_launch, complete_launch, cancel_launch, set_ad_status untuk pause/hidupkan ad dalam kempen autopilot). Suis & had autopilot ditetapkan di Ads Hub → Tetapan. Kelulusan ikut MOD setiap akaun (autopilot_status.mode & approval, ditetapkan HQ): manual = launch_ad / prepare_launch HANYA selepas pengguna meluluskan draf angle, ad copy, skrip VO dan storyboard; shadow / veto / auto = jalankan kitaran penuh ikut SOP templat strategi + arahan khusus akaun TANPA tunggu kelulusan (shadow: launch_ad hanya merekod cadangan), dan laporkan setiap tindakan. Jangan langgar SOP; berhenti & tanya pengguna bila SOP kata begitu atau server menolak. Jika launch_ad ditolak kerana app Meta dalam mod Development, guna prepare_launch → cipta ad melalui MCP Meta Ads rasmi → complete_launch. Strategi akaun (macam peraturan): list_strategy_templates → use_strategy_template salin templat HQ jadi versi sendiri → update_my_strategy edit SOP/had versi itu; arahan ringkas tambahan dengan set_account_notes. Semua perubahan strategi hanya selepas pengguna setuju dengan teks penuh.
 Stok HQ (key HQ sahaja): get_stock (baki & pergerakan), add_stock (batch masuk: SKU, kuantiti, kos seunit), adjust_stock (kiraan fizikal / rosak, nota wajib). Order COD/FPX menolak stok automatik — jangan tolak stok order secara manual.`;
