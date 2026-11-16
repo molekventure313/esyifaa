@@ -816,12 +816,13 @@ export function AutopilotCard({ marketerId } = {}) {
   const [s, setS] = useState(null);
   const [opts, setOpts] = useState(null);
   const [canManage, setCanManage] = useState(false);
+  const [selfManage, setSelfManage] = useState(false);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setS(null); setMsg('');
     getJson(`/api/ads-hub/autopilot${q(marketerId)}`).then(j => {
-      if (j.success) { setS(j.settings); setOpts(j.options); setCanManage(!!j.canManage); } else setMsg(j.error);
+      if (j.success) { setS(j.settings); setOpts(j.options); setCanManage(!!j.canManage); setSelfManage(!!j.selfManage); } else setMsg(j.error);
     });
   }, [marketerId]);
   const patch = async body => {
@@ -862,7 +863,7 @@ export function AutopilotCard({ marketerId } = {}) {
         </span>
         <button disabled={busy} onClick={() => patch({ autopilot_enabled: !on })} style={btn(t, !on)}>{on ? 'Matikan autopilot' : 'Hidupkan autopilot'}</button>
       </div>
-      <ModeSection t={t} s={s} setS={setS} opts={opts} canManage={canManage} busy={busy} patch={patch} field={field} row={row} />
+      <ModeSection t={t} s={s} setS={setS} opts={opts} canManage={canManage} selfManage={selfManage} busy={busy} patch={patch} field={field} row={row} />
       {row('ap-budget', 'Bajet setiap adset baru (RM/hari)', `Mesti ≤ had adset di kad Had keselamatan (RM${Number(s.limit_max_budget)}).`,
         <input id="ap-budget" type="number" min="1" value={s.autopilot_adset_budget} onChange={e => setS({ ...s, autopilot_adset_budget: e.target.value })} style={{ ...field, width: 110 }} />)}
       {row('ap-max', 'Adset aktif maksimum', 'Dalam kempen [AUTOPILOT]. Draf baru hanya bila ada slot kosong.',
@@ -894,7 +895,9 @@ const AP_MODES = [
 
 // Marketer / fighter: guna templat strategi HQ → disalin jadi versi sendiri yang boleh diedit (macam peraturan). Migration 044.
 const MY_PARAMS = [['adset_budget', 'Bajet setiap adset (RM)'], ['max_adsets', 'Maks adset live'], ['daily_cap', 'Had bajet harian (RM)'], ['kpi_roas', 'KPI ROAS']];
-function MyStrategy({ t, field, onSettings }) {
+// full = fighter: boleh ubah had launch sehari dalam versi sendiri
+function MyStrategy({ t, field, onSettings, full = false }) {
+  const params = full ? [...MY_PARAMS, ['max_launches_day', 'Launch sehari']] : MY_PARAMS;
   const [d, setD] = useState(null);
   const [pick, setPick] = useState('');
   const [edit, setEdit] = useState(null);
@@ -921,7 +924,7 @@ function MyStrategy({ t, field, onSettings }) {
   const useTpl = (id, reset) => run(() => sendJson('/api/ads-hub/strategies', 'POST', { template_id: Number(id), reset: !!reset }), 'Disimpan.');
   const save = () => run(() => sendJson(`/api/ads-hub/strategies?id=${edit.id}`, 'PATCH', {
     name: edit.name, description: edit.description, sop: edit.sop,
-    params: Object.fromEntries(MY_PARAMS.map(([k]) => [k, edit.params[k] ?? ''])),
+    params: Object.fromEntries(params.map(([k]) => [k, edit.params[k] ?? ''])),
   }), 'Versi strategi disimpan.');
   const mineActive = d.my_versions.find(v => v.active);
   return (
@@ -942,7 +945,7 @@ function MyStrategy({ t, field, onSettings }) {
           <input id="my-strategy-name" value={edit.name} onChange={e => setEdit({ ...edit, name: e.target.value })} maxLength={80} placeholder="Nama versi" style={{ ...field, width: '100%', boxSizing: 'border-box', marginBottom: 6 }} />
           <input id="my-strategy-desc" value={edit.description} onChange={e => setEdit({ ...edit, description: e.target.value })} maxLength={300} placeholder="Penerangan ringkas" style={{ ...field, width: '100%', boxSizing: 'border-box', marginBottom: 6 }} />
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-            {MY_PARAMS.map(([k, label]) => (
+            {params.map(([k, label]) => (
               <label key={k} htmlFor={`my-strategy-${k}`} style={{ fontSize: '0.75rem', color: t.text2 }}>{label}<br />
                 <input id={`my-strategy-${k}`} type="number" value={edit.params[k] ?? ''} onChange={e => setEdit({ ...edit, params: { ...edit.params, [k]: e.target.value } })} style={{ ...field, width: 110 }} />
               </label>
@@ -953,7 +956,7 @@ function MyStrategy({ t, field, onSettings }) {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' }}>
             <button disabled={busy} onClick={save} style={btn(t, true)}>Simpan versi saya</button>
             <button disabled={busy} onClick={() => confirm(`Padam versi "${edit.name}"? Akaun akan kembali tanpa strategi.`) && run(() => fetch(`/api/ads-hub/strategies?id=${edit.id}`, { method: 'DELETE' }).then(r => r.json()).catch(() => ({ success: false, error: 'Gagal hubungi server.' })), 'Versi dipadam.')} style={btn(t)}>Padam versi</button>
-            <span style={{ fontSize: '0.72rem', color: t.muted }}>Had launch sehari & mod kekal ditetapkan HQ.</span>
+            {!full && <span style={{ fontSize: '0.72rem', color: t.muted }}>Had launch sehari & mod kekal ditetapkan HQ.</span>}
           </div>
         </div>
       )}
@@ -962,7 +965,37 @@ function MyStrategy({ t, field, onSettings }) {
   );
 }
 
-function ModeSection({ t, s, setS, opts, canManage, busy, patch, field, row }) {
+// Fighter (penjual bebas): kawalan penuh akaun sendiri — mod, had launch sehari, versi strategi & arahan
+function FighterModeSection({ t, s, setS, busy, patch, field, row, cur, mode }) {
+  return (
+    <>
+      <div style={{ padding: '0.7rem 0', borderBottom: t.rowBorder }}>
+        <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: 6 }}>Mod autopilot</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {AP_MODES.map(m => (
+            <button key={m.id} disabled={busy} onClick={() => m.id !== mode && patch({ autopilot_mode: m.id })} style={btn(t, m.id === mode)}>{m.label}</button>
+          ))}
+        </div>
+        <div style={{ fontSize: '0.75rem', color: t.muted, marginTop: 6 }}>{cur.hint}</div>
+      </div>
+      <div style={{ padding: '0 0 0.6rem', borderBottom: t.rowBorder, fontSize: '0.82rem' }}>
+        <MyStrategy t={t} field={field} full onSettings={settings => setS(settings)} />
+      </div>
+      {row('ap-launches', 'Launch baru maksimum sehari', 'Had keras di server, dikira ikut hari (waktu Malaysia).',
+        <input id="ap-launches" type="number" min="1" max="20" value={s.autopilot_max_launches_day ?? 3} onChange={e => setS({ ...s, autopilot_max_launches_day: e.target.value })} style={{ ...field, width: 110 }} />)}
+      <label htmlFor="ap-notes" style={{ display: 'block', padding: '0.6rem 0', borderBottom: t.rowBorder }}>
+        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Arahan tambahan akaun</span><br />
+        <span style={{ fontSize: '0.75rem', color: t.muted }}>Nota ringkas yang ejen ikut di atas SOP strategi aktif, cth produk fokus, angle yang dielak. Claude anda boleh tulis melalui MCP set_account_notes.</span>
+        <textarea id="ap-notes" rows={3} value={s.autopilot_notes || ''} onChange={e => setS({ ...s, autopilot_notes: e.target.value })} maxLength={20000} style={{ ...field, width: '100%', marginTop: 6, resize: 'vertical', boxSizing: 'border-box' }} />
+      </label>
+      <div style={{ padding: '0.5rem 0', borderBottom: t.rowBorder }}>
+        <button disabled={busy} onClick={() => patch({ autopilot_max_launches_day: s.autopilot_max_launches_day ?? 3, autopilot_notes: s.autopilot_notes || null })} style={btn(t)}>Simpan had launch & arahan</button>
+      </div>
+    </>
+  );
+}
+
+function ModeSection({ t, s, setS, opts, canManage, selfManage, busy, patch, field, row }) {
   if (s.mode_unavailable) {
     return <div style={{ fontSize: '0.75rem', color: t.muted, padding: '0.6rem 0', borderBottom: t.rowBorder }}>Mod autopilot (manual / shadow / auto): run migration 039 dalam Supabase untuk aktifkan.</div>;
   }
@@ -970,6 +1003,7 @@ function ModeSection({ t, s, setS, opts, canManage, busy, patch, field, row }) {
   const cur = AP_MODES.find(m => m.id === mode) || AP_MODES[0];
   const strategies = opts?.strategies || [];
   const st = strategies.find(x => String(x.id) === String(s.autopilot_strategy_id || ''));
+  if (!canManage && selfManage) return <FighterModeSection t={t} s={s} setS={setS} busy={busy} patch={patch} field={field} row={row} cur={cur} mode={mode} />;
   if (!canManage) {
     return (
       <div style={{ padding: '0.6rem 0', borderBottom: t.rowBorder, fontSize: '0.82rem' }}>

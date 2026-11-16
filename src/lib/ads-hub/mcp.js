@@ -273,7 +273,7 @@ KILL KEKAL = pause KEMPEN (object_type "campaign", campaign_id dari autopilot_st
   },
   {
     name: 'update_my_strategy',
-    description: 'Edit VERSI SENDIRI strategi akaun ini (lalai: versi aktif): nama, penerangan, SOP penuh (Markdown, maks 20,000 aksara) dan params (adset_budget, max_adsets, daily_cap, kpi_roas, products, creative, structure). Templat HQ tidak boleh diedit — guna use_strategy_template dulu. Had launch sehari (max_launches_day) dan mod kelulusan kekal ditetapkan HQ. Jika versi ini aktif, had baru terus dikenakan pada tetapan akaun. WAJIB tunjuk perubahan penuh kepada pengguna dan dapatkan persetujuan sebelum simpan. Direkod dalam Log Ads Hub.',
+    description: 'Edit VERSI SENDIRI strategi akaun ini (lalai: versi aktif): nama, penerangan, SOP penuh (Markdown, maks 20,000 aksara) dan params (adset_budget, max_adsets, daily_cap, kpi_roas, products, creative, structure). Templat HQ tidak boleh diedit — guna use_strategy_template dulu. max_launches_day hanya untuk akaun fighter (marketer: ditetapkan HQ); mod kelulusan diubah di web. Jika versi ini aktif, had baru terus dikenakan pada tetapan akaun. WAJIB tunjuk perubahan penuh kepada pengguna dan dapatkan persetujuan sebelum simpan. Direkod dalam Log Ads Hub.',
     inputSchema: obj({
       strategy_id: int('Pilihan: id versi sendiri (lalai versi aktif)'),
       name: str('Nama baru versi'),
@@ -397,7 +397,7 @@ export async function callTool(admin, keyProfile, name, rawInput = {}) {
       return { ...list, template: one };
     }
     if (name === 'use_strategy_template') return strategies.useTemplate(admin, mid, actor, input);
-    if (name === 'update_my_strategy') return strategies.updateOwn(admin, mid, actor, input, { hq: keyProfile.role === 'super_admin' });
+    if (name === 'update_my_strategy') return strategies.updateOwn(admin, mid, actor, input, { hq: keyProfile.role === 'super_admin' || profile.role === 'independent' });
     if (name === 'set_ad_status') return autopilot.setAdStatus(admin, mid, actor, input);
   }
   const needConn = async () => {

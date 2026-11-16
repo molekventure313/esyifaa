@@ -67,7 +67,8 @@ export async function GET(req) {
     if (sErr) ({ data: st } = await g.admin.from('autopilot_strategies').select('id, name, description, params').order('name'));
     opts.strategies = (st || []).map(x => (x.owner_id ? { ...x, name: `✏️ ${x.name}` } : x));
   }
-  return NextResponse.json({ success: true, settings, options: opts, canManage: !!g.isOwner });
+  // selfManage = fighter urus mod & had launch akaun sendiri (strategi melalui versi sendiri)
+  return NextResponse.json({ success: true, settings, options: opts, canManage: !!g.isOwner, selfManage: !!g.isFighter });
 }
 
 export async function PATCH(req) {
@@ -91,8 +92,10 @@ export async function PATCH(req) {
         upd[k] = v;
       }
     }
-    // Mod, strategi & had launch sehari: HQ (super_admin) sahaja. Arahan akaun (strategi sendiri): pemilik akaun (marketer / fighter) atau HQ.
-    const hqOnly = ['autopilot_mode', 'autopilot_strategy_id', 'autopilot_max_launches_day', 'apply_strategy'].filter(k => k in b);
+    // Mod & had launch sehari: HQ, atau fighter (penjual bebas) untuk akaun sendiri. Marketer: ditetapkan HQ.
+    // Pautan templat terus (strategy_id / apply_strategy): HQ sahaja — marketer & fighter guna /api/ads-hub/strategies (versi sendiri).
+    // Arahan akaun: pemilik akaun (marketer / fighter) atau HQ.
+    const hqOnly = ['autopilot_strategy_id', 'apply_strategy', ...(g.isFighter ? [] : ['autopilot_mode', 'autopilot_max_launches_day'])].filter(k => k in b);
     if (hqOnly.length && !g.isOwner) return NextResponse.json({ success: false, error: 'Mod & strategi autopilot ditetapkan oleh HQ.' }, { status: 403 });
     if ('autopilot_mode' in b) {
       if (!MODES.includes(b.autopilot_mode)) return NextResponse.json({ success: false, error: 'Mod tidak sah.' }, { status: 400 });

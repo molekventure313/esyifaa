@@ -70,7 +70,8 @@ export async function PATCH(req) {
   if (!g.isOwner) {
     const a = await account(g, req);
     if (a.error) return a.error;
-    try { return NextResponse.json({ success: true, ...(await updateOwn(a.admin, a.mid, a.user.id, { ...(await req.json()), strategy_id: id })) }); } catch (e) { return libFail(e); }
+    // Fighter (penjual bebas) boleh ubah had launch sehari dalam versi sendiri; marketer tidak
+    try { return NextResponse.json({ success: true, ...(await updateOwn(a.admin, a.mid, a.user.id, { ...(await req.json()), strategy_id: id }, { hq: !!g.isFighter })) }); } catch (e) { return libFail(e); }
   }
   try {
     const row = clean(await req.json(), true);
