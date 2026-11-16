@@ -35,6 +35,15 @@ async function strategyOf(admin, conn) {
   return data || null;
 }
 
+// Produk dibenarkan = strategy.params.products (kosong = semua). Produk dihentikan HQ (cth Kasturi Kijang untuk ai-01) ditolak di server.
+async function checkProduct(admin, conn, product) {
+  const allowed = (await strategyOf(admin, conn))?.params?.products;
+  const key = product || 'sabun-garam';
+  if (Array.isArray(allowed) && allowed.length && !allowed.includes(key)) {
+    throw fail(`Produk "${key}" tidak aktif dalam strategi akaun ini (dibenarkan: ${allowed.join(', ')}). Launch ditolak — jangan launch produk ini.`);
+  }
+}
+
 // Launch baru hari ini (MYT) yang mencipta sesuatu di Meta — untuk had launch sehari
 async function launchesToday(admin, marketerId) {
   const since = new Date(`${todayMyt()}T00:00:00+08:00`).toISOString();
@@ -472,6 +481,7 @@ export async function launchAd(admin, marketerId, actorId, input) {
   const conn = await loadHqConn(admin, marketerId);
   if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
   if (!conn.autopilot_page_id || !conn.autopilot_template_adset_id) throw fail('Tetapan autopilot belum lengkap: Facebook Page & adset contoh (Ads Hub → Tetapan).');
+  await checkProduct(admin, conn, p.product);
   const mode = modeOf(conn);
   if (mode === 'shadow') return recordShadow(admin, marketerId, actorId, conn, p);
   if (mode === 'veto') p.start = 'tomorrow';   // HQ mesti sempat batal sebelum ad mula
@@ -573,6 +583,7 @@ export async function prepareLaunch(admin, marketerId, actorId, input) {
   const conn = await loadHqConn(admin, marketerId);
   if (!conn.autopilot_enabled) throw fail('Autopilot dimatikan (suis di Ads Hub → Tetapan). Launch ditolak.');
   if (!conn.autopilot_page_id || !conn.autopilot_template_adset_id) throw fail('Tetapan autopilot belum lengkap: Facebook Page & adset contoh (Ads Hub → Tetapan).');
+  await checkProduct(admin, conn, p.product);
   const mode = modeOf(conn);
   if (mode === 'shadow') return recordShadow(admin, marketerId, actorId, conn, p);
   if (mode === 'veto') p.start = 'tomorrow';   // HQ mesti sempat batal sebelum ad mula

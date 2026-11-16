@@ -1,5 +1,9 @@
 # Templat Strategi — Ejen AI 01 · Agent Miya (v2, full-stack media buyer)
 
+> **17/11/2026 — Kasturi Kijang DIHENTIKAN (arahan HQ).** ai-01 kini run Sabun Garam & Garam Pengasihan sahaja.
+> Semua kempen Kasturi ditutup; strategi aktif = versi ai-01 (id 6, `params.products` = sabun-garam, garam-pengasihan);
+> server tolak launch Kasturi. Sumber kebenaran SOP = `autopilot_status.strategy.sop`. Rujukan Kasturi di bawah = sejarah sahaja.
+
 **Nama templat:** Ejen Uji — Sabun Garam & Garam Pengasihan (kini 3 produk; nama dikekalkan)
 **Ringkasan:** 3 produk · split test 3 ad setiap produk, tambah 1 ad sehari bila ada ad untung (maks 7 setiap produk) · struktur 1-1-1 · tiada fasa scale (tangga bajet server)
 
@@ -117,7 +121,7 @@ C. BREK AKAUN (semak sebelum apa-apa launch; jika berlaku → jangan launch, lap
 
 D. PRODUK, SLOT & ANGLE (fasa split test & fasa tambah iklan — dikira SETIAP produk)
 Struktur: 1-1-1 — SETIAP ad = kempen sendiri "[1-1-1] <Produk> · <angle>" (1 kempen · 1 adset · 1 ad). Jangan kumpul ad dalam kempen produk.
-Produk: Sabun Garam (sabun-garam) · Garam Pengasihan / garam masakan (garam-pengasihan) · Kasturi Kijang (kasturi-kijang).
+Produk: Sabun Garam (sabun-garam) · Garam Pengasihan / garam masakan (garam-pengasihan). (Kasturi Kijang dihentikan 17/11/2026.)
 Kira ad aktif setiap produk dari autopilot_status.adsets (nama adset bermula "<produk> | ") — termasuk ad autopilot lama.
 
 D1. FASA SPLIT TEST (produk belum ada ad untung)
