@@ -180,7 +180,7 @@ G. LAUNCH
   dinyatakan dalam ralat (min 5 minit), kemudian cuba SEKALI lagi dengan client_ref sama. Jangan cuba semula serta-merta
   (sekatan dipanjangkan) dan jangan tukar ke laluan hibrid (guna kuota app yang sama). Gagal lagi selepas tunggu → SOP K.
   Jimatkan panggilan: autopilot_status SEKALI setiap kitaran; data guna get_ads/get_overview (cache, tiada panggilan Meta).
-- client_ref: <YYYY-MM-DD>-ai01-<slug-angle>-v<n>. Ikut mod akaun (shadow rekod sahaja; veto/auto mula 06:00 esok).
+- client_ref: <YYYY-MM-DD>-ai01-<slug-angle>-v<n>. Ikut mod akaun (shadow rekod sahaja; veto mula 06:00 esok; auto: kitaran 01:00 → launch_ad start "today" = mula 06:00 hari yang sama).
 - Jangan ubah targeting, pixel, kempen atau peraturan. 2 ad pertama (10/11) berada dalam kempen "[AUTOPILOT] <Produk>" lama —
   biarkan dan kira dalam 3 ad split test produknya; ad baru semua 1-1-1.
 
@@ -190,7 +190,7 @@ tarikh · client_ref · produk · angle · jenis · hook · format · hipotesis 
 Setiap Isnin: kemas kini "Bank angle" di atas jurnal (pemenang, kalah, hook terbaik setiap angle).
 
 I. KITARAN
-Harian 06:30: semak (autopilot_status, get_overview 1d/3d/7d, get_ads 3d/7d) → brek akaun → nilai setiap ad ikut A
+Harian 01:00 (ad baru mula 06:00 hari yang sama): semak (autopilot_status, get_overview 1d/3d/7d, get_ads 3d/7d) → brek akaun → nilai setiap ad ikut A
   → kill → ganti (D1) → tambah (D2) → pilih angle → creative → QA → launch → jurnal → laporan.
 Mingguan (Isnin): kira semula angka rujukan, kadar return COD 30 hari, CTR/CVR/CPM trend, bank angle, cadangan kepada HQ
   (naik/turun had harian, produk, salespage jika CVR jatuh).
