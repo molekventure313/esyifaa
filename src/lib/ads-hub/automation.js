@@ -248,7 +248,7 @@ async function fireRule(admin, conn, rule, ev, action, out) {
 /** Adset akaun (dari cache meta_ads): status adset & kempen, budget harian. */
 async function adsetIndex(admin, marketerId) {
   const rows = await fetchAll(() => admin.from('meta_ads')
-    .select('adset_id, adset_name, adset_status, adset_daily_budget, campaign_id, campaign_status')
+    .select('adset_id, adset_name, adset_status, adset_daily_budget, campaign_id, campaign_name, campaign_status')
     .eq('marketer_id', marketerId).not('adset_id', 'is', null).order('ad_id'));
   const map = new Map();
   for (const a of rows) {
@@ -265,8 +265,12 @@ async function blockedAdsets(admin, marketerId) {
   return new Set((data || []).map(r => r.adset_id));
 }
 
+// Kempen "[AWARENESS] …" (kitar semula ad yang di-kill, bajet tetap) dikecualikan dari SEMUA peraturan & amaran:
+// tiada order dijangka, dan tutup 00:00 / reset bajet 23:30 / tangga akan merosakkan bajet tetapnya.
+export const isAwarenessCampaign = name => /^\s*\[AWARENESS\]/i.test(name || '');
+
 // Skop autopilot = semua kempen [AUTOPILOT] akaun ini (kempen utama + kempen setiap produk); conn.apCampaigns diisi oleh withApCampaigns
-const inScope = (rule, conn, s) => s.campaign_status === 'ACTIVE'
+const inScope = (rule, conn, s) => s.campaign_status === 'ACTIVE' && !isAwarenessCampaign(s.campaign_name)
   && (rule.scope !== 'autopilot' || !!conn.apCampaigns?.has(s.campaign_id))
   && productOk(rule, conn, s.campaign_id);
 
@@ -460,7 +464,7 @@ export async function evaluateConnection(admin, conn) {
     const autopilot = rule.scope === 'autopilot';
     if (autopilot) await withApCampaigns(admin, conn);
     if (autopilot && !conn.apCampaigns.size) continue;
-    const inRuleScope = a => (!autopilot || conn.apCampaigns.has(a.campaign_id)) && productOk(rule, conn, a.campaign_id);
+    const inRuleScope = a => !isAwarenessCampaign(a.campaign_name) && (!autopilot || conn.apCampaigns.has(a.campaign_id)) && productOk(rule, conn, a.campaign_id);
     const apBudgets = new Map();
     if (autopilot) for (const a of rep.ads) if (a.running && inRuleScope(a) && a.daily_budget != null) apBudgets.set(a.adset_id, a.daily_budget);
     for (const ad of rep.ads.filter(a => a.running && inRuleScope(a))) {
@@ -521,7 +525,7 @@ export async function evaluateConnection(admin, conn) {
         dedupe_key: `alert:status:${ad.ad_id}:${ad.status}`,
       })) out.alerts++;
     }
-    if (ad.running && ad.spend >= 60 && ad.orders === 0) {
+    if (ad.running && ad.spend >= 60 && ad.orders === 0 && !isAwarenessCampaign(ad.campaign_name)) {
       if (await addEvent(admin, {
         marketer_id: conn.marketer_id, kind: 'alert', severity: 'warn', object_type: 'ad', object_id: ad.ad_id, object_name: ad.name,
         title: `${ad.name}: RM${r2(ad.spend)} dibelanja 3 hari tanpa order`,
