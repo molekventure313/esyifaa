@@ -380,6 +380,39 @@ async function evaluateAdsetRule(admin, conn, rule, rep, ctx, out) {
   }
 }
 
+// Ambang lulus fasa bajet test (SOP v3): sekurang-kurangnya 1 order dan ROAS ≥ 2.0 dalam sehari.
+export const TEST_PASS = { orders: 1, roas: 2 };
+
+/**
+ * Fasa bajet test (migration 045) untuk peraturan reset bajet ikut jam. Pulangkan Map adset_id → { id, orders, roas, passes }
+ * untuk launch autopilot yang masih test (bajet launch ≤ bajet test, belum lulus), dengan .budget = bajet test.
+ * null jika ciri dimatikan (autopilot_test_budget kosong) atau tiada test.
+ */
+export async function testBudgetPhase(admin, conn, today) {
+  const budget = Number(conn.autopilot_test_budget);
+  if (!(budget > 0)) return null;
+  const { data: rows, error } = await admin.from('autopilot_launches').select('id, adset_id, daily_budget')
+    .eq('marketer_id', conn.marketer_id).eq('status', 'scheduled').is('budget_passed_at', null)
+    .not('adset_id', 'is', null).lte('daily_budget', budget);
+  if (error || !rows?.length) return null;
+  const rep = await buildReport(admin, conn.marketer_id, { from: today, to: today });
+  const agg = new Map();
+  for (const a of rep.ads || []) {
+    if (!a.adset_id) continue;
+    const g = agg.get(a.adset_id) || { spend: 0, orders: 0, revenue: 0 };
+    g.spend += a.spend || 0; g.orders += a.orders || 0; g.revenue += a.revenue || 0;
+    agg.set(a.adset_id, g);
+  }
+  const map = new Map();
+  for (const r of rows) {
+    const g = agg.get(r.adset_id) || { spend: 0, orders: 0, revenue: 0 };
+    const roas = g.spend > 0 ? r2(g.revenue / g.spend) : null;
+    map.set(r.adset_id, { id: r.id, orders: g.orders, roas, passes: g.orders >= TEST_PASS.orders && roas != null && roas >= TEST_PASS.roas });
+  }
+  map.budget = budget;
+  return map;
+}
+
 /** Cron 10 minit: peraturan ikut jam (run_at_time) — sekali sehari, dalam 2 jam selepas masa jadual. */
 export async function runTimeRules(admin, { budgetMs = 15000 } = {}) {
   const started = Date.now();
@@ -398,17 +431,27 @@ export async function runTimeRules(admin, { budgetMs = 15000 } = {}) {
     // (punca reset 23:30 tidak berjalan sejak 5/11).
     if (rule.scope === 'autopilot') await withApCampaigns(admin, conn);
     const [adsets, blocked] = await Promise.all([adsetIndex(admin, rule.marketer_id), blockedAdsets(admin, rule.marketer_id)]);
+    const tests = rule.action === 'budget_set' ? await testBudgetPhase(admin, conn, today) : null;
     const out = { suggestions: 0, executed: 0 };
     let done = true;
     for (const s of adsets.values()) {
       if (Date.now() - started > budgetMs) { done = false; break; }   // sambung pada cron seterusnya (dedupe elak ulang)
       if (!inScope(rule, conn, s) || (rule.action === 'activate_adset' && blocked.has(s.adset_id))) continue;
-      const action = adsetAction(rule, s);
+      // Bajet test (migration 045): test belum lulus → reset ke bajet test; lulus hari ini → bajet biasa (peraturan ini)
+      const t = tests?.get(s.adset_id);
+      let note = '';
+      if (t) {
+        if (t.passes) {
+          if (rule.mode === 'auto') await admin.from('autopilot_launches').update({ budget_passed_at: new Date().toISOString() }).eq('id', t.id);
+          note = ` Lulus fasa test hari ini (${t.orders} order, ROAS ${t.roas}) → bajet biasa.`;
+        } else note = ` Test belum lulus (hari ini ${t.orders} order, ROAS ${t.roas ?? '—'}) → kekal bajet test.`;
+      }
+      const action = adsetAction(t && !t.passes ? { ...rule, action_value: tests.budget } : rule, s);
       if (!action) continue;
       await fireRule(admin, conn, rule, {
         marketer_id: conn.marketer_id, rule_id: rule.id, kind: 'suggestion', severity: 'info',
         object_type: 'adset', object_id: s.adset_id, object_name: s.adset_name, title: describeAction(action),
-        detail: `Peraturan "${rule.name}" (setiap hari ${rule.run_at_time}).`, action,
+        detail: `Peraturan "${rule.name}" (setiap hari ${rule.run_at_time}).${note}`, action,
         dedupe_key: `rule:${rule.id}:adset:${s.adset_id}:${today}`,
       }, action, out);
     }

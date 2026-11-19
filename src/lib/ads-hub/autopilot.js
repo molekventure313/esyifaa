@@ -27,6 +27,11 @@ export const MODES = {
   auto: 'AUTO — launch sendiri ikut SOP tanpa tunggu kelulusan. Had keras tetap dikuatkuasa server. Laporkan setiap launch.',
 };
 export const modeOf = conn => (MODES[conn?.autopilot_mode] ? conn.autopilot_mode : 'manual');
+
+// Bajet test (migration 045): ad baru dilaunch dengan bajet ini; peraturan reset ikut jam kekalkan bajet test
+// sehingga ad "lulus" (≥1 order & ROAS ≥2 dalam sehari) → bajet biasa. Kosong = semua launch guna bajet biasa.
+export const testBudgetOf = conn => (Number(conn?.autopilot_test_budget) > 0 ? Number(conn.autopilot_test_budget) : null);
+const launchBudget = conn => testBudgetOf(conn) ?? Number(conn.autopilot_adset_budget);
 const todayMyt = (now = Date.now()) => new Date(now + MYT_MS).toISOString().slice(0, 10);
 
 async function strategyOf(admin, conn) {
@@ -65,7 +70,7 @@ async function recordShadow(admin, marketerId, actorId, conn, p) {
   if (old) return summary(old, `client_ref ini dah direkod (status ${old.status}).`);
   const { data: row, error } = await admin.from('autopilot_launches').insert({
     marketer_id: marketerId, client_ref: p.client_ref, product: p.product, angle: p.angle, headline: p.headline,
-    primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: Number(conn.autopilot_adset_budget),
+    primary_text: p.primary_text, link: p.link, video_id: p.video_id, daily_budget: launchBudget(conn),
     start_time: startFor(p.start), status: 'shadow', mode: 'shadow',
   }).select('*').single();
   if (error) throw fail(error.message);
@@ -190,8 +195,19 @@ export async function status(admin, marketerId) {
   const token = decryptToken(conn.token_encrypted);
   const adsets = await liveAdsets(admin, conn, token);
   const active = adsets.filter(isLive);
-  const budget = Number(conn.autopilot_adset_budget);
+  const budget = launchBudget(conn);
+  const testBudget = testBudgetOf(conn);
   const pending = await pendingLaunches(admin, marketerId, active.map(a => a.adset_id));
+  // Fasa bajet test setiap adset: 'test' (belum lulus, bajet test) / 'lulus' (bajet biasa) / null (launch sebelum ciri ini)
+  if (testBudget && adsets.length) {
+    const { data: ls } = await admin.from('autopilot_launches').select('adset_id, daily_budget, budget_passed_at')
+      .eq('marketer_id', marketerId).in('adset_id', adsets.map(a => a.adset_id));
+    const by = new Map((ls || []).map(r => [r.adset_id, r]));
+    for (const a of adsets) {
+      const r = by.get(a.adset_id);
+      a.budget_phase = !r ? null : r.budget_passed_at ? 'lulus' : Number(r.daily_budget) <= testBudget ? 'test' : null;
+    }
+  }
   const used = active.reduce((s, a) => s + a.daily_budget, 0) + pending.reduce((s, r) => s + Number(r.daily_budget || budget), 0);
   const { data: launches } = await admin.from('autopilot_launches')
     .select('id, client_ref, product, angle, status, adset_id, ad_id, start_time, error, created_at')
@@ -210,7 +226,8 @@ export async function status(admin, marketerId) {
     ready: conn.autopilot_enabled && !missing.length,
     missing_settings: missing,
     settings: {
-      adset_budget: budget, max_adsets: conn.autopilot_max_adsets, daily_cap: Number(conn.autopilot_daily_cap),
+      adset_budget: Number(conn.autopilot_adset_budget), test_budget: testBudget,
+      max_adsets: conn.autopilot_max_adsets, daily_cap: Number(conn.autopilot_daily_cap),
       campaign_id: conn.autopilot_campaign_id, page_id: conn.autopilot_page_id, instagram_id: conn.autopilot_ig_id,
       template_adset_id: conn.autopilot_template_adset_id,
     },
@@ -419,8 +436,9 @@ async function pendingLaunches(admin, marketerId, excludeAdsetIds = []) {
 
 // Had keselamatan — disemak sebelum adset dicipta / diaktifkan. skipAdsetId = adset launch ini sendiri.
 async function checkLimits(admin, conn, token, marketerId, skipAdsetId = null) {
-  const budget = Number(conn.autopilot_adset_budget);
-  if (budget > Number(conn.limit_max_budget)) throw fail(`Bajet adset autopilot ${rm(budget)} melebihi had adset ${rm(conn.limit_max_budget)} (Tetapan → Had keselamatan).`);
+  const budget = launchBudget(conn);
+  const normal = Number(conn.autopilot_adset_budget);
+  if (Math.max(budget, normal) > Number(conn.limit_max_budget)) throw fail(`Bajet adset autopilot ${rm(Math.max(budget, normal))} melebihi had adset ${rm(conn.limit_max_budget)} (Tetapan → Had keselamatan).`);
   const active = (await liveAdsets(admin, conn, token)).filter(a => isLive(a) && a.adset_id !== skipAdsetId);
   const pending = await pendingLaunches(admin, marketerId, [...active.map(a => a.adset_id), skipAdsetId]);
   const count = active.length + pending.length;
@@ -504,7 +522,7 @@ export async function launchAd(admin, marketerId, actorId, input) {
     if (!row?.adset_id) {
       await checkLimits(admin, conn, token, marketerId);
       if (!row) await checkDailyLaunches(admin, conn, marketerId);
-      row = row || await insertRow(admin, marketerId, p, Number(conn.autopilot_adset_budget));
+      row = row || await insertRow(admin, marketerId, p, launchBudget(conn));
       await createAdset(admin, conn, token, row, p, 'ACTIVE', save, actorId);
       if (timeUp()) return summary(row, 'Adset dicipta. Panggil launch_ad sekali lagi dengan client_ref sama untuk sambung.', true);
     }
@@ -603,7 +621,7 @@ export async function prepareLaunch(admin, marketerId, actorId, input) {
     if (!row?.adset_id) {
       await checkLimits(admin, conn, token, marketerId);
       if (!row) await checkDailyLaunches(admin, conn, marketerId);
-      row = row || await insertRow(admin, marketerId, p, Number(conn.autopilot_adset_budget));
+      row = row || await insertRow(admin, marketerId, p, launchBudget(conn));
       await createAdset(admin, conn, token, row, p, 'PAUSED', save, actorId);
     }
   } catch (e) {

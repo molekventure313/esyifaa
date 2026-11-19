@@ -20,6 +20,12 @@ async function readConn(admin, mid, extra = '') {
     r = await admin.from('meta_connections').select(`${COLS}${extra}`).eq('marketer_id', mid).maybeSingle();
     if (r.data) r.data.mode_unavailable = true;
   }
+  // Bajet test (migration 045) — dibaca berasingan supaya tetapan lain tetap jalan sebelum migration di-run
+  if (r.data) {
+    const t = await admin.from('meta_connections').select('autopilot_test_budget').eq('marketer_id', mid).maybeSingle();
+    if (t.error) r.data.test_budget_unavailable = true;
+    else r.data.autopilot_test_budget = t.data?.autopilot_test_budget ?? null;
+  }
   return r;
 }
 
@@ -107,6 +113,18 @@ export async function PATCH(req) {
       upd.autopilot_max_launches_day = v;
     }
     if ('autopilot_notes' in b) upd.autopilot_notes = b.autopilot_notes ? String(b.autopilot_notes).slice(0, NOTES_MAX) : null;
+    // Bajet test (migration 045): kosong / 0 = ciri dimatikan. Disimpan berasingan (kolum mungkin belum wujud).
+    let testBudget;
+    if ('autopilot_test_budget' in b) {
+      const v = b.autopilot_test_budget === '' || b.autopilot_test_budget == null ? 0 : Number(b.autopilot_test_budget);
+      if (!(v === 0 || (v >= 1 && v <= 1000))) return NextResponse.json({ success: false, error: 'Bajet test mesti antara 1 dan 1000 (kosong = matikan).' }, { status: 400 });
+      testBudget = v || null;
+    }
+    if (testBudget !== undefined) {
+      const { error: tErr } = await g.admin.from('meta_connections').update({ autopilot_test_budget: testBudget }).eq('marketer_id', g.mid);
+      if (tErr) return NextResponse.json({ success: false, error: /autopilot_test_budget/.test(tErr.message) ? 'Run migration 045 dalam Supabase dulu.' : tErr.message }, { status: 500 });
+      if (!Object.keys(upd).length) return NextResponse.json({ success: true, settings: (await readConn(g.admin, g.mid)).data });
+    }
     if ('autopilot_strategy_id' in b || b.apply_strategy) {
       let id = b.autopilot_strategy_id ? Number(b.autopilot_strategy_id) : null;
       if (!('autopilot_strategy_id' in b)) {
@@ -147,6 +165,13 @@ export async function PATCH(req) {
         marketer_id: g.mid, actor_id: g.user.id, source: 'autopilot', action: 'autopilot_switch',
         after: { enabled: upd.autopilot_enabled }, status: 'ok', message: `Autopilot ${upd.autopilot_enabled ? 'dihidupkan' : 'dimatikan'}.`,
       }).then(() => {}, () => {});
+    }
+    if (data) {
+      if (testBudget !== undefined) data.autopilot_test_budget = testBudget;
+      else {
+        const t = await g.admin.from('meta_connections').select('autopilot_test_budget').eq('marketer_id', g.mid).maybeSingle();
+        if (t.error) data.test_budget_unavailable = true; else data.autopilot_test_budget = t.data?.autopilot_test_budget ?? null;
+      }
     }
     return NextResponse.json({ success: true, settings: data });
   } catch (e) {

@@ -851,6 +851,7 @@ export function AutopilotCard({ marketerId } = {}) {
   const save = () => patch({
     autopilot_adset_budget: s.autopilot_adset_budget, autopilot_max_adsets: s.autopilot_max_adsets, autopilot_daily_cap: s.autopilot_daily_cap,
     autopilot_page_id: s.autopilot_page_id, autopilot_ig_id: s.autopilot_ig_id, autopilot_template_adset_id: s.autopilot_template_adset_id,
+    ...(s.test_budget_unavailable ? {} : { autopilot_test_budget: s.autopilot_test_budget ?? '' }),
   });
   const on = s.autopilot_enabled;
 
@@ -866,6 +867,8 @@ export function AutopilotCard({ marketerId } = {}) {
       <ModeSection t={t} s={s} setS={setS} opts={opts} canManage={canManage} selfManage={selfManage} busy={busy} patch={patch} field={field} row={row} />
       {row('ap-budget', 'Bajet setiap adset baru (RM/hari)', `Mesti ≤ had adset di kad Had keselamatan (RM${Number(s.limit_max_budget)}).`,
         <input id="ap-budget" type="number" min="1" value={s.autopilot_adset_budget} onChange={e => setS({ ...s, autopilot_adset_budget: e.target.value })} style={{ ...field, width: 110 }} />)}
+      {!s.test_budget_unavailable && row('ap-test-budget', 'Bajet test ad baru (RM/hari)', 'Ad baru mula dengan bajet ini. Reset malam kekalkan bajet test sehingga ad dapat ≥1 order & ROAS ≥2 dalam sehari, kemudian bajet biasa di atas. Kosong = matikan.',
+        <input id="ap-test-budget" type="number" min="1" value={s.autopilot_test_budget ?? ''} onChange={e => setS({ ...s, autopilot_test_budget: e.target.value })} style={{ ...field, width: 110 }} />)}
       {row('ap-max', 'Adset aktif maksimum', 'Dalam kempen [AUTOPILOT]. Draf baru hanya bila ada slot kosong.',
         <input id="ap-max" type="number" min="1" max="50" value={s.autopilot_max_adsets} onChange={e => setS({ ...s, autopilot_max_adsets: e.target.value })} style={{ ...field, width: 110 }} />)}
       {row('ap-cap', 'Had bajet harian kempen (RM)', 'Jumlah bajet semua adset aktif autopilot (termasuk selepas scale).',
