@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount, calcCOGS as calcCOGSShared } from '@/lib/marketer-calc';
 import { ownerScope } from '@/lib/team';
+import { selectAll } from '@/lib/supabase/fetch-all';
 
 export async function GET(req) {
   try {
@@ -51,25 +52,33 @@ export async function GET(req) {
     const scope = await ownerScope(adminClient, user.id);
 
     // Build queries — select all fields needed for COGS + parseAmount
-    let subsQ = adminClient
-      .from('submissions')
-      .select('id, marketer_id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, order_channel, returned_at, created_at')
-      .in('marketer_id', scope.ids)
-      .in('payment_type', ['fpx_payment', 'cod'])
-      .order('created_at', { ascending: false });
+    // Pembina query (paginasi — Supabase hadkan 1000 baris satu query)
+    const subsQ = () => {
+      let q = adminClient
+        .from('submissions')
+        .select('id, marketer_id, amount_paid, notes, problem, source, qty, payment_type, full_name, phone, payment_status, order_channel, returned_at, created_at')
+        .in('marketer_id', scope.ids)
+        .in('payment_type', ['fpx_payment', 'cod'])
+        .order('created_at', { ascending: false });
+      if (dateFrom) q = q.gte('created_at', dateFrom);
+      if (dateTo)   q = q.lte('created_at', dateTo);
+      return q;
+    };
 
-    let adsQ = adminClient
-      .from('ads_spend')
-      .select('marketer_id, amount, spend_date')
-      .in('marketer_id', scope.ids);
-
-    if (dateFrom) { subsQ = subsQ.gte('created_at', dateFrom); adsQ = adsQ.gte('spend_date', dateFrom.split('T')[0]); }
-    if (dateTo)   { subsQ = subsQ.lte('created_at', dateTo);   adsQ = adsQ.lte('spend_date', dateTo.split('T')[0]); }
+    const adsQ = () => {
+      let q = adminClient
+        .from('ads_spend')
+        .select('marketer_id, amount, spend_date')
+        .in('marketer_id', scope.ids);
+      if (dateFrom) q = q.gte('spend_date', dateFrom.split('T')[0]);
+      if (dateTo)   q = q.lte('spend_date', dateTo.split('T')[0]);
+      return q;
+    };
 
     // Fetch submissions, ads, and product costs in parallel
     const [{ data: submissions }, { data: adsSpend }, stockRes] = await Promise.all([
-      subsQ,
-      adsQ,
+      selectAll(subsQ),
+      selectAll(adsQ),
       adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']),
     ]);
 

@@ -7,6 +7,7 @@ import { formatOrder } from '@/lib/orders';
 import { getTeam, isMyTeamsale, fetchMembersMonth, memberSummary, activeTeamsale } from '@/lib/team';
 import { validateMalaysianPhone } from '@/lib/utils/phone';
 import { logActivity } from '@/lib/utils/logger';
+import { selectAll } from '@/lib/supabase/fetch-all';
 
 // Team Saya — ketua marketer urus teamsale bawah dia.
 // GET  ?month=YYYY-MM            → senarai team + prestasi bulan
@@ -43,13 +44,13 @@ export async function GET(req) {
       const [{ data: member }, { subs, ads }, { data: orders }] = await Promise.all([
         admin.from('profiles').select('id, full_name, email, phone, marketer_code, is_active, created_at').eq('id', memberId).single(),
         fetchMembersMonth(admin, [memberId], range),
-        admin.from('submissions')
+        selectAll(() => admin.from('submissions')
           .select('id, full_name, phone, address, problem, notes, source, qty, payment_type, payment_status, chip_bill_id, amount_paid, ninjavan_exported_at, returned_at, marketer_id, order_channel, order_origin, created_at')
           .eq('marketer_id', memberId)
           .in('payment_type', ['fpx_payment', 'cod'])
           .gte('created_at', range.from)
           .lte('created_at', range.to)
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })),
       ]);
       const summary = memberSummary(memberId, subs, ads, costs);
       const { days, productSummary } = buildMonthlyBreakdown({ subs, ads, range, costs, commissionPct: TEAMSALE_PCT });

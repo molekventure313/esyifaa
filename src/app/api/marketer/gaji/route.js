@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount, calcCOGS, commissionPctFor, calcKomisen, calcLeaderPay, TEAMSALE_PCT, LEADER_OVERRIDE_PCT } from '@/lib/marketer-calc';
 import { getTeam, fetchMembersMonth, memberSummary } from '@/lib/team';
 import { monthRange, fetchProductCosts, buildMonthlyBreakdown } from '@/lib/products';
+import { selectAll } from '@/lib/supabase/fetch-all';
 
 export async function GET(req) {
   try {
@@ -24,7 +25,7 @@ export async function GET(req) {
 
     // Sales (sama filter dgn dashboard stats) + ads + kos produk
     const [{ data: submissions }, { data: adsSpend }, costs] = await Promise.all([
-      adminClient
+      selectAll(() => adminClient   // paginasi — had 1000 baris Supabase
         .from('submissions')
         .select('id, amount_paid, notes, problem, source, qty, payment_type, order_channel, created_at')
         .eq('marketer_id', user.id)
@@ -32,13 +33,13 @@ export async function GET(req) {
         .is('returned_at', null)   // order return tak dikira sales
         .in('payment_type', ['fpx_payment', 'cod'])
         .gte('created_at', range.from)
-        .lte('created_at', range.to),
-      adminClient
+        .lte('created_at', range.to)),
+      selectAll(() => adminClient
         .from('ads_spend')
         .select('amount, spend_date, product')
         .eq('marketer_id', user.id)
         .gte('spend_date', range.firstDay)
-        .lte('spend_date', range.lastDay),
+        .lte('spend_date', range.lastDay)),
       fetchProductCosts(adminClient),
     ]);
 

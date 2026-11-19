@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ownerScope } from '@/lib/team';
+import { fetchAllRows, fetchByIds } from '@/lib/supabase/fetch-all';
 // Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -87,18 +88,18 @@ async function fetchMovements(adminClient, fromUTC, toUTC, marketer_id) {
   const { data: sabunProd } = await adminClient
     .from('products').select('id').eq('sku', 'SGH-200G').maybeSingle();
 
-  let q = adminClient
-    .from('stock_movements')
-    .select('id, qty, reference_id, reference_type, created_at')
-    .eq('movement_type', 'out')
-    .order('created_at', { ascending: true });
-
-  if (sabunProd?.id) q = q.eq('product_id', sabunProd.id);
-  if (fromUTC) q = q.gte('created_at', fromUTC);
-  if (toUTC)   q = q.lte('created_at', toUTC);
-
-  const { data: raw, error } = await q;
-  if (error) throw error;
+  // Paginasi — Supabase hadkan 1000 baris satu query
+  const raw = await fetchAllRows(() => {
+    let q = adminClient
+      .from('stock_movements')
+      .select('id, qty, reference_id, reference_type, created_at')
+      .eq('movement_type', 'out')
+      .order('created_at', { ascending: true });
+    if (sabunProd?.id) q = q.eq('product_id', sabunProd.id);
+    if (fromUTC) q = q.gte('created_at', fromUTC);
+    if (toUTC)   q = q.lte('created_at', toUTC);
+    return q;
+  });
   // Stok rosak dari return (reference_type 'adjustment') bukan jualan — abaikan
   const movements = (raw || []).filter(m => m.reference_type !== 'adjustment');
 
@@ -114,17 +115,23 @@ async function fetchMovements(adminClient, fromUTC, toUTC, marketer_id) {
   // Cross-check reference_ids — filter out orphans (deleted orders)
   const refIds = [...new Set(orderMvs.map(m => m.reference_id))];
   
-  let subQ = adminClient.from('submissions').select('id').in('id', refIds).is('returned_at', null);
-  if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
-  else if (Array.isArray(marketer_id)) subQ = subQ.in('marketer_id', marketer_id);   // ketua + teamsale
-  
-  const { data: subs } = await subQ;
-  const existingIds = new Set((subs || []).map(s => s.id));
+  const subs = await existingOrderIds(adminClient, refIds, marketer_id);
+  const existingIds = new Set(subs.map(s => s.id));
 
   const validMvs = orderMvs.filter(m => existingIds.has(m.reference_id));
   
   if (marketer_id) return validMvs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   return [...otherMvs, ...validMvs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+}
+
+// Order yang masih wujud & belum di-return (skop marketer) — dalam kumpulan id (URL panjang = HTTP 400)
+function existingOrderIds(adminClient, refIds, marketer_id) {
+  return fetchByIds(refIds, chunk => {
+    let q = adminClient.from('submissions').select('id').in('id', chunk).is('returned_at', null);
+    if (marketer_id === 'hq') q = q.is('marketer_id', null);
+    else if (Array.isArray(marketer_id)) q = q.in('marketer_id', marketer_id);   // ketua + teamsale
+    return q;
+  });
 }
 
 // ─── Count kasturi add-on orders in period ────────────────────────────────────
@@ -133,16 +140,16 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
     .from('products').select('id').eq('sku', 'KKE-01').maybeSingle();
   if (!prod?.id) return 0;
 
-  let q = adminClient
-    .from('stock_movements')
-    .select('id, reference_id, reference_type')
-    .eq('movement_type', 'out')
-    .eq('product_id', prod.id);
-
-  if (fromUTC) q = q.gte('created_at', fromUTC);
-  if (toUTC)   q = q.lte('created_at', toUTC);
-
-  const { data: raw } = await q;
+  const raw = await fetchAllRows(() => {   // paginasi — had 1000 baris Supabase
+    let q = adminClient
+      .from('stock_movements')
+      .select('id, reference_id, reference_type')
+      .eq('movement_type', 'out')
+      .eq('product_id', prod.id);
+    if (fromUTC) q = q.gte('created_at', fromUTC);
+    if (toUTC)   q = q.lte('created_at', toUTC);
+    return q;
+  });
   const movements = (raw || []).filter(m => m.reference_type !== 'adjustment');   // abaikan stok rosak
   if (movements.length === 0) return 0;
 
@@ -153,12 +160,8 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
     return movements.length;
   }
 
-  let subQ = adminClient.from('submissions').select('id').in('id', refIds).is('returned_at', null);
-  if (marketer_id === 'hq') subQ = subQ.is('marketer_id', null);
-  else if (Array.isArray(marketer_id)) subQ = subQ.in('marketer_id', marketer_id);   // ketua + teamsale
-  
-  const { data: subs } = await subQ;
-  const existingIds = new Set((subs || []).map(s => s.id));
+  const subs = await existingOrderIds(adminClient, refIds, marketer_id);
+  const existingIds = new Set(subs.map(s => s.id));
 
   return movements.filter(m => existingIds.has(m.reference_id) || (!m.reference_id && !marketer_id)).length;
 }
@@ -166,10 +169,8 @@ async function fetchKasturiCount(adminClient, fromUTC, toUTC, marketer_id) {
 // ─── Batch-fetch submission amounts ───────────────────────────────────────────
 async function fetchRevenues(adminClient, subIds) {
   if (!subIds.length) return {};
-  const { data } = await adminClient
-    .from('submissions')
-    .select('id, amount_paid, notes')
-    .in('id', subIds);
+  // Kumpulan id (URL terlalu panjang = HTTP 400) + paginasi
+  const data = await fetchByIds(subIds, chunk => adminClient.from('submissions').select('id, amount_paid, notes').in('id', chunk));
 
   const map = {};
   (data || []).forEach(s => {
@@ -186,13 +187,14 @@ async function fetchRevenues(adminClient, subIds) {
 
 // ─── Fetch ads_spend records ──────────────────────────────────────────────────
 async function fetchAds(adminClient, fromDate, toDate, marketer_id) {
-  let q = adminClient.from('ads_spend').select('*').order('spend_date', { ascending: true });
-  if (fromDate) q = q.gte('spend_date', fromDate);
-  if (toDate)   q = q.lte('spend_date', toDate);
-  if (marketer_id === 'hq') q = q.is('marketer_id', null);
-  else if (Array.isArray(marketer_id)) q = q.in('marketer_id', marketer_id);   // ketua + teamsale
-  const { data } = await q;
-  return data || [];
+  return fetchAllRows(() => {   // paginasi — had 1000 baris Supabase
+    let q = adminClient.from('ads_spend').select('*').order('spend_date', { ascending: true });
+    if (fromDate) q = q.gte('spend_date', fromDate);
+    if (toDate)   q = q.lte('spend_date', toDate);
+    if (marketer_id === 'hq') q = q.is('marketer_id', null);
+    else if (Array.isArray(marketer_id)) q = q.in('marketer_id', marketer_id);   // ketua + teamsale
+    return q;
+  });
 }
 
 // ─── Aggregate movements into daily buckets ───────────────────────────────────

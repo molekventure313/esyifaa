@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildCampaignTree, summarizeClicks } from '@/lib/utm';
 import { ownerScope } from '@/lib/team';
+import { selectAll } from '@/lib/supabase/fetch-all';
 
 const MYT_MS = 8 * 3600 * 1000;
 
@@ -57,18 +58,21 @@ export async function GET(req) {
       'kasturi-kijang-1': 'Kasturi 1 Kena Himpit', 'kasturi-kijang-2': 'Kasturi 2 Anak Meracau', 'kasturi-kijang-3': 'Kasturi 3 Sesak Dada', 'kasturi-kijang-4': 'Kasturi 4 Tengkuk Berat', 'kasturi-kijang-5': 'Kasturi 5 Wangian Solat',
     };
 
-    let q = admin.from('submissions')
-      .select('id, full_name, source, amount_paid, notes, payment_type, created_at, utm_source, utm_medium, utm_campaign, utm_content, utm_term')
-      .eq('payment_status', 'completed')
-      .is('returned_at', null)
-      .in('payment_type', ['fpx_payment', 'cod'])
-      .in('marketer_id', (await ownerScope(admin, user.id)).ids)   // ← marketer sendiri + teamsale (order WA team dari ads ketua)
-      .order('created_at', { ascending: false });
+    const scopeIds = (await ownerScope(admin, user.id)).ids;   // ← marketer sendiri + teamsale (order WA team dari ads ketua)
+    const buildSubs = () => {
+      let q = admin.from('submissions')
+        .select('id, full_name, source, amount_paid, notes, payment_type, created_at, utm_source, utm_medium, utm_campaign, utm_content, utm_term')
+        .eq('payment_status', 'completed')
+        .is('returned_at', null)
+        .in('payment_type', ['fpx_payment', 'cod'])
+        .in('marketer_id', scopeIds)
+        .order('created_at', { ascending: false });
+      if (from) q = q.gte('created_at', from);
+      if (to)   q = q.lte('created_at', to);
+      return q;
+    };
 
-    if (from) q = q.gte('created_at', from);
-    if (to)   q = q.lte('created_at', to);
-
-    const { data: subs, error } = await q;
+    const { data: subs, error } = await selectAll(buildSubs);   // paginasi — had 1000 baris Supabase
     if (error) throw error;
 
     // Klik WhatsApp (section SP) — marketer sendiri, tempoh sama

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/utils/logger';
+import { selectAll } from '@/lib/supabase/fetch-all';
 
 // GET: admin (staff) dapat senarai nama sahaja (untuk penapis order) · super_admin dapat penuh.
 // PATCH / DELETE: super_admin sahaja. (Dulu GET & PATCH tiada semakan role.)
@@ -41,16 +42,17 @@ export async function GET(req) {
     if (error) throw error;
     
     // Fetch submissions
-    const { data: submissions } = await adminSupabase
+    // Paginasi — Supabase hadkan 1000 baris satu query
+    const { data: submissions } = await selectAll(() => adminSupabase
       .from('submissions')
       .select('marketer_id, amount_paid, payment_status')
       .eq('payment_status', 'completed')
-      .is('returned_at', null);
-      
+      .is('returned_at', null));
+
     // Fetch ads_spend
-    const { data: ads_spend } = await adminSupabase
+    const { data: ads_spend } = await selectAll(() => adminSupabase
       .from('ads_spend')
-      .select('marketer_id, amount');
+      .select('marketer_id, amount'));
     
     const formattedMarketers = (marketers || []).map(m => {
       const mSubmissions = (submissions || []).filter(s => s.marketer_id === m.id);

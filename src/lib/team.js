@@ -1,5 +1,6 @@
 // Teamsale — helper server (ketua marketer & ahli team).
 import { parseAmount, calcCOGS } from '@/lib/marketer-calc';
+import { fetchAllRows } from '@/lib/supabase/fetch-all';
 
 const r2 = n => parseFloat((n || 0).toFixed(2));
 
@@ -24,22 +25,23 @@ export async function isMyTeamsale(admin, leaderId, memberId) {
 // Order completed (bukan return) + ads beberapa marketer dalam satu julat bulan
 export async function fetchMembersMonth(admin, ids, range) {
   if (!ids.length) return { subs: [], ads: [] };
-  const [{ data: subs }, { data: ads }] = await Promise.all([
-    admin.from('submissions')
+  // Paginasi — Supabase hadkan 1000 baris satu query
+  const [subs, ads] = await Promise.all([
+    fetchAllRows(() => admin.from('submissions')
       .select('id, marketer_id, amount_paid, notes, problem, source, qty, payment_type, order_channel, created_at')
       .in('marketer_id', ids)
       .eq('payment_status', 'completed')
       .is('returned_at', null)
       .in('payment_type', ['fpx_payment', 'cod'])
       .gte('created_at', range.from)
-      .lte('created_at', range.to),
-    admin.from('ads_spend')
+      .lte('created_at', range.to)),
+    fetchAllRows(() => admin.from('ads_spend')
       .select('marketer_id, amount, spend_date, product')
       .in('marketer_id', ids)
       .gte('spend_date', range.firstDay)
-      .lte('spend_date', range.lastDay),
+      .lte('spend_date', range.lastDay)),
   ]);
-  return { subs: subs || [], ads: ads || [] };
+  return { subs, ads };
 }
 
 // Ringkasan satu ahli dari data yang dah diambil

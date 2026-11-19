@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { summarizeByProduct, monthRange } from '@/lib/products';
+import { fetchAllRows, selectAll } from '@/lib/supabase/fetch-all';
 import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared, commissionPctFor, calcKomisen, calcLeaderPay, TEAMSALE_PCT, FPX_FEE } from '@/lib/marketer-calc';
 // Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
@@ -223,24 +224,27 @@ function computeProductStats(marketers, submissions, adsSpend) {
 }
 
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
+// Semua baris (paginasi) — Supabase hadkan 1000 baris satu query; tanpa ini laporan terpotong pada 1000 order
 async function fetchSubs(admin, from, to) {
-  let q = admin.from('submissions')
-    .select('marketer_id, amount_paid, notes, problem, source, qty, payment_type, order_channel')  // payment_type for postage calc
-    .eq('payment_status', 'completed')
-    .is('returned_at', null)   // order return tak dikira sales
-    .in('payment_type', ['cod', 'fpx_payment']);
-  if (from) q = q.gte('created_at', from);
-  if (to)   q = q.lte('created_at', to);
-  const { data } = await q;
-  return data || [];
+  return fetchAllRows(() => {
+    let q = admin.from('submissions')
+      .select('marketer_id, amount_paid, notes, problem, source, qty, payment_type, order_channel')  // payment_type for postage calc
+      .eq('payment_status', 'completed')
+      .is('returned_at', null)   // order return tak dikira sales
+      .in('payment_type', ['cod', 'fpx_payment']);
+    if (from) q = q.gte('created_at', from);
+    if (to)   q = q.lte('created_at', to);
+    return q;
+  });
 }
 
 async function fetchAds(admin, spendFrom, spendTo) {
-  let q = admin.from('ads_spend').select('marketer_id, amount, product');
-  if (spendFrom) q = q.gte('spend_date', spendFrom);
-  if (spendTo)   q = q.lte('spend_date', spendTo);
-  const { data } = await q;
-  return data || [];
+  return fetchAllRows(() => {
+    let q = admin.from('ads_spend').select('marketer_id, amount, product');
+    if (spendFrom) q = q.gte('spend_date', spendFrom);
+    if (spendTo)   q = q.lte('spend_date', spendTo);
+    return q;
+  });
 }
 
 // ─── GET ──────────────────────────────────────────────────────────────────────
@@ -273,12 +277,12 @@ export async function GET(req) {
       const [subs, ads, returnedRes, expRes] = await Promise.all([
         fetchSubs(admin, range.from, range.to),
         fetchAds(admin, range.firstDay, range.lastDay),
-        admin.from('submissions')
+        selectAll(() => admin.from('submissions')
           .select('source, payment_type')
           .eq('payment_status', 'completed')
           .not('returned_at', 'is', null)
           .gte('created_at', range.from)
-          .lte('created_at', range.to),
+          .lte('created_at', range.to)),
         admin.from('hq_expenses').select('*').order('amount', { ascending: false }),
       ]);
       if (expRes.error) throw new Error(`Jadual hq_expenses belum wujud — run migration 019. (${expRes.error.message})`);

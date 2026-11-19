@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { parseAmount } from '@/lib/marketer-calc';
 import { formatOrder } from '@/lib/orders';
 import { ownerScope } from '@/lib/team';
+import { selectAll } from '@/lib/supabase/fetch-all';
 
 export async function GET(req) {
   try {
@@ -54,17 +55,19 @@ export async function GET(req) {
     if (!ownerIds.length) return NextResponse.json({ success: true, data: [], stats: {}, has_team: scope.team.length > 0 });
 
     // Order FPX/COD marketer sendiri (sama skop dgn Pengurusan Order admin)
-    let query = adminClient
-      .from('submissions')
-      .select('id, full_name, phone, address, problem, notes, source, qty, payment_type, payment_status, chip_bill_id, amount_paid, ninjavan_exported_at, returned_at, marketer_id, order_channel, order_origin, created_at')
-      .in('marketer_id', ownerIds)
-      .in('payment_type', ['fpx_payment', 'cod'])
-      .order('created_at', { ascending: false });
+    const buildOrders = () => {
+      let query = adminClient
+        .from('submissions')
+        .select('id, full_name, phone, address, problem, notes, source, qty, payment_type, payment_status, chip_bill_id, amount_paid, ninjavan_exported_at, returned_at, marketer_id, order_channel, order_origin, created_at')
+        .in('marketer_id', ownerIds)
+        .in('payment_type', ['fpx_payment', 'cod'])
+        .order('created_at', { ascending: false });
+      if (dateFrom) query = query.gte('created_at', dateFrom);
+      if (dateTo) query = query.lte('created_at', dateTo);
+      return query;
+    };
 
-    if (dateFrom) query = query.gte('created_at', dateFrom);
-    if (dateTo) query = query.lte('created_at', dateTo);
-
-    const { data: orders, error } = await query;
+    const { data: orders, error } = await selectAll(buildOrders);   // paginasi — had 1000 baris Supabase
     if (error) throw error;
 
     // Format sama dgn admin: label produk (pakej + add-on), alamat, amaun
