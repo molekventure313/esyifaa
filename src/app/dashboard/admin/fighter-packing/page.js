@@ -82,9 +82,10 @@ Rosak: ${damaged.map(d => `${d.sku} x${d.qty}`).join(', ')} — ditolak dari sto
     if (!list.length) return setMsg({ ok: false, text: 'Tiada parcel NinjaVan HQ dalam pilihan.' });
     if (list.length > WAYBILL_CHUNK) setMsg({ ok: true, text: `Menyediakan ${list.length} waybill — sila tunggu…` });
     try {
-      const { pages, errors } = await openMergedWaybills(part => `/api/admin/ninjavan/waybill?fighter=1&ids=${part.join(',')}`, list);
-      setMsg(errors.length ? { ok: false, text: `${pages} waybill dibuka · ${errors.length} ralat — ${errors.slice(0, 2).join(' | ')}` }
-        : list.length > WAYBILL_CHUNK ? { ok: true, text: `${pages} waybill sedia untuk dicetak.` } : null);
+      const { pages, errors, files } = await openMergedWaybills(part => `/api/admin/ninjavan/waybill?fighter=1&ids=${part.join(',')}`, list);
+      const done = files ? `${pages} waybill dimuat turun dalam ${files} fail PDF (folder Downloads)` : `${pages} waybill dibuka`;
+      setMsg(errors.length ? { ok: false, text: `${done} · ${errors.length} ralat — ${errors.slice(0, 2).join(' | ')}` }
+        : list.length > WAYBILL_CHUNK ? { ok: true, text: files ? `${done}.` : `${pages} waybill sedia untuk dicetak.` } : null);
     } catch (e) { setMsg({ ok: false, text: `Gagal sediakan waybill: ${e.message}` }); }
     load();   // segarkan tanda "Dah print"
   };

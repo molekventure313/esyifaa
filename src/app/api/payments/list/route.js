@@ -71,7 +71,8 @@ export async function GET(req) {
     const sp            = searchParams.get('sp') || 'all';              // <source SP HQ> | s:<slug> (SP Generator)
     // Tempoh (MYT): today | yesterday | month | year | all. 'Belum Diexport' abaikan tempoh — order lama yang belum dihantar tak tercicir
     // Tapis waybill NinjaVan (unprinted | printed) — di SERVER: parcel boleh jadi untuk order lama (di luar 100 terbaru / tempoh)
-    const print         = ['unprinted', 'printed'].includes(searchParams.get('print')) ? searchParams.get('print') : null;
+    // printed_today / printed_yesterday = waybill dicetak pada hari itu (MYT) — cari semula satu batch cetakan
+    const print         = ['unprinted', 'printed', 'printed_today', 'printed_yesterday'].includes(searchParams.get('print')) ? searchParams.get('print') : null;
     // Perlu dibetulkan: order belum dihantar yang gagal push / maklumat penghantaran bermasalah — juga di SERVER
     const problem       = searchParams.get('problem') === 'true';
     // Order duplikat (telefon + produk sama dalam 7 hari) — semua tarikh, terbaru dahulu
@@ -83,7 +84,22 @@ export async function GET(req) {
     const limit  = parseInt(searchParams.get('limit')) || ((print || problem) ? 1000 : notExported ? 500 : 100);
     const offset = (page - 1) * limit;
 
-    // Query all paid orders (FPX + COD) — exclude appointment (lead form, legacy)
+    // Penapis produk / pemilik / saluran — dikenakan pada senarai DAN statistik.
+    // JANGAN jadikan async / await pada query (query Supabase "thenable" → terus dijalankan).
+    const ownerIds = await resolveOwner(adminClient, owner);
+    const scoped = q => {
+      q = applySpFilter(applyOwner(applyProductFilter(q, product), ownerIds), sp);
+      if (channel === 'whatsapp') q = q.eq('order_channel', 'whatsapp');
+      else if (channel === 'web') q = q.neq('order_channel', 'whatsapp');
+      return q;
+    };
+    // Tempoh — senarai & statistik (bukan bilangan 'belum export', itu amaran keseluruhan).
+    // Ada carian → SENARAI cari semua tarikh (dulu terhad ke 'Hari Ini' lalai → pesakit lama tak dijumpai); statistik kekal ikut tempoh.
+    const dated = q => (range ? q.gte('created_at', range.from).lte('created_at', range.to) : q);
+
+    // Query all paid orders (FPX + COD) — exclude appointment (lead form, legacy).
+    // Fungsi pembina: penapis id (print / problem) dijalankan dalam kumpulan kecil — beratus id dalam satu URL = HTTP 400.
+    const buildQuery = () => {
     let query = adminClient
       .from('submissions')
       .select(`
@@ -126,51 +142,62 @@ export async function GET(req) {
       query = query.is('ninjavan_exported_at', null).eq('payment_status', 'completed').is('returned_at', null);
     }
 
-    // Penapis produk / pemilik / saluran — dikenakan pada senarai DAN statistik.
-    // JANGAN jadikan async / await pada query (query Supabase "thenable" → terus dijalankan).
-    const ownerIds = await resolveOwner(adminClient, owner);
-    const scoped = q => {
-      q = applySpFilter(applyOwner(applyProductFilter(q, product), ownerIds), sp);
-      if (channel === 'whatsapp') q = q.eq('order_channel', 'whatsapp');
-      else if (channel === 'web') q = q.neq('order_channel', 'whatsapp');
-      return q;
-    };
-    // Tempoh — senarai & statistik (bukan bilangan 'belum export', itu amaran keseluruhan).
-    // Ada carian → SENARAI cari semua tarikh (dulu terhad ke 'Hari Ini' lalai → pesakit lama tak dijumpai); statistik kekal ikut tempoh.
-    const dated = q => (range ? q.gte('created_at', range.from).lte('created_at', range.to) : q);
     query = search ? scoped(query) : dated(scoped(query));
+    if (duplicate) query = query.not('duplicate_note', 'is', null);
+    return query;
+    };
+
+    // Penapis id (print / problem) — null = tiada penapis id
+    let idFilter = null;
 
     if (print) {
       // Order yang ada parcel aktif (bukan batal / gagal) dengan waybill belum / dah dicetak.
-      // "Dah print" dihadkan 14 hari terakhir (kalau tak, beribu parcel lama).
+      // "Dah print" dihadkan 14 hari terakhir (kalau tak, beribu parcel lama); hari ini / semalam ikut tarikh cetak (MYT).
+      const printedRange = print === 'printed_today' ? periodRange('today')
+        : print === 'printed_yesterday' ? periodRange('yesterday') : null;
       const ids = new Set();
       for (let from = 0; ; from += 1000) {
         let sq = adminClient.from('ninjavan_shipments').select('submission_id')
           .eq('env', NV_ENV).not('submission_id', 'is', null).not('tracking_number', 'is', null)
           .not('status', 'in', '(Cancelled,Failed)');
-        sq = print === 'unprinted' ? sq.is('waybill_printed_at', null)
-          : sq.gte('waybill_printed_at', new Date(Date.now() - 14 * 864e5).toISOString());
+        if (print === 'unprinted') sq = sq.is('waybill_printed_at', null);
+        else if (printedRange) sq = sq.gte('waybill_printed_at', printedRange.from).lte('waybill_printed_at', printedRange.to);
+        else sq = sq.gte('waybill_printed_at', new Date(Date.now() - 14 * 864e5).toISOString());
         const { data, error: e } = await sq.order('created_at', { ascending: false }).range(from, from + 999);
         if (e) throw e;
         (data || []).forEach(r => ids.add(r.submission_id));
         if (!data || data.length < 1000 || ids.size >= 1000) break;
       }
-      query = query.in('id', ids.size ? [...ids].slice(0, 1000) : ['00000000-0000-0000-0000-000000000000']);
+      idFilter = [...ids].slice(0, 1000);
     }
 
     if (problem) {
       const ids = await problemOrderIds(adminClient);
       // Bilangan sahaja (lencana penapis — dipanggil jarang, bukan setiap refresh 15s)
       if (searchParams.get('count_only') === 'true') return NextResponse.json({ success: true, count: ids.length });
-      query = query.in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+      idFilter = idFilter ? idFilter.filter(id => ids.includes(id)) : ids;
     }
 
-    if (duplicate) query = query.not('duplicate_note', 'is', null);
-
-    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
-
-    const { data: submissions, error, count } = await query;
-    if (error) throw error;
+    let submissions, count;
+    if (idFilter) {
+      // Kumpulan 150 id setiap query, gabung, susun terbaru dahulu, kemudian halaman
+      const ID_CHUNK = 150;
+      const rows = [];
+      for (let i = 0; i < idFilter.length; i += ID_CHUNK) {
+        const { data, error } = await buildQuery().in('id', idFilter.slice(i, i + ID_CHUNK))
+          .order('created_at', { ascending: false }).range(0, ID_CHUNK - 1);
+        if (error) throw error;
+        rows.push(...(data || []));
+      }
+      rows.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
+      count = rows.length;
+      submissions = rows.slice(offset, offset + limit);
+    } else {
+      const { data, error, count: c } = await buildQuery().order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+      if (error) throw error;
+      submissions = data;
+      count = c;
+    }
 
     // Physical filter: COD (semua) + FPX produk fizikal (sabun / garam / kasturi)
     const filteredSubmissions = (physical || notExported)

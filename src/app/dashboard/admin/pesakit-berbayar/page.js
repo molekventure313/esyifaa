@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { isPhysicalOrder, SP_FILTER_GROUPS, spFilterLabel } from '@/lib/products';
 import EditShippingModal, { ShippingIssues } from '@/components/orders/EditShippingModal';
-import { openMergedWaybills, WAYBILL_CHUNK } from '@/lib/ninjavan/waybill-client';
+import { openMergedWaybills, WAYBILL_CHUNK, WAYBILL_FILE_MAX } from '@/lib/ninjavan/waybill-client';
 
 // Tarikh + masa ringkas (MYT ikut browser), cth: "27 Sep, 3:45 PTG"
 const fmtDateTime = (d) => d
@@ -179,7 +179,7 @@ export default function PengurusanOrderPage() {
   const displayOrders = orders.filter(o =>
     (!notExportedOnly || (!o.ninjavan_exported_at && o.payment_status === 'completed' && !o.returned_at && isPhysicalOrder(o))) &&
     (channel === 'all' || (o.order_channel || 'web') === channel) &&
-    (printFilter === 'all' || (nvActive(o) && (printFilter === 'printed' ? !!o.nv.printed_at : !o.nv.printed_at)))
+    (printFilter === 'all' || (nvActive(o) && (printFilter === 'unprinted' ? !o.nv.printed_at : !!o.nv.printed_at)))
   );
 
   // ─── Selection ─────────────────────────────────────────────────────────────
@@ -319,10 +319,13 @@ export default function PengurusanOrderPage() {
   const handlePrintWaybill = async (ids) => {
     const list = ids.filter(id => { const o = orders.find(x => x.id === id); return o && nvActive(o); });
     if (!list.length) { showToast('Tiada parcel NinjaVan untuk order dipilih.', 'error'); return; }
-    if (list.length > WAYBILL_CHUNK) showToast(`Menyediakan ${list.length} waybill — sila tunggu, PDF akan dibuka bila siap.`, 'info');
+    if (list.length > WAYBILL_FILE_MAX) showToast(`Menyediakan ${list.length} waybill — akan dimuat turun sebagai beberapa fail PDF (${WAYBILL_FILE_MAX} setiap fail). Jangan tutup halaman.`, 'info');
+    else if (list.length > WAYBILL_CHUNK) showToast(`Menyediakan ${list.length} waybill — sila tunggu, PDF akan dibuka bila siap.`, 'info');
     try {
-      const { pages, errors } = await openMergedWaybills(part => `/api/admin/ninjavan/waybill?ids=${part.join(',')}`, list);
-      if (errors.length) showToast(`${pages} waybill dibuka · ${errors.length} ralat — ${errors.slice(0, 2).join(' | ')}`, 'error');
+      const { pages, errors, files } = await openMergedWaybills(part => `/api/admin/ninjavan/waybill?ids=${part.join(',')}`, list);
+      const done = files ? `${pages} waybill dimuat turun dalam ${files} fail PDF (folder Downloads)` : `${pages} waybill dibuka`;
+      if (errors.length) showToast(`${done} · ${errors.length} ralat — ${errors.slice(0, 2).join(' | ')}`, 'error');
+      else if (files) showToast(`${done}.`, 'success');
       else if (list.length > WAYBILL_CHUNK) showToast(`${pages} waybill sedia untuk dicetak.`, 'success');
     } catch (e) {
       showToast(`Gagal sediakan waybill: ${e.message}`, 'error');
@@ -717,7 +720,9 @@ export default function PengurusanOrderPage() {
         }}>
           <option value="all">🖨️ Semua Waybill</option>
           <option value="unprinted">⬜ Belum Print</option>
-          <option value="printed">✅ Dah Print</option>
+          <option value="printed">✅ Dah Print (14 hari)</option>
+          <option value="printed_today">✅ Dah Print — Hari Ini</option>
+          <option value="printed_yesterday">✅ Dah Print — Semalam</option>
         </select>
         <button onClick={() => setProblemOnly(v => !v)} title="Order belum dihantar yang gagal push ke NinjaVan atau maklumat penghantaran bermasalah (90 hari)" style={{
           padding: '0.45rem 0.7rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
