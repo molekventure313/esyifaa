@@ -88,6 +88,9 @@ export default function PengurusanOrderPage() {
   const [dupCount, setDupCount] = useState(0);
   const [editing, setEditing] = useState(null);             // order yang sedang dibetulkan
   const [nvEnv,     setNvEnv]     = useState('sandbox');
+  // ⚠️ Amaran: order selesai belum push > 3 hari, parcel menunggu pickup > 7 hari
+  const [nvAlerts,  setNvAlerts]  = useState(null);
+  const [alertOpen, setAlertOpen] = useState(false);
 
   const { showToast } = useToast();
 
@@ -167,6 +170,32 @@ export default function PengurusanOrderPage() {
     } catch { /* abaikan */ }
   }, []);
   useEffect(() => { fetchProblemCount(); const h = setInterval(fetchProblemCount, 60000); return () => clearInterval(h); }, [fetchProblemCount]);
+
+  // Amaran NinjaVan — setiap 5 minit. Pop-up keluar sekali setiap sesi, atau bila bilangan bertambah.
+  const fetchNvAlerts = useCallback(async () => {
+    try {
+      const j = await (await fetch('/api/admin/ninjavan/alerts')).json();
+      if (!j.success) return;
+      setNvAlerts(j);
+      const sig = `${j.unpushed.length}:${j.stale_pickup.length}`;
+      let seen = null;
+      try { seen = sessionStorage.getItem('nvAlertSeen'); } catch { /* abaikan */ }
+      const [su, sp] = (seen || '0:0').split(':').map(Number);
+      if ((j.unpushed.length || j.stale_pickup.length) && (!seen || j.unpushed.length > su || j.stale_pickup.length > sp)) {
+        setAlertOpen(true);
+        try { sessionStorage.setItem('nvAlertSeen', sig); } catch { /* abaikan */ }
+      }
+    } catch { /* abaikan */ }
+  }, []);
+  useEffect(() => { fetchNvAlerts(); const h = setInterval(fetchNvAlerts, 300000); return () => clearInterval(h); }, [fetchNvAlerts]);
+
+  // Klik order dalam amaran → cari order itu dalam jadual
+  const focusOrder = (a) => {
+    setAlertOpen(false);
+    setNotExportedOnly(false); setProblemOnly(false); setDupOnly(false); setPrintFilter('all');
+    setPaymentStatusFilter('all'); setPaymentTypeFilter('all');
+    setSearchTerm((a.phone || a.name || '').replace(/^\+?6?0?/, '') || a.name);
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -562,9 +591,90 @@ export default function PengurusanOrderPage() {
             style={{ border: 'none', background: 'none', cursor: 'pointer', color: isLightMode ? '#2563EB' : '#60A5FA', fontSize: '0.75rem', fontWeight: 600 }}>✕ Reset penapis</button>}
         </div>
       )}
+      {/* ─── Amaran NinjaVan (banner kekal) ─── */}
+      {nvAlerts && (nvAlerts.unpushed.length > 0 || nvAlerts.stale_pickup.length > 0) && (
+        <div onClick={() => setAlertOpen(true)} role="button" style={{
+          display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', cursor: 'pointer',
+          padding: '0.85rem 1.1rem', borderRadius: '8px', marginBottom: '1rem',
+          background: isLightMode ? '#FEF2F2' : 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.45)',
+        }}>
+          <span style={{ fontSize: '1.2rem' }}>🚨</span>
+          <span style={{ fontWeight: 700, color: isLightMode ? '#B91C1C' : '#FCA5A5', fontSize: '0.875rem' }}>Perlu tindakan:</span>
+          {nvAlerts.unpushed.length > 0 && (
+            <span style={{ fontSize: '0.85rem', color: textPrimary }}>
+              <b>{nvAlerts.unpushed.length}</b> order selesai belum dihantar ke NinjaVan &gt; {nvAlerts.unpushed_days} hari
+            </span>
+          )}
+          {nvAlerts.unpushed.length > 0 && nvAlerts.stale_pickup.length > 0 && <span style={{ color: textMuted }}>·</span>}
+          {nvAlerts.stale_pickup.length > 0 && (
+            <span style={{ fontSize: '0.85rem', color: textPrimary }}>
+              <b>{nvAlerts.stale_pickup.length}</b> parcel menunggu pickup &gt; {nvAlerts.stale_pickup_days} hari
+            </span>
+          )}
+          <span style={{ marginLeft: 'auto', fontSize: '0.8rem', fontWeight: 700, color: isLightMode ? '#B91C1C' : '#FCA5A5' }}>Lihat senarai →</span>
+        </div>
+      )}
+
+      {/* ─── Pop-up amaran NinjaVan ─── */}
+      {alertOpen && nvAlerts && (
+        <div onClick={() => setAlertOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: cardBg, border: isLightMode ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '16px', padding: '1.5rem', maxWidth: '640px', width: '100%', maxHeight: '85vh', overflowY: 'auto',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+              <span style={{ fontSize: '1.8rem' }}>🚨</span>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: textPrimary, margin: 0 }}>Order mungkin terlepas pandang</h3>
+            </div>
+            <p style={{ fontSize: '0.825rem', color: textSecondary, margin: '0 0 1rem' }}>Klik order untuk cari dalam jadual.</p>
+
+            {[
+              {
+                key: 'unpushed', rows: nvAlerts.unpushed, color: '#F59E0B',
+                title: `📦 ${nvAlerts.unpushed.length} order selesai belum dihantar ke NinjaVan (> ${nvAlerts.unpushed_days} hari)`,
+                hint: 'Order dah dibayar / COD sah tapi belum di-push. Hantar ke NinjaVan atau semak kenapa tertangguh.',
+                line: a => `${a.payment_type === 'cod' ? 'COD' : 'FPX'} · order ${fmtDateTime(a.created_at)} · ${a.days} hari${a.nv_error ? ` · ❌ ${a.nv_error}` : ''}`,
+              },
+              {
+                key: 'stale', rows: nvAlerts.stale_pickup, color: '#EF4444',
+                title: `⏳ ${nvAlerts.stale_pickup.length} parcel menunggu pickup (> ${nvAlerts.stale_pickup_days} hari)`,
+                hint: 'Dah push tapi rider belum ambil. Semak parcel ada di HQ / hubungi NinjaVan, atau batal & hantar semula.',
+                line: a => `${a.tracking} · push ${fmtDateTime(a.pushed_at)} · ${a.days} hari · ${a.status}`,
+              },
+            ].filter(s => s.rows.length).map(s => (
+              <div key={s.key} style={{ marginBottom: '1rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: s.color, marginBottom: '0.2rem' }}>{s.title}</div>
+                <div style={{ fontSize: '0.775rem', color: textMuted, marginBottom: '0.5rem' }}>{s.hint}</div>
+                <div style={{ border: cardBorder, borderRadius: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+                  {s.rows.map(a => {
+                    const body = (
+                      <>
+                        <div style={{ fontWeight: 600, fontSize: '0.825rem', color: textPrimary }}>
+                          {a.name}{a.fighter && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: '#A78BFA' }}>🥊 Fighter</span>}
+                          <span style={{ fontWeight: 400, color: textMuted }}> · {a.phone}</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: textSecondary }}>{s.line(a)}</div>
+                      </>
+                    );
+                    const rowStyle = { display: 'block', width: '100%', textAlign: 'left', padding: '0.55rem 0.75rem', background: 'none', border: 'none', borderBottom: cardBorder, cursor: 'pointer', textDecoration: 'none' };
+                    return a.fighter
+                      ? <a key={s.key + a.id} href="/dashboard/admin/fighter-orders" style={rowStyle}>{body}</a>
+                      : <button key={s.key + a.id} onClick={() => focusOrder(a)} style={rowStyle}>{body}</button>;
+                  })}
+                </div>
+              </div>
+            ))}
+            <div style={{ textAlign: 'right' }}>
+              <button onClick={() => setAlertOpen(false)} style={{ padding: '0.6rem 1.4rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', background: '#DC2626', border: 'none', color: '#fff' }}>Faham, tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {[
-          { label: 'Order Selesai',     value: stats.total_completed,                          color: '#10B981', icon: '✅' },
+          { label: 'Order Selesai',    value: stats.total_completed,                          color: '#10B981', icon: '✅' },
           { label: 'Jumlah Sales (RM)', value: `RM ${(stats.total_revenue_rm || 0).toFixed(2)}`, color: '#10B981', icon: '💰' },
           { label: 'Order COD',         value: stats.total_cod,                                color: '#F97316', icon: '📦' },
           { label: 'Order FPX',         value: stats.total_fpx,                                color: '#60A5FA', icon: '💳' },
