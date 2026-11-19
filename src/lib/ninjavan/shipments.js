@@ -398,9 +398,43 @@ export async function applyWebhookEvent(db, payload) {
   const { data } = await db.from('ninjavan_shipments').update(patch)
     .eq('tracking_number', tracking)
     .or(`last_event_at.is.null,last_event_at.lte."${iso}"`)
-    .select('id, submission_id, fighter_order_id, env');
+    .select('id, submission_id, fighter_order_id, env, tracking_number');
   if (event === 'Cancelled') for (const s of data || []) await releaseCancelled(db, s);
-  return { updated: data?.length || 0 };
+  const returns = event === 'Returned to Sender' ? await autoReturn(db, data || []) : undefined;
+  return { updated: data?.length || 0, ...(returns ? { returns } : {}) };
+}
+
+/**
+ * Parcel sampai semula ke HQ ("Returned to Sender") → return automatik (sama seperti butang Return):
+ *  · order HQ COD  → returnStock: order ditanda return (keluar dari sales / profit / komisen) + stok masuk semula
+ *  · order fighter yang dah dipack → returnOrder: stok masuk semula + caj stok dikreditkan (pos kekal dicaj)
+ * Unit rosak direkod staf selepas periksa parcel. FPX HQ kekal manual (dah dibayar — biasanya dihantar semula).
+ * Hanya live (sandbox tidak menyentuh order sebenar). Gagal / dah return → dilangkau (webhook tetap 200).
+ */
+export async function autoReturn(db, shipments) {
+  const out = [];
+  for (const s of shipments) {
+    if ((s.env ?? NV_ENV) !== 'live') continue;
+    try {
+      if (s.submission_id) {
+        const { data: o } = await db.from('submissions').select('payment_type, payment_status, returned_at').eq('id', s.submission_id).maybeSingle();
+        if (!o || o.returned_at || o.payment_type !== 'cod' || o.payment_status !== 'completed') continue;
+        const { returnStock } = await import('@/lib/stock');
+        const r = await returnStock({ submissionId: s.submission_id, adminUserId: null });
+        out.push({ submission_id: s.submission_id, ok: true, qty: r.qtyReturned });
+      } else if (s.fighter_order_id) {
+        const { data: o } = await db.from('fighter_orders').select('ship_status').eq('id', s.fighter_order_id).maybeSingle();
+        if (o?.ship_status !== 'packed') continue;
+        const { returnOrder } = await import('@/lib/fighter/orders');
+        const r = await returnOrder(db, s.fighter_order_id, { id: null });
+        out.push({ fighter_order_id: s.fighter_order_id, ok: true, credited: r.credited });
+      }
+    } catch (e) {
+      console.error('[ninjavan] auto return gagal:', s.tracking_number || s.id, e.message);
+      out.push({ id: s.id, ok: false, error: e.message });
+    }
+  }
+  return out;
 }
 
 export { errorMessageOf };
