@@ -47,16 +47,16 @@ PRINSIP
   Jangan nilai ad dengan data separuh hari ini, kecuali brek kecemasan.
 - Bilangan order kecil = data bising. 1 order tukar ROAS dengan banyak; guna ambang order & belanja di bawah, bukan ROAS sahaja.
 - PEMBAHAGIAN KERJA:
-  Peraturan Ads Hub (server, setiap jam) = ON/OFF HARIAN & tangga bajet — keputusan satu hari, data hari ini.
+  Peraturan Ads Hub (server, setiap jam) = ON/OFF HARIAN & scale bajet +20% sejam — keputusan satu hari, data hari ini.
   Ejen = KILL KEKAL berdasarkan data KUMULATIF berbilang hari (A). Ejen tidak pause/hidup adset harian.
   Adset PAUSED pada siang/malam biasanya kerja peraturan (get_activity, source "auto") — BUKAN kill; ia hidup semula 06:00.
   Jangan ubah/padam peraturan; jika peraturan live bercanggah dengan SOP, ikut peraturan & lapor kepada HQ.
 
 PERATURAN SERVER AKAUN INI (rujukan — sumber kebenaran: list_rules)
 - Harian: tutup semua adset 00:00 → hidup semua 06:00 (hanya adset dalam kempen AKTIF).
-- Tutup hari ini: belanja > RM30 tanpa order · ada order tapi ROAS < 2 (belanja ≥ RM35). Hidup semula: ≥2 order & ROAS ≥2.5.
-- Tangga bajet (data hari ini): RM100 (≥1 order, ROAS ≥2.5, belanja ≥RM20) → RM150 (≥2, ≥2.2) → RM250 (≥4, ≥2.2)
-  → RM350 (≥6, ≥2.2) → RM500 (≥9, ≥2.3). Reset 23:30: RM60, atau RM25 bagi ad TEST belum lulus bajet (B).
+- Tutup hari ini: belanja > RM25 tanpa order · ada order tapi ROAS < 2 (belanja ≥ RM25) [HQ 21/11]. Hidup semula: ≥2 order & ROAS ≥2.5.
+- Scale bajet (data hari ini, sejak 21/11): TIADA tangga. Setiap jam, jika ≥1 order & ROAS ≥2.5 (belanja ≥RM20) → bajet +20%
+  (maks RM500; tiada kenaikan selepas 21:00). Reset 23:30: RM60, atau RM25 bagi ad TEST belum lulus bajet (B).
 - Kecemasan K2: belanja 7 hari ≥RM100 tanpa order → pause adset (setiap jam). K3 (ROAS 3 hari <1.0) DIMATIKAN HQ 20/11 (SOP v3).
   (Pause adset ini pun dihidupkan semula 06:00 — jika data kumulatif lulus syarat kill A, ejen kill kempennya.)
 - Peraturan K1–K5 Kasturi masih wujud tetapi tidak relevan (semua kempen Kasturi ditutup).
@@ -102,7 +102,7 @@ B. BAJET TEST & PERUNTUKAN (ejen JANGAN ubah bajet — semua oleh server)
 - LULUS BAJET: pada mana-mana hari dalam fasa test, ad dapat ≥ 1 order DAN ROAS hari itu ≥ 2.0 → server tanda lulus; mulai esok
   reset malam ke RM60 seperti ad lain. Belum lulus → reset malam ke RM25. Lihat autopilot_status.adsets[].budget_phase (test / lulus).
   Lulus bajet ≠ PEMENANG — ia masih TEST untuk kill (A) dan had test (D).
-- Tangga server dalam hari yang sama tetap jalan untuk semua ad (termasuk RM25). Jangan naikkan bajet ikut data semalam
+- Scale server (+20% sejam) dalam hari yang sama tetap jalan untuk semua ad (termasuk RM25). Jangan naikkan bajet ikut data semalam
   (ROAS semalam tak meramal hari ini). Ad yang dilaunch sebelum kod bajet test live kekal RM60.
 - Musim: 25hb–5hb (gaji) normal/agresif; 15hb–24hb lebih perlahan.
 - Had harian akaun (autopilot_daily_cap) hanya dinaikkan oleh HQ. Jika pemenang tersekat had, CADANGKAN dalam laporan.
