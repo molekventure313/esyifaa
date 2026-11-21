@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { summarizeByProduct, monthRange } from '@/lib/products';
+import { summarizeByProduct, monthRange, COST_SKUS, sabunUnitCost } from '@/lib/products';
 import { fetchAllRows, selectAll } from '@/lib/supabase/fetch-all';
 import { calcProductCOGS as calcProductCOGSShared, calcPostage as calcPostageShared, commissionPctFor, calcKomisen, calcLeaderPay, TEAMSALE_PCT, FPX_FEE } from '@/lib/marketer-calc';
 // Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
@@ -261,13 +261,13 @@ export async function GET(req) {
         .select('id, full_name, marketer_code, is_active, marketer_basic_salary, team_leader_id')
         .eq('role', 'marketer')
         .order('full_name'),
-      admin.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']),
+      admin.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', COST_SKUS),
     ]);
 
     const marketers    = mktRes.data || [];
     const stockMap2    = {};
     (stockRes.data || []).forEach(s => { stockMap2[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
-    const avgCost      = stockMap2['SGH-200G'] || 0;  // backward compat
+    const avgCost      = sabunUnitCost(stockMap2);   // sabun + kotak  // backward compat
     const kasturiCost  = stockMap2['KKE-01']   || 0;
     const garamCost    = stockMap2['GPM-500G']  || 0;
 

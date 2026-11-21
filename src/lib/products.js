@@ -198,13 +198,17 @@ export function periodRange(period) {
 }
 
 // Kos seunit produk dari stock_summary → param untuk calcCOGS
+// SKU yang kosnya masuk COGS. Kotak sabun (KTK-SGH, 1 kotak seunit sabun) ditambah ke kos sabun seunit.
+export const COST_SKUS = ['SGH-200G', 'KKE-01', 'GPM-500G', 'KTK-SGH'];
+export const sabunUnitCost = map => (map['SGH-200G'] || 0) + (map['KTK-SGH'] || 0);
+
 export async function fetchProductCosts(adminClient) {
   const map = {};
   try {
-    const { data } = await adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']);
+    const { data } = await adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', COST_SKUS);
     (data || []).forEach(s => { map[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
   } catch (_) { /* ignore — COGS produk = 0 */ }
-  return { sabunCost: map['SGH-200G'] || 0, kasturiCost: map['KKE-01'] || 0, garamCost: map['GPM-500G'] || 0 };
+  return { sabunCost: sabunUnitCost(map), kasturiCost: map['KKE-01'] || 0, garamCost: map['GPM-500G'] || 0 };
 }
 
 // Order bukan fizikal + ads kategori Pengisian / Digital (ads diisi dari Ads Hub, bukan borang harian)

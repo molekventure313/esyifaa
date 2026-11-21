@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { productUnits, calcPostage } from '@/lib/marketer-calc';
 import { ownerScope } from '@/lib/team';
+import { COST_SKUS, sabunUnitCost } from '@/lib/products';
 // Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // ─── Timezone helpers (MYT = UTC+8) ────────────────────────────────────────
@@ -188,7 +189,7 @@ export async function GET(req) {
       queryOrders(adminClient, current, marketer_id),
       queryOrders(adminClient, previous, marketer_id),
       recentQ,
-      adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']),
+      adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', COST_SKUS),
     ]);
 
     const totals   = aggregate(currentOrders);
@@ -197,7 +198,7 @@ export async function GET(req) {
     // ── Gross PNL calculation — COGS + Postage ───────────────────────────────
     const stockMap     = {};
     (stockRes.data || []).forEach(s => { stockMap[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
-    const sabun_cost   = stockMap['SGH-200G'] || 0;
+    const sabun_cost   = sabunUnitCost(stockMap);   // sabun + kotak
     const kasturi_cost = stockMap['KKE-01']   || 0;
     const garam_cost   = stockMap['GPM-500G'] || 0;
 

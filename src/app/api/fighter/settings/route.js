@@ -25,7 +25,7 @@ export async function GET() {
     const [s, markups, { data: products }] = await Promise.all([
       load(g),
       markupsFor(g.admin, g.user.id),
-      g.admin.from('products').select('sku, name, unit, cost_price').eq('is_active', true).order('name'),
+      g.admin.from('products').select('sku, name, unit, cost_price').eq('is_active', true).not('sku', 'like', 'KTK-%').order('name'),   // kotak packaging bukan produk jualan
     ]);
     const prices = (products || []).map(p => {
       const markup = markups[p.sku] ?? 0;

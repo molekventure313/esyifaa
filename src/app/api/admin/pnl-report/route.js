@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ownerScope } from '@/lib/team';
 import { fetchAllRows, fetchByIds } from '@/lib/supabase/fetch-all';
+import { COST_SKUS, sabunUnitCost } from '@/lib/products';
 // Akses: super_admin sahaja — role 'admin' ialah staff order (lihat src/lib/auth.js)
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -237,10 +238,10 @@ export async function GET(req) {
     const marketer_id = marketerParam && marketerParam !== 'hq' ? (await ownerScope(adminClient, marketerParam)).ids : marketerParam;
 
     // Avg cost for COGS — fetch all physical products
-    const stockRes = await adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', ['SGH-200G', 'KKE-01', 'GPM-500G']);
+    const stockRes = await adminClient.from('stock_summary').select('sku, avg_cost_per_unit').in('sku', COST_SKUS);
     const stockMap = {};
     (stockRes.data || []).forEach(s => { stockMap[s.sku] = parseFloat(s.avg_cost_per_unit || 0); });
-    const avgCost      = stockMap['SGH-200G'] || 0;  // sabun — backward compat
+    const avgCost      = sabunUnitCost(stockMap);   // sabun + kotak  // sabun — backward compat
     const kasturiCost  = stockMap['KKE-01']   || 0;
     const garamCost    = stockMap['GPM-500G']  || 0;
 

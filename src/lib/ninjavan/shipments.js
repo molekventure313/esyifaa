@@ -1,6 +1,7 @@
 // Shipment NinjaVan — bina payload Order Create 4.2, push order, cache waybill, kemas kini status dari webhook V2.
 // Setiap parcel = satu baris ninjavan_shipments (sql/029_ninjavan_api.sql).
 import { NV_ENV, NinjaVanError, createOrder, cancelOrder, fetchWaybillPdf, errorMessageOf } from './api';
+import { deductBoxesForShipment, restoreBoxesForShipment } from '@/lib/stock-box';
 import { addressStringOf, parseAddressParts, formatPhone, unitCellOf } from '@/lib/ninjavan-csv';
 import { orderQty, parseAmount } from '@/lib/marketer-calc';
 import { checkShipping } from '@/lib/shipping-validate';
@@ -154,6 +155,7 @@ export async function createShipment(db, input, { submissionId = null, fighterOr
     await db.from('submissions').update({ ninjavan_exported_at: new Date().toISOString(), ninjavan_exported_by: userId })
       .eq('id', submissionId);
   }
+  await deductBoxesForShipment(db, shipment);   // kotak sabun: 1 setiap unit sabun (live sahaja)
   return { shipment, created: true };
 }
 
@@ -334,6 +336,7 @@ export async function cancelShipment(db, shipment) {
  *    (hanya live, dan hanya jika tiada parcel aktif lain untuk order itu)
  */
 async function releaseCancelled(db, shipment) {
+  await restoreBoxesForShipment(db, shipment);
   await db.from('ninjavan_shipments')
     .update({ waybill_printed_at: null, waybill_printed_by: null, waybill_print_count: 0 })
     .eq('id', shipment.id);

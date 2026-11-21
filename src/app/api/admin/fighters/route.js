@@ -15,7 +15,7 @@ export async function GET() {
     const [{ data: fighters, error: fe }, { data: settings, error: se }, { data: products }, { data: markups, error: me }] = await Promise.all([
       g.admin.from('profiles').select('id, full_name, email, phone, marketer_code, is_active, created_at').eq('role', 'independent').order('created_at', { ascending: false }),
       g.admin.from('fighter_settings').select('fighter_id, chip_brand_id, chip_status, ai_status, whatsapp, meta_pixel_id, sender_name'),
-      g.admin.from('products').select('sku, name, unit, cost_price').eq('is_active', true).order('name'),
+      g.admin.from('products').select('sku, name, unit, cost_price').eq('is_active', true).not('sku', 'like', 'KTK-%').order('name'),   // kotak packaging bukan produk jualan
       g.admin.from('fighter_markups').select('scope, sku, markup'),
     ]);
     const missing = [se, me].find(tableMissing);
