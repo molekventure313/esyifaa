@@ -13,6 +13,9 @@ async function requireAdmin() {
 }
 
 const EDITABLE_TYPES = ['in', 'adjustment'];
+// Rekod manual: stok masuk + pelarasan (kiraan fizikal / MCP). Rosak dari return diurus di modul return.
+const isEditable = m => EDITABLE_TYPES.includes(m.movement_type)
+  || (m.reference_type === 'adjustment' && ['out', 'return'].includes(m.movement_type) && !/^ROSAK/i.test(m.notes || ''));
 
 /**
  * GET /api/stock/movements?product_id=&limit=50&offset=0
@@ -67,9 +70,9 @@ export async function PATCH(req) {
 
     // Verify movement exists and is editable type
     const { data: existing, error: fetchErr } = await adminClient
-      .from('stock_movements').select('id, movement_type').eq('id', id).single();
+      .from('stock_movements').select('id, movement_type, reference_type, notes').eq('id', id).single();
     if (fetchErr || !existing) return NextResponse.json({ success: false, error: 'Rekod tidak dijumpai' }, { status: 404 });
-    if (!EDITABLE_TYPES.includes(existing.movement_type)) {
+    if (!isEditable(existing)) {
       return NextResponse.json({ success: false, error: `Rekod jenis '${existing.movement_type}' tidak boleh diedit — hanya rekod manual (in/adjustment) dibenarkan` }, { status: 403 });
     }
 
@@ -115,9 +118,9 @@ export async function DELETE(req) {
 
     // Verify movement exists and is editable type
     const { data: existing, error: fetchErr } = await adminClient
-      .from('stock_movements').select('id, movement_type, qty, notes').eq('id', id).single();
+      .from('stock_movements').select('id, movement_type, reference_type, qty, notes').eq('id', id).single();
     if (fetchErr || !existing) return NextResponse.json({ success: false, error: 'Rekod tidak dijumpai' }, { status: 404 });
-    if (!EDITABLE_TYPES.includes(existing.movement_type)) {
+    if (!isEditable(existing)) {
       return NextResponse.json({ success: false, error: `Rekod jenis '${existing.movement_type}' tidak boleh dipadam — hanya rekod manual dibenarkan` }, { status: 403 });
     }
 

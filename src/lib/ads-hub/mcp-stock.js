@@ -2,7 +2,7 @@
 // dengan Dashboard → Stok, jadi halaman stok & laporan P&L terus nampak perubahan.
 // Jenis pergerakan:
 //   add_stock            → 'in'  / reference_type 'batch'       (sama seperti /api/stock/add)
-//   adjust_stock tambah  → 'in'  / reference_type 'adjustment'  (tanpa kos — avg kos guna cost_price)
+//   adjust_stock tambah  → 'return' / reference_type 'adjustment' (tidak mengubah kos purata)
 //   adjust_stock tolak   → 'out' / reference_type 'adjustment'  (dikira "Rosak", P&L abaikan — bukan jualan)
 
 const fail = msg => Object.assign(new Error(msg), { toolError: true });
@@ -62,7 +62,7 @@ async function balanceOf(admin, productId) {
 }
 
 const moveLabel = m => m.movement_type === 'out' && m.reference_type === 'adjustment' ? 'rosak/pelarasan tolak'
-  : m.movement_type === 'in' && m.reference_type === 'adjustment' ? 'pelarasan tambah'
+  : m.reference_type === 'adjustment' ? 'pelarasan tambah'
   : m.movement_type === 'out' && m.reference_type === 'order' ? 'keluar (order)'
   : { in: 'masuk', out: 'keluar', return: 'return', adjustment: 'pelarasan (tidak dikira)' }[m.movement_type] || m.movement_type;
 
@@ -122,7 +122,7 @@ async function adjustStock(admin, actor, input) {
   const note = String(input.note || '').trim();
   if (!note) throw fail('note (sebab pelarasan) wajib.');
   const { data: mv, error } = await admin.from('stock_movements').insert({
-    product_id: p.id, movement_type: input.direction === 'increase' ? 'in' : 'out', qty,
+    product_id: p.id, movement_type: input.direction === 'increase' ? 'return' : 'out', qty,
     reference_type: 'adjustment', notes: `${note} (MCP)`, created_by: actor,
   }).select('id').single();
   if (error) throw new Error(error.message);
