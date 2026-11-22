@@ -1,7 +1,8 @@
 // Ringkasan Pos & COD (status parcel + floating COD) — dikongsi oleh dashboard HQ & Portal Fighter.
-import { periodRange, productOf, PRODUCTS } from '@/lib/products';
+import { periodRange, productOf, PRODUCTS, isPhysicalOrder } from '@/lib/products';
+import { parseAmount } from '@/lib/marketer-calc';
 import { NV_ENV } from './api';
-import { statusGroupOf } from './shipments';
+import { latestShipmentsBy, statusGroupOf } from './shipments';
 
 export const GROUPS = ['pending_pickup', 'in_transit', 'exception', 'delivered', 'returned', 'cancelled', 'failed'];
 const round2 = n => Math.round(n * 100) / 100;
@@ -96,5 +97,59 @@ export async function buildNvSummary(db, { period = 'month', scope = 'hq', produ
     ],
     product_total: productCounts.all,
     parcels,
+    ...(fighterScope && scope !== 'fighter' ? {} : { unpushed: await unpushedSummary(db, { scope, product, range }) }),
+  };
+}
+
+async function fetchAll(build) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await build().range(from, from + 999);
+    if (error) throw new Error(error.message);
+    out.push(...(data || []));
+    if (!data || data.length < 1000) return out;
+  }
+}
+
+/**
+ * Order SELESAI (FPX dibayar / COD dihantar) yang belum dihantar ke NinjaVan — ikut tarikh order dalam tempoh & tapis produk.
+ * HQ: submissions fizikal, belum return, tiada parcel aktif (syarat sama dengan amaran 'unpushed').
+ * Fighter: fighter_orders ship_status 'new' bagi fighter yang guna akaun NinjaVan HQ (courier 'own' diabaikan).
+ * Order pending / belum bayar tidak dikira.
+ */
+async function unpushedSummary(db, { scope, product, range }) {
+  const inRange = q => (range ? q.gte('created_at', range.from).lte('created_at', range.to) : q);
+  let rows = [];
+  if (scope === 'hq') {
+    const subs = (await fetchAll(() => inRange(db.from('submissions')
+      .select('id, source, payment_type, amount_paid, notes, created_at')
+      .eq('payment_status', 'completed').is('returned_at', null).is('ninjavan_exported_at', null)
+      .in('payment_type', ['fpx_payment', 'cod'])
+      .order('created_at', { ascending: true })))).filter(isPhysicalOrder);
+    const nv = subs.length ? await latestShipmentsBy(db, 'submission_id', subs.map(o => o.id)) : {};
+    rows = subs
+      .filter(o => ['none', 'cancelled', 'failed'].includes(statusGroupOf(nv[o.id])))
+      .map(o => ({ source: o.source, cod: o.payment_type === 'cod', amount: parseAmount(o), created_at: o.created_at }));
+  } else {
+    const orders = await fetchAll(() => inRange(db.from('fighter_orders')
+      .select('id, fighter_id, source, payment_type, amount, created_at')
+      .eq('payment_status', 'completed').eq('ship_status', 'new')
+      .order('created_at', { ascending: true })));
+    const fids = [...new Set(orders.map(o => o.fighter_id).filter(Boolean))];
+    const { data: st } = fids.length ? await db.from('fighter_settings').select('fighter_id, courier').in('fighter_id', fids) : { data: [] };
+    const own = new Set((st || []).filter(r => r.courier === 'own').map(r => r.fighter_id));
+    rows = orders
+      .filter(o => !own.has(o.fighter_id))
+      .map(o => ({ source: o.source, cod: o.payment_type === 'cod', amount: Number(o.amount) || 0, created_at: o.created_at }));
+  }
+  if (product && product !== 'all') rows = rows.filter(r => (productOf(r.source) || 'lain') === product);
+
+  const old = Date.now() - 3 * 864e5;
+  const sum = arr => round2(arr.reduce((n, r) => n + r.amount, 0));
+  const cod = rows.filter(r => r.cod), fpx = rows.filter(r => !r.cod);
+  return {
+    count: rows.length, amount: sum(rows),
+    cod_count: cod.length, cod_amount: sum(cod), fpx_count: fpx.length, fpx_amount: sum(fpx),
+    over_3_days: rows.filter(r => new Date(r.created_at).getTime() < old).length,
   };
 }

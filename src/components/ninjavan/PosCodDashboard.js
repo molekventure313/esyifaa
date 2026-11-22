@@ -191,6 +191,11 @@ export default function PosCodDashboard({ urlFor, canRemit = false, showFighter 
               { label: 'COD Dalam Perjalanan', sub: 'Belum sampai ke pelanggan', value: rm(c.on_the_way), color: '#3B82F6', icon: '🚚' },
               { label: 'COD Diterima', sub: canRemit ? 'Ditanda diterima dari NinjaVan' : 'Diterima HQ & dikreditkan ke bil anda', value: rm(c.remitted), color: '#10B981', icon: '🏦' },
               { label: 'COD Return', sub: 'Parcel return — tiada kutipan', value: rm(c.returned), color: '#8B5CF6', icon: '↩️' },
+              ...(data.unpushed ? [{
+                label: 'Belum Push NinjaVan',
+                sub: `${data.unpushed.count} order selesai · COD ${data.unpushed.cod_count} (${rm(data.unpushed.cod_amount)}) · FPX ${data.unpushed.fpx_count} (${rm(data.unpushed.fpx_amount)})${data.unpushed.over_3_days ? ` · ⚠️ ${data.unpushed.over_3_days} lebih 3 hari` : ''}`,
+                value: rm(data.unpushed.amount), color: data.unpushed.count ? '#DC2626' : '#10B981', icon: '📭',
+              }] : []),
               { label: 'Kadar Delivered', sub: `Return ${data.rates.returned_pct ?? '—'}% · dari parcel yang selesai`, value: data.rates.delivered_pct == null ? '—' : `${data.rates.delivered_pct}%`, color: '#10B981', icon: '🎯' },
             ].map(s => (
               <div key={s.label} onClick={s.onClick} style={{ ...card, cursor: s.onClick ? 'pointer' : 'default' }}>
