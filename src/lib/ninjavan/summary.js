@@ -97,7 +97,7 @@ export async function buildNvSummary(db, { period = 'month', scope = 'hq', produ
     ],
     product_total: productCounts.all,
     parcels,
-    ...(fighterScope && scope !== 'fighter' ? {} : { unpushed: await unpushedSummary(db, { scope, product, range }) }),
+    ...(fighterScope && scope !== 'fighter' ? {} : { unpushed: await unpushedSummary(db, { scope, product }) }),
   };
 }
 
@@ -112,16 +112,15 @@ async function fetchAll(build) {
 }
 
 /**
- * Order SELESAI (FPX dibayar / COD dihantar) yang belum dihantar ke NinjaVan — ikut tarikh order dalam tempoh & tapis produk.
+ * Order SELESAI (FPX dibayar / COD dihantar) yang belum dihantar ke NinjaVan — SEMUA tarikh (backlog, tidak ikut penapis tempoh) & tapis produk.
  * HQ: submissions fizikal, belum return, tiada parcel aktif (syarat sama dengan amaran 'unpushed').
  * Fighter: fighter_orders ship_status 'new' bagi fighter yang guna akaun NinjaVan HQ (courier 'own' diabaikan).
  * Order pending / belum bayar tidak dikira.
  */
-async function unpushedSummary(db, { scope, product, range }) {
-  const inRange = q => (range ? q.gte('created_at', range.from).lte('created_at', range.to) : q);
+async function unpushedSummary(db, { scope, product }) {
   let rows = [];
   if (scope === 'hq') {
-    const subs = (await fetchAll(() => inRange(db.from('submissions')
+    const subs = (await fetchAll(() => (db.from('submissions')
       .select('id, source, payment_type, amount_paid, notes, created_at')
       .eq('payment_status', 'completed').is('returned_at', null).is('ninjavan_exported_at', null)
       .in('payment_type', ['fpx_payment', 'cod'])
@@ -131,7 +130,7 @@ async function unpushedSummary(db, { scope, product, range }) {
       .filter(o => ['none', 'cancelled', 'failed'].includes(statusGroupOf(nv[o.id])))
       .map(o => ({ source: o.source, cod: o.payment_type === 'cod', amount: parseAmount(o), created_at: o.created_at }));
   } else {
-    const orders = await fetchAll(() => inRange(db.from('fighter_orders')
+    const orders = await fetchAll(() => (db.from('fighter_orders')
       .select('id, fighter_id, source, payment_type, amount, created_at')
       .eq('payment_status', 'completed').eq('ship_status', 'new')
       .order('created_at', { ascending: true })));
